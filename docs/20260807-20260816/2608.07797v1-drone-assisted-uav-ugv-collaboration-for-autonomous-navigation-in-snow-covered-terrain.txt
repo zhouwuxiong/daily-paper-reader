@@ -1,0 +1,300 @@
+Title: Drone-Assisted UAV-UGV Collaboration for Autonomous Navigation in Snow-Covered Terrain
+
+URL Source: https://arxiv.org/pdf/2608.07797v1
+
+Published Time: Tue, 11 Aug 2026 00:18:27 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# Drone-Assisted UAV-UGV Collaboration for Autonomous Navigation in Snow-Covered Terrain 
+
+# Shreyam Gupta 1 , Pranjal Agrawal 2 , Priyam Gupta 3 and R. Gautam 11Robotics Research Group, Indian Institute of Technology (BHU), Varanasi, India 
+
+> 2
+
+# University of Colorado, Boulder, USA 
+
+> 3
+
+# Erasmus Mundus — Intelligent Field Robotic Systems (IFRoS), University of Girona, Spain 
+
+# Abstract 
+
+This paper presents a collaborative UAV-UGV nav-igation framework for high-altitude, snow-covered terrain, where reduced visibility and unstable ground render conventional methods ineffective. We introduce a custom efficient U-Net architecture that falls under the computational constraints for real-time road segmentation, utilizing a novel syn-thetic snow data augmentation technique to achieve 96.5% segmentation accuracy. For UAV localiza-tion, we implement an Extended Kalman Filter (EKF) fusing onboard GPS and IMU data, achiev-ing a maximum observed positional error of ±0.5 meters. The UGV position is determined via a vi-sual tracking pipeline using YOLOv5 and depth data from the UAV’s RGB-D camera. A dynamic path planning algorithm utilizes this segmentation to adjust for snow drifts, enabling successful nav-igation in obscured test environment with minimal deviation. 
+
+# 1 Introduction 
+
+The operational challenges inherent to high-altitude, snow-covered terrain represent one of the most formidable fron-tiers in modern field robotics. These environments, often called cryospheric zones, are marked by extreme weather changes and sub-zero temperatures that degrade electrome-chanical performance, and most importantly, the constant presence of snow. Snow cover changes both the physical and visual landscape, turning structured roads into uniform, high-albedo surfaces where traditional navigation cues, like lane markings, road boundaries, and textural differences, are virtually erased. For standard Unmanned Ground Vehicles (UGVs), this “whitewashing” effect leads to a major failure of normal perception algorithms. Optical sensors, including RGB cameras and LiDAR, have difficulty resolving depth and traversability when the ground lacks visual variation. The uniformity of a snowfield hides dangerous terrain features like drifts, cornices, and hidden depressions, increasing the chances of becoming stuck. Additionally, the properties of snow, such as its compressibility, shear strength, and vary-ing friction coefficients, create constraints that standard kine-matic models cannot handle. A UGV trying to move through deep snow often suffers from significant wheel slip. This makes wheel-encoder-based odometry unreliable and causes the vehicle to stray from its intended path. Traditionally, nav-igating in these environments has required heavy, manned machinery or simple teleoperation. Both options are logis-tically challenging and put human operators at considerable risk. As the need for autonomous operations grows, driven by uses in military logistics, border surveillance, post-disaster search and rescue, and infrastructure maintenance in the Arc-tic, there is an urgent need to create navigation systems that can handle visual loss and mechanical instability. 
+
+1.1 The Paradigm Shift: Air-Ground Collaboration 
+
+This research suggests a major shift from ground-focused per-ception to a collaborative, mixed air-ground approach. By separating perception and movement tasks, we can use the unique mechanical benefits of both robotic types. The Un-manned Aerial Vehicle (UAV), unencumbered by terrain fric-tion and capable of achieving an orthographic vantage point [Moore and Charles River Analytics, 2022], assumes the role of the primary sensor node. The UGV, serving as the payload carrier, relies on this aerial intelligence to navigate “blindly” but precisely through safe corridors defined by the aerial agent. [Baril et al. , 2022] Specifically, we introduce a system where a UAV constructs a real-time semantic map of the ter-rain using a custom-trained U-Net architecture to handle the visual complexity of the terrain. [Baril et al. , 2022] This map informs a path planning module that dynamically routes the UGV. To ensure robustness, the UAV employs an Extended Kalman Filter (EKF) to fuse its onboard GPS and IMU data, while the UGV is tracked visually by the drone, eliminating the need for ground-based sensors that are prone to failure in adverse conditions. 
+
+# 2 Related Work 
+
+2.1 Visual Perception in Adversarial Weather Conditions 
+
+The core challenge of autonomous navigation in snow is the degradation of visual data reliability. In computer vision, “adverse weather” is categorized as a domain shift problem where the statistical distribution of the test data (snowy im-ages) diverges significantly from the training data (usually arXiv:2608.07797v1 [cs.RO] 7 Aug 2026 clear, sunny datasets like Cityscapes or KITTI). [Uˇ sinskis et al. , 2025] Snow introduces specific optical artifacts: scat-tering, which reduces contrast; occlusion, where falling snowflakes block the lens; and saturation, where high sur-face albedo causes camera sensors to clip at maximum bright-ness, resulting in featureless white regions. [Spasev et al. ,2024] Recent studies have highlighted that active sensors like LiDAR are particularly susceptible to “volumetric noise” from falling snow, where snowflakes are misclassified as solid obstacles, creating “phantom walls” in the occupancy map. [Northern Robotics Laboratory, 2020] Thermal imag-ing offers some immunity to lighting conditions but often lacks the spatial resolution required for precise edge detection of road boundaries. [Ma et al. , 2024] Consequently, passive RGB-D sensing, enhanced by robust deep learning models capable of extracting semantic context from low-contrast tex-ture, remains a promising and cost-effective avenue for field robotics. 
+
+2.2 Evolution of Semantic Segmentation Architectures 
+
+Semantic segmentation: The process of classifying every pixel in an image, is the cornerstone of the UAV’s percep-tion stack. The evolution of this field has moved from clas-sical computer vision techniques (thresholding, edge detec-tion) to deep convolutional neural networks (CNNs). While massive transformer-based models (e.g., SegFormer) repre-sent the current state-of-the-art in benchmark accuracy, they often impose computational loads that are prohibitive for the size, weight, and power (SWaP) constraints of tactical UAVs. The U-Net architecture, originally developed for biomedical image segmentation, remains uniquely suited for this appli-cation. Its encoder-decoder structure with skip connections allows for the precise localization of boundaries (e.g., cell walls or road edges) using limited training data. [Yin et al. ,2022] In the context of snow navigation, the “road” is often defined not by sharp edges but by subtle textural differences between packed snow and looses powder. The U-Net’s abil-ity to propagate high-resolution features from the encoder to the decoder enables it to resolve these subtle gradients bet-ter than architectures that rely solely on high-level semantic abstraction. [McAfee et al. , 2022] 
+
+2.3 Sensor Fusion and State Estimation Theory 
+
+Robust localization in GPS-denied or GPS-degraded envi-ronments requires the fusion of multiple sensor modalities. The theoretical standard for this is the Kalman Filter, specif-ically its non-linear variants: the Extended Kalman Filter (EKF) and the Unscented Kalman Filter (UKF). [Alam et al. , 2016] In standard urban driving, a 6-Degree-of-Freedom (DoF) state vector (position and orientation) often suffices. However, in cryospheric terrain, the assumption of “no slip” in wheel odometry is violated. When a UGV slips on ice, the wheel encoders register motion that does not translate to global displacement. To compensate for this, modern field robotics literature advocates for high-dimensional state esti-mation. [Nemade, 2024] By tracking not just pose, but also the first and second derivatives of position (velocity and ac-celeration) and sensor biases, the filter can distinguish be-tween actual motion and sensor drift. This necessitates a 15-state formulation, which allows the system to dynami-cally weight the trust between proprioceptive sensors (IMU, Odom) and exteroceptive sensors (Visual Odometry) based on the instantaneous consistency of the data. [Shaik et al. ,2024] 
+
+2.4 Heterogeneous Multi-Agent Coordination 
+
+The field of UAV-UGV collaboration has matured signif-icantly, moving from simple master-slave teleoperation to complex, semi-autonomous teaming. Literature from 2024 emphasizes the efficiency gains of such systems in disaster response and precision agriculture. [Pomerleau, 2022] The theoretical advantage lies in the complementarity of the plat-forms: the UAV provides high-frequency, low-latency global planning, while the UGV provides long-endurance, high-payload local actuation. However, a critical bottleneck iden-tified in recent reviews is communication efficiency. Contin-uous streaming of high-bandwidth video from UAV to UGV drains battery life and saturates wireless channels, which are often unstable in remote terrain. Emerging frameworks sug-gest “event-driven” communication or semantic data sharing, where agents exchange only critical updates (e.g., “new ob-stacle detected”) rather than raw data streams. [Aljalbout et al. , 2025] This research integrates these concepts by imple-menting a message-queue-based architecture that prioritizes control commands and map updates over telemetry, directly addressing the energy constraints of aerial platforms. 
+
+# 3 System Architecture and Design Refinements 
+
+The proposed system architecture is a realization of the theo-retical principles of heterogeneous collaboration, engineered specifically for the harsh constraints of snow-covered terrain. The system comprises three distinct but tightly coupled sub-systems: the Aerial Mapping Node, the Ground Actuation Node, and the Collaborative Communication Bridge. 
+
+3.1 The Aerial Perception Platform (UAV) 
+
+The UAV functions as the primary “cognitive” agent in the system. Unlike typical setups where the drone acts merely as a relay, our architecture offloads the heavy lifting of environ-mental mapping and semantic analysis to the aerial platform. 
+
+Sensor Configuration: The UAV is equipped with a so-phisticated sensor suite designed to maximize information gain per flight minute: • RGB-D Camera: This is the primary exteroceptive sen-sor. It captures both color information (for semantic seg-mentation) and depth information (for geometric obsta-cle detection). The depth channel is particularly critical in snow, as it helps distinguish between flat snow patches and volumetric drifts that might appear identical in a 2D image. [Pomerleau, 2022] • Inertial Measurement Unit (IMU): A high-frequency IMU provides data on the UAV’s acceleration and angu-lar rates, essential for stabilizing the flight controller and providing short-term dead-reckoning during rapid ma-neuvers. [Baril et al. , 2022] • Global Positioning System (GPS): Provides absolute lo-calization to correct the drift inherent in the visual-inertial odometry system. 
+
+Modifications and Refinements: A significant refinement from initial prototypes is the onboard processing capability. The UAV runs the road segmentation U-Net and the RTAB-Map SLAM algorithm locally. This “edge computing” ap-proach ensures that the decision-making loop is tight and does not depend on the latency of a ground control station link. [Baril et al. , 2022] 
+
+3.2 The Ground Actuation Platform (UGV) 
+
+The UGV is architected as a “sensor-lean” platform. This de-liberate design choice shifts the cost and complexity to the UAV, allowing the ground vehicle to be more rugged and ex-pendable. • Sensor Configuration: The UGV possesses no environ-mental perception sensors or localization hardware (Li-DAR, Cameras, or GPS). It operates entirely without on-board sensing. • Role: The UGV executes trajectory commands sent by the UAV. Its position and orientation are estimated ex-clusively by the UAV’s perception system, which calcu-lates the vehicle’s pose relative to the drone’s coordinate frame. 
+
+3.3 The Collaborative Communication Bridge 
+
+Effective coordination requires a robust data link. We utilize the Robot Operating System (ROS) as the middleware back-bone. • Mechanism: The system coordinates actions by passing road segmentation and location data through ROS top-ics. The UAV publishes the UGV’s position and veloc-ity in the initial drone frame (odom), which the UGV controller uses to generate velocity commands. • Efficiency: This architecture centralizes computation on the UAV, reducing the processing load and hardware re-quirements of the ground unit. 
+
+# 4 Methodology I: Advanced Perception and Semantic Mapping 
+
+The cornerstone of the system’s autonomy is its ability to per-ceive the environment. This section details the “modified sec-tions” of the research concerning the custom U-Net architec-ture and the data augmentation strategies that enable robust segmentation in snow. 
+
+4.1 Refined Road Segmentation Architecture 
+
+The task of segmenting a white road from white surround-ings is non-trivial. Standard computer vision techniques like Canny edge detection or Otsu thresholding fail catastrophi-cally because the histogram of pixel intensities is unimodal and compressed in the high-brightness region. [Baril et al. ,2022] To address this, we developed a learning-based ap-proach using a customized U-Net. 
+
+Custom U-Net Architecture Design 
+
+We employ a modified U-Net architecture designed to balance segmentation accuracy with computational effi-ciency. [Sultonov et al. , 2022; Zhang et al. , 2023] • Encoder (Contracting Path): The encoder consists of a series of convolutional blocks that progressively down-sample the image to extract high-level semantic features. Our specific implementation uses five hierarchical levels with channel depths increasing from 64 to 1024 [Baril et al. , 2022] Each block includes: 
+
+– Convolution Layers: Two convolutions to capture spatial features. 
+
+– Batch Normalization: To stabilize learning and ac-celerate convergence. 
+
+– ReLU Activation: To introduce non-linearity. 
+
+– Max Pooling: A operation to reduce spatial dimen-sions and abstraction. [Yin et al. , 2023] • Decoder (Expansive Path): The decoder upsamples the feature maps using transposed convolutions. It uses skip connections that combine the feature maps from the cor-responding encoder layer. These skip connections re-cover the spatial information lost during pooling, help-ing the network define precise boundaries. This is essen-tial for keeping the UGV on a narrow safe path. • Input/Output: The network accepts RGB images, nor-malized to a standard normal distribution (mean 0, std 1) to ensure consistent gradient flow. The output is a binary mask that shows road versus non-road. 
+
+Data Augmentation Strategy 
+
+A major challenge in developing deep learning models for specific terrains is the lack of annotated datasets. To address the issue of a small training set, which has only 95 images, we used the Albumentations library for extensive augmenta-tion. This included rotational transformations ( ±60 ◦), flip-ping, and synthetic snow injection. Geometric Augmenta-tion: We performed random rotations with a limit of ±60 de-grees and a probability of 0.6. We also applied horizontal flipping with a probability of 0.5 and vertical flipping with a probability of 0.5. 
+
+Impact: This approach helps the network learn strong fea-tures that are unaffected by the drone’s direction. As a re-sult, the model can generalize effectively, even with a limited amount of training footage. 
+
+Training and Convergence 
+
+The model was trained using the Adam optimizer with a dynamic learning rate schedule, ranging from 2 × 10 −3 to 
+
+5 × 10 −7. The loss function employed was Binary Cross-Entropy (BCE) with Logits. Over a training regime of 10,000 epochs, the loss converged from 2.1 to 0.07. This conver-gence indicates that the model successfully learned the deci-sion boundaries required for road segmentation. 
+
+4.2 Multi-Modal Mapping with RTAB-Map 
+
+Perception is not limited to 2D segmentation. To enable navi-gation, the system must understand the 3D structure of the en-Figure 1: RTAB-Map (Real Time Appearance Based Mapping) 
+
+vironment. We utilize RTAB-Map (Real-Time Appearance-Based Mapping), a graph-based SLAM approach. [Labb´ e, 2022; Fuentes-Pacheco et al. , 2015] • Integration: The binary road mask generated by the U-Net is projected onto the 3D point cloud generated by the depth camera. This results in a semantic occupancy grid where cells are classified as “Traversable Road,” “Ob-stacle,” or “Unexplored.” • Frontier Exploration: To map unknown areas au-tonomously, the UAV employs a frontier exploration algorithm. This algorithm identifies the boundaries between open space and unexplored space (frontiers) and generates flight commands to investigate these re-gions, ensuring complete coverage of the operational zone. [Baril et al. , 2022] 
+
+> Figure 2: Map Build using Frontier Exploration.
+
+# 5 Methodology II: Localization, Tracking, and Adaptive Control 
+
+Once the environment is perceived, the challenge shifts to lo-calization (knowing where the agents are) and control (mov-ing them effectively). This section details the sophisticated sensor fusion and planning algorithms that constitute the core of the UGV’s navigation capability. 
+
+5.1 UAV Localization with EKF 
+
+To ensure stable aerial mapping, we implemented a ro-bust sensor fusion strategy for the drone using the robot localization [Moore and Charles River Analytics, 2022] ROS package. • State Vector Formulation: The filter tracks the 15-dimensional kinematic state of the UAV (Position, Ori-entation, and their rates of change). • Fusion Logic: The filter fuses high-frequency acceler-ation and angular data from the UAV’s IMU (100 Hz) with absolute position updates provided by the onboard GPS. This fusion is critical for generating a smooth and drift-free odometry/filtered estimate required for accu-rate mapping. [Nemade, 2024] 
+
+5.2 Collaborative UGV Tracking 
+
+Since the UGV lacks onboard sensors, the UAV must continu-ously track it to provide corrections. We utilize a vision-based tracking pipeline: • YOLOv5 Detection: A YOLOv5s object detection model, trained on aerial imagery, detects the UGV in the RGB video stream. [Jocher and Ultralytics, 2020] This model achieved an mAP@0.5 score of 0.989 and an mAP@0.5:0.95 score of 0.552. • Depth-Based Pose Estimation: Once the bounding box of the UGV is identified, the system queries the corre-sponding depth map. By analyzing the depth gradient and applying the camera’s intrinsic calibration matrix (K), the system computes the UGV’s precise 3D posi-tion and orientation relative to the drone. 
+
+5.3 Adaptive Path Planning 
+
+Below section highlights an adaptive planning architecture that is responsive to environmental changes. Figure 3: Mapping & Exploration rqt Image View   
+
+> Figure 4: Hierarchical Navigation strategy Conceptual Frame-work [Herbert et al. , 2017]
+
+Global Planner (TEB): We utilize the Timed Elastic Band (TEB) planner for trajectory optimization. The TEB ap-proach treats the trajectory as a deformable elastic band that is pulled towards the goal while being pushed away from obstacles. This optimization considers the kinematic constraints of the vehicle (e.g., minimum turning radius), which is crucial for preventing the UGV from attempting impossible maneuvers in deep snow. [R¨ osmann et al. , 2021; Darweesh et al. , 2017] 
+
+Local Planner (OMPL): For generating feasible motion primitives, we integrate the Open Motion Planning Library (OMPL), specifically using Reeds-Shepp curves. This allows the system to plan smooth, curvature-continuous paths that minimize the risk of inducing slip. [R¨ osmann et al. , 2021; Darweesh et al. , 2017] 
+
+Dynamic Adaptation: The critical innovation is the dy-namic re-costing of the map. As the UAV detects new snow-drifts or changes in road traversability via real-time segmen-tation, it updates the costmap. The path planner then instantly re-computes the optimal trajectory. This “live” adaptation al-lows the UGV to deviate from a pre-planned route to avoid getting stuck in a fresh drift, a capability termed “adaptive drift avoidance”. [Baril et al. , 2022] 
+
+5.4 Path Tracking Controller 
+
+To execute the planned path, the UGV uses a Pure Pursuit controller.  
+
+> Figure 5: Pure Pursuit Controller Methodology [Diaz-Arango et al. ,2020]
+
+This geometric tracking algorithm calculates the steering angle necessary to return the vehicle to the path by “chasing” a look-ahead point a fixed distance ahead. 
+
+Benefit : Pure Pursuit is known for its stability and smooth-ness, reducing the jerky control inputs that often lead to loss of traction on slippery surfaces. [Kim et al. , 2014] 
+
+# 6 Experimental Results and Analysis 
+
+To validate the proposed framework, extensive experiments were conducted in high-fidelity simulations (Gazebo) de-signed to replicate the physics and visual conditions of a snow-covered environment. The experiments focused on as-sessing segmentation accuracy, localization robustness, and overall mission success rates. 
+
+6.1 Road Segmentation Performance 
+
+The performance of the custom U-Net model was evaluated based on training metrics and inference speed. • Accuracy: On the training set, the model reached an ac-curacy of 96.5 • Convergence: The Binary Cross-Entropy (BCE) loss was successfully minimized from 2.1 to 0.07 over 10,000 epochs, demonstrating strong convergence. • Computational Efficiency: The model operates with an inference time of approximately 170ms per frame. This latency allows for continuous segmentation updates suit-able for the UGV’s navigation speed. 
+
+6.2 Localization and Navigation Robustness 
+
+The integration of the EKF for the drone and visual tracking for the UGV yielded precise navigational control. - Positional Error: Experimental validation in the Gazebo simulation environment showed a maximum observed posi-tional error of ±0.5 meters in all three axes. - Mission Success: The system successfully demonstrated the ability to guide the UGV through the mapped environment by dynamically updating velocity commands based on the visual tracking feedback. 
+
+# 7 Discussion and Broader Implications 
+
+7.1 Decoupling Perception and Actuation 
+
+The data strongly suggests that the primary driver of the sys-tem’s success is the architectural decision to decouple percep-tion (UAV) from actuation (UGV). In snow-covered terrain, ground-level perception is inherently limited by geometry; a snowdrift appears as a white wall, indistinguishable from the horizon. By elevating the sensor, we convert a complex 3D perception problem into a simpler 2D orthographic mapping task. This “bird’s-eye view” advantage allows the U-Net to perform with high accuracy, which in turn enables the UGV to navigate with confidence. 
+
+7.2 The Efficacy of Synthetic Data 
+
+The 96.5% accuracy achieved through synthetic snow aug-mentation is a significant finding. It validates the hypoth-esis that deep learning models can be robustly trained for extreme environments without requiring massive, dangerous data collection campaigns. This aligns with the broader trend in robotics towards “Sim-to-Real” transfer, where photoreal-istic simulation is used to bridge the reality gap. [Zhao et al. ,2025] 
+
+7.3 Operational Impact and Scalability 
+
+The implications of this research extend beyond snow re-moval. The framework is highly scalable and applicable to any domain where ground mobility is compromised but aerial visibility is maintained. Search and Rescue: In post-avalanche scenarios, this system could deploy a UGV to transport medical supplies to sur-vivors while the UAV maps the debris field. Military Logistics: For convoy operations in the Arctic, a sin-gle UAV could guide a platoon of autonomous supply trucks, reducing the cognitive load on human operators and ensuring route safety. [Baril et al. , 2022] 
+
+7.4 Limitations 
+
+While robust, the system is not without limitations. It cur-rently relies on GPS for the UAV’s absolute positioning. In GPS-denied environments (e.g., deep canyons or during jam-ming), the system would drift. Future work must integrate visual-inertial odometry (VIO) or terrain-relative navigation (TRN) on the UAV to ensure fully autonomous operation in GNSS-denied zones. Additionally, while the U-Net performs well, extremely heavy snowfall (whiteout conditions) may still blind the RGB camera. Integrating active sensors like Near-Infrared (NIR) or Radar could further enhance robust-ness. [B¨ uhler et al. , 2017] 
+
+# 8 Conclusion 
+
+This report has detailed the design, implementation, and validation of a novel Drone-Assisted UAV-UGV Collabo-rative Navigation framework tailored for snow-covered ter-rain. By synthesizing a custom-trained U-Net segmentation model, a robust 15-state sensor fusion engine, and an adap-tive planning architecture, we have addressed the fundamen-tal failure modes of conventional autonomous systems in the cryosphere. Key Contributions: • High-Accuracy Segmentation: The development of a custom U-Net model that achieves 96.5% training ac-curacy in segmenting terrain. • Sensor-Lean Navigation: A framework that successfully navigates a UGV without any onboard sensors, relying entirely on aerial visual tracking with a maximum ob-served error of ±0.5 meters. • Robust UAV Localization: The implementation of a 15-state EKF fusing GPS and IMU data to ensure stable aerial tracking. • Adaptive Planning: The integration of the TEB (Timed Elastic Band) global planner to optimize trajectories based on real-time aerial maps. These experimental results validate the thesis that hetero-geneous collaboration is superior to single-agent approaches in unstructured, adverse environments. This work lays a solid foundation for the future deployment of autonomous robotic teams in some of the most challenging regions on Earth, of-fering a pathway to safer, more efficient operations in the face of extreme winter conditions. 
+
+# References 
+
+[Alam et al. , 2016] Mushfiqul Alam, Gin´ es L´ opez, Martin Sipos, and Jan Rohac. Ins/gnss localization using 15 state extended kalman filter. 11 2016. [Aljalbout et al. , 2025] Elie Aljalbout, Jiaxu Xing, Angel Romero, Iretiayo Akinola, Caelan Reed Garrett, Eric Hei-den, Abhishek Gupta, Tucker Hermans, Yashraj Narang, Dieter Fox, Davide Scaramuzza, and Fabio Ramos. The re-ality gap in robotics: Challenges, solutions, and best prac-tices, 2025. [Baril et al. , 2022] Dominic Baril, Simon-Pierre Deschˆ enes, Olivier Gamache, Maxime Vaidis, Damien LaRocque, Jo-hann Laconte, Vladim´ ır Kubelka, Philippe Gigu` ere, and Franc ¸ois Pomerleau. Kilometer-scale autonomous naviga-tion in subarctic forests: Challenges and lessons learned. 
+
+Field Robotics , 2:1628–1660, July 2022. [B¨ uhler et al. , 2017] Yves B¨ uhler, Marc S. Adams, Andreas Stoffel, and Ruedi Boesch. Photogrammetric reconstruc-tion of homogenous snow surfaces in alpine terrain apply-ing near-infrared uas imagery. International Journal of Remote Sensing , 38:3135 – 3158, 2017. [Darweesh et al. , 2017] Hatem Darweesh, Eijiro Takeuchi, Kazuya Takeda, Yoshiki Ninomiya, Adi Sujiwo, Luis Yoichi Morales, Naoki Akai, Tetsuo Tomizawa, and Shinpei Kato. Open source integrated planner for autonomous navigation in highly dynamic environments. 
+
+Journal of Robotics and Mechatronics , 29(4):668–684, 2017. [Diaz-Arango et al. , 2020] Gerardo Diaz-Arango, Hector Vazquez-Leal, Luis Hernandez-Martinez, Victor Manuel Jimenez-Fernandez, Aurelio Heredia-Jimenez, Roberto C. Ambrosio, Jesus Huerta-Chua, Hector De Cos-Cholula, and Sergio Hernandez-Mendez. Multiple-target homo-topic quasi-complete path planning method for mobile robot using a piecewise linear approach. Sensors , 20(11), 2020. [Fuentes-Pacheco et al. , 2015] Jorge Fuentes-Pacheco, Jose Ascencio, and J. Rendon-Mancha. Visual simultaneous localization and mapping: A survey. Artificial Intelligence Review , 43, 11 2015. [Herbert et al. , 2017] Sylvia Herbert, Mo Chen, SooJean Han, Somil Bansal, Jaime F. Fisac, and Claire J. Tomlin. FaSTrack: Fast and Safe Tracking for Online Trajectory Planning. https://bair.berkeley.edu/blog/2017/12/05/fastra ck/, 2017. Berkeley AI Research (BAIR) Blog. Accessed: 2022-04-16. [Jocher and Ultralytics, 2020] Glenn Jocher and Ultralytics. YOLOv5. https://github.com/ultralytics/yolov5, 2020. Accessed: 2022-04-16. [Kim et al. , 2014] Hanguen Kim, Donghoon Kim, Jae-Uk Shin, Hyongjin Kim, and Hyun Myung. Angular rate-constrained path planning algorithm for unmanned surface vehicles. Ocean Engineering , 84:37–44, 2014. [Labb´ e, 2022] Mathieu Labb´ e. rtabmap ros. http://wiki.ros .org/rtabmap ros, 2022. Accessed: 2022-04-25. [Ma et al. , 2024] Zihan Ma, Yongshang Li, Ronggui Ma, and Chen Liang. Applying unsupervised semantic seg-mentation to high-resolution uav imagery for enhanced road scene parsing, 2024. [McAfee et al. , 2022] Marion McAfee, Mandana Karimine-jad, Albert Weinert, Saif Huq, Johannes D. Stigter, and David Tormey. State estimators in soft sensing and sen-sor fusion for sustainable manufacturing. Sustainability ,14(6), 2022. [Moore and Charles River Analytics, 2022] Thomas Moore and Charles River Analytics. robot localization. https: //github.com/cra-ros-pkg/robot localization, 2022. Ac-cessed: 2022-05-15. [Nemade, 2024] Ganesh Nemade. Event-Driven Architec-ture: How Asynchronous Systems Improve Scalability and Responsiveness. https://medium.com/@nemagan/event-d riven-architecture-how-asynchronous-systems-improve -scalability-and-responsiveness-2cfda9eb811c, 2024. Accessed: 2026-08-01. [Northern Robotics Laboratory, 2020] Northern Robotics Laboratory. SNOW: Self-driving navigation optimized for winter. https://norlab.ulaval.ca/research/snow/, 2020. Accessed: 2022-04-16. [Pomerleau, 2022] Franc ¸ois Pomerleau. Robotics in snow and ice, 08 2022. [R¨ osmann et al. , 2021] Christoph R¨ osmann, Artemi Makarow, and Torsten Bertram. Online motion planning based on nonlinear model predictive control with non-euclidean rotation groups. In 2021 European Control Conference (ECC) , pages 1583–1590, 2021. [Shaik et al. , 2024] Furqan Shaik, Abhishek Malreddy, Nikhil Billa, Kunal Chaudhary, and Sunny Manchanda. Idd-aw: A benchmark for safe and robust segmentation of drive scenes in unstructured traffic and adverse weather. pages 4602–4611, 01 2024. [Spasev et al. , 2024] Vlatko Spasev, Ivica Dimitrovski, Ivan Chorbev, and Ivan Kitanovski. Semantic segmentation of unmanned aerial vehicle remote sensing images using seg-former, 2024. [Sultonov et al. , 2022] Furkat Sultonov, Jun-Hyun Park, Sangseok Yun, Dong-Woo Lim, and Jae-Mo Kang. Mixer u-net: An improved automatic road extraction from uav imagery. Applied Sciences , 12(4), 2022. [Uˇ sinskis et al. , 2025] Vygantas Uˇ sinskis, Michał Nowicki, Andrius Dzedzickis, and Vytautas Buˇ cinskas. Sensor-fusion based navigation for autonomous mobile robot. 
+
+Sensors , 25(4), 2025. [Yin et al. , 2022] Xiao-Xia Yin, Le Sun, Yuhan Fu, Ruiliang Lu, and Yanchun Zhang. [retracted] u-net-based medical image segmentation. Journal of Healthcare Engineering ,2022(1):4189781, 2022. [Yin et al. , 2023] Yuming Yin, Jinhong Zhang, Mengqi Guo, Xiaobin Ning, Yuan Wang, and Jianshan Lu. Sensor fusion of gnss and imu data for robust localization via smoothed error state kalman filter. Sensors , 23(7), 2023. [Zhang et al. , 2023] Hua Zhang, Zhengang Jiang, Guoxun Zheng, and Xuekun Yao. Semantic segmentation of uav re-mote sensing images based on improved u-net. In 2023 8th International Conference on Intelligent Computing and Signal Processing (ICSP) , pages 1735–1740, 2023. [Zhao et al. , 2025] Fangzhou Zhao, Yao Sun, Jianglin Lan, Lan Zhang, Xuesong Liu, and Muhammad Ali Imran. Adaptive semantic communication for uav/ugv coopera-tive path planning, 2025. Component Computation Overhead 
+
+Ardupilot 0.090 cores Gazebo 2 cores UAV Localization/RTabMap 0.30 cores Segmentation 4 cores 
+
+> Table 1: Computation Analysis (Phase-I)
+
+Component Computation Overhead 
+
+Ardupilot 0.090 cores Gazebo 2 cores UAV Localization/RTabMap 0.50 cores Segmentation 2 cores 
+
+> Table 2: Computation Analysis (Phase-II)
+
+Operating System Ubuntu (20.04) System Processor Intel(R) Core(TM) i5-11300H Processor 3.1GHz Gazebo 2 cores 
+
+> Table 3: Hardware specifications
+
+Algorithm 1 Depth-Based UGV 3D Pose & Orientation Extraction 
+
+Require: IRGB (RGB image), ID (Depth image), K (Camera intrinsic matrix), MY OLO (Trained YOLOv5 model) 
+
+Ensure: (X, Y, Z ) (3D spatial coordinates), θ (Yaw/Heading angle) 
+
+1: Extract UGV bounding box using YOLOv5 
+
+[umin , v min , u max , v max ] = MY OLO (IRGB )
+
+2: Compute bounding box centroid (u, v ) and dimensions (lx, l y )
+
+u = umin + umax 
+
+2 , v = vmin + vmax 
+
+2
+
+lx = umax − umin , ly = vmax − vmin 
+
+3: Extract UGV depth value Z at the centroid 
+
+Z = ID (v, u )
+
+4: Compute 3D coordinates using pinhole parameters (f, c x, c y ) from KX = −(u − cx) · Zf , Y = ( cy − v) · Zf
+
+5: Crop depth region of interest ( ROI D ) around bounding box 
+
+ROI D ← ID
+
+ 
+
+v − ly
+
+2
+
+
+
+:
+
+
+
+v + ly
+
+2
+
+
+
+,
+
+
+
+u − lx
+
+2
+
+
+
+:
+
+
+
+u + lx
+
+2
+
+ 
+
+6: Normalize ROI D to [0 , 1] 
+
+7: Initialize binary mask M of same shape as ROI D
+
+8: for each pixel p ∈ ROI D do 
+
+9: if 0 < p ≤ 0.5 then 
+
+10: M (p) ← 255 
+
+11: else 
+
+12: M (p) ← 0
+
+13: end if 
+
+14: end for 
+
+15: Apply morphological erosion and dilation on M
+
+16: Extract contours C = {c1, c 2, . . . , c n} from M
+
+17: Select largest contour cmax based on enclosed area 
+
+18: Compute orientation θ via PCA / Ellipse fitting on cmax 
+
+θ = atan2( eigenvector 0,1, eigenvector 0,0)
+
+19: return (X, Y, Z ), θ

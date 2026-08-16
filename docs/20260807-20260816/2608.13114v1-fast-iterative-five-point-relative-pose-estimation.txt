@@ -1,0 +1,350 @@
+Title: 2608.13114v1.pdf
+
+URL Source: https://arxiv.org/pdf/2608.13114v1
+
+Published Time: Fri, 14 Aug 2026 00:52:56 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Fast Iterative Five point Relative Pose Estimation 
+
+## Johan Hedborg Michael Felsberg Computer Vision Laboratory Link¨ oping University, Sweden 
+
+> https://www.cvl.isy.liu.se/
+
+## Abstract 
+
+Robust estimation of the relative pose between two cam-eras is a fundamental part of Structure and Motion meth-ods. For calibrated cameras, the fi ve point method together with a robust estimator such as RANSAC gives the best re-sult in most cases. The current state-of-the-art method for solving the relative pose problem from fi ve points is due to Nist´ er [9], because it is faster than other methods and in the RANSAC scheme one can improve precision by increasing the number of iterations. In this paper, we propose a new iterative method, which is based on Powell’s Dog Leg algorithm. The new method has the same precision and is approximately twice as fast as Nist´ er’s algorithm. The proposed method is easily extended to more than fi ve points while retaining a ef fi cient error met-rics. This makes it also very suitable as an re fi nement step. The proposed algorithm is systematically evaluated on three types of datasets with known ground truth. 
+
+## 1. Introduction 
+
+The estimation of the relative position and orientation of two cameras based on the image content exclusively is the basis for a number of applications, ranging from aug-mented reality to navigation. In many cases, it is possible to estimate the intrinsic parameters of the camera prior to the pose estimation. This reduces the number of unknowns to fi ve. This particular case is the problem considered in this paper and the current state-of-the-art solution is the fi ve point solver presented by Nist´ er [9] combined with a pre-emptive scoring scheme, [10], in a RANSAC loop, [3]. We propose to solve the fi ve point problem iteratively using Powell’s Dog Leg (DL) method, [11]. We show that a non-linear DL solver with fi ve parameters is faster than the currently fastest fi ve point solver [9]. The DL optimiza-tion method is a commonly used method for solving general non-linear systems of equations and least square problems. Our formulation of the fi ve point problem is based on the epipolar distance, [5], i.e. the distance of the points to the respective epipolar lines. By minimizing an error based on the epipolar distance instead of an error in 3D space, no structure estimation is required, thus leading to fewer un-known parameters and to a signi fi cant reduction in calcula-tions. 
+
+1.1. Related work 
+
+In the case of calibrated cameras, the pose estimation problem is most accurately solved using the minimal case of fi ve points within a robust estimator (RANSAC) frame-work, [9, 17, 12]. The fi ve point problem is a well un-derstood topic and there exists a wide variety of solutions. Among the fi rst methods is the early work by [2] and more recent work can be found in [7, 18]. As a consequence of using the fi ve point solver within a RANSAC loop, the speed of the solver is of great practical relevance because the accuracy can be improved by using more iterations, [5]. Therefore, the current state-of-the-art method is due to Nist´ er [9], as his method is capable of cal-culating the relative pose within a RANSAC loop in video real-time. However, to achieve this level of performance, a considerable implementation effort is required, [7]. Stew´ enius [18] improved the numerical stability of [9] by using Gr¨ obner bases to solve a series of third order poly-nomials instead of solving a tenth order polynomial. How-ever, this gain in stability comes with a performance penalty due to a 10x10 eigenvector decomposition. An alternative to algebraic solvers are non-linear op-timization methods, which fi nd the solution iteratively, e.g. using the Gauss-Newton method, [14]. However, the Gauss-Newton method becomes unstable if the Hessian is ill-conditioned. To compensate for that the authors pro-pose to include more than fi ve points in the estimation of the pose, [14], section 4.2. The speed reported in [14] is prohibitively slower (about four orders of magnitude) than Nist´ er’s implementation. In terms of evaluation, many authors have been using synthetic data in order to have access to ground truth infor-mation, [9, 18, 12]. Using additive Gaussian noise in these synthetic datasets does not necessarily lead to realistic eval-1uation results. 
+
+1.2. Main contributions 
+
+The main contributions of this paper are: 
+
+• We propose a new iterative method for solving the fi ve point relative pose problem using the Dog Leg algo-rithm. 
+
+• The new method is nearly a factor of two faster and at least as accurate as the current state-of-the-art. 
+
+• We demonstrate the methods ability to generalize to more than fi ve points and the increase in precision. 
+
+• We provide a novel type of dataset consisting of real image sequences and high accuracy ground truth cam-era poses (throw the authors homepage). The remainder of the paper is structured as follows. In the subsequent section, we formalize the relative pose esti-mation problem and introduce our novel algorithm. In sec-tion three we describe the evaluation and in section four we present and analyze the results. 
+
+## 2. Methods 
+
+2.1. Problem formulation 
+
+A 3D world point xwi is projected onto two images, re-sulting in two corresponding image points xi and x′
+
+> i
+
+. The projections are de fi ned by 
+
+xi ∼ P1xwi , P1 = K1[I|0] (1) 
+
+x′ 
+
+> i
+
+∼ P2xwi , P2 = K2[R12 |t12 ] , (2) where ∼ denotes equality up to scale and the fi rst camera de fi nes the coordinate system. Let R12 and t12 denote the rotation and the translation between camera 1 and 2. The cameras are related as, [2], 
+
+x′T K−12 
+
+> T
+
+EK −11 x = 0 , (3) where E = R12 [t12 ]× is the essential matrix, which con-tains the relative rotation and translation between the views. The translation [tx ty tz ] is represented as a skew symmet-ric cross product matrix 
+
+[t12 ]× =
+
+ 0 −tz ty
+
+tz 0 −tx
+
+−ty tx 0
+
+ . (4) If the internal camera parameters K1, K2 are known, we can assume that the image points are recti fi ed, i.e. , they are multiplied beforehand by K−11 and K−12 , respectively. In that case, (3) becomes 
+
+x′T Ex = 0 . (5) To simplify notation, we omit the subindex ·12 for the rota-tion R and the translation t in what follows. 
+
+2.2. Essential matrix estimation problem 
+
+Equation 5 allows us to verify whether the image points and the essential matrix are consistent, but in practice we need to estimate E from sets of points. Usually, these sets of points contain outliers and to obtain a robust estimate, one usually uses RANSAC. Within the RANSAC loop, it is preferable to use as few points as possible, [3]. The min-imum number of points is determined by the degrees of freedom in E = R[t]× as (5) gives us one equation per correspondence. Hence we need fi ve points. The degrees of freedom also determine the dimension-ality of minimal parameterizations. For reasons of com-putational ef fi ciency, we chose a parametrization with fi ve angles w = [ α β γ θ φ], further details are given in Appendix A. Given fi ve points, we aim at computing E(w) using an 
+
+iterative solver of non-linear systems of equations instead of a closed form solution. For this purpose, we need to have geometric error rather than a purely algebraic one. One pos-sibility to de fi ne a geometric error is in terms of the distance between a point in one view xi and the epipolar line li from the corresponding point x′ 
+
+> i
+
+in the other view, [5]: 
+
+ri(w) = li(w)xi , (6) where 
+
+li(w) = x′Ti E(w)
+
+|| x′Ti e1(w) x′Ti e2(w)|| 2
+
+(7) and ej (w) are the column vectors of E(w). Note that the symmetric variant of (6) is the Sampson distance, [13]. Hence, we want to solve 
+
+r(w∗) = 
+
+
+
+r1(w∗)
+
+...
+
+r5(w∗)
+
+ = 0 (8) and w∗ is a global minimizer of 
+
+σ(w) = 12 || r(w)|| 22 . (9) 
+
+2.3. Iterative solution using Dog Leg 
+
+Equation 9 can be categorized as a non-linear least squares problem, and solved by e.g. the Gauss-Newton method, [14]. We have instead chosen to apply an alter-native method that combines Newton-Raphson (NR) and steepest descent (SD), called Dog Leg (DL), because ”The Dog Leg method is presently considered as the best method for solving systems of non-linear equation.” [8] The combination of NR and SD is determined by means of the radius Δ of a trust region . Within this trust region, we assume that we can model r(w) locally using a linear model ℓℓℓ:
+
+r(w + h) ≈ ℓℓℓ(h)  r(w) + J(w)h , (10) where J = [ ∂r 
+
+> ∂w1
+
+. . . ∂r 
+
+> ∂w5
+
+] is the Jacobian. The Newton-Raphson update hnr is obtained by solving 
+
+J(w)h = −r(w) e.g. by Gauss elimination with pivoting. If the update is within the trust region ( khnr k2 ≤ Δ), it is used to compute a new potential parameter vector 
+
+wnew = w + hnr . (11) Otherwise, compute the gradient g = JT r and the steep-est descent step hsd = −αg (for the computation of the step length α, see Appendix B). If the SD step leads outside the trust region ( αkgk2 ≥ Δ), a step in the direction of steepest descent with length Δ is applied 
+
+wnew = w − (Δ/kgk2)g . (12) If the SD step is shorter than Δ, β times hnr + αg is added to produce a vector of length Δ:
+
+wnew = w − αg + ( hnr + αg)β . (13) In all three cases, the new parameter vector is only used in the next iteration ( w = wnew ) if the gain factor ρ is posi-tive (for the computation of ρ see Appendix B). Depending on the gain factor, the region of trust is growing or shrink-ing. The iterations are stopped, if kgk∞, krk∞, khk2, or Δ
+
+is below a threshold or if a maximum number of iterations is reached. 
+
+2.4. Initialization 
+
+As with any iterative method, the DL method needs a starting point w0. In the case of pose estimation for video frames its often possible to quite accurately guess the posi-tion of the next frame, because of physical limitations of motion (visual odometry). A good prediction is that the camera motion is constant between frames. To create a wider baseline for the pose estimation it is common not to take subsequent frames but frames further apart. In this case, the motion until the second but latest frame is already known and using the prediction described above, a good starting point for the pose estimation is obtained. This is meant when referring to DLinit in the Result section. In certain cases, the initial position might be completely unknown, e.g. photo sharing sites. The main focus of this work is however towards real-time video sequences imply-ing that we have some knowledge of the previous pose. The case without prior knowledge is still of occasional interest i.e. in an initial state or when one loses track resulting in a completely unknown pose. In these cases we obtain con-vergence by fi rst initiating the solver with a standard pa-rameter vector w = 0 (corresponding to a forward motion) for a number of RANSAC iterations. After these fi rst itera-tions, we initialize the solver with the currently best model (largest RANSAC consensus set). This is referred to as DL-const in section 4. The major advantage of DLinit com-pared to DLconst is that the individual RANSAC iterations are data independent and can easily be implemented on a parallel computer, e.g. GPU. There are some further parameters in the DL algorithm that have to be chosen. Δ0 is the start value for Δ, which is set to 1 in our implementation. An upper limit of the num-ber of iterations is de fi ned to avoid a waste of computational power in cases of that do not converge. In these cases, the resulting pose estimate is usually inaccurate and will be ne-glected anyway. We use an upper limit 5 for the number of iterations for DLinit. For DLconst we use a two step strat-egy: for the fi rst 100 iterations the limit set to 8 and then it is lowered to 6. The thresholds for kgk∞, krk∞, khk2, and 
+
+Δ are set to 10 −9, 10 −9, 10 −10 , and 10 −10 , respectively. 
+
+2.5. The processing pipeline 
+
+In order to apply the algorithm from the previous section to image sequences, several steps have to be performed be-fore. First of all, we need to calibrate the camera which is done with Zhang’s method, [19]. After this, distinct image regions are extracted using an interest point detector, [15]. We use the KLT-tracker, [15], to obtain point correspon-dences over time. The KLT-tracker is basically a least-squares matching of rectangular patches that achieves sub-pixel accuracy by gradient search. We use a translation-only model between neighboring frames. Tracking between neighboring frames instead of across larger temporal win-dows improves the stability, especially with respect to scale variations that are present in forward motion. When track-ing frame-by-frame, the changes in viewing angle and scale are suf fi ciently small for tracking to work well. In order to improve stability of tracked points, the track-retrack (cross-check) has been applied in certain cases, [6]. All these steps were performed using Willow Garage’s OpenCV im-plementations. 
+
+## 3. Evaluation setup 
+
+We have evaluated our method on three types of data, consisting of synthetic images, real images and the Notre Dame dataset [16]. Pose estimation methods are com-monly tested on synthetic data with added arti fi cial noise, [9, 12, 18, 17]. Since real data might differ signi fi cantly from synthetic test data, we have also evaluated our method on a dataset with real images. The error metric used for our datasets are the difference in angle of the translation direction between the ground truth and the pose estimate. The direction is used because of the scale associated with the relative pose estimation is ambiguous. The Notre Dame data set is used to evaluate how well it generalizes to N-points and in order to compare it with the very accurate and fast method of Hartley et al. [4] we use an error metric based on differences in rotation. In general, pose estimation methods behave differently on sideways motion and on forwards motion, [12, 18, 9]. In dataset 1 dataset 2 
+
+dataset 3 dataset 4 
+
+> Figure 1. Forward motion, real data.
+
+order to analyze both cases separately, we have divided the datasets into two parts, one for forward motion and one for sideways motion. 
+
+3.1. Synthetic data 
+
+We have tested the algorithm on a synthetic dataset, which consists of 1000 randomly positioned 3D world points viewed by a camera moving both sideways and for-wards. The world points were projected into the cameras and Gaussian noise (zero mean) was added to the projected point positions. The noise variance is varied between 0 and 1, where standard deviation 1 is equivalent to one pixel in an image with the size 1024x1024. The horizontal view-angle is set to 60 ◦. This follows the methodology used in [9, 18]. 
+
+3.2. Real image sequences 
+
+The second evaluation dataset is constructed from real images by applying a methodology motivated by [1]. For capturing the images, a 15 megapixel Canon 50D DLSR camera has been used, which is capable to capture 6.5 im-ages per second. The relatively low frame rate was com-pensated by moving the camera approximately one fourth of the wanted speed. By mounting the camera on a stable wagon and pushing it forward we could get a smooth cam-era trajectory for the sequence. This allowed us to get ap-proximate ground truth for the sequence by estimating the pose for the high resolution images. A large quantity of points has been tracked ( ∼10K) and the pose has been esti-mated by using the fi ve point method, [17] within a 10000 RANSAC iterations. Examples for the acquired images are shown in Figure 1 (forward motion) and Figure 2 (sideways motion). The dataset images for evaluation are obtained by down-sampling the images to 1 megapixel. 
+
+dataset 1 dataset 2 
+
+dataset 3 dataset 4 
+
+> Figure 2. Sideways motion, real data.
+
+3.3. The Notre Dame dataset 
+
+The full Notre Dame data set consists of 715 images of 127431 3D points. The number of image pairs with more than 30 point correspondences are 32051. The dataset comes with already reconstructed cameras and points which has been re fi ned with bundle adjustment. As in [4] we have chosen to use the bundle adjusted cameras as ground truth. 
+
+## 4. Results 
+
+The results are presented in Figures. 3-4 as box plots over 500 individual pose estimates. The boxes cover the sec-ond and third quantile and the dots are considered outliers. Each pose estimate is produced by running a 500 iterations RANSAC loop. All methods are run on the same set of fi ve points, which is randomly selected before each RANSAC iteration. Therefore, in the ideal case, all methods should produce the same result for a fi xed number of RANSAC iterations. However, small deviations between the methods occur due to sporadic failures. Failures in Nist´ er’s method are pre-sumably caused by the preemptive scoring scheme, where all solutions are scored using a sixth point and the solution with the best score is chosen, [10]. Given that the sixth point is an outlier, a wrong solution is likely to be cho-sen and a potentially better solution and larger consensus set is potentially disregarded, but with respect to the whole RANSAC loop this is still the most ef fi cient solution. The proposed method occasionally misses the correct solution due to slow convergence or convergence to another solu-tion with the same consequences regarding the consensus set. The failure cases/deviations between the methods can be observed more frequently in hard cases such as the for-ward case with higher amounts of noise. 4.1. Synthetic data 
+
+Figure 3 shows the results on synthetic data. We have evaluated all methods on 4 different noise levels with stan-dard deviation 0.25, 0.50, 0.75, and 1 pixel. The size of the consensus set depends on the epipolar dis-tance threshold that is used when evaluating the solutions. In order to get an appropriate fraction of points as inliers, we need to adjust the threshold according to the noise level. Without going into further details, the threshold has been scaled linearly with the noise. The noise level can be esti-mated using e.g. the forward-backward tracking error. According to the box plots, the proposed method per-forms nearly identical to the method of Nist´ er for all datasets if ti is initialized with the previous camera position (DLinit). One small performance increase can be observed for the forward case with large noise and the case of DLconst. This is the hardest case to solve and a high loss of solutions during the RANSAC iteration is expected. The increase of performance of DLconst is probably caused by select-ing the currently best solution as initialization for the next RANSAC iteration. However, the improvement is data de-pendent and not statistical signi fi cant. 
+
+4.2. Real image sequences 
+
+In contrast to the synthetic data, the noise level in the real data is approximately constant and therefore the same threshold for the epipolar distance is used all cases. Overall, the accuracy is nearly identical for all methods. Despite the quite similar performance for the same number of RANSAC iterations, the DL method is superior in the way that it is faster than Nist´ er’s method, see next section. Figure 5 shows the difference in precision between Nist´ er’s and the proposed method. For each RANSAC range of 100 iteration, it shows the error of the currently best solution from Nist´ er’s algorithm minus the error of the currently best solution from our method. Bars in the nega-tive range indicate that Nist´ er’s result is more accurate and bars in the positive range indicate that our results are better. As can be seen, in all cases the median error is near zero. Note that the error difference is in the order of 10 −6 to 10 −8,which is several orders of magnitude smaller than the error in the pose estimate (about 0.4 degree). Practically speak-ing, the methods perform equally well in terms of precision for the evaluated datasets. One exception is observed for the forward motion and DLconst after 100 iterations, where one quantile lies signi fi cantly below 0 for datasets 3 and 4 (not the median though). This is presumably caused by a failed initialization using the DLconst strategy. 
+
+4.3. Speed 
+
+The faster the method, the more RANSAC iterations can be computed in the same time. The more RANSAC iter-      
+
+> 0.25 0.5 0.75 1.0 00.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 translation direction error (deg) Noise level Synthetic Scene Sidways 1 −4Nister DLconst DLinit 0.25 0.5 0.75 1.0 00.5 11.5 22.5 33.5 4translation direction error (deg) Noise level Synthetic Scene Forward 1 −4Nister DLconst DLinit
+
+Figure 3. Synthetic data 
+
+ations are computed, the better precision can be achieved, [5]. This is why the method of [9] is still considered to be state-of-the-art, even if more accurate methods like [17] have been proposed later. Our method is implemented in plain C/C++ code. It is all compiled and tested on a desktop PC with an Intel 2.66Ghz (W5320) CPU. The proposed method is compared with 2 implementa-tions of Nist´ er’s algorithm, one which is contained in VW34 (a library for real-time vision developed at Oxford’s Active Vision Lab 1). The second is from Richard Hartley and is to our knowledge the fastest available implementation 2.To accurately compare our method with Nist´ er’s imple-mentation, we have compiled our code on a Pentium III desktop PC, with the same type of processor that is used in [9]. The performance timings are then compared with the ones found in [9]. The average speedups on our data sets are summarized       
+
+> 1http://www.robots.ox.ac.uk/ActiveVision/
+> 2http://users.cecs.anu.edu.au/ hartley/ 123400.2 0.4 0.6 0.8 11.2 1.4 1.6 translation direction error (deg) Dataset number Real Scene Sideways 1 −4Nister DLconst DLinit 123400.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 translation direction error (deg) Dataset number Real Scene Forward 1 −4Nister DLconst DLinit
+
+Figure 4. Real data 
+
+Method i7 PIII 550 [9] x 121 μsNist´ er(available) 16,5 μs xVW34 34.8 μs xOurs (mean) 7.0 μs 72.1 μs
+
+Table 1. Timings for different methods and implementations. The time for our method is the mean over all tested datasets. 
+
+Data type time Nist´ er(paper) Nist´ er(imp) Realdata DLconst 7.5 μs 1.6x 2.2x Realdata DLinit 6.5 μs 1.9x 2.5x Syntdata DLconst 7.7 μs 1.5x 2.1x Syntdata DLinit 7.1 μs 1.7x 2.3x 
+
+Table 2. Average timings for each of the real and synthetic datasets, using DLconst and DLinit. The Nist´ er(paper) column is the speed up compared with [9] on the PIII and Nist´ er(imp) is the implementation freely available from Hartley           
+
+> 100 200 300 400 500
+> −2
+> −1.5
+> −1
+> −0.5 00.5 11.5 2 x 10 −8Real data sideways motion, DLinit translation error difference (deg) Iterations count Dataset 1 Dataset 2 Dataset 3 Dataset 4
+> 100 200 300 400 500
+> −2
+> −1.5
+> −1
+> −0.5 00.5 11.5 2 x 10 −7Real data forward motion, DLconst translation error difference (deg) Iterations count
+
+Figure 5. The bar plots shows the difference in precision of every new best solution found whit in the RANSAC loop. Here we show the best and the worst case for our method on real data. 
+
+in table 1. For a modern CPU and a currently available code we are on average 2-2.5 times faster than the closed form solution. Compared with Nist´ er’s own implementation on older hardware, we achieve an average speedup between 1.5x and 1.9x. 
+
+4.4. N-point generalization 
+
+The approach in section 2.3 allows us to use more then 
+
+fi ve points to solve the relative pose, with very minor changes to the actual implementation. Instead of solving the square linear equation (LSQ) system J(w)h = −r(w)
+
+arising from (10), we need to solve the alternative LSQ system J(w)T J(w)h = −J(w)T r(w) (a.k.a. the normal equations). This and the fact that the residual is de fi ned as an reprojection error (line to point distance in image), renders our method an interesting alternative for overdeter-mined relative pose problems. The current state-of-the-art method for using more than 
+
+fi ve points for determining rotations is due to Hartley et al. Our RANSAC Bundle 00.5 11.5 2 
+
+> Figure 6. A box plot over the precision for three different method, our, standard fi ve point solver within a RANSAC framework and 2-view bundle adjustment. The line in the box marks the median and the top and bottom of the boxes are the 25th and 75th per-centiles.
+
+[4]. The method consists of an L1-rotation averaging of sev-eral fi ve-point pose estimates and the authors show how this can be used to fast and accurately estimate relative rotations for the Notre Dame dataset [16] under 3 minutes. We have compared the generalization to N-points of our method to the result in [4]. Our approach consists of two steps, fi rst a small set of RANSAC iterations (20 with DLinit) are run with our method using fi ve points. Then the fi nal pose/rotation is estimated using N points, where N is the number of correspondences in the current image pair. As in [4] we only use image pairs with more than 30 correspondences. In our experiment, we use the full 715 images Notre Dame data set to compare our N-point approach, [9] within a RANAC framework and the 2-view bundle adjustment. Table 4.4 compares our result to the one in [4]. The preci-sion is shown as the increase in angular error compared to using a 2-view bundle adjustment approach. Both methods has high precision and come within 20% of the angular er-ror of the much heavier bundle approach. Hovever as seen in table 4.4 our method is by far the fastest (7.5x faster than current state-of-the-art) while also retaining the best esti-mating (closest to the 2-view bundle adjustment). Data type time precision Our 22s 15.9% Hartley 168s 19.5% 2-view BA 11932s 0.0% 
+
+> Table 3. Trimmings and precision for Hartley and 2-view BA are from [4]. [4] does not use the same CPU model as here but has the same clock frequency (2.6Ghz). The relative precision error is de fi ned as the increase in angular error as compared to 2-view bundle adjustment (in L1-norm).
+
+## 5. Conclusion 
+
+We have presented a new iterative method for solving the relative pose problem for fi ve points. The method is based on Powell’s DogLeg algorithm and achieves at least the same accuracy as state-of-the-art methods on both syn-thetic and real data. The proposed algorithm is approxi-mately twice as fast as Nist´ er’s method, depending on hard-ware and implementation, which can be exploited within the RANSAC algorithm to increase the number of iterations and thus to further enhance accuracy. In addition, the pro-posed method has approximately half the number of code lines compared to the implementation from [4] which sim-pli fi es implementation and maintenance of code. In contrast to a closed for solver such as, [9] the pre-sented method can solve the pose for more points than fi ve with very minor changes to the current implementation. We have showed that this generalization is highly competitive with the current state-of-the-art [4], having similar accuracy while being considerably faster. 
+
+Acknowledgements The authors gratefully acknowl-edge funding from the Swedish Foundation for Strategic Research for the project VPS, through grant IIS11-0081. Further fundings have been received through the ECs 7th Framework Programme (FP7/2007-2013), grant agreement 247947 (GARNICS), and from the project Extended Target Tracking founded by Swedish Research Council. 
+
+Appendix A: parametrization of the essential ma-trix and computation of the Jacobian 
+
+The essential matrix can be factorized as E = R[t]×.The rotation R is parametrized using angles, 
+
+R(α, β, γ) = Rx(α)Ry (β)Rz (γ), where Rx(α) is the ro-tation matrix around the x-axis and equally Ry , Rz for the y- and z-axis. The motivation for choosing this particular represen-tation instead of other options, e.g. quaternions or Ro-drigues parameters, is computational speed. Using angles reduces the number of arithmetic operations for computing the derivatives by at least a factor of two. The translation vector t of the relative pose is only de-
+
+fi ned up to scale. In order to have a minimal representation, the translation vector is fi xed to unit length by representing it in spherical coordinates 
+
+t(θ, φ) = [sin( θ) cos( φ) sin( θ) sin( φ) cos( θ)] T .Parametrizing the essential matrix with w gives E(w) = 
+
+R(α, β, γ)[ t(θ, φ)] ×. We further reformulate (5): 
+
+x′T Ex = ˜Eq , where x = [ x y 1] T and 
+
+q = x′x y′x x x′y y′y y x′ y′ 1T
+
+˜E = e11 e12 e13 e21 e22 e23 e31 e32 e33 
+
+The Jacobian now reads 
+
+∂ri
+
+∂wj
+
+= ∂∂wj
+
+( 1
+
+√s ˜Eq i) i, j ∈ {1 . . . 5} (14) where 
+
+s = ( x′e11 + y′e21 + e31 )2 + ( x′e12 + y′e22 + e32 )2.
+
+The product rule gives 
+
+∂ri
+
+∂wj
+
+= 1
+
+√s ( ∂ ˜E
+
+∂wj
+
+− 12s
+
+∂s
+
+∂wj
+
+˜E)qi , where (15) 
+
+∂s
+
+∂wj
+
+= 2( x′e11 + y′e21 + e31 )( x′ ∂e11 
+
+∂wj
+
++ y′ ∂e21 
+
+∂wj
+
++ ∂e31 
+
+∂wj
+
+)+ 2( x′e12 + y′e22 + e32 )( x′ ∂e12 
+
+∂wj
+
++ y′ ∂e22 
+
+∂wj
+
++ ∂e32 
+
+∂wj
+
+).
+
+Appendix B: algorithmic details of DL 
+
+The optimal step length α for the gradient descent is de-termined as, [8] 
+
+α = kgk22
+
+kJ(w)gk22
+
+. (16) The gain factor is determined by comparing the factual gain with the gain according to the model 
+
+L(h) = 12 kr(w) + J(w)hk22 , (17) and 
+
+ρ = ( σ(w) − σ(wnew )) /(L(0) − L(hdl )) . (18) If ρ > 0.75 , the trust region radius Δ is growing to 
+
+max {Δ, 3khdl k2}. If ρ < 0.25 , the trust region is shrinking to Δ/2.The matrices handled here have so small dimensions that it is more effective to implement the linear algebra operation yourself (using standard implementation scheme with fi xed looping) then to use optimized linear algebra packages, e.g. Lapack, due to their large overhead. A further performance improvement is achieved by re-ducing the number of trigonometric instructions that are used. When updating w with h, many of the update steps are very small and trigonometric updates can be computed by using the sum of angles formula for sin() and cos() 
+
+in combination with a Taylor expansion of sin( wj ) and 
+
+cos( wj ).
+
+## References 
+
+[1] S. Baker, D. Scharstein, J. P. Lewis, S. Roth, M. J. Black, and R. Szeliski. A database and evaluation methodology for optical fl ow. In IEEE ICCV , 2007. [2] O. Faugeras and S. Maybank. Motion from point matches: Multiplicity of solutions. International Journal of Computer Vision , 4(3):225–246, 1990. [3] M. Fischler and R. Bolles. Random sample consensus: a paradigm for model fi tting, with applications to image analy-sis and automated cartography. Communications of the ACM ,24(6):381–395, 1981. [4] R. Hartley, K. Aftab, and J. Trumpf. L1 rotation averaging using the weiszfeld algorithm. In IEEE CVPR , pages 3041 –3048, june 2011. [5] R. Hartley and A. Zisserman. Multiple View Geometry in Computer Vision . Cambridge University Press, 2nd edition, 2003. [6] J. Hedborg, P.-E. Forss´ en, and M. Felsberg. Fast and accu-rate structure and motion estimation. In International Sym-posium on Visual Computing , number 5875 in Lecture Notes in Computer Science, pages 211–222. Springer, 2009. [7] H. Li and R. I. Hartley. Five-point motion estimation made easy. In ICPR (1) , pages 630–633, 2006. [8] K. Madsen, H. Nielsen, and O. Tingleff. Methods for non-linear least squares problems. Technical report, IMM, Tech-nical University of Denmark, April 2004. 2nd Edition. [9] D. Nist´ er. An ef fi cient solution to the fi ve-point relative pose problem. IEEE TPAMI , 6(26):756–770, June 2004. [10] D. Nist´ er. Preemptive RANSAC for live structure and motion estimation. Machine Vision and Applications , 16(5):321– 329, December 2005. [11] M. J. D. Powell. A hybrid method for nonlinear equa-tions. Numerical Methods for Nonlinear Algebraic Equa-tions , page 87144, 1970. [12] V. Rodehorst, M. Heinrichs, and O. Hellwich. Evaluation of relative pose estimation methods for multi-camera setups. In 
+
+ISPRS Congress , page B3b: 135 ff, 2008. [13] P. D. Sampson. Fitting conic sections to ”very scattered” data: An iterative re fi nement of the bookstein algorithm. 
+
+Computer Graphics and Image Processing , 1982. [14] M. Sarkis, K. Diepold, and K. Huper. A fast and robust solution to the fi ve-pint relative pose problem using gauss-newton optimization on a manifold. In Acoustics, Speech and Signal Processing, 2007 , 2007. [15] J. Shi and C. Tomasi. Good features to track. In IEEE CVPR ,Seattle, June 1994. [16] N. Snavely, S. M. Seitz, and R. Szeliski. Photo tourism: exploring photo collections in 3d. ACM Trans. Graph. ,25(3):835–846, July 2006. [17] H. Stew´ enius, C. Engels, and D. Nist´ er. Recent develop-ments on direct relative orientation. ISPRS Journal of Pho-togrammetry and Remote Sensing , 60:284–294, June 2006. [18] H. Stew´ enius, C. Engels, and D. Nist´ er. An ef fi cient minimal solution for in fi nitesimal camera motion. In CVPR , 2007. [19] Z. Zhang. A fl exible new technique for camera calibration. 
+
+IEEE Transactions on Pattern Analysis and Machine Intelli-gence , 22(11):1330–1334, 2000.

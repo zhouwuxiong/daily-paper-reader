@@ -1,0 +1,410 @@
+Title: ASPIRE-VINS: Adaptive Spline-based Visual-inertial Navigation System With Robust 3D Measurement Residuals
+
+URL Source: https://arxiv.org/pdf/2608.12840v1
+
+Published Time: Fri, 14 Aug 2026 00:33:19 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+> IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. ACCEPTED JUNE, 2026 1
+
+# ASPIRE-VINS: Adaptive Spline-based Visual-inertial Navigation System With Robust 3D Measurement Residuals 
+
+Kwangyik Jung, Eungchang Mason Lee, Member, IEEE , Taekjun Oh, and Hyun Myung, Senior Member, IEEE 
+
+Abstract —Visual-inertial navigation systems estimate six-degree-of-freedom motion by fusing visual and inertial data. Modern discrete-time methods with IMU preintegration provide strong accuracy and efficiency, but keyframe-based represen-tations can be less flexible when residuals must be evaluated at arbitrary timestamps or when motion-dependent temporal resolution is needed. Continuous-time splines address this issue by representing the trajectory as a smooth temporal function, but uniformly spaced knots can under-represent rapid dynamics or over-parameterize static intervals. This letter proposes ASPIRE-VINS, a continuous-time VINS framework that combines adap-tive knot placement (AKP), multi-resolution splines (MRS), and 3D measurement-space residuals (3D-MSR). AKP allocates knots according to local motion variation, MRS adds bounded local refinement in tangent space, and 3D-MSR provides bearing consistency by aligning transformed features with calibrated ob-servation rays in 3D measurement space. Experiments show that ASPIRE-VINS achieves competitive or lower trajectory errors than the compared baselines, demonstrating the effectiveness of motion-adaptive continuous-time trajectory modeling under diverse motion and sensing conditions. 
+
+Index Terms —visual-inertial navigation system (VINS), pose estimation, continuous-time system, spline interpolation. 
+
+I. INTRODUCTION 
+
+# VISUAL-inertial navigation systems (VINS) estimate six-degree-of-freedom trajectories by fusing camera and inertial measurement unit (IMU) data. Discrete-time frame-works, such as MSCKF [1], VINS-Mono [2], PL-VINS [3], and recent square-root filters such as √VINS [4], remain strong real-time baselines. They achieve practical accuracy and efficiency, but their state updates are tied to discrete timestamps, which can be less flexible when residuals are evaluated at native sensor times or when trajectory resolution should vary with motion intensity. Continuous-time representations address this issue by mod-eling motion as a smooth function of time [5]–[10]. They support timestamp-continuous residual evaluation for high-rate IMU and low-rate camera data. However, many continuous-time systems use uniformly spaced knots, which can underfit rapid motion or add redundant parameters in low-dynamic intervals. Many VINS frameworks also rely on 2D image-plane repro-jection errors for visual constraints. Although effective, these residuals can be sensitive to pixel noise, feature localization errors, and visual degradation during rapid motion [2], [3], [11]–[14]. This motivates residual formulations that operate in 3D measurement space while still depending on calibrated bearing vectors. In this paper, we present ASPIRE-VINS , an Adaptive 
+
+Spline-based Platform for Inertial–visual Robust Estimation, which integrates three components. 1) Adaptive knot placement (AKP) dynamically allocates spline knots according to local motion variation, pro-viding higher temporal resolution in fast or nonlinear segments while avoiding redundancy in static intervals. AKP therefore determines where the trajectory should be represented with finer detail. 2) Multi-resolution splines (MRS) model the trajectory across multiple temporal scales, enabling coarse levels to maintain global smoothness while fine levels refine localized dynamics identified by AKP. This hierarchy yields a compact yet expressive continuous-time repre-sentation that adapts to varying motion complexity. 3) 3D measurement-space residuals (3D-MSR) enforce feature alignment directly in Euclidean 3D space by constraining predicted points to lie along the observation rays of their corresponding measurements. Evaluated at the timestamps provided by the continuous-time spline, these residuals reduce direct reliance on image-plane reprojection. Together, these components form a unified continuous-time optimization framework in which spline control points across all resolution levels serve as the optimization variables, and 3D-MSR provides temporally accurate geometric constraints along the continuous trajectory. The resulting formulation improves motion adaptability and visual residual consistency under the evaluated conditions, including nonlinear motion and visual degradation. II. R ELATED WORKS 
+
+Discrete-time VINS approaches, such as MSCKF [1], VINS-Mono [2], and SPVIO [12], optimize or filter over keyframe-based or frame-wise poses. They provide real-time performance and strong accuracy, but their updates are tied to selected timestamps or image frames. Recent filtering methods have further improved efficiency and numerical sta-bility through equivariant filtering in EqVIO [15], Schur-complement marginalization in SchurVINS [16], and square-root covariance propagation in √VINS [4]. These discrete-time methods provide strong practical baselines, whereas continuous-time trajectories offer a complementary represen-tation for evaluating inter-frame states and adapting temporal resolution to motion variation. Continuous-time models improve temporal modeling be-yond discrete-state formulations. Furgale et al. [5] and Mueg-gler et al. [7] used cubic B-splines in SE (3) to interpolate arXiv:2608.12840v1 [cs.RO] 13 Aug 2026 2 IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. ACCEPTED JUNE, 2026 
+
+sensor trajectories and integrate measurements at different rates. OKVIS-CT [9] and Ctrl-VIO [8] further embedded Lie group splines into full state-estimation systems. However, their uniformly spaced knots can limit representation during highly dynamic intervals or add unnecessary parameters during static intervals [17], [18]. CT-UIO [19] addressed uniform-knot inefficiency using non-uniform B-splines with adaptive knot placement from local motion dynamics. It reduced redundancy in motion-variable environments, but it was developed for UWB-inertial odometry and does not include visual feature-level residuals. Its Euclidean-space representation and decoupled fitting pro-cess are also not directly tailored to tightly coupled visual-inertial optimization. Many VINS frameworks rely on 2D image-plane repro-jection errors, which can degrade under pixel noise, feature localization errors, and visual degradation [2], [3], [11]. PL-VIO [11] and PL-VINS [3] enrich image-domain constraints with line features, and UV-SLAM [20] introduces uncertainty-aware visual constraints. However, these methods still depend on projective residuals. Recent studies have extended 3D residual modeling to visual-inertial systems. DiT-SLAM [21] uses implicit 3D depth in graph optimization but increases real-time burden. D-VINS [22] uses semantic cues and dynamic-object filtering, while GaussianFlow SLAM [23] and AIM-SLAM [24] rely on dense or learned front-end priors and remain sensitive to front-end estimation quality. A, B, VINS [25] uses Euclidean residuals for efficient SE (3) optimization, but its minimal design can be less robust under nonlinear motion or visual degradation. ASPIRE-VINS integrates adaptive spline resolution and 3D measurement-space residuals in one continuous-time op-timization. AKP and MRS reduce the limitations of uniform discretization, while 3D-MSR enforces feature alignment in Euclidean 3D space instead of relying solely on pixel-level reprojection. This formulation positions ASPIRE-VINS as a motion-adaptive continuous-time backend that combines non-uniform trajectory representation with calibrated bearing-vector constraints. III. A DAPTIVE SPLINE -BASED VISUAL -INERTIAL 
+
+NAVIGATION SYSTEM WITH ROBUST 3D M EASUREMENT 
+
+RESIDUALS 
+
+VINS generally follows a prediction-update pipeline: high-rate IMU measurements propagate the state, and lower-rate camera frames provide drift-correcting observations. ASPIRE-VINS preserves this principle in continuous time by estimating the trajectory, velocity, inertial biases, and 3D landmarks with the Lie group formulation of MSCKF-DVIO [26] and a continuous-time B-spline representation. This representation provides smooth interpolation, analytic inertial derivatives, and visual constraints in 3D measurement space, allowing inertial and visual cues to be fused in one optimization. Fig. 1 summarizes the proposed backend. High -rate  
+
+> IMU
+> Low -rate
+> Camera
+> Lie group
+> state variables
+> (Section III.A)
+> Loss function
+> formulation
+> (Section III.B)
+> Multi -resolution splines
+> (MRS, Section III.D)
+> Adaptive spline -based VINS
+> (Section III)
+> 3D measurement -space
+> residuals
+> (3D -MSR, Section III.C)
+> Optimized continuous -
+> time trajectory
+> Optimized 3D
+> landmark positions
+> Adaptive knot placement
+> (AKP, Section III.E)
+
+Fig. 1. Compact pipeline of ASPIRE-VINS. AKP determines the knot distribution, MRS evaluates the continuous-time trajectory on SE (3) , and IMU and 3D-MSR residuals are jointly optimized. 
+
+A. State Variables 
+
+The system state X contains the continuous-time pose trajectory Tsw(t), which represents the pose of the sensor frame s with respect to the world frame w at time t. The trajectory is modeled by spline coefficients in local SE (3) 
+
+coordinates and is mapped back to SE (3) by retraction. The state also includes the linear velocity v(t) ∈ R3, accelerometer and gyroscope biases ba(t), bg (t) ∈ R3, and observed 3D landmark positions P as follows: 
+
+X = {Tsw(t), v(t), ba(t), bg (t), P} ,
+
+P = {P1, . . . , PN } ∈ R3N . (1) The full state space is embedded in SE (3) ×R9+3 N . The angu-lar velocity ω(t) is not treated as an independent state. Instead, it is obtained from the first time derivative of the rotation spline embedded in Tsw(t) ∈ SE (3) , following continuous-time visual-inertial formulations. This avoids introducing angular velocity as a redundant state variable. For optimization, we employ the Lie group retraction used in MSCKF-DVIO to ensure consistency and efficient Jacobian computation. The spline interpolation and optimizer incre-ments are represented in local tangent coordinates rather than by a direct Euclidean average of transformation matrices. State updates are performed in the tangent space as follows: 
+
+x ⊕ δξ = exp( δξ) · x, (2) where δξ ∈ se (3) × R9 denotes a minimal perturbation, and x
+
+is the state in the tangent space, excluding landmark positions. 
+
+B. Loss Function Formulation 
+
+The state variables are optimized by minimizing a loss function that fuses inertial and visual data while regularizing physically plausible motion. The overall loss function J (X)
+
+is formulated as follows: 
+
+J (X) = X
+
+> i
+
+n
+
+∥ωi − ˆωi∥2Σω + ∥ai − ˆai∥2Σa
+
+o
+
++ X
+
+> j
+
+fP
+
+ Pmj , Pr ; Tmj 
+
+> r
+
+, Tsw(tj ) 2ΣP
+
++ λ
+
+Z 
+
+∥ ˙ω(t)∥2Σ ˙ω + ∥¨p(t)∥2Σ¨p
+
+
+
+dt. 
+
+(3) Here, ωi and ai denote the bias-compensated gyroscope and accelerometer measurements at timestamp ti, while ˆωi and ˆai
+
+are the corresponding spline-based predictions. The prediction 
+
+ˆωi is obtained from the right-trivialized derivative of the JUNG et al. : ASPIRE-VINS: ADAPTIVE SPLINE-BASED VISUAL-INERTIAL NAVIGATION SYSTEM WITH ROBUST 3D MEASUREMENT RESIDUALS 3
+
+rotation spline, and ˆai is computed from the translational component of Tsw(t) expressed in the sensor frame. The covariance matrices Σω and Σa weight the inertial residuals. Each visual measurement contributes to the 3D measurement-space residual fP (·). For the j-th observation, 
+
+Pmj denotes the back-projected measurement ray direction obtained from the calibrated camera model, and Pr ∈ R3
+
+denotes the associated reference 3D feature point. The residual is evaluated using the relative transformation Tmj 
+
+> r
+
+∈ SE (3) 
+
+and the interpolated pose Tsw(tj ) ∈ SE (3) . The details of fP (·) and Tsw(tj ) are provided in Section III-C and Section III-D, respectively, and ΣP is the visual-measurement covariance. The final term is a tangent-space smoothness prior. Here, 
+
+˙ω(t) is the time derivative of the body angular velocity, p(t)
+
+is the translational component of Tsw(t), and ¨p(t) is its second derivative. The covariance matrices Σ ˙ω and Σ¨p weight angular-velocity variation and translational-acceleration regularization, respectively. This prior suppresses implausible motion without directly differentiating the homogeneous transformation ma-trix. The hyperparameter λ balances measurement fidelity and trajectory regularization, and each residual is weighted by the inverse of its covariance. The resulting loss extends the Lie group retraction of MSCKF-DVIO [26] to non-uniform multi-resolution splines and is solved using Ceres [27]. Throughout this section, i indexes IMU samples, whereas j indexes visual measurements. 
+
+C. Visual Residuals: 3D Measurement-Space Residuals (3D-MSR) 
+
+To incorporate visual information into the continuous-time framework, we formulate the visual residual in 3D measure-ment space. Unlike conventional VINS methods [2], [3], [11] that rely on 2D image-plane reprojection errors, 3D-MSR evaluates the consistency between a transformed reference fea-ture and its back-projected measurement ray. This formulation minimizes the ray-orthogonal component defined by calibrated bearing vectors and reduces direct reliance on pixel-plane reprojection under visually degraded conditions [21], [25]. It assumes calibrated observations in the corresponding sensor frame and does not compensate for calibration errors or feature mismatches. Let Pr ∈ R3 denote the reference 3D feature position, obtained from multi-view triangulation of image correspon-dences and refined by global bundle adjustment. Let Pm ∈ R3
+
+denote the back-projected measurement-ray direction obtained from the calibrated camera model. Here, Pm defines only the calibrated observation direction and does not contain feature-depth information. Given the relative transformation 
+
+Tmr = T−1 
+
+> m
+
+Tr ∈ SE (3) , which maps the reference frame to the measurement frame, the residual is formulated as follows: 
+
+fP (Pm, Pr ; Tmr , Tsw(t)) = ( I − V)( Rmr Pr + tmr ), (4) where Rmr and tmr denote the rotation and translation of Tmr ,
+
+I ∈ R3×3 is the identity matrix, and V ∈ R3×3 is the projection matrix onto the unit observation-ray direction r as follows:    
+
+> Fig. 2. Conceptual illustration of 3D-MSR. The reference 3D feature Pris transformed into the measurement frame and compared with the observation ray defined by Pm. White circles indicate AKP knots, yellow circles denote MRS-interpolated poses, and the green star denotes the reference feature. The residual imposes a 3D ray-consistency constraint without directly minimizing 2D reprojection error.
+
+V = rr ⊤
+
+∥r∥2 , r = Pm
+
+∥Pm∥ . (5) The normalization defines the unit observation-ray direction 
+
+r and makes the projection independent of the scale of Pm.Thus, I−V removes the ray-parallel component and evaluates the ray-orthogonal consistency error in 3D measurement space. Since the along-ray component is not constrained, 3D-MSR does not make feature depth observable under pure rotation or insufficient parallax. The depth of Pr is instead inherited from prior multi-view triangulation and bundle adjustment, which provides the reference feature when sufficient paral-lax is available. The inertial residuals and the smoothness prior in (3) regularize the trajectory, while 3D-MSR provides the visual bearing-consistency constraint optimized. Residuals in (4) are evaluated on the multi-resolution, non-uniform B-spline trajectory described in Section III-D. Fig. 2 illustrates how the spline-based trajectory provides temporally aligned interpolation for evaluating 3D-MSR. 
+
+D. Trajectory Representation Using Multi-Resolution Splines (MRS) 
+
+We represent the continuous-time sensor trajectory Tsw(t) ∈
+
+SE (3) using non-uniform B-spline interpolation over multiple resolution levels. The spline coefficients are expressed as local pose coordinates and mapped to SE (3) through Lie group retraction, so the trajectory remains a valid rigid-body motion. Let H = {0, 1, . . . , L } be the set of resolution levels, where 
+
+h = 0 is the coarsest level and h > 0 denotes a refinement level. The MRS trajectory is defined as follows: 
+
+Tsw(t) = RSE (3) 
+
+X
+
+> h∈H
+> nh−1
+
+X
+
+> μ=0
+
+whμ(t)chμ
+
+!
+
+. (6) Here, Tsw(t) is the pose of the sensor frame s with respect to the world frame w at time t, and RSE (3) (·) maps the interpo-lated local coordinate to a valid pose on SE (3) through the exponential-map update used in the optimizer. The weighted summation in (6) is therefore performed in the local coordinate representation before retraction, not directly on homogeneous transformation matrices. The index h denotes the resolution level, L is the highest refinement level, μ indexes a local coefficient, and nh is the number of coefficients at level h.The vector chμ ∈ R6 is the local pose coefficient for the μ-th support region, and whμ(t) is its effective interpolation weight. 4 IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. ACCEPTED JUNE, 2026 
+
+The effective interpolation weight is constructed from fixed B-spline basis functions and bounded refinement coefficients as follows: 
+
+whμ(t) = Bhμ,k (t)+ γhμ
+
+t − thμ
+
+thμ+1 − thμ
+
+Bhμ,k −1(t)+ γhμ+1 
+
+thμ+1 − tthμ+1 − thμ
+
+Bhμ+1 ,k −1(t).
+
+(7) Here, Bhμ,k (t), Bhμ,k −1(t), and Bhμ+1 ,k −1(t) are B-spline basis functions defined by the level-h knot vector and spline order k.The timestamps thμ and thμ+1 are consecutive knots associated with the local support of chμ. The coefficients γhμ and γhμ+1 
+
+activate adjacent refinement terms according to local motion variation. Accordingly, whμ(t) preserves the fixed spline sup-port while adding bounded local flexibility to the interpolation weight. The refinement activation is computed from a locally filtered velocity-change statistic as follows: 
+
+˜vi =
+
+> R
+
+X
+
+> s=−R
+
+κsvi+s,δhμ = ˜vi(μ,h )+1 − ˜vi(μ,h ) ,M h 
+
+> ∆v
+
+= Q0.95 
+
+ Wh .
+
+(8) Here, vi and ˜vi are the raw and locally filtered velocities at the i-th IMU timestamp, respectively. The integer s ∈ [−R, R ]
+
+is the filtering offset, R is the half-window size, and κs is a normalized kernel coefficient satisfying PRs=−R κs = 1 . The mapping i(μ, h ) gives the IMU sample index associated with the support of chμ, and δhμ is the corresponding local velocity-change magnitude. The set Wh denotes the filtered velocity-change magnitudes in the current optimization window at level 
+
+h, and Q0.95 (·) denotes the empirical 95th-percentile operator. The bounded activation coefficient is defined as follows: 
+
+γhμ = clip δhμ
+
+M h 
+
+> ∆v
+
++ ϵ , γ h
+
+> min
+
+, γ h
+
+> max
+
+!
+
+. (9) Here, clip( ·, γ h
+
+> min
+
+, γ h
+
+> max
+
+) bounds its first argument between 
+
+γh 
+
+> min
+
+and γh
+
+> max
+
+, and ϵ > 0 prevents division by zero. The bounds γh 
+
+> min
+
+and γh 
+
+> max
+
+limit abrupt amplification of local refinement terms. During each linearization, γhμ is computed using the propagated velocity estimate and then held fixed, so residual optimization updates the trajectory coefficients under fixed spline support. Thus, MRS does not introduce a discontinuous change in the active spline basis functions and their associated temporal support during optimization. Because the refinement term uses lower-order fixed B-spline basis functions, the smoothness of the effective trajectory is bounded by the smoothness of the lowest-order active refinement term under the selected knot multiplicity. With the spline order in Table I, pose, velocity, and acceleration for inertial residuals are evaluated analytically from the same spline representation. This hierarchy combines multiple temporal supports within a single continuous-time trajectory representation. Coarse lev-els provide long-term smoothness, while finer levels add local detail for sudden turns, vibrations, and nonlinear motion. Com-pared with fixed-resolution approaches such as CT-ICP [10] and uniformly spaced continuous-time formulations such as OKVIS-CT [9], MRS increases interpolation flexibility in high-variation intervals while maintaining an explicit SE (3) 
+
+trajectory representation. This motion-aware hierarchy sup-ports accurate residual evaluation at arbitrary timestamps with-out introducing redundant resolution in low-variation intervals. 
+
+E. Adaptive Knot Placement (AKP) 
+
+AKP determines spline knot timestamps from local motion intensity. High-dynamic intervals receive shorter knot spac-ings, whereas low-dynamic intervals use longer spacings to avoid unnecessary parameters. The resulting knot sequence defines the temporal support on which the MRS trajectory in Section III-D is evaluated. For the q-th adaptive knot, the timestamp is accumulated from bounded local intervals as follows: 
+
+tq = t0 +
+
+> q
+
+X
+
+> r=1
+
+∆tr ,
+
+∆tr = clip 
+
+ αρr + ϵ , ∆tmin , ∆tmax 
+
+
+
+,ρr = ∥˜vir +1 − ˜vir ∥ .
+
+(10) Here, tq is the timestamp of the q-th adaptive knot, t0 is the initial knot timestamp, and q is the adaptive-knot index. The index r denotes the local interval accumulated up to knot q,and ∆tr = tr − tr−1 is the duration of the r-th adaptive interval. The scalar ρr is the local motion intensity computed from the filtered velocity sequence ˜vi in (8), and ir is the associated IMU sample index. The gain α > 0 maps the motion statistic to knot spacing under a fixed normalization rule, ϵ prevents division by zero, and clip( ·, ∆tmin , ∆tmax )
+
+bounds the interval between the minimum and maximum spacings. The bounds ∆tmin and ∆tmax are selected from the camera rate, IMU rate, and expected motion bandwidth, not in-dependently tuned for each trajectory. The same normalization rule is used across sequences to map the motion statistic to the specified knot-interval range. The inverse relation between ρr
+
+and ∆tr increases temporal resolution in high-motion intervals and reduces redundant knots in low-motion intervals. Unlike uniformly spaced formulations [5], [9], AKP allo-cates temporal resolution according to local motion charac-teristics. Compared with CT-UIO’s adaptive knot span strat-egy [19], AKP uses bounded cumulative intervals to gen-erate a smooth non-uniform knot sequence for the visual-inertial backend. The resulting trajectory representation pro-vides motion-dependent temporal support for MRS interpo-lation and 3D-MSR evaluation at visual measurement times-tamps. IV. E XPERIMENTS 
+
+This section evaluates ASPIRE-VINS and quantifies the contributions of AKP, MRS, and 3D-MSR. The experiments cover highly dynamic motion, realistic visual degradation, and structurally degenerate environments using three complemen-tary data sources, namely a benchmark UAV-style dataset, cus-tom handheld sequences, and selected large-scale architectural JUNG et al. : ASPIRE-VINS: ADAPTIVE SPLINE-BASED VISUAL-INERTIAL NAVIGATION SYSTEM WITH ROBUST 3D MEASUREMENT RESIDUALS 5
+
+sequences. We report existing VINS comparisons as end-to-end system-level evaluations and use a separate controlled ablation to isolate backend components under identical visual inputs. Each sequence was evaluated once with fixed parame-ters and the same recorded stream. Accordingly, the reported RMSE and maximum-error values are trajectory-level statistics rather than the mean and standard deviation over repeated runs. We first employ the VIO benchmark dataset [28], which was originally developed to benchmark VO/VIO algorithms under UAV-like motion patterns. The dataset provides four canonical trajectory types ( circle , infinity , square , and pure-rotation ), each further divided into normal , fast , and head-turning variants. These sequences isolate motion-induced fail-ure modes such as high-speed translation and aggressive yaw dynamics. The fast sequences reach translational velocities of approximately 3.0 m/s, and the head-turning cases introduce rapid yaw and parallax variation, making them suitable for evaluating AKP and MRS. Despite these advantages, the VIO benchmark dataset is inherently limited by its experimental environment. All se-quences are recorded indoors within a compact 3.15 × 3.60 ×
+
+2.50 m 3 space, under stable illumination and with abundant visual features. Thus, it does not fully evaluate robustness to visual degradation or structural degeneracy. To complement these limitations, we further evaluate ASPIRE-VINS on two additional data sources, custom hand-held sequences and selected sequences from the Hilti-Oxford dataset [29]. The custom handheld datasets are captured in unconstrained environments and target realistic deployment scenarios that are difficult to reproduce in benchmark settings. They include abrupt indoor-to-outdoor illumination transitions, feature-deprived regions such as plain white walls and narrow staircases, as well as transparent or reflective surfaces such as glass walls. These sequences stress robustness to rapid photometric changes and locally weak geometric constraints, but they do not systematically expose the system to long repetitive structures under consistent motion. To address these aspects, we additionally incorporate se-lected Hilti-Oxford sequences (exp04 , exp05 , exp06 , and 
+
+exp18 ). These sequences contain large-scale layouts with spiral staircases, repetitive structures, and narrow corridors, enabling evaluation under sustained geometric repetition and comple-menting the localized handheld scenarios. We collected custom handheld sequences on a system equipped with an Intel ® Core™ i7-7567U processor, 32 GB of memory, Ubuntu 22.04, and ROS 2 Humble. The main parameters used in all experiments are summarized in Table I. These settings are fixed across VIO benchmarks with UAV-like motion, custom handheld data, and Hilti-Oxford data from architectural environments unless otherwise stated. Knot bounds are determined from the camera rate, IMU rate, and expected motion bandwidth. The AKP gain maps the robust motion statistic to the specified knot-interval range using the same normalization rule across all evaluations. 
+
+A. Comparison With State-of-the-Art Algorithms 
+
+We compare ASPIRE-VINS with five representative VINS systems in an end-to-end system-level evaluation, where                                   
+
+> TABLE I. K EY PARAMETER SETTINGS USED IN THE EXPERIMENTS .
+> Parameter Value Role
+> Camera / IMU rate 30 Hz / 400 Hz Sensor timing Spline order k4C2trajectory interpolation Resolution levels |H| 3Coarse + two refinement levels Knot bounds ∆tmin ,∆tmax 0.03 s ,0.25 s AKP spacing bounds AKP gain αnormalized Motion-to-spacing mapping
+> γh
+> min , γ h
+> max 0.0, 1.0 Bounded MRS activation Smoothing half-window R2 IMU samples Velocity-change smoothing Robust upper scale Mh
+> ∆v95th percentile MRS velocity-change normalization Stability constant ϵ10 −6Division-by-zero prevention Smoothness weight λ0.05 Motion regularization
+
+each method uses its own visual frontend and estimator pipeline. MSCKF-DVIO [26] provides a discrete-time filtering reference with Lie group-based IMU propagation, whereas PL-VINS [3] represents a real-time feature-enhanced VINS that exploits both point and line measurements. √VINS [4] serves as a modern square-root filtering baseline, allowing the runtime and numerical-efficiency characteristics of ASPIRE-VINS to be compared with an optimized discrete-time esti-mator. Ctrl-VIO [8] and OKVIS-CT [9] are included as fixed-resolution continuous-time baselines for evaluating the effect of motion-adaptive trajectory representation. This comparison therefore reports practical system-level performance rather than isolating a single backend component, and the controlled ablation in Section IV-B2 separately evaluates the effects of the temporal backend and residual formulation. 
+
+B. Benchmark Evaluation on VIO Benchmark Dataset 1) Pose Estimation Accuracy: Table II summarizes the absolute trajectory error (ATE) results across nine VIO bench-mark sequences, which include square , circle , and infinity 
+
+trajectories, each executed under normal , fast , and head-turning conditions. MSCKF-DVIO performs competitively in structured, low-dynamic motion but degrades under fast or rotational trajectories due to its fixed temporal state represen-tation. PL-VINS achieves moderate gains through line con-straints, yet its image-plane residuals remain sensitive to fea-ture localization errors under rapid motion. √VINS provides an efficient square-root filtering baseline and improves over the conventional discrete-time baselines in most sequences, re-flecting its numerical stability and filtering efficiency. Ctrl-VIO and OKVIS-CT, as fixed-resolution continuous-time baselines, improve temporal consistency but use uniform temporal sup-port, which can be less effective during head-turning or rapidly varying motion. In contrast, ASPIRE-VINS improves accuracy in high-dynamic and head-turning sequences by combining motion-adaptive spline resolution with 3D measurement-space bearing consistency. ASPIRE-VINS achieves the lowest mean RMSE of 0.212 m 
+
+across all sequences, representing a 5.36% improvement over the best baseline, OKVIS-CT. While Ctrl-VIO slightly sur-passes ASPIRE-VINS in the square-normal case and OKVIS-CT performs comparably in smooth infinity trajectories, adap-tive modeling yields clear advantages in nonlinear and rapidly varying motion. These results indicate that ASPIRE-VINS is most effective when temporal resolution and residual evalua-tion must adapt to motion complexity. 
+
+2) Controlled Backend Ablation: To reduce frontend con-founding, all variants in Table III are implemented within the same feature-processing pipeline and use identical feature 6 IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. ACCEPTED JUNE, 2026 
+
+TABLE II. A BSOLUTE TRAJECTORY ERROR (ATE) COMPARISON ACROSS NINE VIO BENCHMARK SEQUENCES .Sequence MSCKF-DVIO [26] PL-VINS [3] √VINS [4] Ctrl-VIO [8] OKVIS-CT [9] ASPIRE-VINS RMSE Max RMSE Max RMSE Max RMSE Max RMSE Max RMSE Max                                                                                                                          
+
+> square-normal 0.083 0.217 0.093 0.245 0.086 0.231 0.072 0.189 0.078 0.196 0.074 0.191
+> square-fast 0.188 0.463 0.204 0.500 0.169 0.436 0.145 0.391 0.135 0.372 0.111 0.345
+> square-head 0.322 0.897 0.347 0.947 0.286 0.817 0.254 0.738 0.231 0.693 0.215 0.688
+> circle-normal 0.093 0.254 0.100 0.277 0.089 0.241 0.085 0.222 0.076 0.208 0.078 0.211
+> circle-fast 0.212 0.553 0.233 0.588 0.190 0.507 0.163 0.447 0.152 0.423 0.137 0.400
+> circle-head 0.388 1.124 0.414 1.181 0.347 1.040 0.309 0.965 0.290 0.920 0.259 0.888
+> infinity-normal 0.366 1.524 0.399 1.533 0.338 1.448 0.291 1.342 0.269 1.239 0.273 1.250
+> infinity-fast 0.472 1.634 0.502 1.697 0.424 1.535 0.377 1.417 0.339 1.317 0.343 1.321
+> infinity-head 0.593 1.893 0.633 1.967 0.535 1.750 0.494 1.600 0.450 1.520 0.418 1.479
+> Mean 0.302 0.951 0.325 0.993 0.274 0.889 0.243 0.812 0.224 0.765 0.212 0.753
+> The best performance in each sequence is highlighted in bold , the second best is underlined, and all errors are reported in meters [m].
+
+TABLE III. C ONTROLLED ABLATION USING IDENTICAL VISUAL FEATURE TRACKS .Variant CT A/M MSR sq.-n. sq.-f. rot.-n. rot.-f.                                                          
+
+> DT + 2D reproj. ✗✗✗0.092 0.204 0.814 0.872 DT + 3D-MSR ✗✗✓0.087 0.179 0.746 0.803 CT uni. + 2D reproj. ✓✗✗0.090 0.187 0.823 0.889 CT uni. + 3D-MSR ✓✗✓0.083 0.156 0.681 0.736 CT A/M + 2D reproj. ✓✓✗0.085 0.166 0.728 0.782 CT-UIO span + 3D-MSR [19] ✓∼✓0.080 0.143 0.639 0.699 Full proposed backend ✓✓✓0.076 0.126 0.552 0.612
+> ATE RMSE is reported in meters [m] for the internal controlled-backend ablation. “DT,” “CT,” “uni.,” “A/M,” “MSR,” and “reproj.” denote a preintegrated discrete-time backend, the continuous-time backend, uniform knot spacing, AKP/MRS, 3D measurement-space residuals, and 2D reprojection residuals, respectively. “sq.-n.,” “sq.-f.,” “rot.-n.,” and “rot.-f.” denote the square-normal ,square-fast ,rot-normal ,and rot-fast sequences, respectively. The symbol ∼denotes replacement of AKP with the CT-UIO-style knot-span rule. The best values are highlighted in bold .
+
+tracks, triangulated landmarks, and outlier rejection. Only the trajectory representation, knot strategy, and residual for-mulation differ across the ablation variants; therefore, the controlled-backend values are reported as a separate analysis and are not expected to numerically match the end-to-end system-level results in Table II. The selected sequences in-clude low-dynamic motion ( square-normal ), translation-heavy motion ( square-fast ), and pure-rotation cases ( rotation-normal 
+
+and rotation-fast ), which are used to assess ray-orthogonal consistency rather than depth observability. Because all rows share the same feature tracks, the DT rows separate the effect of 3D-MSR from the continuous-time representation, while the CT rows separate temporal modeling from the residual formulation. Adding 3D-MSR improves both DT and CT variants by replacing pixel-plane reprojection with a bearing-consistency constraint evaluated in 3D measurement space. The rotation-dominant results reflect improved ray-orthogonal consistency and reduced sensitivity to image-plane perturbations under calibrated observations, rather than a separate depth-observability or calibration-error compensation effect. Comparing CT uniform + 3D-MSR with the full model shows that AKP/MRS mainly improves fast translation and rotation-heavy motion, while the small change in square-normal indicates that the adaptive representation remains stable in low-dynamic motion. The CT-UIO-style vari-ant changes knot spans only, whereas ASPIRE-VINS couples bounded AKP intervals with MRS local refinement. Its lower errors support this combined refinement within the visual-inertial backend. 
+
+3) Runtime Analysis: Table IV summarizes the average processing time over the nine VIO benchmark sequences using the same input data and CPU platform. Among the evaluated methods, √VINS achieves the lowest latency of 18 ms per frame ( ≈56 FPS), reflecting the computational efficiency of a square-root filter-based discrete-time estimator. ASPIRE-VINS requires 56 ms per frame ( ≈18 FPS), which is slower than the optimized filtering baselines but faster than OKVIS-
+
+TABLE IV. R UNTIME COMPARISON OF VINS ALGORITHMS AVERAGED ACROSS ALL NINE VIO BENCHMARK SEQUENCES UNDER THE SAME EVALUATION PLATFORM .Method Avg. time [ms] FPS Adaptive resolution                      
+
+> MSCKF-DVIO [26] 38 ≈26 ✗
+> PL-VINS [3] 44 ≈23 ✗√VINS [4] 18 ≈56 ✗
+> Ctrl-VIO [8] 63 ≈16 ✗
+> OKVIS-CT [9] 87 ≈11 ✗
+> ASPIRE-VINS 56 ≈18 ✓
+> Continuous-time methods are shaded, and the best values are highlighted in
+> bold . All values were measured on the same Intel Core i7-7567U CPU platform with 32 GB memory under Ubuntu 22.04/ROS 2 Humble, using the same input resolution and nine-sequence set. The √VINS result is obtained from its released ROS 2 implementation and includes the visual-inertial estimator pipeline used in this comparison.
+
+CT and comparable to Ctrl-VIO. This runtime indicates that the proposed backend maintains practical processing speed while providing motion-adaptive continuous-time modeling. 
+
+C. Evaluation on Custom Handheld Datasets 1) Sensor Configuration: As discussed in Section IV, we collected custom handheld sequences on our campus using the multi-sensor platform shown in Fig. 3. 
+
+Fig. 3. Hardware configuration for custom handheld data collection. 
+
+The platform consists of an Intel RealSense D435 RGB-D camera, an Xsens MTi-300 IMU, and a Velodyne VLP-16 Li-DAR with rigid mounting and hardware-level synchronization. All custom datasets were recorded at 30 Hz for the camera, 400 Hz for the IMU, and 10 Hz for the LiDAR. Accordingly, the custom sequences are used to evaluate trajectory accuracy and robustness under realistic visual and geometric degrada-tion. 
+
+2) Ground Truth via PALoc: To generate accurate 6-DoF ground truth, we employ PALoc [30], a prior-assisted local-ization framework that fuses LiDAR odometry, IMU, and prior map constraints in a factor-graph optimization. Unlike conventional scan-to-map pipelines [31], [32], PALoc provides frame-wise pose and uncertainty estimates, which are useful in degenerate indoor geometries such as corridors and staircases. PALoc poses are aligned and interpolated to the VIO times-tamps, and global consistency is checked using map continuity and uncertainty trends around transitions such as stairs and doorways. We also report maximum trajectory errors alongside JUNG et al. : ASPIRE-VINS: ADAPTIVE SPLINE-BASED VISUAL-INERTIAL NAVIGATION SYSTEM WITH ROBUST 3D MEASUREMENT RESIDUALS 7
+
+TABLE V. A BSOLUTE TRAJECTORY ERROR (ATE) COMPARISON ON CUSTOM HANDHELD AND PUBLIC HILTI -O XFORD DATASETS .Sequence MSCKF-DVIO [26] PL-VINS [3] √VINS [4] Ctrl-VIO [8] OKVIS-CT [9] ASPIRE-VINS RMSE Max RMSE Max RMSE Max RMSE Max RMSE Max RMSE Max                                                                                      
+
+> Multistory Stairs 0.680 0.954 0.480 0.720 0.408 0.846 0.320 0.500 0.340 0.540 0.240 0.420
+> Indoor-to-Outdoor 0.707 1.004 0.491 0.754 0.418 0.774 0.333 0.524 0.308 0.500 0.312 0.448
+> HILTI-OXFORD exp04 1.709 3.175 1.481 2.854 1.234 2.490 1.025 1.589 0.854 1.635 0.570 0.964
+> HILTI-OXFORD exp05 1.571 2.995 1.362 2.047 1.136 2.115 0.943 1.728 0.786 1.894 0.524 0.784
+> HILTI-OXFORD exp06 2.091 4.057 1.812 3.229 1.512 2.865 1.255 1.954 1.046 1.671 0.697 1.136
+> HILTI-OXFORD exp18 1.136 2.544 0.984 1.764 0.805 1.435 0.681 1.065 0.568 1.020 0.379 0.690
+> Mean 1.316 2.455 1.102 1.895 0.919 1.754 0.760 1.227 0.650 1.210 0.454 0.740
+> The best performance in each sequence is highlighted in bold , the second best is underlined, and all errors are reported in meters [m].
+
+Fig. 4. Evaluation on custom handheld datasets with PALoc ground truth. ( a) Multistory Stairs sequence showing the full 3D trajectory with representative environment snapshots of narrow staircases and feature-sparse regions. ( c) Indoor-to-Outdoor Transition sequence showing the 3D trajectory under abrupt illumination changes, transparent surfaces, and outdoor exposure. ( b) and ( d) show translation error distributions over temporal segments for the two sequences, respectively. 
+
+RMSE to reflect worst-case deviations at elevation changes and abrupt illumination shifts. 
+
+3) Pose Estimation Accuracy on Custom Handheld Se-quences: The custom handheld evaluation focuses on visual robustness in realistic deployment conditions, including repet-itive stair geometries with limited texture ( Multistory Stairs )and abrupt photometric transitions across glass boundaries (Indoor-to-Outdoor ). As shown in Table V, the discrete-time baselines provide references for efficient filtering and image-plane residual formulations under realistic visual degradation. MSCKF-DVIO and PL-VINS exhibit larger errors in these sequences, where motion blur, exposure shifts, and feature dropouts reduce the reliability of image-domain constraints. √VINS reduces average drift through square-root covariance filtering but remains less accurate than the continuous-time variants in these challenging handheld sequences. Continuous-time baselines maintain smoother trajectories, but their fixed-resolution splines can be suboptimal when motion and visual quality change locally. In Multistory Stairs ,ASPIRE-VINS achieves the lowest RMSE and maximum error. In Indoor-to-Outdoor , OKVIS-CT achieves the lowest RMSE, while ASPIRE-VINS achieves the lowest maximum error. These results suggest that adaptive temporal resolution is beneficial in locally degraded segments, particularly near stair landings and photometric transition boundaries (Table V). The supplementary videos are provided only as explanatory visualizations of knot density, MRS activation, and the 3D-MSR residual surrogate, not as independent proof of smooth-ness, differentiability, or calibration robustness. This behavior is consistent with Fig. 4, where AKP increases temporal reso-lution near landings and transition boundaries, MRS preserves global smoothness across the sequence, and 3D-MSR provides bearing consistency under feature-deprived or photometrically unstable conditions. 
+
+D. Pose Estimation Accuracy in Hilti-Oxford Datasets 
+
+The custom handheld sequences capture abrupt illumination changes and locally feature-deprived regions, but not pro-longed structural repetition. We therefore evaluate selected Hilti-Oxford sequences ( exp04 , exp05 , exp06 , and exp18 ), which contain spiral staircases, repetitive geometry, and nar-row corridors. As summarized in Table V, ASPIRE-VINS achieves the lowest RMSE and maximum error across all selected se-quences. The advantage is particularly evident in exp18 , where highly repetitive spiral staircases induce strong structural de-generacy and natural lighting produces severe illumination contrast and dark corner regions (Fig. 5). This evaluation tests whether a motion-adaptive continuous-time trajectory can preserve consistency through sustained geometric and photometric degradation. Under these challenges, AKP and MRS provide motion-dependent temporal support, while 3D-MSR contributes bearing consistency under unstable feature observations. 
+
+Fig. 5. Evaluation on the Hilti-Oxford exp18 sequence. (a) shows the estimated trajectories projected onto the XY plane, highlighting long-term drift behavior under repetitive motion. (b) illustrates a narrow spiral staircase with highly repetitive geometry, which induces strong structural degeneracy. (c) and (d) depict regions with strong illumination contrast caused by natural lighting, leading to severe photometric degradation and unstable feature observations. (e) highlights dark corner regions with limited texture and visibility. 8 IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. ACCEPTED JUNE, 2026 
+
+V. C ONCLUSION 
+
+This letter presented ASPIRE-VINS, a continuous-time visual-inertial odometry framework that combines AKP, MRS, and 3D-MSR within a unified Lie group optimization. AKP provides motion-dependent knot spacing, MRS adds bounded multi-resolution refinement, and 3D-MSR contributes bearing consistency through calibrated observation-ray constraints in 3D measurement space. Experiments showed competitive or lower errors than the evaluated baselines. The controlled abla-tion showed that temporal adaptivity and 3D-MSR improve accuracy under identical visual inputs, while the runtime analysis confirmed practical speed among continuous-time methods. The framework remains sensitive to knot initializa-tion and numerical conditioning over long trajectories, and depth observability remains limited under pure rotation or insufficient parallax. Future work will incorporate Chebyshev-based barycentric rational interpolation (CBRI) for improved stability. REFERENCES [1] K. Sun, K. Mohta, B. Pfrommer, M. Watterson, S. Liu, Y. Mulgaonkar, C. J. Taylor, and V. Kumar, “Robust stereo visual-inertial odometry for fast autonomous flight,” IEEE Robot. Automat. Lett. , vol. 3, no. 2, pp. 965–972, 2018. [2] T. Qin, P. Li, and S. Shen, “VINS-Mono: A robust and versatile monocular visual-inertial state estimator,” IEEE Trans. Robot. , vol. 34, no. 4, pp. 1004–1020, 2018. [3] Q. Fu, J. Wang, H. Yu, I. Ali, F. Guo, and H. Zhang, “PL-VINS: Real-time monocular visual-inertial SLAM with point and line,” arXiv preprint arXiv:2009.07462 , 2020. [4] Y. Peng, C. Chen, K. Wu, and G. Huang, “ √vins : Robust and ultra-fast square-root filter-based 3D motion tracking,” IEEE Trans. Robot. ,vol. 41, pp. 6570–6589, 2025. [5] P. Furgale, T. D. Barfoot, and G. Sibley, “Continuous-time batch estimation using temporal basis functions,” in Proc. IEEE Int. Conf. Robot. Automat. , 2012, pp. 2088–2095. [6] G. Bourmaud, R. M´ egret, M. Arnaudon, and A. Giremus, “Continuous-discrete extended Kalman filter on matrix Lie groups using concentrated Gaussian distributions,” J. Math. Imaging Vis. , vol. 51, no. 1, pp. 209– 228, 2015. [7] E. Mueggler, G. Gallego, H. Rebecq, and D. Scaramuzza, “Continuous-time visual-inertial odometry for event cameras,” IEEE Trans. Robot. ,vol. 34, no. 6, pp. 1425–1440, 2018. [8] X. Lang, J. Lv, J. Huang, Y. Ma, Y. Liu, and X. Zuo, “Ctrl-VIO: Continuous-time visual-inertial odometry for rolling shutter cameras,” 
+
+IEEE Robot. Automat. Lett. , vol. 7, no. 4, pp. 11 537–11 544, 2022. [9] D. Hug, P. B¨ anninger, I. Alzugaray, and M. Chli, “Continuous-time stereo-inertial odometry,” IEEE Robot. Automat. Lett. , vol. 7, no. 3, pp. 6455–6462, 2022. [10] P. Dellenbach, J.-E. Deschaud, B. Jacquet, and F. Goulette, “CT-ICP: Real-time elastic LiDAR odometry with loop closure,” in Proc. IEEE Int. Conf. Robot. Automat. , 2022, pp. 5580–5586. [11] Y. He, J. Zhao, Y. Guo, W. He, and K. Yuan, “PL-VIO: Tightly cou-pled monocular visual-inertial odometry using point and line features,” 
+
+Sensors , vol. 18, no. 4, p. 1159, 2018. [12] X. Du, L. Zhang, C. Ji, X. Luo, M. Wang, W. Wu, and J. Mao, “SPVIO: Pose-only visual-inertial odometry with state transformation and visual-deprived correction,” IEEE Internet of Things Journal , 2025. [13] Q. D. Tran, Q. H. Hoang, and G.-W. Kim, “Robust monocular vision-based 3D feature point correction leveraging IMU motion for visual-inertial odometry in agricultural autonomous applications,” IEEE Access ,2025. [14] S. Song, H. Lim, A. J. Lee, and H. Myung, “DynaVINS++: Robust visual-inertial state estimator in dynamic environments by adaptive truncated least squares and stable state recovery,” IEEE Robot. Automat. Lett. , vol. 9, no. 10, pp. 9127–9134, 2024. [15] P. van Goor and R. Mahony, “EqVIO: An equivariant filter for visual-inertial odometry,” IEEE Trans. Robot. , vol. 39, no. 5, pp. 3567–3585, 2023. [16] Y. Fan, T. Zhao, and G. Wang, “Schurvins: Schur complement-based lightweight visual inertial navigation system,” in Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. , 2024, pp. 17 964–17 973. [17] J. Mo and J. Sattar, “Continuous-time spline visual-inertial odometry,” 
+
+arXiv preprint arXiv:2109.09035 , 2021. [18] W. Talbot, J. Nubert, T. Tuna, C. Cadena, F. D¨ umbgen, J. Tordesillas, T. D. Barfoot, and M. Hutter, “Continuous-time state estimation methods in robotics: A survey,” IEEE Trans. Robot. , vol. 41, pp. 4975–4999, 2025. [19] J. Sun, W. Sun, G. Zhang, K. Yang, S. Li, X. Meng, N. Deng, and C. Tan, “CT-UIO: Continuous-time UWB-inertial-odometer localiza-tion using non-uniform B-spline with fewer anchors,” arXiv preprint arXiv:2502.06287 , 2025. [20] H. Lim, J. Jeon, and H. Myung, “UV-SLAM: Unconstrained line-based SLAM using vanishing points for structural mapping,” IEEE Robot. Automat. Lett. , vol. 7, no. 2, pp. 1518–1525, 2022. [21] M. Zhao, D. Zhou, X. Song, X. Chen, and L. Zhang, “DiT-SLAM: Real-time dense visual-inertial SLAM with implicit depth representation and tightly-coupled graph optimization,” Sensors , vol. 22, no. 9, p. 3389, 2022. [22] Y. Sun, Q. Wang, C. Yan, Y. Feng, R. Tan, X. Shi, and X. Wang, “D-VINS: Dynamic adaptive visual-inertial SLAM with IMU prior and semantic constraints in dynamic scenes,” Remote Sensing , vol. 15, no. 15, p. 3881, 2023. [23] D.-U. Seo, J. Jeon, E. M. Lee, and H. Myung, “GaussianFlow SLAM: Monocular Gaussian splatting SLAM guided by GaussianFlow,” IEEE Robot. Automat. Lett. , vol. 11, no. 6, pp. 7644–7651, 2026. [24] J. Jeon, D.-U. Seo, E. M. Lee, and H. Myung, “AIM-SLAM: Dense monocular SLAM via adaptive and informative multi-view keyframe prioritization with foundation model,” in Proc. IEEE Int. Conf. Robot. Automat. , 2026, pp. 18 530–18 537. [25] N. Merrill and G. Huang, “Visual-inertial SLAM as simple as A, B, VINS,” arXiv preprint arXiv:2406.05969 , 2024. [26] K. Jung, J. Song, S. Seong, and H. Myung, “MSCKF-DVIO: Multi-state constraint Kalman filter based RGB-D visual-inertial odometry with spline interpolation and nonholonomic constraint,” in Proc. Int. Conf. Ubiquti. Robot. , 2024, pp. 558–565. [27] S. Agarwal, K. Mierle et al. , “Ceres solver: Tutorial & reference,” 
+
+Google Inc , vol. 2, no. 72, p. 8, 2012. [28] J. Jeon, S. Jung, E. Lee, D. Choi, and H. Myung, “Run your visual-inertial odometry on NVIDIA Jetson: Benchmark tests on a micro aerial vehicle,” IEEE Robot. Automat. Lett. , vol. 6, no. 3, pp. 5332–5339, 2021. [29] L. Zhang, M. Helmberger, L. F. T. Fu, D. Wisth, M. Camurri, D. Scara-muzza, and M. Fallon, “Hilti-oxford dataset: A millimeter-accurate benchmark for simultaneous localization and mapping,” IEEE Robot. Automat. Lett. , vol. 8, no. 1, pp. 408–415, 2022. [30] X. Hu, L. Zheng, J. Wu, R. Geng, Y. Yu, H. Wei, X. Tang, L. Wang, J. Jiao, and M. Liu, “PALoc: Advancing SLAM benchmarking with prior-assisted 6-DoF trajectory generation and uncertainty estimation,” 
+
+IEEE/ASME Trans. Mechatron. , vol. 29, no. 6, pp. 4297–4308, 2024. [31] K. ´Cwian, M. R. Nowicki, J. Wietrzykowski, and P. Skrzypczy´ nski, “Large-scale LiDAR SLAM with factor graph optimization on high-level geometric features,” Sensors , vol. 21, no. 10, p. 3445, 2021. [32] B. Zhou, Y. He, K. Qian, X. Ma, and X. Li, “S4-SLAM: A real-time 3D LiDAR SLAM system for ground/watersurface multi-scene outdoor applications,” Autonomous Robots , vol. 45, no. 1, pp. 77–98, 2021.
