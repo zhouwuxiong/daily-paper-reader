@@ -41,17 +41,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-08-07 ~ 2026-08-16</span>
+      <span class="dpr-home-dashboard-kicker">2026-07-18 ~ 2026-08-16</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 29 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 25 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
-    <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>5 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>13</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>16</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>14</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>11</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-08-16 08:41:57 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-08-16 09:08:01 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,7 +62,7 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日共处理29篇论文，覆盖隐式神经SLAM、稀疏视图重建与场景补全等热点方向，其中13篇精读、16篇速读。最值得关注的是满分10分的《Multi-Submap Implicit Neural SLAM》与9分的《Scenix》，分别聚焦大场景闭环重建与程序化稀疏视图生成。建议普通读者优先从这两篇切入，理解当前3D重建从隐式表达走向可编辑、可扩展的最新趋势。</p>
+<p>本月25篇论文中精读14篇，重点聚焦实时三维重建与场景生成两大方向。最值得关注的是满分论文《Stipple》实现视觉惯性追踪与增量高斯泼溅的实时融合，以及《Scene-SAM3D》无需微调即可完成多视角场景资产生成。下一步建议优先阅读这两篇，并顺带浏览低光照SLAM、水下重建及稀疏视角重定位等速读论文。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -71,12 +71,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">13 篇</strong>
+    <strong class="dpr-home-dashboard-count">14 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Multi-Submap Implicit Neural SLAM with Local-to-Global Loop Closure for Large-Scale Scene Reconstruction">Multi-Submap Implicit Neural SLAM with Local-to-Global Loop Closure for Large-Scale Scene Reconstruction</span></li><li><span class="dpr-home-dashboard-paper-title" title="Scenix: Sparse-View 3D Scene Reconstruction via Executable Scene Programs">Scenix: Sparse-View 3D Scene Reconstruction via Executable Scene Programs</span></li><li><span class="dpr-home-dashboard-paper-title" title="InstanceSplat: Instance-Aware Feed-Forward 3D Gaussian Splatting for Scene Understanding">InstanceSplat: Instance-Aware Feed-Forward 3D Gaussian Splatting for Scene Understanding</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Stipple: Real-Time Incremental Gaussian Splatting with Visual-Inertial Tracking">Stipple: Real-Time Incremental Gaussian Splatting with Visual-Inertial Tracking</span></li><li><span class="dpr-home-dashboard-paper-title" title="Scene-SAM3D: Multi-View Scene Asset Generation Without Fine-Tuning">Scene-SAM3D: Multi-View Scene Asset Generation Without Fine-Tuning</span></li><li><span class="dpr-home-dashboard-paper-title" title="TopoGS: Planar Reconstruction via Topology-aware 3D Gaussian Splatting">TopoGS: Planar Reconstruction via Topology-aware 3D Gaussian Splatting</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>13</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>14</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -84,12 +84,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">速读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">16 篇</strong>
+    <strong class="dpr-home-dashboard-count">11 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="RayLift: Lifting Complementary Ray-Wise Evidence with 3D Geometry Priors for Semantic Scene Completion">RayLift: Lifting Complementary Ray-Wise Evidence with 3D Geometry Priors for Semantic Scene Completion</span></li><li><span class="dpr-home-dashboard-paper-title" title="Self-Geometry: GT-Free and Plug-and-Play Test-Time Adaptation for Geometrically Consistent 3D Vision Foundation Models">Self-Geometry: GT-Free and Plug-and-Play Test-Time Adaptation for Geometrically Consistent 3D Vision Foundation Models</span></li><li><span class="dpr-home-dashboard-paper-title" title="GS-CPE: Unified 6-Degree-of-Freedom Camera Pose Estimation via 3D Gaussian Splatting">GS-CPE: Unified 6-Degree-of-Freedom Camera Pose Estimation via 3D Gaussian Splatting</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="SLAM in Low-Light Environments: Project Report">SLAM in Low-Light Environments: Project Report</span></li><li><span class="dpr-home-dashboard-paper-title" title="WAT3R: Feedforward Underwater 3D Reconstruction">WAT3R: Feedforward Underwater 3D Reconstruction</span></li><li><span class="dpr-home-dashboard-paper-title" title="Visual Relocalization from Sparse Views in Aliased and Low-Texture Environments via Novel View Synthesis">Visual Relocalization from Sparse Views in Aliased and Low-Texture Environments via Novel View Synthesis</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>16</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>11</strong></span></div>
 </section>
 </div>
 

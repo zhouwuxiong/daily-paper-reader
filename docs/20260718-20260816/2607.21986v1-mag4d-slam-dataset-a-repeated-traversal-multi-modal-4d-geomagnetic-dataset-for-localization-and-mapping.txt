@@ -1,0 +1,390 @@
+Title: Mag4D-SLAM Dataset: A Repeated-Traversal Multi-Modal 4D Geomagnetic Dataset for Localization and Mapping
+
+URL Source: https://arxiv.org/pdf/2607.21986v1
+
+Published Time: Mon, 27 Jul 2026 00:24:30 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Mag4D-SLAM Dataset: A Repeated-Traversal Multi-Modal 4D Geomagnetic Dataset for Localization and Mapping 
+
+Bibhutibhusan Nayak 1∗, Hyoseok Ju 1∗, and Giseop Kim 1†
+
+Fig. 1. Overview of the Mag4D-SLAM dataset and sensing paradigm. Left: The Earth’s geomagnetic field provides a globally available orientation reference measured by an onboard tri-axis magnetometer ( Mx, My , Mz ) mounted on a quadruped robot platform. Right: Spatial magnetic field maps ( Mx) along repeated campus trajectories under (left) daytime and (center) nighttime conditions. The rightmost panel shows the cross-session consistency (daytime and nighttime) map ( |∆Mx|), demonstrating that geomagnetic signatures remain spatially stable across day–night sessions, enabling illumination-invariant localization and heading estimation. 
+
+Abstract — Geomagnetic sensing offers an infrastructure-free, absolute orientation reference that is robust to GNSS denial and visual degradation, yet no large-scale outdoor robotics dataset supports its systematic study in SLAM. Existing magnetic datasets are confined to small-scale indoor environments and lack the synchronized multi-modal sensing, repeated-traversal structure, and high-precision 6-DoF ground truth required for geomagnetic SLAM research. We present Mag4D-SLAM, the first large-scale outdoor geomagnetic SLAM dataset. It com-prises 14 sequences totaling over 18 km of synchronized LiDAR, camera, IMU, tri-axis magnetometer, and GNSS measurements with SE(3) ground-truth poses, collected along structured campus trajectories under paired day/night conditions in both forward and reverse directions. Through repeated-traversal experiments, we analyze three core properties: magnetic field repeatability across different recording sessions (daytime and nighttime), drift-free global heading estimation, and location-discriminative magnetic signatures for cross-session place recog-nition. Mag4D-SLAM is designed to support research on yaw drift mitigation, magnetic loop closure, and long-term localiza-tion — and to open new research questions on how geomagnetic sensing can complement visual and LiDAR modalities or provide a fallback cue under illumination changes, structural repetition, and GNSS-denied long-term operation. 
+
+> ∗
+
+Equal contribution. 
+
+> †
+
+Corresponding author. 
+
+> 1
+
+Bibhutibhusan Nayak, Hyoseok Ju, and Giseop Kim are with the Department of Robotics and Mechatronics Engineering, DGIST, Daegu, Republic of Korea [bibhutibhusan 223, hyoseokju, gsk]@dgist.ac.kr .This work was supported by the InnoCORE program of the Ministry of Science and ICT (26-InnoCORE-01), by the Institute of Information & Communications Technology Planning & Evaluation (IITP) grant funded by the Korea government (MSIT) (No. RS-2025-02219277, AI Star Fellowship Support (DGIST)), and by Basic Science Research Program through the National Research Foundation of Korea (NRF) funded by the Ministry of Education (No. RS-2025-25420118). 
+
+I. I NTRODUCTION 
+
+Simultaneous Localization and Mapping (SLAM) is a fundamental capability for autonomous robotic systems operating in complex and large-scale environments. Over the past decade, significant advances have been achieved through LiDAR-based SLAM [1], visual–inertial odometry, and tightly coupled multi-sensor fusion frameworks. Public benchmarks such as KITTI [2], EuRoC [3], TUM-VI [4], Oxford RobotCar [5], and Boreas [6] have played a cru-cial role in accelerating research by providing synchronized multi-modal data with accurate ground-truth poses. However, these datasets primarily emphasize vision, LiDAR, radar, and inertial sensing, without incorporating geomagnetic measure-ments as a core modality. In contrast, the geomagnetic field, despite being glob-ally available, infrastructure-free, and inherently abso-lute in orientation, remains largely absent from robotics-oriented SLAM datasets. Existing magnetic datasets such as UJIIndoorLoc-Mag [10], MagPIE [7], and MagWi [9] are confined to indoor environments and lack synchronized visual–LiDAR–IMU–magnetometer measure-ments with high-precision 6-DoF ground truth. More recent work such as Mag-Match [11] addresses magnetic map registration but does not provide a large-scale outdoor dataset for evaluating magnetic-aware SLAM. Beyond datasets, several works have incorporated mag-netic information into SLAM frameworks. Osman et al. [12] modeled local magnetic anomalies using Gaussian processes within a Rao–Blackwellized particle filter for pedestrian SLAM. Wang et al. [13] proposed an orientation-aware 3D SLAM system using alternating magnetic fields from arXiv:2607.21986v1 [cs.RO] 24 Jul 2026 TABLE I. Comparison of Public SLAM and Magnetic Datasets                                                                                                      
+
+> Year Dataset Seq. Avg. Length Modalities Mag. Environment Platform Repeated Trav. Day/Night GT Pose
+> 2013 KITTI [2] 22 ∼2 km L, C, I, G ×Outdoor Car ××✓
+> 2016 EuRoC [3] 11 ∼80 m C, I ×Indoor MAV ××✓
+> 2017 RobotCar [5] 100+ ∼10 km L, C, I, G ×Outdoor Car ✓✓✓
+> 2017 MagPIE [7] 10 ∼400 m M, I ✓Indoor Handheld ✓×✓
+> 2018 TUM VI [4] 28 ∼200 m C, I ×Indoor/Outdoor Handheld ××✓
+> 2020 Newer College [8] 4∼1.5 km L, C, I ×Outdoor Handheld ××✓
+> 2021 MagWi [9] 100+ Indoor multi-floor M, W, I ✓Indoor Smartphone ✓××
+> 2023 Boreas [6] 40+ ∼8 km L, C, R, I, G ×Outdoor Car ✓✓✓
+> 2026 Mag4D (Ours) 14 ∼1.3 km L, C, I, M, G ✓Outdoor Quadruped ✓✓✓
+> Abbreviations: L = LiDAR, C = Camera, I = IMU, M = Magnetometer, G = GNSS, R = Radar, W = Wi-Fi.
+
+powerlines. While these works demonstrate the feasibility of magnetic mapping, they rely on task-specific experimental setups and do not provide standardized robotics datasets that combine camera, IMU, LiDAR, and geomagnetic measure-ments for reproducible research. Across existing magnetic datasets and magnetic SLAM studies, three key limita-tions remain:  
+
+> •
+
+Lack of synchronized conventional robotics sensors (e.g., camera, LiDAR, and IMU) and tri-axis magne-tometer measurements,  
+
+> •
+
+Absence of structured repeated trajectories for drift and repeatability analysis for the magnetometer measure-ments in outdoor environments,  
+
+> •
+
+No robotics-oriented dataset providing paired multi-modal sensing and accurate ground truth for magnetic-aided SLAM research. Consequently, the role of geomagnetic sensing in mitigating yaw drift, improving loop closure, and supporting multi-modal state estimation remains insufficiently studied in the context of standard SLAM datasets. To address this gap, we introduce the Mag4D-SLAM Dataset , a multi-modal geomagnetic dataset designed for magnetic-aware localization and mapping research. The dataset provides synchronized camera, LiDAR, IMU, and tri-axis magnetic measurements recorded along structured cir-cular and rectangular trajectories with accurate ground-truth poses. The “4D” designation reflects the spatio-temporal nature of the dataset: the three-axis magnetic field M(t) = [Mx(t), My (t), Mz (t)] ⊤ is recorded continuously along repeated traversals across multiple sessions, forming a long-term spatial magnetic field map. Long-term scene under-standing and re-localization have been recognized as critical challenges in SLAM [5, 14, 15], yet no existing magnetic dataset provides the multi-session repeated-traversal structure necessary to study geomagnetic sensing as a long-term localization modality. Fig. 1 illustrates the dataset concept and sensing paradigm. The Earth’s geomagnetic field provides a globally consistent yet spatially varying reference, observed in the robot frame as (Mx, M y , M z ). When recorded along structured trajecto-ries, these measurements form location-dependent magnetic signatures. Despite variations in environmental conditions (e.g., day and night), the underlying magnetic field structure remains largely stable, producing repeatable environmental fingerprints that can help constrain heading drift and improve Environments 
+
+> Height
+> UTM z = 89m
+> UTM z = 100m
+> UTM z = 118m
+> UTM z = 104m UTM z = 97m
+> Day
+> Night
+
+Fig. 2. Data collection environments and trajectory overview. Left: representative day and night camera images. Right: top-view Li-DAR point cloud of the campus loop, colorized by height, showing mild elevation changes across the trajectory. 
+
+cross-session consistency in multi-sensor SLAM. The contributions of this work are summarized as follows:  
+
+> •
+
+First large-scale outdoor geomagnetic dataset :Mag4D-SLAM provides 14 sequences totaling over 18 km of synchronized camera, LiDAR, IMU, tri-axis magnetometer, and GNSS data with accurate 6-DoF ground truth, collected on a quadruped robot platform across structured campus trajectories.  
+
+> •
+
+Repeated-traversal multi-condition design : The dataset captures paired day and night sessions in both forward and reverse directions along identical paths with mild elevation changes across the trajectory, as shown in Fig. 2, enabling systematic analysis of geomagnetic consistency, heading-dependent signatures, and illumination-invariant localization.  
+
+> •
+
+Baseline analysis of geomagnetic cues : We quan-titatively evaluate three core properties relevant to magnetic-aware localization and mapping: 1) bounded global heading estimation without accumulated drift, 2) cross-session magnetic repeatability, and 3) location-discriminative place recognition. These baselines char-acterize how geomagnetic measurements can support future magnetic-aided multi-sensor fusion and SLAM research. II. R ELATED WORK 
+
+A. Benchmark Datasets for SLAM 
+
+Progress in SLAM has been strongly driven by standard-ized datasets providing synchronized multi-modal sensing and reliable ground truth. KITTI [2] established a large-scale outdoor benchmark for visual and LiDAR-based SLAM using GPS/INS references. EuRoC [3] and TUM-VI [4] provide high-quality visual–inertial data, yet are limited in spatial scale and primarily indoor scenarios. Oxford Robot-Car [5] enables large-scale multi-season evaluation, and Newer College [8] offers centimeter-level ground truth via map alignment. More recent datasets such as Boreas [6] and TartanAir [16] further extend diversity across weather conditions and synthetic environments. Despite their contri-butions, none incorporate geomagnetic measurements as a core sensing modality, limiting their suitability for magnetic-assisted localization and heading estimation. 
+
+B. Magnetic Sensing for Localization and SLAM 
+
+Magnetic sensing has been explored as a complementary modality where GNSS is unreliable. Unlike vision or LiDAR, magnetometers capture spatial distortions of the Earth’s magnetic field caused by ferromagnetic structures, producing location-dependent signatures that support localization, loop closure detection, and global heading correction. More re-cent research has incorporated magnetometers into inertial navigation systems and probabilistic mapping frameworks for SLAM [17], demonstrating that magnetic anomalies can serve as spatial features for pose correction. Tan et al. [18] proposed a magnetometer-based approach for high-angular-rate estimation during gyroscope saturation, though their work addresses dynamic attitude recovery rather than spatial magnetic field analysis. Magnetometers have also been used to mitigate yaw drift in visual–inertial pipelines [19]. While these works demonstrate the utility of magnetic sensing in SLAM, they rely on task-specific setups and lack publicly available multi-modal datasets for reproducible research. 
+
+C. Magnetic Datasets 
+
+Several collections have been proposed to support magnetic-based localization, yet none fully address the requirements of robotic SLAM research. UJIIndoorLoc-Mag [10] introduced one of the first public magnetic finger-printing databases, containing magnetometer and IMU mea-surements along indoor corridors. MagPIE [7] extended this by providing centimeter-level ground truth across multiple buildings, though it remains focused on indoor localization without synchronized LiDAR–IMU–magnetometer measure-ments. MagWi [9] introduced a long-term magnetic and Wi-Fi dataset across heterogeneous smartphones and multi-floor buildings, targeting temporal stability rather than robotic SLAM research. More recently, Mag-Match [11] extracts orientation-invariant features from 3D magnetic vector fields via a physics-informed Gaussian Process for map match-ing, but does not provide a large-scale outdoor dataset for magnetic-aware SLAM. As summarized in Table I, Mag4D-SLAM is designed to address these gaps by providing large-scale outdoor trajectories, repeated traversals under day and night conditions, and globally aligned 6-DoF ground-truth poses. Orbbec Gemini 336L Microstrain 3DM-GX5 Livox MID 360 & IMU (built in) Ublox EVK-F9P X axis Y axis Z axis 
+
+Fig. 3. Robot platform with all sensors: LiDAR with built-in IMU, GNSS receiver, camera, and magnetometer. 
+
+TABLE II. Overview of the sensor suite used in our system                            
+
+> Sensor Type Rate Characteristics
+> Camera Gemini 336L 30 Hz RGB 1280 ×800, H94 ◦/V68 ◦
+> LiDAR Mid-360 10 Hz 360 ◦/59 ◦FOV; 200k pts/s; 70 m range IMU Mid-360 (built-in) 200 Hz 3-axis Accelerometer; 3-axis Gyro-scope Magnetometer 3DM-GX5-AHRS 100 Hz 3-axis, ±8 Gauss; Temp. compensated GNSS EVK-F9P 1 Hz Multi-band GNSS receiver; Operated in standalone mode (∼meter-level accuracy) SE(3) Ground-truth Pose LiDAR-inertial local-ization on HD map 10 Hz Multi-session map-based verification (manual)
+
+III. S YSTEM OVERVIEW 
+
+A. Sensor Suite 
+
+As shown in Fig. 3, the Mag4D platform consists of a rigidly mounted multi-modal sensor payload including a 3D LiDAR, an RGB camera, a 6-axis IMU (3-axis accelerome-ter, 3-axis gyroscope), a tri-axis magnetometer, and a GNSS receiver. Table II summarizes the multi-sensor configuration used in our platform with LiDAR–inertial ground-truth pose estimation. All sensors are rigidly attached to a common base frame and recorded into a single ROS 2 bag file. 
+
+B. Ground Truth Pose Generation 
+
+Following the approach of the Newer College dataset [8], we generate precise 6-DoF ground-truth poses by registering LiDAR scans against a high-definition (HD) prior map. The HD prior map is constructed from mapping-vehicle LiDAR scans using RTK-GPS fixed-solution trajectory constraints and pose-graph optimization. Specifically, each LiDAR scan is aligned to the prior map using ICP: 
+
+T ∗ = arg min  
+
+> T∈SE (3)
+
+X
+
+> i
+
+∥pmap i − T pscan i ∥2 . (1) To ensure path smoothness between registered poses, we used RKO-LIO [20] as the localizer, providing continuous LiDAR-inertial estimates that were subsequently refined via scan-to-map ICP alignment. Registration accuracy shows a standard deviation below 5 cm, consistent with high-precision benchmarks [8]. The ground-truth quality was further verified by overlaying each trajectory-based session TABLE III. Sequence-level statistics of our dataset, covering three environments, two lighting conditions, and three traversal directions. 
+
+Seq. Env. Light. Dir. Path (m) Duration (s) 
+
+campus day fwd 01 Campus ☼ Day → Fwd 1382.9 1203.8 
+
+campus day fwd 04 Campus ☼ Day → Fwd 1554.06 1291.9 
+
+campus day fwd 08 Campus ☼ Day → Fwd 1465.62 1181.2 
+
+campus day fwd 09 Campus ☼ Day → Fwd 1443.59 1132.3 
+
+campus day rev 05 Campus ☼ Day ← Rev 1637.24 1299.1 
+
+campus day rev 07 Campus ☼ Day ← Rev 1605.33 1234.9 
+
+campus night fwd 00 Campus Q Night → Fwd 1376.6 1117.3 
+
+campus night rev 11 Campus Q Night ← Rev 1527.28 1224.4 
+
+circle day fwd rev 02 Circle ☼ Day ↔ Fwd+Rev 1119.1 822.1 
+
+circle day fwd rev 06 Circle ☼ Day ↔ Fwd+Rev 987.53 763.0 
+
+circle day fwd rev 10 Circle ☼ Day ↔ Fwd+Rev 1402.79 993.2 
+
+circle night fwd rev 00 Circle Q Night ↔ Fwd+Rev 1064.4 816.9 
+
+library day fwd 03 Library ☼ Day → Fwd 189.52 163.3 
+
+campus circle night rev 12 Campus+Circle Q Night ← Rev 1676.00 1406.2 *circle night fwd rev 00 and campus night fwd 00 were intentionally collected without magnetometer calibration to illustrate the effect of hard-iron and soft-iron distortions, as visualized in Fig. 4. 10 m     
+
+> (b)
+> (a)
+> Raw
+> Calibrated
+> Uncalibrated Calibrated
+> 60
+> -60
+> 40
+> -40
+> 20
+> -20
+> 0
+> 𝑴 𝒙
+> 𝑴 𝒚
+> 𝑴 𝒛
+> 3D Magnetometer Sphere (Raw vs. Calibrated ) (b)
+> 𝑴 𝒛  (μT )
+> Field ( μ𝑻 )
+> 40
+> 20
+> 0
+> -20
+> -40
+> 40
+> 0
+> -40
+> 20
+> -20
+> 40
+> 20
+> 0
+> -20
+> -40
+
+Fig. 4. (a) 3D visualization of uncalibrated (raw) (blue) and calibrated (red) magnetic measurements. Calibration removes hard-and soft-iron distortions, transforming the ellipsoidal distribution into a centered sphere. (b) 2D projections of Mx, My , and Mz ,before and after calibration, demonstrating improved symmetry and heading consistency after distortion removal. 
+
+map against the HD prior map in CloudCompare, with manual inspection confirming spatial alignment across all sequences. IV. S ENSOR CALIBRATION 
+
+Multi-modal extrinsic calibrations are essential for reliable sensor fusion and SLAM evaluation. We perform intrin-sic, extrinsic, and temporal calibration following established dataset practices [4, 15]. Specifically, camera–IMU and LiDAR–IMU extrinsic transformations are estimated using motion-based hand–eye calibration. Magnetometer calibra-tion is additionally performed as described below, given its critical role in heading estimation. 
+
+Magnetometer calibration background: Raw magnetome-ter readings are affected by hard-iron bias, soft-iron defor-mation, axis misalignment, and scale errors [19, 21], which introduce systematic yaw errors over long trajectories with-out correction. The measured magnetic vector is modeled as: 
+
+mmeas = Sm true + b + n (2) where b ∈ R3 is the hard-iron bias, S ∈ R3×3 is the dis-tortion matrix encoding soft-iron effects, axis misalignment, and scale errors, and n is measurement noise. The calibrated measurement is obtained via ellipsoid fitting [22]: 
+
+mcal = S−1(mmeas − b), ∥mcal ∥ ≈ B (3) where B is the local geomagnetic magnitude. 
+
+Magnetometer calibration procedure: Calibration was per-formed in-situ with all onboard electronics active to capture realistic platform-induced distortions from motors, batteries, and metallic structures [23]. The robot was manually rotated through full yaw, pitch, and roll motions to ensure sufficient excitation of all three magnetic axes for reliable ellipsoid fitting. 
+
+Calibration analysis: Fig. 4(a) shows the 3D magnetic measurement distribution before and after calibration. The uncalibrated measurements form a distorted ellipsoidal dis-tribution offset from the origin, indicating hard-iron bias and soft-iron deformation. After correction, the measurements approximate a centered sphere, satisfying ∥mcal ∥ ≈ B.Fig. 4(b) shows the spatial magnetic component maps ( Mx,
+
+My , Mz ) before and after calibration along a circular tra-jectory. The calibrated maps exhibit improved symmetry and heading consistency, confirming that ellipsoid fitting effectively compensates for platform-induced distortions. V. M AG 4D D ATASET 
+
+Environment and Trajectory Design: Data collection was conducted in a large structured outdoor environment covering the university campus road segments and pedestrian areas. The primary trajectory includes a circular road segment surrounding a central roundabout and rectangular sections with mild elevation changes, providing realistic terrain condi-tions within a controlled geometric layout. Shorter sequences recorded near the campus library offer localized high-overlap measurements for fine-grained spatial consistency analysis. The dataset includes 14 sequences across repeated traver-sals of identical paths under both daytime and nighttime con-campus_day_fwd_08 Forward direc �on Forward Reverse Reverse direc �on campus_day_rev_05 Fig. 5. Magnetic field component maps along forward and reverse traversals in the Mag4D-SLAM dataset. (a–d) Rectangular campus trajectory showing the spatial distribution of Mx and My during forward and reverse runs. (e–h) Circular trajectory executed in forward and reverse directions, illustrating the corresponding magnetic field component maps. Color represents the magnetic field intensity ( μT), while dashed arrows indicate the direction of motion. Start and end positions are indicated by gray and red markers. (i) Trajectory of the forward (blue) and reverse (red) runs near the circle, highlighting traversal direction. (j) Zoom-in region showing the magnetic field vector at a selected location, where the three-axis components Mx, My , and Mz are visualized using red, green, and blue arrows, respectively. 
+
+ditions, with forward and reverse directions as summarized in Table III. While visual sensing performance varies across lighting conditions, magnetic field measurements remain continuously available, enabling systematic evaluation of illumination-invariant localization. 
+
+Data Format and Availability: The Mag4D-SLAM dataset is provided in both raw ROS bag format and processed CSV format (e.g., mag.csv , gt pose.csv ). Each sequence contains synchronized multi-sensor recordings and associ-ated ground-truth files. The dataset is publicly available. 1
+
+VI. E XPERIMENTAL ANALYSIS 
+
+This section quantitatively validates three core properties of the Mag4D-SLAM dataset: multi-condition magnetic re-peatability, drift-free heading estimation, and place recogni-tion capability. 
+
+A. Multi-Condition Repeatability Analysis 
+
+We evaluate magnetic field variability under forward and reverse traversals for rectangular (campus) trajecto-ries on campus day fwd 08 and campus day rev 05 .Fig. 5(a–d) presents the magnetic field component maps for 
+
+Mx and My along a rectangular campus loop executed in forward and reverse directions. The color scale represents magnetic field intensity ( μT) at each spatial location. Al-though the geometric trajectory is identical, the measured components depend strongly on the robot’s heading, which provides an informative directional signature. This property is particularly valuable when visual SLAM performance degrades under low-light or nighttime conditions. 
+
+> 1https://mag4d-dataset.github.io/Mag4d-Dataset/
+
+For the circular trajectory Fig. 5 (e–h), clockwise (re-verse) and counter-clockwise (forward) motions from the 
+
+circle day fwd rev 10 sequence produce distinct mag-netic component distributions despite overlapping spatial paths. Specifically, Mx and My exhibit sign changes and intensity redistribution along identical spatial segments, with variations spanning approximately ±40 μT. These differ-ences arise from changes in body-frame orientation rather than environmental inconsistency. Notably, within a single direction of motion, the magnetic intensity at specific spatial locations remains consistent, demonstrating the uniqueness and repeatability of the magnetic signature. The zoomed visualization in Fig. 5 (j) further illustrates this behavior: at nearly identical spatial positions, the magnetic vectors (red and green arrows) differ between traversals, with Mx
+
+and My appearing approximately inverted. This confirms that magnetometer measurements are frame-dependent and strongly influenced by heading, even when the robot revisits the same physical location. Similar orientation-dependent magnetic signatures have also been reported in magnetic field based loop-closure studies [24]. Importantly, despite component-level differences, the over-all spatial structure of the magnetic field remains continuous along the trajectory, while heading-dependent differences are particularly pronounced between forward and reverse traver-sals. The absence of abrupt spatial discontinuities indicates that the environmental magnetic field varies smoothly across the surveyed area. As a result, while the measured com-ponents change with robot heading due to projection onto the sensor frame, the underlying magnetic field distribution remains spatially consistent. These results demonstrate that magnetic measurements −60 −40 −20 020 40 60 
+
+> Mean ( μT)
+> Magnetic field Means Across Sequences
+> Mx
+> My
+> Mz
+> |M|
+> campus_night_fwd_00 circle_night_fwd_rev_00 campus_day_fwd_01 circle_day_fwd_rev_02 library_day_fwd_03 campus_day_fwd_04 campus_day_rev_05 circle_day_fwd_rev_06 campus_day_rev_07 campus_day_fwd_08 campus_day_fwd_09 circle_day_fwd_rev_10 campus_night_rev_11 campus_circle_night_rev_12
+> Mag4D sequence
+> 510 15 20 25 30
+> STD ( μT)
+> Magnetic field Standard Deviations Across Sequences
+
+Fig. 6. Magnetic field statistics across all Mag4D-SLAM dataset sequences. Top: Mean values of the magnetic components ( Mx,
+
+My , Mz ) and the magnetic field magnitude ( |M |) for each se-quence, with error bars indicating the standard error. Bottom: 
+
+Standard deviation of the magnetic components and the field magnitude across the same sequences, illustrating the variability of the geomagnetic measurements along different trajectories and environmental conditions (day/night and forward/reverse traversals). 
+
+are direction-sensitive at the component level yet spatially repeatable in structure, an essential property for magnetic-aware SLAM and heading-consistent loop closure. 
+
+B. Quantitative Magnetic Stability Analysis 
+
+Fig. 6 summarizes the mean and standard deviation of Mx,
+
+My , Mz , and |M | across all sequences. The first two sequences campus night fwd 00 and 
+
+circle night fwd rev 00 , recorded without calibra-tion, exhibit clear offset distortion. In particular, Mz shows a strong negative bias of ≈ − 50 μT, while |M | exceeds 
+
+60 μT, indicating hard-iron and scale effects. The larger spread of |M | confirms violation of the constant-magnitude geomagnetic constraint. After calibration, the mean components stabilize: Mx and 
+
+Mz remain within ±15 μT, while My stays within ±10 μT. The magnitude |M | consistently clusters between 35 and 
+
+45 μT, matching the expected local field strength. The standard deviation remains consistent across the cal-ibrated runs. σMx ranges from 24 –30 μT, σMy from 18 –
+
+23 μT, and σMz remains lowest at 4–7 μT, reflecting its vertical alignment with the Earth’s field. The magnitude variation is tightly bounded ( σ|M | ≈ 5–10 μT), indicating improved spherical consistency. Overall, calibration enforces 
+
+∥mcal ∥ ≈ B (local geomagnetic field), reduces bias spread, and stabilizes magnetic intensity, supporting repeatable sig-natures for magnetic-aided SLAM. 
+
+C. Drift-Free Heading Estimation 
+
+A key motivation for Mag4D is to enable global heading estimation without yaw drift. We quantitatively evaluate this 
+
+Fig. 7. Heading estimation on campus circle night rev 12 
+
+using the proposed online 2D circle fitting calibration. Top: esti-mated heading tracks ground truth (GT) continuously without drift over the full 1400 s trajectory. Bottom: absolute heading error with a moving average filter (window = 200 samples) overlaid; mean error 
+
+6.3◦ and RMSE 7.7◦ remain bounded throughout, attributable to local magnetic anomalies along the campus route. 
+
+TABLE IV. Per-Segment RMSE Across Representative Sequences 
+
+Sequence Segment 
+
+campus day rev 05 campus day fwd 08 campus circle night rev 12 
+
+0–20% 4.8◦ 4.6◦ 7.1◦
+
+20 –40% 5.3◦ 6.2◦ 8.4◦
+
+40 –60% 5.6◦ 6.7◦ 7.3◦
+
+60 –80% 4.9◦ 7.0◦ 8.3◦
+
+80 –100% 5.9◦ 5.7◦ 7.0◦
+
+TABLE V. Heading Estimation Accuracy (RMSE) 
+
+Method Day (Seq. 05) Day (Seq. 08) Night (Seq. 12) Direct + Hard-iron 6.5◦ 6.3◦ 12 .0◦
+
+Direct + 2D Circle 5.3◦ 6.1◦ 7.7◦
+
+Seq. 05: campus day rev 05 .Seq. 08: campus day fwd 08 .Seq. 12: campus circle night rev 12 .
+
+property by comparing two heading estimation strategies against the ground-truth (GT) yaw described in Sec. III-B. 
+
+1) Methods: Direct + Hard-iron Correction. We ap-ply tilt-compensated [25] heading estimation directly from calibrated magnetic measurements without sequential filter-ing. The hard-iron bias is estimated per-sequence using the min/max method: 
+
+bi = max( Mi) + min( Mi)2 , i ∈ { x, y, z }. (4) The tilt-compensated heading is then computed as: 
+
+M hx = Mx cos θ + My sin ϕ sin θ + Mz cos ϕ sin θM hy = My cos ϕ − Mz sin ϕ
+
+ˆψ = atan2( −M hy , M hx ), (5) where ϕ and θ denote roll and pitch from the IMU. 
+
+Direct + Online 2D Circle Fitting. Ground robots exhibit small roll/pitch variation ( |ϕ| < 5◦, |θ| < 13 ◦) but full 360 ◦
+
+yaw coverage during normal traversal, such that the Mx–My
+
+plane is naturally well-sampled. We exploit this property to Fig. 8. Recall@ K for place recognition using raw magnetic features (campus day rev 05 vs. campus night rev 11 , day–night cross-session). Adding axes progressively improves retrieval perfor-mance, with Mx+My +Mz achieving Recall@10 = 20.9%, demon-strating that raw magnetic signatures carry location-discriminative information as a baseline for learning-based methods. 
+
+fit a 2D circle online [26]: 
+
+dk =
+
+q
+
+(M kx − cx)2 + ( M ky − cy )2
+
+(c∗
+
+> x
+
+, c ∗ 
+
+> y
+
+, r ∗) = arg min  
+
+> cx,c y,r
+
+X
+
+> k
+
+(dk − r)2 (6) yielding a calibrated center (c∗
+
+> x
+
+, c ∗ 
+
+> y
+
+) subtracted before apply-ing Eq. (5). Crucially, this requires no dedicated calibration maneuver —normal operation provides sufficient excitation. 
+
+2) Drift-Free Property: Fig. 7 illustrates the estimated yaw against GT on campus circle night rev 12 .Table V summarizes RMSE across two sequences. The online 2D circle fitting consistently achieves lower RMSE, with a particularly pronounced improvement on 
+
+campus circle night rev 12 (7.7◦ vs. 12 .0◦). Per-segment RMSE further confirms the drift-free nature of the proposed approach (Table IV): error remains consis-tently bounded across all segments regardless of traversal duration. 
+
+3) Discussion: The results reveal two key findings. First, online 2D circle-fitting calibration consistently outperforms the standard hard-iron method, particularly on longer se-quences, demonstrating that calibration quality is the dom-inant factor in magnetic heading accuracy. Second, ground robots naturally generate sufficient magnetic excitation dur-ing normal traversal to enable online calibration, eliminating the need for dedicated calibration maneuvers. The residual error of ∼ 6◦–8◦ is attributable to local magnetic anomalies from campus structures. This analysis confirms that the Mag4D-SLAM dataset provides the structured trajectories and high-precision ground truth necessary to quantitatively evaluate global heading observability—a capability absent from existing SLAM benchmarks. 
+
+D. Place Recognition Baseline 
+
+To assess whether raw magnetic signatures carry location-discriminative information, we formulate a null hypoth-esis H0: retrieval performance is equivalent to ran-dom selection from the database. We evaluate cross-session place recognition between campus day rev 05 
+
+and campus night rev 11 using nearest-neighbor re-trieval with Euclidean distance in magnetic feature space. A query pose is considered correctly retrieved if at least one of the top-K candidates lies within 3 m of the ground-truth position. As shown in Fig. 8, all three feature configurations substantially exceed the random baseline ( p0 = K/ |D| ,
+
+|D| = 12 ,245 ) across all K. At K = 10 , Mx+My +Mz
+
+achieves Recall@10 = 20.9% versus a random baseline of 0.08%, over 250 × improvement. A one-sided binomial test yields p < 10 −250 for all tested K, strongly rejecting H0
+
+and confirming that raw magnetic measurements are statis-tically significant location descriptors. Notably, Mx alone achieves competitive Recall@50 of 47.8% compared to the full three-axis feature (46.5%), suggesting that Mx carries the most location-discriminative information among the three components. These results establish a raw-feature baseline and motivate the development of learning-based magnetic descriptors using the Mag4D benchmark. VII. D ISCUSSION 
+
+The experimental results demonstrate that geomagnetic sensing provides bounded heading estimates without accu-mulated drift and location-discriminative signatures across diverse operational conditions. We outline three directions for integrating magnetic sensing into robotic SLAM pipelines. 
+
+Global Heading Correction. As demonstrated in Sec. VI-C, magnetometer-derived heading achieves RMSE of 6–
+
+8◦ without accumulating drift over trajectories exceeding 1.4 km, offering a level of long-term consistency that IMU-based orientation cannot provide. This property makes mag-netic sensing a practical absolute orientation reference for visual-inertial and LiDAR-inertial odometry systems operat-ing in GNSS-denied environments. 
+
+Magnetic Place Recognition. Raw magnetic signatures achieve Recall@10 = 20.9% in cross-session place recogni-tion, providing a viable baseline for magnetic-aided loop closure. In conditions where visual and LiDAR descriptors degrade—including low-light operation, structurally repeti-tive environments, and adverse weather—magnetic finger-prints offer an infrastructure-free retrieval signal independent of ambient light levels. Learning-based descriptors trained on the Mag4D benchmark hold promise for substantially improving upon this baseline. 
+
+Long-Term Localization. Geomagnetic signatures exhibit temporal stability that visual maps often struggle to maintain under visual degradation, seasonal variation, or structural modifications. The cross-session consistency observed in our experiments suggests that a magnetic map constructed from a single traversal can support reliable re-localization across multiple sessions, making magnetic sensing a robust modality for long-term autonomous operation. Nevertheless, environments with strong ferromagnetic interference or dense metallic infrastructure may reduce signature reliability, a limitation that warrants further investigation. VIII. C ONCLUSION 
+
+This paper presented the Mag4D-SLAM dataset, a large-scale outdoor magnetic-aware SLAM dataset for study-ing magnetic-assisted localization. Unlike existing magnetic datasets limited to small indoor environments, Mag4D-SLAM provides structured outdoor trajectories with accurate 6-DoF ground truth collected across a university campus under both day and night conditions. The dataset includes synchronized LiDAR, IMU, and tri-axis magnetometer mea-surements, enabling evaluation of magnetic-assisted heading correction, place recognition, and drift mitigation in mod-ern SLAM systems. Our analysis demonstrates that mag-netic signatures remain spatially consistent across repeated traversals and can complement visual–inertial and LiDAR– inertial pipelines for global yaw stabilization. By releasing the Mag4D-SLAM dataset, we aim to support future research on magnetic-aware SLAM and encourage the use of geo-magnetic sensing as a robust, infrastructure-free modality for long-term robotic autonomy. Although the current dataset includes repeated day/night and directional traversals, it does not yet cover long-term seasonal variations, weather changes, or large temporal gaps across months. Therefore, the present study primarily focuses on evaluating cross-session magnetic consistency under varying illumination and traversal condi-tions within a structured outdoor campus environment. REFERENCES 
+
+[1] Luca Carlone, Ayoung Kim, Timothy Barfoot, Daniel Cre-mers, and Frank Dellaert, editors. SLAM Handbook. From Localization and Mapping to Spatial Intelligence . Cambridge University Press, 2026. [2] Andreas Geiger, Philip Lenz, and Raquel Urtasun. Vision meets robotics: The KITTI dataset. Int. J. Robot. Res. ,32(11):1231–1237, 2013. [3] Michael Burri, Janosch Nikolic, Pascal Gohl, Thomas Schnei-der, Joern Rehder, Sammy Omari, Markus W. Achtelik, and Roland Siegwart. The EuRoC micro aerial vehicle datasets. 
+
+Int. J. Robot. Res. , 35(10):1157–1163, 2016. [4] David Schubert, Thore Goll, Nikolaus Demmel, Vladyslav Usenko, Joerg Stueckler, and Daniel Cremers. The TUM VI benchmark for evaluating visual-inertial odometry. In Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , pages 1680– 1687, 2018. [5] Will Maddern, Geoffrey Pascoe, Chris Linegar, and Paul Newman. 1 year, 1000 km: The oxford RobotCar dataset. 
+
+Int. J. Robot. Res. , 36(1):3–15, 2017. [6] Keenan Burnett, David J. Yoon, Yuchen Wu, Andrew Zou Li, Haowei Zhang, Shichen Lu, Jingxing Qian, Wei-Kang Tseng, Andrew Lambert, Keith Y. K. Leung, Angela P. Schoellig, and Timothy D. Barfoot. Boreas: A multi-season autonomous driving dataset. Int. J. Robot. Res. , 42(1-2):33–42, 2023. [7] David Hanley, Alexander B. Faustino, Scott D. Zelman, David A. Degenhardt, and Timothy Bretl. Magpie: A dataset for indoor positioning with magnetic anomalies. In Proc. Int. Conf. Indoor Position. Indoor Navig. (IPIN) , pages 1–8. IEEE, 2017. [8] Milad Ramezani, Yiduo Wang, Marco Camurri, David Wisth, Matias Mattamala, and Maurice Fallon. The Newer College dataset: Handheld LiDAR, inertial and vision with ground truth. In Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) ,pages 4353–4360. IEEE, 2020. [9] Imran Ashraf, Soojung Hur, and Youngho Park. Magwi: Benchmark dataset for long term magnetic field and wi-fi data involving heterogeneous smartphones, multiple orientations, spatial diversity and multi-floor buildings. IEEE Access ,9:77976–77996, 2021. [10] Joaqu´ ın Torres-Sospedra, David Rambla, Ra´ ul Montoliu, ´Oscar Belmonte, and Joaqu´ ın Huerta. Ujiindoorloc-mag: A new database for magnetic field-based localization problems. In Proc. Int. Conf. Indoor Position. Indoor Navig. (IPIN) ,pages 1–10. IEEE, October 2015. [11] William McDonald, C´ edric Le Gentil, Jennifer Wakulicz, and Teresa Vidal-Calleja. Mag-match: Magnetic vector field features for map matching and registration. In Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , pages 19377–19382. IEEE, 2025. [12] Mostafa Osman, Frida Viset, and Manon Kok. Indoor slam using a foot-mounted imu and the local magnetic field. In 
+
+Proc. Int. Conf. Inf. Fusion (FUSION) , pages 1–7. IEEE, 2022. [13] Rongrong Wang, Rui Tan, Zhenyu Yan, and Chris Xiaoxuan Lu. Orientation-aware 3d slam in alternating magnetic field from powerlines. Proc. ACM Interact. Mobile Wearable Ubiquitous Technol. , 7(4):1–25, 2024. [14] Giseop Kim and Ayoung Kim. Lt-mapper: A modular frame-work for lidar-based lifelong mapping. In Proc. IEEE Int. Conf. Robot. Autom. (ICRA) , pages 7995–8002. IEEE, 2022. [15] Nicholas Carlevaris-Bianco, Arash K Ushani, and Ryan M Eustice. University of michigan north campus long-term vision and lidar dataset. Int. J. Robot. Res. , 35(9):1023–1035, 2016. [16] Wenshan Wang, Delong Zhu, Xiangwei Wang, Yaoyu Hu, Yuheng Qiu, Chen Wang, Yafei Hu, Ashish Kapoor, and Sebastian Scherer. TartanAir: A dataset to push the limits of visual SLAM. In Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) . IEEE, 2020. [17] Manon Kok and Arno Solin. Scalable magnetic field slam in 3d using gaussian process maps. In Proc. Int. Conf. Inf. Fusion (FUSION) , pages 1353–1360. IEEE, July 2018. [18] Chee How Tan, Danial Sufiyan bin Shaiful, Emmanuel Tang, Jien-Yi Khaw, Gim Song Soh, and Shaohui Foong. Flydar: Magnetometer-based high angular rate estimation during gyro saturation for slam. In Proc. IEEE Int. Conf. Robot. Autom. (ICRA) , pages 8532–8537. IEEE, 2020. [19] Bharat Joshi and Ioannis Rekleitis. Enhancing visual inertial slam with magnetic measurements. In Proc. IEEE Int. Conf. Robot. Autom. (ICRA) , pages 10012–10019. IEEE, 2024. [20] Meher V. R. Malladi, Tiziano Guadagnino, Luca Lobefaro, and Cyrill Stachniss. Robust approach for lidar-inertial odometry without sensor-specific modeling. IEEE Robotics and Automa-tion Letters , 11(6):7420–7427, 2026. [21] Y. Wu and W. Shi. On calibration of three-axis magnetometer. 
+
+IEEE Sensors J. , 15(11):6424–6431, 2015. [22] J. F. Vasconcelos, G. Elkaim, C. Silvestre, P. Oliveira, and B. Cardeira. Geometric approach to strapdown magnetometer calibration in sensor frame. IEEE Trans. Aerosp. Electron. Syst. , 47(2):1293–1306, 2011. [23] Manon Kok and Thomas B. Sch¨ on. Magnetometer calibration using inertial sensors. IEEE Sensors Journal , 16(14):5679– 5689, 2016. [24] Manon Kok and Arno Solin. Online one-dimensional mag-netic field slam with loop-closure detection. In Proc. IEEE Int. Conf. Multisensor Fusion Integr. Intell. Syst. (MFI) , pages 1–7. IEEE, September 2024. [25] Michael J. Caruso. Applications of magnetoresistive sensors in navigation systems. Technical Report SAE Technical Paper 970602, SAE International, 1997. [26] Val´ erie Renaudin, Muhammad Haris Afzal, and G´ erard Lachapelle. Complete triaxis magnetometer calibration in the magnetic domain. Journal of Sensors , 2010(1):967245, 2010.

@@ -1,0 +1,440 @@
+Title: DynActiveGS: Active Gaussian Splatting for Dynamic Scene Reconstruction
+
+URL Source: https://arxiv.org/pdf/2608.01178v1
+
+Published Time: Tue, 04 Aug 2026 01:18:03 GMT
+
+Number of Pages: 10
+
+Markdown Content:
+# DynActiveGS: Active Gaussian Splatting for Dynamic Scene Reconstruction 
+
+# Hongbo Duan 
+
+Tsinghua University, Shenzhen International Graduate School Shenzhen, Guangdong, China dhb24@mails.tsinghua.edu.cn 
+
+# Pengting Luo 
+
+Huawei Technologies Ltd Shenzhen, Guangdong, China pengtingluo@gmail.com 
+
+# Chengzhi Zhao 
+
+Harbin Institute of Technology, Shenzhen Shenzhen, Guangdong, China 2021210731@stu.hit.edu.cn 
+
+# Yuanhao Chiang 
+
+Tsinghua University, Shenzhen International Graduate School Shenzhen, Guangdong, China jiang-yh24@mails.tsinghua.edu.cn 
+
+# Fangming Liu 
+
+Peng Cheng Laboratory Shenzhen, Guangdong, China fangminghk@gmail.com 
+
+# Xueqian Wang ∗
+
+Tsinghua University, Shenzhen International Graduate School Shenzhen, Guangdong, China wang.xq@sz.tsinghua.edu.cn Step 0 1000 
+
+Figure 1: DynActiveGS in action. The robot actively explores a dynamic indoor scene and progressively improves reconstruction completeness. From left to right, we show RGB-D inputs with dynamic disturbances, intermediate reconstruction states, and final renderings after 1000 steps. DynActiveGS preserves stable geometry and rendering quality despite dynamic interference. 
+
+## Abstract 
+
+We present DynActiveGS, a dynamic-aware active reconstruction framework based on 3D Gaussian Splatting (3DGS) for autonomous exploration in dynamic environments. The framework incremen-tally reconstructs a 3D Gaussian scene representation while sup-pressing motion-corrupted observations through online uncertainty 
+
+> ∗Corresponding author
+> This work is licensed under a Creative Commons Attribution 4.0 International License.
+> MM ’26, Rio de Janeiro, Brazil
+> © 2026 Copyright held by the owner/author(s). ACM ISBN 979-8-4007-2213-4/2026/11 https://doi.org/10.1145/3767308.3835011
+
+prediction and uncertainty-weighted Gaussian optimization. A key component of DynActiveGS is the explicit decomposition of uncer-tainty into structural uncertainty and motion-induced uncertainty, which enables the system to distinguish under-reconstructed static regions from dynamically unreliable areas. Based on these uncer-tainty fields, DynActiveGS performs dynamic-aware viewpoint selection and dynamic-constrained path planning to favor infor-mative yet stable observations during exploration. The resulting system forms a unified closed-loop pipeline for robust active recon-struction in dynamic scenes. Extensive experiments on challenging dynamic benchmarks demonstrate consistent improvements over existing active reconstruction baselines in reconstruction accuracy, completeness, rendering quality, and exploration efficiency. arXiv:2608.01178v1 [cs.CV] 2 Aug 2026 MM ’26, November 10–14, 2026, Rio de Janeiro, Brazil Duan et al. 
+
+## CCS Concepts 
+
+• Computing methodologies → Reconstruction ; Vision for robotics ; Robotic planning .
+
+## Keywords 
+
+Active Reconstruction, 3D Gaussian Splatting, Dynamic Scenes   
+
+> ACM Reference Format:
+> Hongbo Duan, Pengting Luo, Chengzhi Zhao, Yuanhao Chiang, Fangming Liu, and Xueqian Wang. 2026. DynActiveGS: Active Gaussian Splatting for Dynamic Scene Reconstruction. In Proceedings of the 35th ACM International Conference on Multimedia (MM ’26), November 10–14, 2026, Rio de Janeiro, Brazil. ACM, New York, NY, USA, 10 pages. https://doi.org/10.1145/3767308. 3835011
+
+## 1 Introduction 
+
+The ability to reconstruct 3D scenes from visual observations is fundamental to computer vision and robotics [10, 35, 50]. Beyond passive perception, intelligent agents should actively determine where to move and what to observe [14] to efficiently acquire informative data and build high-fidelity scene representations [22]. This paradigm, known as active 3D reconstruction [1], integrates perception, uncertainty estimation, and motion planning [7]. Recent advances in 3D Gaussian Splatting (3DGS) [21] have en-abled explicit, differentiable, and efficient scene representations with high-quality rendering and incremental optimization. These advantages have inspired active reconstruction methods that lever-age 3DGS with next-best-view (NBV) planning [39, 40] and uncertainty-driven exploration [25, 38, 42]. However, existing active reconstruc-tion approaches [6, 11, 17, 18, 29, 30, 41, 53, 55] are primarily devel-oped under the assumption of static environments. Dynamic objects, including pedestrians, vehicles, and articu-lated agents, are common in real-world scenarios and introduce fundamental challenges to active reconstruction [13, 57]. Motion-corrupted observations can degrade Gaussian optimization [37, 54], distort uncertainty estimation [24, 43], and mislead viewpoint plan-ning [16, 23]. Meanwhile, existing dynamic 3DGS and Gaussian-based SLAM methods mainly focus on passive mapping and dy-namic object filtering [44, 54, 59], leaving active perception and long-horizon exploration in dynamic environments largely un-explored. Therefore, robust active reconstruction under dynamic scenes remains an open challenge. In this paper, we propose DynActiveGS , a dynamic-aware active reconstruction framework for 3D Gaussian Splatting in dynamic environments. As shown in Fig. 1, DynActiveGS first performs uncertainty-aware Gaussian reconstruction by predicting pixel-wise uncertainty and suppressing motion-corrupted observations during online optimization. Based on the reconstructed Gaussian map, we further disentangle structural uncertainty from motion-induced uncertainty to construct map-level uncertainty fields for exploration. These uncertainty fields guide dynamic-aware view-point selection through local-global scoring on a Voronoi graph, while a motion-constrained planner generates efficient and sta-ble trajectories. Together, these components establish a unified perception–planning–reconstruction pipeline for closed-loop ac-tive reconstruction in dynamic scenes. We evaluate DynActiveGS on diverse dynamic benchmarks. Re-sults demonstrate consistent improvements over existing active reconstruction baselines in reconstruction accuracy, completeness, rendering quality, and exploration efficiency. Our work extends active 3D reconstruction beyond static environments toward robust embodied perception in dynamic real-world scenarios. Our contributions are summarized as follows: 
+
+• We propose DynActiveGS, a dynamic-aware active recon-struction framework for 3D Gaussian Splatting in dynamic scenes. 
+
+• We introduce an uncertainty-aware Gaussian reconstruc-tion strategy that predicts online uncertainty, suppresses motion-corrupted observations, and disentangles structural and motion-induced uncertainty. 
+
+• We develop a closed-loop framework integrating dynamic-aware viewpoint selection and motion-constrained path plan-ning, achieving robust active exploration in challenging dy-namic reconstruction scenarios. 
+
+## 2 Related Work 2.1 3D Scene Representation 
+
+Scene representation plays a critical role in balancing reconstruc-tion fidelity, efficiency, and online perception capability. Classical 3D reconstruction relies on structure-from-motion (SfM) pipelines [33], which estimate camera poses and scene geometry through feature matching [44, 46], geometric verification, and bundle adjustment [9]. Although effective, these methods are computationally expensive and mainly assume static environments. Neural scene represen-tations, such as NeRFs [34] and their variants [2, 5, 26], achieve high-quality view synthesis but remain inefficient for real-time de-ployment. Recently, 3D Gaussian Splatting (3DGS) [21] has emerged as an efficient explicit representation with real-time rendering and incremental optimization, enabling promising applications in on-line reconstruction and robotic perception. Recent Gaussian-based mapping and SLAM systems further demonstrate its potential, yet most remain limited to static scenes [20, 31, 55]. 
+
+## 2.2 Active 3D Reconstruction 
+
+Active reconstruction focuses on selecting informative viewpoints to improve scene acquisition efficiency [8, 28]. Early approaches exploit geometric uncertainty, occupancy reasoning, or information gain for next-best-view (NBV) planning [16, 38, 58]. Recent methods further integrate neural representations and uncertainty estimation to guide exploration [11, 23, 25, 56]. With the development of NeRF and 3DGS representations, several works investigate active recon-struction with neural and Gaussian models [17, 18, 29, 55]. However, existing frameworks are predominantly designed for static envi-ronments, where dynamic objects are ignored or treated as noise, leading to unreliable optimization and viewpoint selection. 
+
+## 2.3 Dynamic Scene Reconstruction 
+
+Dynamic scenes pose significant challenges for reliable 3D re-construction. Traditional SLAM methods handle moving objects through motion segmentation and robust optimization [3, 15], while DynActiveGS: Active Gaussian Splatting for Dynamic Scene Reconstruction MM ’26, November 10–14, 2026, Rio de Janeiro, Brazil 
+
+recent neural and Gaussian-based approaches model or filter dy-namic content for improved robustness [44, 54, 59]. Although uncertainty-aware Gaussian mapping improves reconstruction under dynamic conditions, existing approaches mainly focus on passive mapping and tracking rather than active exploration [20, 60]. Therefore, they cannot determine how an embodied agent should actively ac-quire informative observations in dynamic environments. Our work bridges this gap by integrating dynamic scene modeling with active viewpoint planning in a unified Gaussian splatting framework. 
+
+## 3 Method 
+
+As shown in Fig. 2, DynActiveGS operates as a closed-loop active reconstruction system in dynamic environments. At each timestep 
+
+𝑡 , the embodied agent acquires an RGB-D observation (𝐼 𝑡 , 𝐷 𝑡 ) and an estimated camera pose T𝑡 ∈ 𝑆𝐸 (3). The system updates the 3D Gaussian scene representation through uncertainty-aware recon-struction, constructs structural uncertainty 𝑈 𝑠 and motion uncer-tainty 𝑈 𝑚 , selects the next informative viewpoint, and executes a dynamically stable path toward it. The loop continues until the exploration budget of 𝑆 steps is exhausted. 
+
+## 3.1 Preliminary: 3D Gaussian Splatting 
+
+We represent the scene as a set of anisotropic 3D Gaussian primi-tives G = {𝑔 𝑖 }𝑁 𝑖 =1, where each Gaussian 𝑔 𝑖 is parameterized by its mean 𝝁 𝑖 ∈ R3, color c𝑖 ∈ R3, opacity 𝜂 𝑖 ∈ [ 0, 1], scale S𝑖 ∈ R3×3,and rotation R𝑖 ∈ SO (3). Its covariance is given by 
+
+𝚺 𝑖 = R𝑖 S𝑖 S⊤ 
+
+> 𝑖
+
+R⊤ 
+
+> 𝑖
+
+. (1) The rendered color is obtained via alpha compositing: ˆC( p) =
+
+> 𝑁
+
+∑︁ 
+
+> 𝑖 =1
+
+𝛼 𝑖 c𝑖 𝑖 −1Ö
+
+> 𝑗 =1
+
+(1 − 𝛼 𝑗 ), (2) where 
+
+𝛼 𝑖 = 𝜂 𝑖 exp  − 12 (p − 𝝁 𝑖 )⊤ 𝚺 −1 
+
+> 𝑖
+
+(p − 𝝁 𝑖 ) . (3) This formulation is fully differentiable and supports efficient online optimization. 
+
+## 3.2 Dynamic-aware Gaussian Reconstruction 
+
+Dynamic environments violate the static-scene assumption: mov-ing objects and transient occlusions introduce unreliable observa-tions, which can corrupt Gaussian optimization and further mislead active planning. To address this issue, we develop an uncertainty-aware reconstruction strategy for dynamic active reconstruction. Specifically, we predict a per-pixel uncertainty map online, use it to suppress dynamically corrupted observations during Gaussian map optimization, and further lift it into map-level structural and motion uncertainty fields for downstream planning. 
+
+3.2.1 Frame-level uncertainty prediction. For each input frame 𝐼 𝑡 ,we extract dense visual features using a pre-trained DINOv3 feature extractor [36, 47]: 
+
+𝐹 𝑡 = F ( 𝐼 𝑡 ), (4) where F denotes the DINOv3 encoder and 𝐹 𝑡 is the resulting fea-ture map. These features are fed into a lightweight uncertainty prediction network P to estimate a per-pixel uncertainty map 
+
+𝛽 𝑡 = P ( 𝐹 𝑡 ), (5) where 𝛽 𝑡 ∈ R𝐻 ×𝑊 is bilinearly upsampled to the input resolution. Here, 𝛽 𝑡 (u) measures the reliability of pixel u, and pixels affected by dynamic motion or transient occlusion tend to have higher uncertainty values. The uncertainty predictor is supervised by ap-pearance and depth consistency; the full objective is provided in the supplementary material. 
+
+3.2.2 Uncertainty-weighted Gaussian mapping. Let G𝑡 denote the current Gaussian map. Given the camera pose T𝑡 and intrinsics 
+
+K, we render the predicted RGB image ˆ 𝐼 𝑡 and depth map ˆ 𝐷 𝑡 from 
+
+G𝑡 . The Gaussian map is optimized using an uncertainty-weighted rendering loss 
+
+Lrender = 𝜆 1 Lcolor + 𝜆 2 Ldepth 
+
+𝛽 2
+
+> 𝑡
+
++ 𝜆 3 Liso , (6) where Lcolor combines pixel-wise ℓ1 and SSIM losses, and Liso 
+
+denotes isotropic Gaussian regularization. Here, the uncertainty map 𝛽 𝑡 acts as a pixel-wise weighting factor, so that unreliable observations contribute less to map optimization [27, 43, 59]. This encourages the optimizer to focus on stable static structures while suppressing dynamic distractors during Gaussian updates. 
+
+3.2.3 Map-level structural and motion uncertainty. To support dynamic-aware planning, we maintain two map-level uncertainty fields over a discrete 3D query set Ω:
+
+𝑈 𝑠 : Ω → R≥0, 𝑈 𝑚 : Ω → R≥0, (7) where 𝑈 𝑠 (x) measures structural uncertainty and 𝑈 𝑚 (x) measures motion-induced unreliability at location x.We estimate structural uncertainty from both insufficient ob-servation and reconstruction mismatch. For each x ∈ Ω, let 𝑛 𝑡 (x)
+
+denote the effective observation count and let ¯ 𝑒 𝑡 (x) denote an ag-gregated rendering residual. We define 
+
+𝑈 𝑠 (x) = 𝜆 𝑐 
+
+1√︁ 
+
+𝑛 𝑡 (x) + 𝜖 + 𝜆 𝑟 clip ( ¯𝑒 𝑡 (x), 0, 𝑒 max ) , (8) where the first term highlights under-observed regions and the second term emphasizes locations that are poorly explained by the current Gaussian map. Motion uncertainty is obtained by lifting the frame-level uncer-tainty map 𝛽 𝑡 into 3D and accumulating it over time. For each query location x ∈ Ω, let u𝑡 = Π(T𝑡 , x) denote its projection into frame 
+
+𝑡 , and let 1𝑡 (x) indicate whether it is observable in that frame. We update motion uncertainty using 
+
+𝑈 𝑚 (x) ← ( 1 − 𝛼 ) 𝑈 𝑚 (x) + 𝛼 1𝑡 (x) 𝛽 𝑡 (u𝑡 ), (9) where 𝛼 ∈ ( 0, 1) controls the update rate. As a result, 𝑈 𝑠 identifies where more static evidence is needed, while 𝑈 𝑚 identifies where future observations are likely to be unreliable due to dynamic dis-turbances. 
+
+## 3.3 Dynamic-aware Viewpoint Selection 
+
+Given the map-level structural uncertainty 𝑈 𝑠 and motion uncer-tainty 𝑈 𝑚 , we select viewpoints that are both informative and dy-namically reliable. To improve long-horizon exploration efficiency in multi-room environments, we adopt a hierarchical planning strategy on a Voronoi graph [51] 𝐺 = (V , E) , where each node 
+
+𝑛 ∈ V denotes a reachable region and each edge encodes traversal connectivity. MM ’26, November 10–14, 2026, Rio de Janeiro, Brazil Duan et al. Selected Target Viewpoint Candidate Viewpoints Closed-loop Execution    
+
+> Input RGB-D DINO Features
+> Rendered RGB-D Pose Tracking
+> Gaussian Map State 3DGS Dynamic-aware Edge Cost Habitat Simulator
+> cluster by geometry & motion risk High gain & low risk Low gain & high risk
+> Topological Representation
+> L1 RGB
+> L1 Depth SSIM
+> u n cer
+
+L ren d er L
+
+> Keyframe Poses
+
+Dynamic-aware Gaussian Reconstruction Dynamic-aware Viewpoint Selection Dynamic-constrained Path Planning  
+
+> Uncertainty Network
+
+P 
+
+> Feature Extractor
+
+FG 
+
+> Occupied map Workspace map Obstacle map Motion Uncertainty m
+
+U                      
+
+> Structural Uncertainty sU
+> Uncertainty
+> Subregion Partition
+> local ( ) ( ; )( ; )( )
+> ssrmmc
+> Snn U n U n
+> 
+> IRC
+> Local-Global Scoring
+> ( ) ( ) ( ) mmc e eUe
+> 
+> Avoid high-risk edges
+> Scene
+
+Figure 2: Overview of DynActiveGS. Given RGB-D observations in dynamic environments, DynActiveGS first performs dynamic-aware Gaussian reconstruction by predicting a per-pixel uncertainty map and updating the 3D Gaussian representation through uncertainty-weighted optimization. It then constructs structural uncertainty 𝑈 𝑠 and motion uncertainty 𝑈 𝑚 to guide dynamic-aware viewpoint selection via local-global scoring on a Voronoi graph. Finally, a dynamic-constrained path planner computes stable trajectories using motion-aware edge costs, enabling closed-loop active reconstruction under dynamic disturbances. 
+
+3.3.1 Dynamic-aware subregion partition. Rather than planning over all nodes uniformly, we partition the graph into subregions us-ing agglomerative clustering. To account for dynamic disturbances, the pairwise distance between nodes 𝑛 𝑖 and 𝑛 𝑗 is defined as 
+
+𝑑 dyn (𝑛 𝑖 , 𝑛 𝑗 ) = 𝜆 𝑒 𝑑 𝐸 (𝑛 𝑖 , 𝑛 𝑗 ) + 𝜆 𝑝 𝑑 𝑃 (𝑛 𝑖 , 𝑛 𝑗 ) + 𝜆 𝑚 𝑑 𝑀 (𝑛 𝑖 , 𝑛 𝑗 ), (10) where 𝑑 𝐸 is the Euclidean distance, 𝑑 𝑃 is the graph travel distance, and 𝑑 𝑀 is the accumulated motion risk along the connecting path. This produces a set of subregions {𝑅 𝑘 }, including the current local subregion 𝑅 𝑙 containing the agent. 
+
+3.3.2 Local-global viewpoint selection. We prioritize local explo-ration before switching to global exploration. For each candidate node 𝑛 ∈ 𝑅 𝑙 , we define a local score 
+
+𝑆 local (𝑛 ) = I𝑠 (𝑛 ; 𝑈 𝑠 ) − 𝜆 𝑟 R𝑚 (𝑛 ; 𝑈 𝑚 ) − 𝜆 𝑐 C( 𝑛 ), (11) where C( 𝑛 ) is the travel cost from the current pose to node 𝑛 . The structural utility term is 
+
+I𝑠 (𝑛 ; 𝑈 𝑠 ) =∑︁ 
+
+> x∈Ω
+
+Vis (𝑛, x) 𝑈 𝑠 (x), (12) and the motion risk term is 
+
+R𝑚 (𝑛 ; 𝑈 𝑚 ) =∑︁ 
+
+> x∈Ω
+
+Vis (𝑛, x) 𝑈 𝑚 (x), (13) where Vis (𝑛, x) ∈ [ 0, 1] is a soft visibility score under the current Gaussian map G𝑡 .The best local node is selected iteratively as long as its score re-mains above a threshold. When the local region is either sufficiently explored or becomes unstable due to high motion uncertainty, the planner switches to global selection. For each candidate subregion 
+
+𝑅 𝑘 ≠ 𝑅 𝑙 , we define 
+
+𝑆 global (𝑅 𝑘 ) =∑︁ 
+
+> 𝑛 ∈𝑅 𝑘
+
+ I𝑠 (𝑛 ; 𝑈 𝑠 ) − 𝜆 𝑟 R𝑚 (𝑛 ; 𝑈 𝑚 )
+
+− 𝜆 𝑑 𝑑 (𝑅 𝑙 , 𝑅 𝑘 ) − 𝜆 𝑣 𝑃 visit (𝑅 𝑘 ).
+
+(14) where 𝑑 (𝑅 𝑙 , 𝑅 𝑘 ) is the inter-region travel cost and 𝑃 visit (𝑅 𝑘 ) penal-izes repeatedly visited regions. The region with the highest score is selected as the next exploration target, and a local candidate view action 𝑎 ★ 
+
+> 𝑡
+
+= (p★ 
+
+> 𝑡
+
+, 𝜽 ★ 
+
+> 𝑡
+
+) is chosen around the selected node. 
+
+## 3.4 Dynamic-constrained Path Planning 
+
+After selecting the next target viewpoint, we compute a feasible path that jointly accounts for geometry and dynamic risk. Unlike static planning, the objective here is not simply to minimize travel distance, but also to avoid routes likely to produce unstable or motion-corrupted observations. For each graph edge 𝑒 ∈ E , we define a dynamic-constrained traversal cost 
+
+𝑐 (𝑒 ) = ℓ (𝑒 ) + 𝜆 𝑚 ¯𝑈 𝑚 (𝑒 ), (15) where ℓ (𝑒 ) is the geometric edge length and ¯ 𝑈 𝑚 (𝑒 ) is the average motion uncertainty along the edge. The cost of a path 𝜋 is then 
+
+Cpath (𝜋 ) =∑︁  
+
+> 𝑒 ∈𝜋
+
+𝑐 (𝑒 ). (16) This encourages the robot to favor dynamically stable routes instead of purely shortest paths. DynActiveGS: Active Gaussian Splatting for Dynamic Scene Reconstruction MM ’26, November 10–14, 2026, Rio de Janeiro, Brazil 
+
+To improve temporal robustness, motion uncertainty is accumu-lated over time using an exponential moving average: 
+
+𝑈 (𝑡 ) 
+
+> 𝑚
+
+(x) = (1 − 𝛼 ) 𝑈 (𝑡 −1) 
+
+> 𝑚
+
+(x) + 𝛼 𝛽 𝑡 (x), (17) where 𝛽 𝑡 is the frame-level uncertainty map predicted in Sec. 3.2. As a result, transient disturbances do not dominate planning, while persistently dynamic regions are consistently down-weighted. By combining dynamic-aware viewpoint selection with motion-constrained path planning, DynActiveGS forms a closed-loop active reconstruction system. At each exploration step, the robot updates the Gaussian map and uncertainty fields from the latest RGB-D observation, selects the next informative target, and executes a dynamically stable path toward it. The loop continues until the exploration step budget 𝑆 is exhausted, as summarized in the sup-plementary material Algorithm 1. 
+
+## 4 Experiments 4.1 Experimental Setup 
+
+Simulator and Dynamic Scenes. All experiments are conducted in the Habitat simulator [45]. To evaluate dynamic active recon-struction, we use indoor scenes with runtime human dynamics in two settings. For Matterport3D (MP3D) [4], we adopt the pub-lic Social-MP3D benchmark [12], which augments MP3D scenes with dynamic humans. For Gibson [52], since no public benchmark provides runtime humans for active reconstruction, we construct a reproducible Dynamic Gibson Protocol in Habitat-Sim, follow-ing the human simulation paradigm of HabiCrowd [49]. In both settings, virtual pedestrians are instantiated at runtime with ran-domized start–goal waypoints and simulated using ORCA [48] and UPL++ [19, 49] crowd dynamics. The dynamic humans are not part of the static scene geometry used for reconstruction evalua-tion. We use fixed scene splits, shared human configurations, and standardized random seeds across all compared methods. 
+
+Baselines. We compare DynActiveGS against state-of-the-art ac-tive reconstruction methods, including 3DGS-based approaches (ActiveGAMER [6], ActiveGS [17], ActiveSplat [29]) and neural active mapping methods (NARUTO [11]). Although some baselines employ free-flying 6DoF cameras, we evaluate them using their offi-cial implementations under identical observation budgets. We also include dynamic passive mapping baselines without next-best-view planning. 
+
+Geometric Metrics. We evaluate geometric reconstruction using Accuracy (Acc), Completion (Com), and Completion Ratio (C.R.) with a 5 cm threshold. Metrics are computed by uniformly sampling points from static ground-truth meshes and comparing them with point clouds extracted from reconstructed Gaussian maps. Since dynamic humans are instantiated at runtime and are excluded from the ground-truth meshes, these metrics measure robustness of static scene reconstruction under dynamic disturbances. 
+
+Rendering Metrics. For novel view rendering evaluation, we fol-low the protocol of the baseline ActiveGAMER [6] and use same predefined novel-view trajectories for testing. Specifically, we com-pare the rendered RGB images against static ground-truth render-ings at identical poses, and report PSNR, SSIM, and LPIPS. For depth rendering performance, we additionally use Depth L1 distance as the evaluation metric. 
+
+Table 1: Quantitative comparison on the Social-MP3D dataset for 3D reconstruction and novel view synthesis.                                                                                                                                                        
+
+> Method Metric Gdvg gZ6f HxpK pLe4 YmJk Avg.
+> NARUTO [11] Acc (cm) ↓6.62 5.65 10.87 6.35 13.02 8.50 Com. (cm) ↓7.91 4.26 9.41 5.98 9.73 7.46 C.R. (%) ↑82.46 85.11 83.27 79.42 76.76 81.40 PSNR ↑18.63 18.51 15.46 20.24 16.45 17.86 SSIM ↑0.624 0.548 0.432 0.697 0.386 0.537 LPIPS ↓0.431 0.453 0.561 0.482 0.496 0.485 ActiveSplat [29] Acc (cm) ↓4.64 3.05 5.98 6.74 9.27 5.94 Com. (cm) ↓4.72 3.48 6.75 4.22 5.91 5.02 C.R. (%) ↑88.27 87.16 85.54 86.64 85.22 86.57 PSNR ↑19.65 19.12 21.85 21.57 20.47 20.53 SSIM ↑0.662 0.646 0.788 0.763 0.655 0.703 LPIPS ↓0.516 0.552 0.387 0.423 0.458 0.467 ActiveGAMER [6] Acc (cm) ↓3.71 3.37 3.78 5.43 5.42 4.34 Com. (cm) ↓5.76 3.91 4.11 6.08 6.64 5.30 C.R. (%) ↑92.18 92.74 91.46 88.12 86.35 90.17 PSNR ↑19.76 20.23 22.83 23.07 21.52 21.48 SSIM ↑0.670 0.693 0.816 0.826 0.721 0.745 LPIPS ↓0.445 0.420 0.372 0.425 0.386 0.410
+> Ours
+> Acc (cm) ↓2.54 2.11 3.06 2.62 3.97 2.86
+> Com. (cm) ↓2.87 2.46 3.82 3.02 4.28 3.29
+> C.R. (%) ↑94.41 93.02 95.58 94.77 92.63 94.08
+> PSNR ↑21.36 20.74 26.23 24.98 21.87 23.04
+> SSIM ↑0.722 0.703 0.894 0.862 0.755 0.787
+> LPIPS ↓0.316 0.338 0.185 0.362 0.196 0.279
+
+Implementation Details. We consider a realistic ground mobile robot with a fixed camera height. At each step, the agent executes one discrete navigation action and acquires one posed RGB-D ob-servation along the planned viewpoint. The camera field of view is set to 60 ◦ vertically and 90 ◦ horizontally, and the system processes image sequences online with on-policy planning and incremental reconstruction. Unlike prior works that assume free-flying 6DoF cameras, our embodiment better reflects practical ground robot constraints. All methods are evaluated under an equal observation budget: each method is allowed 1000 exploration steps, and each step produces exactly one RGB-D frame, ensuring identical input image counts across all approaches. 
+
+## 4.2 Comparison Results 
+
+Results on Social-MP3D. As shown in Tab. 1, the advantage of DynActiveGS becomes even more evident on the larger and more heavily occluded Social-MP3D scenes. Under the same observa-tion budget, static-scene baselines suffer substantial performance degradation in complex layouts with frequent human occlusions, whereas our method maintains stable reconstruction quality. 
+
+Results on Dynamic Gibson. Tab. 2 reports the quantitative results on Gibson scenes augmented with our pedestrian injection protocol. Although Gibson has traditionally been used as a static active reconstruction benchmark, introducing dynamic humans leads to frequent occlusions and motion-corrupted observations, which pose significant challenges to next-best-view planning. DynActiveGS consistently outperforms all baselines in both geo-metric and photometric metrics. Compared with the strongest static-scene active reconstruction baseline, our method reduces recon-struction error and improves completion ratio. More importantly, MM ’26, November 10–14, 2026, Rio de Janeiro, Brazil Duan et al. GT OURS ActiveGAMER ActiveSplat NARUTO 
+
+> Coop pLe4 gZ6f Gdvg
+
+Figure 3: Qualitative comparison of 3D reconstruction results on representative scenes from Social-MP3D and Dynamic Gibson. Blue bounding boxes indicate reference areas for easier comparison, while orange ones highlight low-quality reconstruction. Table 2: Quantitative comparison on the Dynamic Gibson for 3D reconstruction and novel view synthesis.           
+
+> Method Metric Beac Coop Denm Elmi Eudo Grei Home Ribe Avg.
+> NARUTO [11] Acc (cm)
+
+↓ 5.42 4.75 4.62 6.31 5.14 5.26 4.58 4.38 5.06 Com. (cm) ↓ 5.72 5.36 5.18 7.02 5.72 5.88 5.12 4.95 5.66 C.R. (%) ↑ 84.38 86.95 87.42 81.64 85.91 84.72 88.62 88.76 86.05 PSNR ↑ 18.94 18.68 17.91 16.85 18.36 16.97 19.31 20.82 18.48 SSIM ↑ 0.691 0.737 0.682 0.659 0.676 0.586 0.687 0.763 0.685 LPIPS ↓ 0.472 0.449 0.468 0.496 0.531 0.488 0.469 0.456 0.479 ActiveSplat [29] Acc (cm) ↓ 5.61 4.52 4.05 4.78 4.18 4.65 3.96 3.87 4.45 Com. (cm) ↓ 6.25 5.03 4.58 5.41 4.72 5.16 4.34 4.26 4.97 C.R. (%) ↑ 84.26 88.37 89.94 86.91 89.18 87.05 90.36 90.82 88.36 PSNR ↑ 22.22 21.05 19.34 20.17 20.88 22.43 21.81 20.72 21.08 SSIM ↑ 0.797 0.833 0.789 0.714 0.761 0.736 0.731 0.782 0.768 LPIPS ↓ 0.323 0.369 0.519 0.445 0.531 0.339 0.456 0.451 0.429 ActiveGAMER [6] Acc (cm) ↓ 5.08 3.72 4.14 4.31 4.08 3.61 3.51 3.42 3.98 Com. (cm) ↓ 5.74 4.28 4.71 4.92 4.56 4.15 3.96 3.88 4.53 C.R. (%) ↑ 87.84 92.03 90.47 90.12 91.35 92.76 93.11 93.48 91.40 PSNR ↑ 23.47 22.11 20.42 21.34 21.96 22.58 23.95 22.08 22.24 SSIM ↑ 0.794 0.832 0.747 0.723 0.756 0.729 0.748 0.785 0.764 LPIPS ↓ 0.338 0.391 0.486 0.414 0.398 0.366 0.409 0.372 0.397 
+
+> Ours
+> Acc (cm)
+
+↓ 2.14 2.31 2.24 2.68 3.52 2.76 3.45 2.03 2.52 
+
+> Com. (cm)
+
+↓ 2.56 2.78 2.71 3.26 3.04 3.35 3.98 2.48 3.02 
+
+> C.R. (%)
+
+↑ 96.18 95.37 95.84 93.86 94.92 93.94 91.75 96.73 94.82 
+
+> PSNR
+
+↑ 25.28 24.34 21.86 23.91 24.18 24.86 25.65 24.62 24.34 
+
+> SSIM
+
+↑ 0.866 0.858 0.811 0.771 0.842 0.835 0.841 0.852 0.835 
+
+> LPIPS
+
+↓ 0.254 0.243 0.339 0.262 0.298 0.286 0.311 0.307 0.288 
+
+the rendering quality is substantially improved, as reflected by higher PSNR and significantly lower LPIPS. These results demonstrate that the proposed motion-aware un-certainty modeling generalizes effectively to active reconstruction in dynamic scenes. While static-scene baselines continue to expand coverage, they cannot filter motion-contaminated observations, often resulting in duplicated structures and texture inconsisten-cies. By contrast, DynActiveGS explicitly disentangles structural uncertainty from motion-induced uncertainty, enabling the agent to avoid high-risk viewpoints and maintain stable map updates. More importantly, this experiment shows that the gains of our method are not tied to a specific dataset. Even when dynamic agents are introduced through an external augmentation protocol rather than being natively embedded in the dataset, our framework still exhibits strong robustness and consistent reconstruction quality. 
+
+Qualitative Comparison. Fig. 3 and Fig. 4 present qualitative comparisons. When humans move across the field of view, static baselines tend to produce duplicated structures and motion streaks. DynActiveGS effectively suppresses these artifacts while preserv-ing consistent geometry and texture fidelity. These observations further validate the benefit of risk-aware planning under dynamic disturbances. These results suggest that the primary limitation of conventional active reconstruction in dynamic environments is not DynActiveGS: Active Gaussian Splatting for Dynamic Scene Reconstruction MM ’26, November 10–14, 2026, Rio de Janeiro, Brazil GT OURS ActiveGAMER ActiveSplat NARUTO Coop pLe4 gZ6f Gdvg 
+
+Figure 4: Novel view synthesis results on representative scenes from Social-MP3D and Dynamic Gibson. The evaluated viewpoints are held-out views that do not appear in the training trajectories of any compared method. Blue bounding boxes indicate reference regions for easier comparison, while orange bounding boxes highlight low-quality renderings. Table 3: Ablation of core components. We progressively enable uncertainty-weighted Gaussian mapping, motion-aware viewpoint selection, and dynamic-constrained planning. Each component brings consistent gains, and the full model achieves the best balance between geometric reconstruction and rendering quality.     
+
+> Variant Weighted Map Motion-aware View Dyn. Planner Acc
+
+↓ Com ↓ C.R. ↑ PSNR ↑ SSIM ↑ LPIPS ↓ L1-D ↓                                        
+
+> Baseline ✗✗✗3.21 3.84 90.62 18.71 0.503 0.505 6.94 + Weighted Mapping ✓✗✗2.98 3.56 91.85 19.83 0.621 0.471 5.12 + Motion-aware View ✓✓✗2.76 3.28 92.93 20.66 0.733 0.409 4.08
+> Full (Ours) ✓✓✓2.24 2.71 95.84 21.86 0.811 0.339 2.92
+
+Table 4: Ablation of motion-aware viewpoint selection.  
+
+> Variant
+
+𝑈 𝑠 𝑈 𝑚 Cost Acc ↓ C.R. ↑ PSNR ↑                        
+
+> Random ✗✗✗3.08 91.24 19.37 Static-Gain ✓✗✗2.81 92.15 20.14 Gain+Cost ✓✗✓2.63 93.08 20.73
+> Ours ✓✓✓2.03 96.73 24.62
+
+insufficient view sampling capacity, but the lack of motion-aware decision-making. 
+
+Reconstruction Progress over Exploration. As shown in Fig. 5, DynActiveGS exhibits the fastest improvement in both rendering quality and reconstruction completeness on the Social-MP3D HxpK 
+
+scene. Compared with NARUTO [11], ActiveSplat [29], and Ac-tiveGAMER [6], our method achieves higher PSNR and completion 
+
+Table 5: Ablation of dynamic-constrained planning.                                                
+
+> Path Ratio Static Hier. + Dyn. Edge Cost Ours
+> Com. ↓C.R. ↑PSNR ↑Com. ↓C.R. ↑PSNR ↑Com. ↓C.R. ↑PSNR ↑
+> 25% 6.12 88.47 18.95 5.86 89.73 19.42 5.54 90.68 20.91
+> 50% 5.36 90.22 19.71 5.08 91.84 20.74 4.28 92.63 21.87
+> 75% 4.25 91.67 20.82 3.96 92.31 21.26 3.61 93.46 22.72
+> 100% 3.89 92.28 21.97 3.66 93.02 22.63 2.96 94.41 24.17
+
+ratio across nearly all exploration stages, further validating the effectiveness of the proposed dynamic-aware active reconstruction pipeline. MM ’26, November 10–14, 2026, Rio de Janeiro, Brazil Duan et al. 
+
+Figure 5: Reconstruction progress on Social-MP3D HxpK . Dy-nActiveGS achieves the fastest improvement in both PSNR and completion ratio throughout the exploration process. Input GT Final   
+
+> Online Before Opt Online After Opt Uncertainty
+
+Figure 6: Rendering quality across reconstruction stages on Dynamic Gibson Denm scene. The proposed uncertainty-aware optimization progressively suppresses dynamic ar-tifacts and improves reconstruction quality from the initial online result to the final refined result. 
+
+## 4.3 Ablation Study 
+
+We conduct ablation studies on representative dynamic scenes from Social-MP3D and Dynamic Gibson to validate the key components of DynActiveGS. Our analysis covers three aspects: (1) core module ablation, (2) motion-aware viewpoint selection, and (3) dynamic-constrained planning. 
+
+Core module ablation. We first evaluate the contribution of the main modules, including uncertainty-weighted Gaussian mapping, motion-aware viewpoint selection, and dynamic-constrained plan-ning, using the Dynamic Gibson Denm scene. As shown in Tab. 3, each component consistently improves both reconstruction and rendering quality. In particular, uncertainty-weighted mapping sup-presses motion-corrupted observations, motion-aware viewpoint selection improves observation quality, and dynamic-constrained planning further enhances exploration efficiency. The full model achieves the best overall performance across all metrics. 
+
+Ablation of motion-aware viewpoint selection. We compare random viewpoint sampling ( Random ), structural-gain-only selec-tion ( Static-Gain ), structural gain with travel cost ( Gain+Cost ), and our full motion-aware formulation ( Ours ) on the Dynamic Gibson 
+
+Ribe scene. Tab. 4 shows that using structural uncertainty alone is insufficient in dynamic scenes, since the agent is often attracted to regions with high gain but low observation reliability. Intro-ducing travel cost improves efficiency, while explicitly modeling motion uncertainty further improves both reconstruction accuracy and rendering fidelity. These results confirm the importance of motion-aware viewpoint utility under human disturbances. 
+
+Ablation of dynamic-constrained planning. We further ana-lyze the planner by comparing a static hierarchical planner ( Static Hier. ), a planner with dynamic edge cost but without temporal ac-cumulation ( + Dyn. Edge Cost ), and our full dynamic-constrained planner ( Ours ). To evaluate long-horizon efficiency, we extend the exploration horizon to 2000 steps on the Social-MP3D YmJk scene and report results at different path ratios in Tab. 5. Hierarchical planning already improves long-horizon exploration over naive shortest-path execution, while dynamic edge cost reduces unstable routes through highly dynamic regions. Temporal accumulation yields the best final performance, suggesting that persistent mo-tion patterns are more informative for planning than instantaneous disturbances. 
+
+Stage-wise rendering analysis. Fig. 6 visualizes reconstruction quality at different stages of the pipeline. The initial online result (Online Before Opt ) still contains strong dynamic artifacts. After uncertainty-guided online optimization ( Online After Opt ), these ar-tifacts are substantially reduced. The final offline refinement further improves consistency and produces the best visual quality. Together with the uncertainty visualization, this result shows that the learned uncertainty map effectively highlights motion-corrupted regions and supports robust Gaussian optimization. Overall, these ablations consistently validate the design of Dyn-ActiveGS. Uncertainty-weighted mapping improves reconstruction robustness, motion-aware viewpoint selection improves observa-tion quality, and dynamic-constrained planning enhances long-horizon exploration efficiency. Together, these components enable robust active reconstruction in dynamic environments. 
+
+## 5 Conclusion and Future Work 
+
+We introduced DynActiveGS , a dynamic-aware active reconstruc-tion framework based on 3D Gaussian Splatting. By disentangling structural and motion-induced uncertainty, and integrating dynamic-aware viewpoint selection with constrained path planning, our method enables robust closed-loop exploration and high-fidelity reconstruction in dynamic environments. Experiments on Social-MP3D and dynamically augmented Gibson scenes demonstrate consistent improvements over existing baselines in reconstruction accuracy, completeness, and rendering quality. 
+
+Limitations. Our evaluation is currently conducted in simulation with controllable human dynamics, while real-world environments may contain more diverse and unpredictable motions. Moreover, the framework is not yet optimized for large-scale multi-floor envi-ronments with complex spatial structures. 
+
+Future Work. Future directions include deployment on real robotic platforms, online motion prediction, and extending dynamic-aware active reconstruction toward 4D scene representations [32] for modeling persistent scene dynamics. DynActiveGS: Active Gaussian Splatting for Dynamic Scene Reconstruction MM ’26, November 10–14, 2026, Rio de Janeiro, Brazil 
+
+## 6 Acknowledgments 
+
+This work was supported by the National Natural Science Founda-tion of China under Grant Nos. 62293545 and U21B6002, in part by the Major Key Project of PCL under Grant Nos. PCL2024A06 and PCL2025A10, and in part by the Shenzhen Science and Technology Program under Grant Nos. RCJC20210706091946001, ZDCY2025090-1104207008, and RCJC20231211085918010. 
+
+## References 
+
+[1] John Aloimonos, Isaac Weiss, and Amit Bandyopadhyay. 1988. Active vision. 
+
+International journal of computer vision 1, 4 (1988), 333–356. [2] Jonathan T Barron, Ben Mildenhall, Dor Verbin, Pratul P Srinivasan, and Peter Hedman. 2022. Mip-nerf 360: Unbounded anti-aliased neural radiance fields. In 
+
+Proceedings of the IEEE/CVF conference on computer vision and pattern recognition .5470–5479. [3] Berta Bescos, José M Fácil, Javier Civera, and José Neira. 2018. DynaSLAM: Track-ing, mapping, and inpainting in dynamic scenes. IEEE robotics and automation letters 3, 4 (2018), 4076–4083. [4] Angel Chang, Angela Dai, Thomas Funkhouser, Maciej Halber, Matthias Niebner, Manolis Savva, Shuran Song, Andy Zeng, and Yinda Zhang. 2018. Matterport3D: Learning from RGB-D data in indoor environments. In 7th IEEE International Conference on 3D Vision, 3DV 2017 . 667–676. [5] Anpei Chen, Zexiang Xu, Andreas Geiger, Jingyi Yu, and Hao Su. 2022. Tensorf: Tensorial radiance fields. In European conference on computer vision . Springer, 333–350. [6] Liyan Chen, Huangying Zhan, Kevin Chen, Xiangyu Xu, Qingan Yan, Changjiang Cai, and Yi Xu. 2025. Activegamer: Active gaussian mapping through efficient rendering. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition . 16486–16497. [7] Shengyong Chen, Youfu Li, and Ngai Ming Kwok. 2011. Active vision in robotic systems: A survey of recent developments. The International Journal of Robotics Research 30, 11 (2011), 1343–1377. [8] Xiao Chen, Quanyi Li, Tai Wang, Tianfan Xue, and Jiangmiao Pang. 2024. Gennbv: Generalizable next-best-view policy for active 3d reconstruction. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition . 16436– 16445. [9] Shin-Fang Chng, Sameera Ramasinghe, Jamie Sherrah, and Simon Lucey. 2022. Gaussian activated neural radiance fields for high fidelity reconstruction and pose estimation. In European Conference on Computer Vision . Springer, 264–280. [10] Angela Dai, Matthias Nießner, Michael Zollhöfer, Shahram Izadi, and Christian Theobalt. 2017. Bundlefusion: Real-time globally consistent 3d reconstruction using on-the-fly surface reintegration. ACM Transactions on Graphics (ToG) 36, 4 (2017), 1. [11] Ziyue Feng, Huangying Zhan, Zheng Chen, Qingan Yan, Xiangyu Xu, Changjiang Cai, Bing Li, Qilun Zhu, and Yi Xu. 2024. Naruto: Neural active reconstruction from uncertain target observations. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition . 21572–21583. [12] Zeying Gong, Tianshuai Hu, Ronghe Qiu, and Junwei Liang. 2025. From cognition to precognition: A future-aware framework for social navigation. In 2025 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 9122–9129. [13] Binbin Huang, Zehao Yu, Anpei Chen, Andreas Geiger, and Shenghua Gao. 2024. 2d gaussian splatting for geometrically accurate radiance fields. In ACM SIGGRAPH 2024 conference papers . 1–11. [14] Stefan Isler, Reza Sabzevari, Jeffrey Delmerico, and Davide Scaramuzza. 2016. An information gain formulation for active volumetric 3D reconstruction. In 2016 IEEE international conference on robotics and automation (ICRA) . IEEE, 3477–3484. [15] Haochen Jiang, Yueming Xu, Kejie Li, Jianfeng Feng, and Li Zhang. 2024. Rodyn-slam: Robust dynamic dense rgb-d slam with neural radiance fields. IEEE Robotics and Automation Letters 9, 9 (2024), 7509–7516. [16] Wen Jiang, Boshu Lei, and Kostas Daniilidis. 2024. Fisherrf: Active view selec-tion and mapping with radiance fields using fisher information. In European Conference on Computer Vision . Springer, 422–440. [17] Liren Jin, Xingguang Zhong, Yue Pan, Jens Behley, Cyrill Stachniss, and Marija Popović. 2025. Activegs: Active scene reconstruction using gaussian splatting. 
+
+IEEE Robotics and Automation Letters (2025). [18] Rui Jin, Yuman Gao, Yingjian Wang, Yuze Wu, Haojian Lu, Chao Xu, and Fei Gao. 2024. Gs-planner: A gaussian-splatting-based planning framework for active high-fidelity reconstruction. In 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 11202–11209. [19] Ioannis Karamouzas, Brian Skinner, and Stephen J Guy. 2014. Universal power law governing pedestrian interactions. Physical review letters 113, 23 (2014), 238701. [20] Nikhil Keetha, Jay Karhade, Krishna Murthy Jatavallabhula, Gengshan Yang, Sebastian Scherer, Deva Ramanan, and Jonathon Luiten. 2024. Splatam: Splat track & map 3d gaussians for dense rgb-d slam. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition . 21357–21366. [21] Bernhard Kerbl, Georgios Kopanas, Thomas Leimkühler, and George Drettakis. 2023. 3D Gaussian splatting for real-time radiance field rendering. ACM Trans. Graph. 42, 4 (2023), 139–1. [22] Andreas Kirsch, Joost Van Amersfoort, and Yarin Gal. 2019. Batchbald: Efficient and diverse batch acquisition for deep bayesian active learning. Advances in neural information processing systems 32 (2019). [23] Zijia Kuang, Zike Yan, Hao Zhao, Guyue Zhou, and Hongbin Zha. 2024. Active neural mapping at scale. In 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 7152–7159. [24] Jonas Kulhanek, Songyou Peng, Zuzana Kukelova, Marc Pollefeys, and Torsten Sattler. 2024. WildGaussians: 3D Gaussian Splatting In the Wild. Advances in Neural Information Processing Systems 37 (2024), 21271–21288. [25] Soomin Lee, Le Chen, Jiahao Wang, Alexander Liniger, Suryansh Kumar, and Fisher Yu. 2022. Uncertainty guided policy for active robotic 3d reconstruction using neural radiance fields. IEEE Robotics and Automation Letters 7, 4 (2022), 12070–12077. [26] Kejie Li, Yansong Tang, Victor Adrian Prisacariu, and Philip HS Torr. 2022. Bnv-fusion: Dense 3d reconstruction using bi-level neural volume fusion. In Pro-ceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition .6166–6175. [27] Moyang Li, Zihan Zhu, Marc Pollefeys, and Daniel Barath. 2026. DROID-SLAM in the Wild. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) .[28] Shiyao Li, Antoine Guédon, Clémentin Boittiaux, Shizhe Chen, and Vincent Lepetit. 2025. NextBestPath: Efficient 3D Mapping of Unseen Environments. In 
+
+ICLR 2025-Thirteenth International Conference on Learning Representations .[29] Yuetao Li, Zijia Kuang, Ting Li, Qun Hao, Zike Yan, Guyue Zhou, and Shaohui Zhang. 2025. ActiveSplat: High-Fidelity Scene Reconstruction through Active Gaussian Splatting. IEEE Robotics and Automation Letters 10, 8 (Aug. 2025), 8099–8106. arXiv:2410.21955 [cs]. doi:10.1109/LRA.2025.3580331 [30] Yan Li, Yingzhao Li, and Gim Hee Lee. 2025. Active3D: Active High-Fidelity 3D Reconstruction via Hierarchical Uncertainty Quantification. arXiv:2511.20050 [cs]. doi:10.48550/arXiv.2511.20050 [31] Yanyan Li, Chenyu Lyu, Yan Di, Guangyao Zhai, Gim Hee Lee, and Federico Tombari. 2024. Geogaussian: Geometry-aware gaussian splatting for scene ren-dering. In European conference on computer vision . Springer, 441–457. [32] Chenguo Lin, Yuchen Lin, Panwang Pan, Yifan Yu, Tao Hu, Honglei Yan, Katerina Fragkiadaki, and Yadong Mu. 2026. MoVieS: Motion-Aware 4D Dynamic View Synthesis in One Second. In Proceedings of the Computer Vision and Pattern Recognition Conference (CVPR) .[33] Jiachen Liu, Pan Ji, Nitin Bansal, Changjiang Cai, Qingan Yan, Xiaolei Huang, and Yi Xu. 2022. Planemvs: 3d plane reconstruction from multi-view stereo. In 
+
+Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition .8665–8675. [34] Ben Mildenhall, Pratul P Srinivasan, Matthew Tancik, Jonathan T Barron, Ravi Ramamoorthi, and Ren Ng. 2021. Nerf: Representing scenes as neural radiance fields for view synthesis. Commun. ACM 65, 1 (2021), 99–106. [35] Richard A Newcombe, Shahram Izadi, Otmar Hilliges, David Molyneaux, David Kim, Andrew J Davison, Pushmeet Kohi, Jamie Shotton, Steve Hodges, and Andrew Fitzgibbon. 2011. Kinectfusion: Real-time dense surface mapping and tracking. In 2011 10th IEEE international symposium on mixed and augmented reality . Ieee, 127–136. [36] Maxime Oquab, Timothée Darcet, Théo Moutakanni, Huy Vo, Marc Szafraniec, Vasil Khalidov, Pierre Fernandez, Daniel Haziza, Francisco Massa, Alaaeldin El-Nouby, et al. 2023. Dinov2: Learning robust visual features without supervision. 
+
+arXiv preprint arXiv:2304.07193 (2023). [37] Emanuele Palazzolo, Jens Behley, Philipp Lottes, Philippe Giguere, and Cyrill Stachniss. 2019. ReFusion: 3D reconstruction in dynamic environments for RGB-D cameras exploiting residuals. In 2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 7855–7862. [38] Xuran Pan, Zihang Lai, Shiji Song, and Gao Huang. 2022. Activenerf: Learning where to see with uncertainty estimation. In European Conference on Computer Vision . Springer, 230–246. [39] Daryl Peralta, Joel Casimiro, Aldrin Michael Nilles, Justine Aletta Aguilar, Rowel Atienza, and Rhandley Cajote. 2020. Next-best view policy for 3d reconstruction. In European Conference on Computer Vision . Springer, 558–573. [40] Richard Pito. 2002. A solution to the next best view problem for automated surface acquisition. IEEE Transactions on pattern analysis and machine intelligence 21, 10 (2002), 1016–1030. [41] Konstantinos D. Polyzos, Athanasios Bacharis, Saketh Madhuvarasu, Nikos Pa-panikolopoulos, and Tara Javidi. 2025. ActiveInitSplat: How Active Image Selec-tion Helps Gaussian Splatting. arXiv:2503.06859 [cs]. doi:10.48550/arXiv.2503. 06859 [42] Yunlong Ran, Jing Zeng, Shibo He, Jiming Chen, Lincheng Li, Yingfeng Chen, Gimhee Lee, and Qi Ye. 2023. Neurar: Neural uncertainty for autonomous 3d reconstruction with implicit neural representations. IEEE Robotics and Automation MM ’26, November 10–14, 2026, Rio de Janeiro, Brazil Duan et al. 
+
+Letters 8, 2 (2023), 1125–1132. [43] Weining Ren, Zihan Zhu, Boyang Sun, Jiaqi Chen, Marc Pollefeys, and Songyou Peng. 2024. Nerf on-the-go: Exploiting uncertainty for distractor-free nerfs in the wild. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition . 8931–8940. [44] Erik Sandström, Ganlin Zhang, Keisuke Tateno, Michael Oechsle, Michael Niemeyer, Youmin Zhang, Manthan Patel, Luc Van Gool, Martin Oswald, and Federico Tombari. 2025. Splat-slam: Globally optimized rgb-only slam with 3d gaussians. In Proceedings of the Computer Vision and Pattern Recognition Confer-ence . 1680–1691. [45] Manolis Savva, Abhishek Kadian, Oleksandr Maksymets, Yili Zhao, Erik Wijmans, Bhavana Jain, Julian Straub, Jia Liu, Vladlen Koltun, Jitendra Malik, et al. 2019. Habitat: A platform for embodied ai research. In Proceedings of the IEEE/CVF international conference on computer vision . 9339–9347. [46] Johannes L Schonberger and Jan-Michael Frahm. 2016. Structure-from-motion revisited. In Proceedings of the IEEE conference on computer vision and pattern recognition . 4104–4113. [47] Oriane Siméoni, Huy V Vo, Maximilian Seitzer, Federico Baldassarre, Maxime Oquab, Cijo Jose, Vasil Khalidov, Marc Szafraniec, Seungeun Yi, Michaël Rama-monjisoa, et al. 2025. Dinov3. arXiv preprint arXiv:2508.10104 (2025). [48] Jur Van Den Berg, Stephen J Guy, Ming Lin, and Dinesh Manocha. 2011. Reciprocal n-body collision avoidance. In Robotics research: the 14th international symposium ISRR . Springer, 3–19. [49] An Vuong, Toan Nguyen, Minh Nhat Vu, Baoru Huang, Huynh Thi Thanh Binh, Thieu Vo, and Anh Nguyen. 2024. Habicrowd: A high performance simulator for crowd-aware visual navigation. In 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 5821–5827. [50] Thomas Whelan, Stefan Leutenegger, Renato F Salas-Moreno, Ben Glocker, and Andrew J Davison. 2015. ElasticFusion: Dense SLAM without a pose graph.. In 
+
+Robotics: science and systems , Vol. 11. Rome, Italy. [51] Pengying Wu, Yao Mu, Bingxian Wu, Yi Hou, Ji Ma, Shanghang Zhang, and Chang Liu. 2024. VoroNav: Voronoi-based Zero-shot Object Navigation with Large Language Model. In International Conference on Machine Learning . PMLR, 53757–53775. [52] Fei Xia, Amir R Zamir, Zhiyang He, Alexander Sax, Jitendra Malik, and Silvio Savarese. 2018. Gibson env: Real-world perception for embodied agents. In 
+
+Proceedings of the IEEE conference on computer vision and pattern recognition .9068–9079. [53] Yuhan Xie, Yixi Cai, Yinqiang Zhang, Lei Yang, and Jia Pan. 2025. GauSS-MI: Gaussian Splatting Shannon Mutual Information for Active 3D Reconstruction. In Proceedings of Robotics: Science and Systems . LosAngeles, CA, USA. doi:10. 15607/RSS.2025.XXI.030 [54] Yueming Xu, Haochen Jiang, Zhongyang Xiao, Jianfeng Feng, and Li Zhang. 2024. Dg-slam: Robust dynamic gaussian splatting slam with hybrid pose optimization. 
+
+Advances in Neural Information Processing Systems 37 (2024), 51577–51596. [55] Zijun Xu, Rui Jin, Ke Wu, Yi Zhao, Zhiwei Zhang, Jieru Zhao, Fei Gao, Zhongxue Gan, and Wenchao Ding. 2025. HGS-Planner: Hierarchical Planning Framework for Active Scene Reconstruction Using 3D Gaussian Splatting. In 2025 IEEE International Conference on Robotics and Automation (ICRA) . 14161–14167. doi:10. 1109/ICRA55743.2025.11127649 [56] Zike Yan, Haoxiang Yang, and Hongbin Zha. 2023. Active Neural Mapping. In 
+
+2023 IEEE/CVF International Conference on Computer Vision (ICCV) . IEEE, Paris, France, 10947–10958. doi:10.1109/ICCV51070.2023.01008 [57] Zehao Yu, Anpei Chen, Binbin Huang, Torsten Sattler, and Andreas Geiger. 2024. Mip-splatting: Alias-free 3d gaussian splatting. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition . 19447–19456. [58] Zhengquan Zhang, Feng Xu, and Mengmi Zhang. 2025. Peering into the Unknown: Active View Selection with Neural Uncertainty Maps for 3D Reconstruction. arXiv preprint arXiv:2506.14856 (2025). [59] Jianhao Zheng, Zihan Zhu, Valentin Bieri, Marc Pollefeys, Songyou Peng, and Iro Armeni. 2025. Wildgs-slam: Monocular gaussian splatting slam in dynamic environments. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition . 11461–11471. [60] Zihan Zhu, Wei Zhang, Norbert Haala, Marc Pollefeys, and Daniel Barath. 2025. VIGS-SLAM: Visual Inertial Gaussian Splatting SLAM. arXiv:2512.02293 [cs]. doi:10.48550/arXiv.2512.02293

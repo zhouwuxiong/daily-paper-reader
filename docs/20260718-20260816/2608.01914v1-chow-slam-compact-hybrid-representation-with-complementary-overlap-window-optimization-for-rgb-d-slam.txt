@@ -1,0 +1,518 @@
+Title: CHOW-SLAM: Compact Hybrid Representation with Complementary Overlap Window Optimization for RGB-D SLAM
+
+URL Source: https://arxiv.org/pdf/2608.01914v1
+
+Published Time: Tue, 04 Aug 2026 02:34:19 GMT
+
+Number of Pages: 33
+
+Markdown Content:
+# CHOW-SLAM: Compact Hybrid Representation with Complementary Overlap Window Optimization for RGB-D SLAM 
+
+Wenxuan Ji a, Jin Xiao a, ∗, Xiaoguang Hu a, Jiaqi Shi a, Zichong Jia a, Baochang Zhang a
+
+> aSchool of Automation Science and Electrical Engineering, Beihang University, Beijing, 100191, China
+
+Abstract 
+
+Simultaneous localization and mapping (SLAM) based on Neural Radiance Fields (NeRF) enables dense, continuous scene reconstruction. However, existing systems operating with limited online resources struggle to simultaneously construct two types of constraints, namely, compact yet discriminative spatial constraints derived from scene representations and persistent temporal constraints derived from historical ob-servations. To address this challenge, we propose CHOW-SLAM, a dense RGB-D SLAM framework that explicitly constructs these complementary spatial and tempo-ral constraints. Spatially, we propose a compact parametric–hash (P-H) hybrid rep-resentation that organizes components based on planes and grids across scales in P and H branches. A unified multi-output decoder further aligns the ray termination distributions induced by TSDF and density, preserving geometry and appearance un-der a compact parameter budget. Temporally, we propose a complementary overlap-window strategy to prevent optimization from being dominated by short-term overlap or weakly related historical observations. Within a fixed budget, the strategy retains recent frames, selects high-overlap local frames, and introduces temporally distributed historical keyframes. Loss-aware keyframe insertion and bundle adjustment schedul-ing further adapt optimization to tracking quality. In addition, ORB-based tracking and geometric pose estimation are used for pose initialization, followed by neural         
+
+> ∗Corresponding author.
+> E-mail addresses: jiwenxuan@buaa.edu.cn (W. Ji), xiaojin@buaa.edu.cn (J. Xiao), xi-aoguang@buaa.edu.cn (X. Hu), jiazichong@buaa.edu.cn (Z. Jia), shijiaqi@buaa.edu.cn (J. Shi), bczhang@buaa.edu.cn (B. Zhang). arXiv:2608.01914v1 [cs.CV] 3 Aug 2026
+
+rendering optimization to improve tracking stability. Extensive evaluations on multi-ple datasets demonstrate that CHOW-SLAM outperforms state-of-the-art methods in both scene reconstruction quality and camera tracking accuracy. The source code is available at https://github.com/jinjidexiaohuoban/CHOW-SLAM .
+
+Keywords: NeRF-based SLAM, Scene representation, Overlap window optimization 
+
+1. Introduction 
+
+Visual simultaneous localization and mapping (SLAM) is a fundamental problem in computer vision and robotics, enabling robotic navigation and providing spatial per-ception for embodied intelligent applications such as vision-language navigation [1, 2]. Over the past decades, traditional visual SLAM frameworks achieve high local-ization accuracy through hand-crafted geometric methods [3–7], while learning-based approaches further improve pose-estimation robustness by incorporating learned ge-ometric and semantic priors [8–11]. However, sparse or semi-dense maps are insuf-ficient for embodied agents, which need not only to localize themselves but also to perceive scene geometry and reason about spatial relationships. The emergence of Neural Radiance Fields (NeRF) provides a continuous and di ff erentiable representa-tion for dense scene modeling [12], and recent radiance-field studies [13] further show its potential for e ffi cient feed-forward reconstruction from sparse observations. Despite these advances, a fundamental challenge remains in NeRF-centric RGB-D SLAM: under a limited online optimization budget, the system must construct suf-ficiently compact, discriminative, and persistent constraints for continual pose–map optimization. Such constraints are determined by two coupled factors: how the scene is represented in 3D space, and which historical observations are selected to reinforce the neural map over time. The former, corresponding to the representation level, deter-mines whether each sampled ray can provide reliable geometric and appearance cues, whereas the latter, corresponding to the observation level, determines whether these cues can be consistently accumulated across local and historical views. Although recent methods have made progress in both representation design and keyframe selec-tion, it remains challenging to simultaneously achieve compact modeling, fine-grained 2reconstruction, and long-term consistency in continual online optimization. At the representation level, recent NeRF-based SLAM methods have explored various scene representations [14–17]. Among them, hash encodings and feature tri-planes are two representative forms of spatial constraints due to their e ffi cient fea-ture querying and dense mapping capability. Hash encodings store multi-resolution features in compact tables and e ffi ciently capture high-frequency details, as adopted by Co-SLAM [18], EC-SLAM [19], and QQ-SLAM [20]; however, hash collisions may introduce ambiguous constraints and reconstruction artifacts. Feature tri-planes instead decompose 3D features onto orthogonal planes, providing structured spatial support and improving surface completeness in systems such as ESLAM [15] and PLGSLAM [21], but their fine-grained 3D discriminability is limited under a compact parameter budget. Although HS-SLAM [22] combines hash grids and tri-planes to exploit their complementary advantages, stacking complete encodings increases pa-rameter redundancy. Therefore, the key issue is not simply to combine encodings, but to organize hash and plane features as scale-aware and complementary components, to construct compact, discriminative, and artifact-resistant spatial constraints. At the observation level, a compact representation can only benefit SLAM if on-line optimization is driven by e ff ective and persistent historical constraints. Early neural SLAM systems prioritize informative observations using mapping loss, as in iMAP [23], or information-guided sampling, as in iSDF [24]. Although these strate-gies improve local optimization e ffi ciency, they may overemphasize di ffi cult views and provide limited long-term supervision. Later NeRF-centric SLAM methods in-corporate historical observations through overlap-based or global keyframe sampling. Overlap-based selection strengthens local geometric constraints but may reduce tem-poral diversity, as in NICE-SLAM [14], whereas global sampling covers a broader keyframe set but may introduce weakly related constraints, as in Co-SLAM [18]. Therefore, the key challenge is not to include more historical frames, but to construct complementary temporal constraints that jointly preserve recent pose continuity, local geometric consistency, and long-term map stability. Accordingly, we present CHOW-SLAM, a NeRF-based dense RGB-D SLAM framework that constructs compact spatial constraints through scene representation 3Fig. 1 : Qualitative comparison on Replica [25] o ffi ce0 and ScanNet [26] scene0207. Blue and red curves denote ground-truth and estimated trajectories. Our method achieves more complete reconstruction and more accurate tracking than NICE-SLAM [14], Co-SLAM [18], and QQ-SLAM [20]. The enlarged views further show that our method produces more faithful color rendering. 
+
+and persistent temporal constraints through online optimization. (1) For compact spa-tial constraint construction, we propose a parametric–hash (P-H) hybrid representa-tion, which organizes the parametric P branch and the hybrid hash H branch into scale-aware and functionally complementary components. The P branch provides structured spatial support through explicit coarse grids and fine planes, while the H branch captures multi-scale details through coarse hash planes and a fine hash grid. These two branches are integrated through a unified multi-output decoder, which per-forms self-supervision by aligning the ray termination distributions derived from the truncated signed distance field (TSDF) and density field, thereby preserving detailed geometry and appearance under a compact parameter budget. (2) For persistent temporal constraint selection, we further propose a comple-mentary overlap-window optimization strategy. Instead of relying on a single source of historical observations, the optimization window considers recent frames, high-overlap local frames, and historical keyframes. These observations respectively pre-serve short-term pose continuity, provide strong local geometric constraints, and main-tain long-term supervision against map forgetting and accumulated drift. Together with loss-aware keyframe insertion and bundle adjustment (BA) scheduling, this strat-egy strengthens neural map constraints and improves online pose–map optimization. In addition, (3) NeRF-SLAM commonly formulates camera tracking as image 4alignment and photometric bundle adjustment, which is sensitive to initialization be-cause of its narrow convergence basin and lack of explicit correspondences [27]. To improve pose initialization, we exploit ORB-based tracking and geometric pose esti-mation from classical visual SLAM [28], and further refine the initialized pose through neural rendering optimization. Fig. 1 presents qualitative comparisons of reconstruction quality and trajectory tracking. In addition to achieving more complete geometry, CHOW-SLAM produces more faithful color rendering, as highlighted by the zoomed-in regions. Extensive evaluations on multiple benchmark datasets further demonstrate its e ff ectiveness in both dense reconstruction and camera tracking. The main contributions of this paper are summarized as follows: 
+
+• CHOW-SLAM framework. We propose CHOW-SLAM, a reliable NeRF-based dense RGB-D SLAM system that jointly exploits compact neural map-ping, overlap-aware optimization, and classical pose initialization. Extensive experiments demonstrate its e ff ectiveness and robustness in dense reconstruc-tion and camera tracking. 
+
+• Compact P-H Hybrid Representation. We introduce a compact parametric– hash (P-H) hybrid representation module that organizes the parametric P branch and the hybrid hash H branch into scale-aware and complementary compo-nents. In addition, a unified multi-output decoder aligns the TSDF-derived and density-derived ray termination distributions, enabling detailed scene re-construction under a compact parameter budget. 
+
+• Complementary Overlap Window Optimization. We propose a complemen-tary overlap-window optimization strategy with loss-aware keyframe insertion and BA scheduling, which strengthens neural map constraints and improves the stability of online pose-map optimization. 
+
+• Two-stage Neural Tracking. We introduce a two-stage tracking scheme that uses ORB-based tracking and geometric pose estimation for lightweight pose initialization, followed by neural rendering refinement to improve stability. 52. Related Work 
+
+2.1. Traditional VSLAM Frameworks 
+
+Traditional visual SLAM methods mainly rely on feature correspondences and geometric optimization for camera tracking and map construction. Early sparse sys-tems such as MonoSLAM [29] demonstrated real-time monocular SLAM, and ORB-SLAM2 [28] and ORB-SLAM3 [3] further improved robustness through feature-based tracking, local mapping, loop closure, and bundle adjustment. However, sparse landmark maps are insu ffi cient for dense scene understanding and geometric recon-struction. To obtain richer geometry, DTAM [30] introduced direct photometric opti-mization for semi-dense reconstruction, while Kintinuous [31] extended RGB-D fu-sion to large-scale dense mapping. Subsequent systems such as ElasticFusion [32] and BAD-SLAM [33] further improved dense mapping robustness and global consis-tency. Recent learning-enhanced VSLAM methods incorporate semantic segmenta-tion, dynamic-object filtering, and multimodal scene reasoning into traditional SLAM pipelines, as represented by Blitz-SLAM [10], SLAM2 [6], and DMSAA-SLAM [11]. Overall, traditional VSLAM provides e ffi cient feature matching and geometric pose estimation, but remains limited in continuous dense representation and appearance-aware mapping. Therefore, our system uses ORB-based tracking for lightweight pose initialization and refines the pose through neural rendering optimization. 
+
+2.2. NeRF-centric VSLAM Frameworks 
+
+Although NeRF-centric SLAM usually has lower tracking accuracy than tradi-tional VSLAM, it provides continuous and di ff erentiable dense scene representations with appearance modeling capability. iMAP [23] first achieved online joint optimiza-tion of an MLP scene representation and camera poses, but its single-MLP architecture limits scalability. NICE-SLAM [14] addresses this limitation with hierarchical fea-ture grids, Vox-Fusion [34] improves scalability with voxel-based implicit fusion, and Point-SLAM [17] adopts neural points for flexible local mapping. ESLAM [15] and Co-SLAM [18] further promote e ffi cient scene representation by exploring feature tri-planes and sparse hash encodings, respectively. For hash-based representations, 6EC-SLAM [19] introduces constrained TSDF hash encoding and joint optimization, while QQ-SLAM [20] improves compactness through query quantization. For tri-plane representations, PLGSLAM [21] adopts local tri-planes and local-to-global bun-dle adjustment (BA) for large-scale indoor scenes, while LRSLAM [35] uses low-rank tensor decomposition to alleviate the memory growth of plane-based representations. HS-SLAM [22] combines hash grids and tri-planes to exploit their complementary advantages. Despite these advances, existing NeRF-based VSLAM methods still face challenges in constructing compact, discriminative, and persistent constraints under limited online optimization budgets. Di ff erent from the above systems, our system constructs complementary con-straints from representation and observation perspectives. At the representation level, we introduce a compact P-H hybrid representation that combines coarse hash planes, a fine hash grid, coarse explicit grids, and fine feature planes through scale-aware com-plementary branches. At the observation level, we adopt a complementary overlap-window optimization strategy with loss-aware keyframe insertion and BA scheduling, which balances recent frames, high-overlap local frames, and historical keyframes for robust online pose–map optimization. These designs highlight the capability of our system in compact dense representation and robust online optimization. 
+
+2.3. 3DGS-centric Visual SLAM Frameworks 
+
+3D Gaussian Splatting (3DGS) [36] has recently become an e ffi cient explicit rep-resentation for photorealistic rendering, motivating its use in VSLAM for dense map-ping and view synthesis. Photo-SLAM [37] and RTG-SLAM [38] exploit classical tracking frameworks such as ORB-SLAM to provide reliable pose estimation, while optimizing Gaussian maps for photorealistic reconstruction. In contrast, SplaTAM [39] and MonoGS [40] directly optimize 3D Gaussian primitives for tracking and map-ping from RGB-D or monocular inputs. Recent systems further improve 3DGS-based SLAM, where GS-SLAM [41] introduces adaptive Gaussian expansion and coarse-to-fine tracking, and RGD-SLAM [42] improves robustness in dynamic environments. However, 3DGS-centric VSLAM systems still require careful Gaussian management during online optimization, which may a ff ect surface accuracy, increase runtime and 7Fig. 2 : Overview of CHOW-SLAM. (1) Tracking process: CHOW-SLAM first performs ORB-based track-ing to obtain an e ffi cient pose initialization, followed by iterative neural tracking optimization. (2) Mapping process: the mapping thread is activated every m frames or when the loss-triggered condition is satisfied, and jointly optimizes the neural scene representation and poses through bundle adjustment. (3) Scene rep-resentation: the whole scene is modeled by a Compact P-H Hybrid Representation, which consists of H branch and P branch. Two lightweight MLPs in the reconstruction and rendering branches map spatial features to the TSDF si, volume density σi, and color ci. Lc, Ld , Lsd f , and Ls denote the color loss, depth loss, TSDF loss, and self-supervised consistency loss, respectively. (4) Frame manager: the frame manager uses the tracking loss to determine keyframe insertion and construct the complementary sliding window. 
+
+memory costs, and hinder deployment in real-time robotic applications. 
+
+3. Method 
+
+Given a sequence of RGB-D frames {Ii, Di}Mi=1 with known camera intrinsics K ∈
+
+R3×3, our goal is to estimate the camera poses {Ri|ti}Mi=1 and a composite implicit scene representation Fτ. The representation jointly models color c, truncated signed distance 
+
+s, and volume density σ, where the predicted TSDF field can be further used to extract a 3D mesh through marching cubes. As shown in Fig. 2, CHOW-SLAM consists of two parallel processes, including a tracking process and a mapping process, which share the same neural scene representation. At system initialization, the global map is initialized by performing multiple mapping iterations on the first frame. For scene representation, we introduce a Compact P-H Hybrid Representation (Sec. 3.1) to construct compact yet detailed spatial constraints, and design a Multi-8output Representation Architecture (Sec. 3.2) to jointly predict geometry, density, and color with self-supervised distribution alignment. Sec. 3.3 describes the volume rendering process, which converts the predicted scene attributes into rendered color, depth, and SDF observations. For mapping, we propose a Complementary Overlap Window Optimization strategy (Sec. 3.4) to select recent, high-overlap local, and his-torical keyframes for persistent temporal constraints. For tracking, we design a Two-stage Neural Tracking scheme (Sec. 3.5) to improve pose initialization and tracking stability. Finally, Sec. 3.6 defines the overall objective functions for joint map and pose optimization. 
+
+3.1. Compact P-H Hybrid Representation 
+
+Although HS-SLAM [22] combines hash grids and tri-planes to exploit their com-plementary advantages, directly stacking multiple encodings inevitably increases the number of trainable parameters. MHED-SLAM [43] shows that coarse hash planes and a fine hash grid can be combined to balance compactness and detail preserva-tion. This insight naturally raises a further question: whether parametric plane-based representations can also be organized in a scale-aware manner to reduce redundancy while preserving structured spatial constraints. To this end, we introduce a compact parametric–hash (P-H) hybrid representation, where the P branch is derived from the scale-aware design insight in [43] and instantiated as a coarse-grid and fine-plane parametric structure, while the H branch adopts the coarse-plane and fine-grid hash architecture in [43]. In this hybrid design, the P branch provides structured and com-plementary spatial support to improve representation completeness, the H branch cap-tures fine geometric details with compact multi-scale encoding, and the one-blob en-coding serves as a coordinate embedding for low-frequency information [18]. To-gether, these components construct compact yet complementary spatial constraints for detailed neural scene representation. For the parametric P branch, as illustrated in Fig. 3, we adopt a coarse-grid and fine-plane design to provide explicit spatial support for geometry and appearance. At the coarse level, the spatial resolution is low, so explicit 3D grids can preserve global structural information with a manageable parameter budget. At the fine level, directly 9Fig. 3 : Illustration of the parametric P branch. The coarse representation uses an explicit 3D grid queried by weighted trilinear interpolation to provide structured spatial support, while the fine representation uses three orthogonal feature planes queried by bilinear interpolation to e ffi ciently obtain fine-level features. 
+
+using high-resolution 3D grids would cause cubic parameter growth, whereas three orthogonal feature planes enable high-resolution feature querying with much lower memory cost. Therefore, we use coarse explicit 3D grids to maintain structured spatial constraints and fine feature planes to e ffi ciently capture local details. For a sampled 3D point xi = (xi, yi, zi), the geometry feature of the P branch is formulated as 
+
+Pgc (xi) = Ggc (xi),
+
+Pgf (xi) = Pgxy , f (xi) + Pgxz , f (xi) + Pgyz , f (xi),
+
+Pg(xi) = Concat  Pgc (xi), Pgf (xi).
+
+(1) Similarly, the appearance feature is defined as 
+
+Pac (xi) = Gac (xi),
+
+Paf (xi) = Paxy , f (xi) + Paxz , f (xi) + Payz , f (xi),
+
+Pa(xi) = Concat  Pac (xi), Paf (xi).
+
+(2) where Ggc and Gac denote the coarse explicit 3D grids for geometry and appearance, respectively, which are queried by trilinear interpolation. Pgxy , f , Pgxz , f , and Pgyz , f de-note the fine geometry feature planes on the xy , xz , and yz planes, while Paxy , f , Paxz , f ,and Payz , f denote the corresponding fine appearance feature planes. These fine feature planes are queried by bilinear interpolation. The coarse and fine features are concate-nated to form the final geometry feature Pg(xi) and appearance feature Pa(xi) of the P branch. For the hybrid hash H branch, due to the finite-capacity nature of hash encoding, 10 using three hash planes at high-resolution levels would duplicate the hash tables over three projections and increase the number of parameters compared with a single 3D hash grid at the same level. Therefore, we adopt coarse 2D hash planes and a fine 3D hash grid in the H branch. The coarse 2D hash planes reduce coarse-scale hash collisions, while the fine 3D hash grid preserves local detail representation and avoids the parameter growth caused by three high-resolution hash planes. For a sampled 3D point xi = (xi, yi, zi), the H-branch feature is defined as 
+
+Hc(xi) = Concat Ecyz (yi, zi), Ecxz (xi, zi), Ecxy (xi, yi) ,
+
+H f (xi) = E fxyz (xi, yi, zi),
+
+H(xi) = Concat Hc(xi), H f (xi) .
+
+(3) where Ecyz , Ecxz , and Ecxy denote the coarse 2D hash planes queried by bilinear inter-polation, while E fxyz denotes the fine 3D hash grid queried by trilinear interpolation. The coarse and fine hash features are concatenated to form the final H-branch feature 
+
+H(xi). 
+
+3.2. Multi-output Representation Architecture 
+
+Existing NeRF-centric SLAM systems often rely on TSDF-based rendering for fast convergence, while density-based rendering provides another way to describe ray termination. To further integrate geometry and rendering constraints within the com-pact P-H representation without introducing additional networks, we design a com-pact multi-output representation architecture inspired by [44]. The unified decoder directly predicts TSDF, volume density, and color from the shared P-H hybrid fea-tures, enabling the TSDF-derived and density-derived ray termination distributions to be explicitly measured and aligned through the SKL loss in Sec. 3.6. Using the features defined in Sec. 3.1, we construct the geometry input by concate-nating the geometry feature Pg(xi), the hash feature H(xi), and the one-blob coordinate embedding γ(xi). The geometry decoder ftsdf predicts the TSDF value si and a latent geometry code gi:
+
+zgi = Concat ( Pg(xi), H(xi), γ (xi)) ,
+
+ftsdf (zgi ) → (si, gi).
+
+(4) 11 For density and color prediction, we concatenate the appearance feature Pa(xi), the one-blob embedding γ(xi), and the latent geometry code gi. The density-color decoder 
+
+fσc predicts the volume density σi and color ci:
+
+zai = Concat ( Pa(xi), γ (xi), gi) ,
+
+fσc(zai ) → (σi, ci).
+
+(5) In Eq. (4) and Eq. (5), si is used for surface reconstruction, while σi and ci for vol-ume rendering. The latent code gi transfers geometry information from the TSDF branch to the density-color branch. In addition, the TSDF-density self-supervision is implemented by aligning their ray termination distributions, as detailed in Sec. 3.6. 
+
+3.3. Volume Rendering 
+
+Following NeRF-style di ff erentiable rendering, we define a ray as x(z) = o + zr,where o is the camera center, r is the ray direction, and z denotes the sampled depth. We adopt a surface-aware sampling strategy, where N points are stratified along each ray and additional samples are uniformly drawn around the observed depth. For all sampled points, the multi-output representation architecture predicts the TSDF value 
+
+si and color ci. Then, a TSDF-based neural rendering function converts si into the opacity value used for volume accumulation: 
+
+σ(si) = (1 /β ) Sigmoid( −si/β ), (6) where β is a learnable parameter that controls the sharpness of the surface bound-ary. Based on the opacity values, the rendering weight of the i-th sampled point is computed as 
+
+wi = Ti
+
+ 1 − exp( −σ(si)δi) , Ti = exp 
+
+−
+
+> i−1
+
+X
+
+> j=1
+
+σ(s j)δ j
+
+ . (7) where δi = zi+1 − zi denotes the distance interval between adjacent samples. The rendered color and depth are obtained by weighted accumulation: ˆC =
+
+> N
+
+X
+
+> i=1
+
+wici, ˆD =
+
+> N
+
+X
+
+> i=1
+
+wizi. (8) 12 3.4. Complementary Overlap Window Optimization 3.4.1. Sliding-window Selection Strategy 
+
+At the observation level, reuse of historical observations is essential for exploiting a compact scene representation. Existing NeRF-based SLAM systems [14, 18, 21] rely on overlap-based local selection, random historical sampling, or global keyframe sampling. However, overlap-dominated windows may lack historical diversity, whereas weakly related historical frames may interfere with local geometric optimization. We therefore construct complementary temporal constraints by jointly considering recent pose continuity, local geometric overlap, and long-term historical supervision. We design a complementary overlap-based sliding-window selection strategy to construct such an optimization window. Let W denote the target number of selected keyframes in the optimization window, and the current frame is optimized together with these selected keyframes. Thus, the e ff ective optimization unit contains W
+
+keyframes and the current frame. Instead of relying on a single source of historical observations, our method decomposes the window into five complementary subsets: 
+
+Kwin  
+
+> t
+
+= Unique Krec  
+
+> t
+
+∥K top  
+
+> t
+
+∥K lrand  
+
+> t
+
+∥K hfix  
+
+> t
+
+∥K hrand 
+
+> t
+
+ , Kwin  
+
+> t
+
+≤ W , (9) where the five subsets denote recent keyframes, top-overlap local keyframes, random-ized high-overlap local keyframes, fixed historical keyframes, and random historical keyframes, respectively. Here, ∥ denotes ordered concatenation, and Unique( ·) re-moves duplicates while preserving the semantic order. We first retain Nr most recent keyframes as temporal anchors: 
+
+Krec  
+
+> t
+
+= Nr. (10) The remaining budget is divided into local and historical parts: 
+
+Nrem = W − Nr, Nl = ⌊Nrem /2⌋ , Nh = Nrem − Nl, (11) where Nl and Nh are the quotas for local and historical keyframes, respectively. For local keyframe selection, candidates are first restricted to the current local radiance-field region to avoid unstable constraints from distant or cross-region keyframes. 13 The most recent keyframes are excluded from the overlap candidate set because they have already been included in Krec  
+
+> t
+
+. We estimate the visual overlap by sampling 3D points along rays in the current frame and projecting them into each candidate keyframe: 
+
+O(t, k) =
+
+X
+
+> x∈X t
+
+I (πk(x) ∈ Ωe) , (12) where Xt denotes the sampled 3D points from the current frame, πk(·) is the projec-tion function of candidate keyframe k, Ωe is the valid image region after removing boundary margins, and I(·) is the indicator function. The local quota is further divided into a top-overlap subset and a randomized high-overlap subset: 
+
+Ntop = round( ρNl), Nlrand = Nl − Ntop , (13) where ρ is the top-overlap ratio. The subset Ktop  
+
+> t
+
+contains the Ntop keyframes with the highest overlap scores. The subset Klrand  
+
+> t
+
+is randomly sampled from a high-overlap candidate pool rather than from all historical keyframes, which preserves strong visual overlap while improving local window diversity. For historical keyframe selection, candidates are also restricted to the current local radiance-field region. After removing recent and local-overlap keyframes, the histori-cal quota is divided into fixed and random subsets: 
+
+Khfix  
+
+> t
+
+= Nhfix , Khrand  
+
+> t
+
+= Nh − Nhfix . (14) The fixed historical keyframes are selected by temporally uniform sampling from the RF-constrained history pool, providing stable long-term constraints. The remaining historical keyframes are randomly sampled from the same filtered pool to increase historical diversity and reduce local representation forgetting. 
+
+3.4.2. Keyframe Selection Strategy 
+
+For sliding-window optimization, keyframe selection is also crucial for providing eff ective candidate observations. Existing SLAM systems commonly adopt fixed-interval, random, or overlap-based keyframe strategies [14, 18, 21], which may over-look frames where tracking quality degrades or new viewpoints provide useful con-straints. Therefore, we adopt a new additive keyframe selection strategy. Specifically, 14 in addition to periodic keyframe insertion, the tracker further checks the tracking qual-ity after each frame is processed. If the total tracking loss is larger than the keyframe insertion threshold τkf , the current frame is inserted into the keyframe queue as an additional keyframe. To avoid overly frequent insertion caused by short-term loss fluctuations, we impose a minimum trigger interval of 2 frames. In addition, we introduce a reprojection-overlap criterion to detect frames with insu ffi cient visual overlap with existing keyframes. When the reprojection overlap of the current frame is lower than the threshold, the frame is treated as a useful new observation and added to the keyframe queue. This strategy improves mapping stabil-ity by preserving regular keyframe coverage while supplementing frames with poor tracking quality or low overlap. 
+
+3.4.3. Loss-aware Bundle Adjustment 
+
+The complementary overlap window provides balanced keyframe constraints, while its e ff ect also depends on when pose–map optimization is activated. Existing NeRF-centric SLAM frameworks often adopt periodic or global bundle adjustment to reduce camera drift [14, 18, 21], but fixed BA scheduling may not respond promptly to abrupt tracking degradation. Therefore, we introduce a loss-aware BA strategy as a supple-ment to the regular mapping and global BA schedule. Specifically, while preserving periodic BA, a non-periodic BA is activated when the tracking loss first exceeds the BA trigger threshold τBA . The threshold τBA is set slightly larger than the keyframe insertion threshold τkf , so that BA is triggered only under more severe tracking degradation. To avoid frequent additional optimization, we use a cooldown window of 10 frames. Within this window, another non-periodic BA is triggered only when the loss of a new high-loss frame exceeds the previously triggered loss by a margin δBA . This design preserves the regular BA schedule while providing timely pose–map correction under unstable tracking. 
+
+3.5. Two-stage Neural Tracking 
+
+Camera tracking in NeRF-centric SLAM is commonly formulated as pose op-timization through neural rendering losses. However, such optimization often has a 15 limited convergence basin and lacks explicit feature correspondences, making it sensi-tive to initialization errors [27]. Some recent systems introduce classical visual SLAM components to improve tracking robustness [37, 38, 45], but they usually rely on a relatively complete classical SLAM pipeline, which increases system coupling and implementation complexity. Di ff erent from these systems, we only encapsulate ORB-based tracking and geo-metric pose estimation as a lightweight initialization module. Specifically, at frame 0, the ORB module is initialized together with the initial scene coordinate system; at frame 1, the ORB result is not used, and the pose of frame 0 is directly copied as the initialization; from frame 2 onward, the ORB-estimated pose is used as the initial pose for neural tracking. The neural tracker then refines the camera rotation and translation by minimizing the neural rendering loss. 
+
+3.6. Objective Functions 
+
+We apply four loss terms to jointly optimize the scene representation, the MLP decoders, and camera poses, including the color loss, depth loss, TSDF loss, and self-supervised consistency loss. Given a set of sampled rays R, we use the L2 loss to measure the di ff erence between the rendered color /depth and the corresponding RGB-D observations: 
+
+Lc = 1
+
+|R| 
+
+X
+
+> r∈R
+
+ˆC(r) − C(r) 22 , (15) 
+
+Ld = 1
+
+|R| 
+
+X
+
+> r∈R
+
+ ˆD(r) − D(r)2
+
+, (16) Following [15], we further impose sample-wise TSDF supervision along each ray. For a sampled point p with sampled depth dp, the free-space region is supervised to have a truncated TSDF value close to 1: 
+
+L f s = 1
+
+|R| 
+
+X
+
+> r∈R
+
+1
+
+|N f s (r)|
+
+X 
+
+> p∈N f s (r)
+
+(s(p) − 1) 2 , (17) where N f s (r) denotes the sampled points outside the truncation band. For points near the observed surface, we split the truncation region into a middle region and a tail region: 
+
+Lmid = 1
+
+|R| 
+
+X
+
+> r∈R
+
+λmid 
+
+|N mid (r)|
+
+X 
+
+> p∈N mid (r)
+
+s(p) + D(r) − dp
+
+2
+
+, (18) 16 Ltail = 1
+
+|R| 
+
+X
+
+> r∈R
+
+λtail 
+
+|N tail (r)|
+
+X
+
+> p∈N tail (r)
+
+s(p) + D(r) − dp
+
+2
+
+. (19) Here, Nmid (r) contains points within the central truncation band [ D(r) − 0.4δ, D(r) +
+
+0.4δ], while Ntail (r) contains the remaining near-surface points within the truncation region. The TSDF loss is then defined as 
+
+Lsd f = L f s + Lmid + Ltail . (20) To keep the TSDF-based reconstruction branch consistent with the density-based rendering branch, we introduce the self-supervised consistency loss in [43]. The TSDF-derived ray termination distribution is given by the rendering weight wi in Eq. (7). Meanwhile, the density σi predicted by the density-color decoder in Eq. (5) is converted into a density-derived ray termination distribution: ˆwi = ˆαii−1Y
+
+> j=1
+
+1 − ˆα j
+
+ , ˆαi = 1 − exp( −σiδi), (21) We then use the symmetric KL divergence to encourage the TSDF-derived distribution 
+
+w and the density-derived distribution ˆ w to be consistent: 
+
+Ls = 1
+
+|R| 
+
+X
+
+> r∈R
+
+12
+
+> N
+
+X
+
+> i=1
+
+"
+
+wi log wi + ϵ
+
+ˆwi + ϵ + ˆwi log ˆwi + ϵ
+
+wi + ϵ
+
+#
+
+, (22) where ϵ is a small constant for numerical stability. The final objective function is formulated as 
+
+L = λcLc + λdLd + λsd f Lsd f + λsLs, (23) 
+
+4. Experiments 
+
+4.1. Experimental Setup 4.1.1. Datasets 
+
+We evaluate CHOW-SLAM on three widely used RGB-D SLAM benchmarks, including both synthetic and real-world indoor scenes. Following the evaluation pro-tocols of iMAP [23], NICE-SLAM [14], and Co-SLAM [18], we assess reconstruction and tracking performance on eight synthetic scenes from Replica [25]. For real-world 17 camera tracking, we use six indoor sequences from ScanNet [26]. In addition, three standard sequences from TUM RGB-D [46], namely fr1 /desk, fr2 /xyz, and fr3 /offi ce, are used to evaluate tracking robustness on real RGB-D data with accurate ground-truth trajectories. 
+
+4.1.2. Metrics 
+
+For reconstruction evaluation, we report Depth L1 (cm), Accuracy (cm), Com-pletion (cm), and Completion Ratio (%) with a distance threshold of 5 cm. Following Co-SLAM [18], we evaluate reconstructed meshes after removing unobserved regions outside all camera frustums and applying mesh culling to discard redundant geometry within the camera view but outside the valid scene region. For tracking, we use the ATE RMSE (cm) [46]. We also report the running speed in Frames Per Second (FPS), computed following the protocol of Co-SLAM [18]. Unless otherwise specified, bold values indicate the best result for each metric within the comparison group. 
+
+4.1.3. Baselines 
+
+We compare our system with representative RGB-D SLAM methods in terms of reconstruction quality and camera tracking accuracy. The baselines include NeRF-based methods: iMAP [23], NICE-SLAM [14], Co-SLAM [18], and QQ-SLAM [20]; 3DGS-based methods: MonoGS [40] and SplaTAM [39]; and classical SLAM meth-ods: Kintinuous [31], BAD-SLAM [33], and ORB-SLAM2 [28]. Since 3DGS-based methods often produce less explicit surfaces and make mesh extraction less reliable, we only compare their camera tracking results for fairness. 
+
+4.1.4. Implementation Details 
+
+We run CHOW-SLAM on a desktop PC with an Intel Core i7-12700K CPU and an NVIDIA RTX 3090 GPU. Unless otherwise specified, all experiments use the same compact hybrid representation. The hash branch uses a 16-level HashGrid encoding, with the first 8 levels represented by three orthogonal 2D hash planes and the remain-ing 8 levels by a 3D hash grid. The auxiliary explicit branch consists of a coarse 3D grid and fine tri-planes. The geometry branch uses resolutions of 24 cm and 6 cm for the coarse grid and fine planes, while the appearance branch uses 24 cm and 3 cm, 18 respectively. Each explicit feature level has 32 channels, resulting in a 64-channel auxiliary feature after concatenation. We use One-blob positional encoding with 16 bins. Both the TSDF /SDF decoder and the color-density decoder are two-layer MLPs with a hidden dimension of 32. In the mapping thread, we perform 10 iterations with 2048 sampled rays per iter-ation on Replica [25], ScanNet [26], and 20 iterations on TUM RGB-D [46]. In the tracking thread, all datasets use 10 iterations. Each tracking iteration samples 1024 rays on Replica, and TUM RGB-D, and 2048 rays on ScanNet. For surface-aware ray sampling, Replica use Nu = 32 stratified samples and Ns = 8 surface-guided samples per ray, while ScanNet and TUM RGB-D use Nu = 48 and Ns = 8. The mapping loss weights are λ f s = 5, λcenter = 200, λtail = 10, λd = 0.1, and 
+
+λc = 5, while the tracking loss weights are λ f s = 10, λcenter = 200, λtail = 50, λd = 1, and λc = 5. The SKL loss is enabled with an initial weight of λS = 5 × 10 −4 and linearly decays to 0 with the number of iterations. For loss-aware keyframe insertion and BA scheduling, τkf is set to 2.2, 1.2, and 1.3 for Replica, ScanNet, and TUM RGB-D, respectively, while τBA is set slightly larger than τkf . The margin δBA is set to 0.2, 0.15, and 0.6 for these three datasets, respectively. For complementary overlap-window selection, we set the window size to W = 20, the number of recent keyframes to Nr = 2, the top-overlap ratio to ρ = 0.4, and the number of fixed historical keyframes to Nhfix = 2. 
+
+4.2. Experimental results 4.2.1. Evaluation on Replica 
+
+We evaluate the reconstruction and tracking performance of our system on eight scenes from Replica [25], with the results reported in Table 1 and Table 2. Compared with recent NeRF-based systems, our method achieves the best average performance on all reconstruction metrics, with a particularly clear advantage in Completion Ratio. In terms of average tracking error, our method outperforms all baselines except the 3DGS-based SplaTAM [39]. The qualitative comparisons in Fig. 4 and Fig. 5 further support the quantitative re-sults. As shown in Fig. 4, other methods either produce incomplete and over-smoothed 19 Fig. 4 : Qualitative reconstruction comparison with state-of-the-art NeRF-based dense RGB-D VSLAM systems on Replica [25]. Our system reconstructs more complete and smoother scene geometry, while the white dashed boxes highlight clearer details around small objects and object boundaries. 
+
+geometry with lost high-frequency details or introduce noisy artifacts around fine structures and surface transitions. In contrast, our method achieves more complete global geometry while preserving smooth surfaces and sharper local structures, re-sulting in reconstructions that are more faithful to the ground truth. Fig. 5 further demonstrates the advantage of our method in color rendering, preserving sharper ap-pearance details and producing more faithful rendered colors. These improvements benefit from the scale-aware complementary P-H representation, where the P branch preserves scene continuity and the H branch captures fine-scale geometry and appear-ance, reducing representation redundancy while suppressing hash-collision artifacts. 
+
+4.2.2. Evaluation on ScanNet 
+
+Although Replica [25] provides accurate reference geometry for quantitative re-construction evaluation, its synthetic scenes cannot fully capture the structural com-plexity and sensing noise of real-world environments. We therefore further evaluate our system on ScanNet [26], a large-scale real-world indoor dataset, to examine its robustness under practical conditions. Table 3 presents a comparison between our system and representative NeRF-based 20 Table 1 
+
+Reconstruction and tracking results on the Replica dataset. Scene Methods Reconstruction (cm) Localization (cm) Depth L1 ↓ Acc. ↓ Comp. ↓ Comp. ratio (%) ↑ ATE RMSE ↓
+
+Room0 iMAP [23] 5.08 4.01 5.84 78.34 5.43 NICE-SLAM [14] 1.79 2.44 2.60 91.81 1.69 Co-SLAM [18] 1.05 2.11 2.02 95.26 0.72 QQ-SLAM [20] 1.09 2.38 1.76 96.39 0.58 
+
+Ours 0.72 2.33 1.80 96.72 0.48 
+
+Room1 iMAP [23] 3.44 3.04 4.40 85.85 3.22 NICE-SLAM [14] 1.33 2.10 2.19 93.56 2.04 Co-SLAM [18] 0.85 1.68 1.81 95.19 1.32 QQ-SLAM [20] 0.69 2.62 1.77 95.49 1.16 
+
+Ours 0.67 2.37 1.59 96.75 0.53 
+
+Room2 iMAP [23] 5.78 3.84 5.07 79.40 2.85 NICE-SLAM [14] 2.20 2.17 2.73 91.48 1.55 Co-SLAM [18] 2.37 1.99 1.96 93.58 1.27 QQ-SLAM [20] 2.48 2.00 1.82 94.28 0.87 
+
+Ours 1.03 1.59 1.59 96.93 0.36 
+
+Offi ce0 iMAP [23] 3.79 3.34 3.62 83.59 2.60 NICE-SLAM [14] 1.43 1.85 1.84 94.93 0.99 Co-SLAM [18] 1.24 1.57 1.56 96.09 0.62 QQ-SLAM [20] 1.18 1.55 1.57 96.10 0.52 
+
+Ours 0.72 1.40 1.29 98.64 0.35 
+
+Offi ce1 iMAP [23] 3.76 2.10 3.62 83.59 1.30 NICE-SLAM [14] 1.58 1.56 1.82 94.11 0.90 Co-SLAM [18] 1.48 1.31 1.59 94.65 0.52 QQ-SLAM [20] 0.99 1.37 1.39 95.40 0.48 
+
+Ours 1.14 1.50 1.19 97.92 0.40 
+
+Offi ce2 iMAP [23] 3.97 4.06 4.73 79.73 5.94 NICE-SLAM [14] 2.70 3.28 3.11 88.27 1.39 Co-SLAM [18] 1.86 2.84 2.43 91.63 2.07 QQ-SLAM [20] 1.76 3.43 2.14 94.07 1.74 
+
+Ours 0.93 2.71 1.86 96.03 1.09 
+
+Offi ce3 iMAP [23] 5.61 4.20 5.49 73.90 5.18 NICE-SLAM [14] 2.10 3.01 3.16 87.68 3.97 Co-SLAM [18] 1.66 3.06 2.72 90.72 1.47 QQ-SLAM [20] 1.54 3.94 2.55 91.78 1.22 
+
+Ours 0.81 2.57 1.97 96.01 0.59 
+
+Offi ce4 iMAP [23] 5.71 4.34 6.65 74.77 2.42 NICE-SLAM [14] 2.06 2.54 3.61 87.23 3.08 Co-SLAM [18] 1.54 2.23 2.52 90.44 0.84 QQ-SLAM [20] 1.68 2.16 2.46 91.53 0.73 
+
+Ours 0.70 1.87 2.02 94.96 0.70 
+
+Avg. iMAP [23] 4.64 3.62 4.93 80.50 3.62 NICE-SLAM [14] 1.90 2.37 2.63 91.13 1.95 Co-SLAM [18] 1.51 2.10 2.08 93.44 1.10 QQ-SLAM [20] 1.42 2.43 1.93 94.38 0.91 
+
+Ours 0.84 2.04 1.66 96.75 0.56 
+
+We quantitatively compare our system with recent NeRF-based dense RGB-D VSLAM methods on the Replica [25] scenes. Our method achieves the highest tracking accuracy and reaches state-of-the-art reconstruction quality. 
+
+21 Fig. 5 : Qualitative color-rendering comparison with state-of-the-art NeRF-based dense RGB-D VSLAM systems on Replica [25]. Our system preserves sharper appearance details and produces more faithful colors closer to the ground truth. 
+
+Table 2 
+
+Tracking results of NeRF-based and 3DGS-based systems on the Replica dataset. Methods R0 R1 R2 O0 O1 O2 O3 O4 Avg. NeRF iMAP [23] 5.43 3.22 2.85 2.60 1.30 5.94 5.18 2.42 3.62 NICE-SLAM [14] 1.69 2.04 1.55 0.99 0.90 1.39 3.97 3.08 1.95 Co-SLAM [18] 0.72 1.32 1.27 0.62 0.52 2.07 1.47 0.84 1.10 QQ-SLAM [20] 0.58 1.16 0.87 0.52 0.48 1.74 1.22 0.73 0.91 Ours 0.48 0.53 0.36 0.35 0.40 1.09 0.59 0.70 0.56 
+
+3DGS MonoGS [40] 0.76 0.37 0.23 0.66 0.72 0.30 0.19 1.46 0.58 SplaTAM [39] 0.31 0.40 0.29 0.47 0.27 0.29 0.32 0.55 0.36 
+
+For MonoGS, we report the single-process implementation, which performs addi-tional mapping iterations. 
+
+Table 3 
+
+Tracking results of 3DGS-based and NeRF-based systems on ScanNet dataset. Methods 0000 0059 0106 0169 0181 0207 Avg. NeRF iMAP [23] 55.95 32.06 17.50 70.51 32.10 11.91 36.67 NICE-SLAM [14] 8.64 12.25 8.09 10.28 12.93 5.59 9.63 Co-SLAM [18] 7.13 11.14 9.36 5.90 11.81 7.14 8.75 QQ-SLAM [20] 6.99 9.47 8.82 6.48 13.30 5.86 8.49 Ours 7.53 6.06 7.67 5.68 9.90 4.80 6.94 
+
+3DGS MonoGS [40] 9.58 6.16 7.05 10.66 18.23 7.46 9.86 
+
+SplaTAM [39] 12.81 10.13 17.68 12.08 11.14 7.49 11.89 Our tracking results outperform those of the other systems on most scenes and achieve the lowest average error. 
+
+22 and 3DGS-based methods. Our system achieves higher tracking accuracy on most se-quences and obtains the lowest average ATE RMSE, demonstrating its robustness in real-world indoor environments. Fig. 6 compares the surface-normal renderings of the reconstructed meshes and camera trajectories on selected ScanNet scenes. The trajectories estimated by our system closely match the ground truth, while its recon-structions are more consistent with the ground truth, particularly in structural shape and local details. For example, in the upper-right restroom of scene0207, our system preserves a more complete and geometrically consistent structure, whereas the other methods produce noticeable deformation and missing surfaces. This improvement benefits from the complementary overlap window optimization, which provides e ff ec-tive and persistent temporal consistency constraints for online pose–map optimization. 
+
+> Fig. 6 : Qualitative comparison with state-of-the-art NeRF-based dense RGB-D VSLAM systems on Scan-Net [26], focusing on reconstructed surface geometry and tracking accuracy. Blue and red curves denote the ground-truth and estimated camera trajectories, respectively. From the same viewpoints, our system re-constructs scene structures more consistent with the ground truth and estimates more accurate trajectories.
+
+4.2.3. Evaluation on TUM RGB-D 
+
+Following [14, 18, 20], we evaluate the tracking accuracy of our system on the TUM RGB-D dataset. As shown in Table 4, our system achieves strong performance on most sequences and obtains the best average accuracy among NeRF-based SLAM methods, with only a slightly higher error than MonoGS among NeRF-based and 3DGS-based methods. This shows that accurate dense mapping helps NeRF-based SLAM reduce the tracking gap to classical SLAM while preserving dense reconstruc-23 tion capability.                                              
+
+> Table 4
+> Tracking results on the TUM RGB-D dataset. Methods fr1 /desk fr2 /xyz fr3 /offi ce Avg. Classic Kintinuous [31] 3.70 2.90 3.00 3.20 BAD-SLAM [33] 1.70 1.10 1.70 1.50 ORB-SLAM2 [28] 1.60 0.40 1.00 1.00
+> NeRF iMAP [23] 4.90 2.00 5.80 4.23 NICE-SLAM [14] 2.85 2.16 3.14 2.72 Co-SLAM [18] 2.73 2.02 2.63 2.46 QQ-SLAM [20] 2.61 1.70 2.70 2.34 Ours 1.95 1.31 2.06 1.77
+> 3DGS MonoGS [40] 1.55 1.58 1.65 1.59
+> SplaTAM [39] 3.35 1.24 5.16 3.25
+
+4.3. Ablation Study 
+
+> Fig. 7 : Qualitative ablation of di ff erent scene encoding configurations on the Replica [25] room1 scene.
+
+We conduct ablation studies on the Compact P-H Hybrid Representation and Com-plementary Overlap Window Optimization (COWO), with the quantitative results re-ported in Table 5. Here, h and p denote the hybrid hash branch and the explicit para-metric branch introduced in Sec. 3.1, respectively. The su ffi x add indicates that grid and plane features are directly combined across all scales, whereas multiscale_hybrid denotes the scale-aware hybrid configuration described in Sec. 3.1. 24 Fig. 8 : Qualitative comparison of sliding-window selection strategies on ScanNet [26] scene0207. 
+
+For scene representation, the multi-scale hybrid design in the H branch yields clear overall improvements over the other hash configurations. In the P branch, al-though the multi-scale hybrid configuration performs slightly below direct grid–plane addition, it preserves most of the representation capability with substantially fewer parameters. The ph_grid_add_plane configuration also achieves competitive perfor-mance, but directly combining grids and planes across all scales leads to excessive parameter growth. In contrast, our scale-aware P-H representation achieves better overall reconstruction and tracking performance while maintaining a compact param-eter budget. For COWO, removing the sliding-window strategy, adaptive keyframe insertion, or loss-aware BA causes relatively small changes in reconstruction qual-ity but a clear degradation in trajectory accuracy. Removing the complete COWO produces the largest tracking error, indicating that its components contribute more directly to accurate pose estimation by maintaining e ff ective and persistent temporal constraints. Fig. 7 visualizes the reconstructed meshes obtained with di ff erent encoding con-figurations on the Replica [25] room1 scene. Although h_multiscale_hybrid avoids the artifact behind the chair, it preserves fewer details around the tabletop and lamp-shade in the upper-right region. In contrast, our method suppresses reconstruction artifacts while recovering these local structures more faithfully. This improvement re-sults from combining the structured spatial support of the P branch with the fine-scale detail modeling capability of the H branch. 25 Table 5                                                                                               
+
+> Ablation study of the Compact P-H Hybrid Representation and Complementary Overlap Window Optimization. Name Reconstruction (cm) Localization (cm) Depth L1 ↓Acc. ↓Comp. ↓Comp. Ratio (%) ↑ATE RMSE ↓
+> (A) h_grid 0.98 1.94 1.93 94.91 0.71 (B) h_plane 1.07 2.17 1.83 95.67 0.66 (C) h_add_grid_plane 1.03 1.98 1.77 95.71 0.61 (D) h_multiscale_hybrid 0.92 2.24 1.79 96.12 0.60 (E) p_grid 1.30 2.33 1.83 95.27 0.63 (F) p_plane 1.09 2.30 1.80 95.97 0.67 (G) p_grid_add_plane 0.99 2.25 1.68 96.52 0.59 (H) p_multiscale_hybrid 1.01 2.30 1.71 96.33 0.62 (I) ph_grid_add_plane 0.87 1.90 1.67 96.61 0.59 (J) w/o sliding window 0.88 2.09 1.68 96.57 0.72 (K) w/o adaptive keyframes 0.88 2.08 1.69 96.68 0.64 (L) w/o loss-aware BA 0.85 2.08 1.68 96.48 0.67 (M) w/o COWO 0.90 2.21 1.73 95.97 0.75
+> Ours 0.84 2.04 1.66 96.75 0.56
+
+We further visualize di ff erent sliding-window selection strategies on ScanNet [26] scene0207 in Fig. 8. Random-only selection lacks su ffi ciently strong local geomet-ric constraints and produces distorted structures, whereas overlap-only selection con-centrates excessively on local observations and provides insu ffi cient supervision for previously observed regions. By jointly incorporating high-overlap local observations and diverse historical keyframes, COWO produces a more complete and geometrically consistent reconstruction. 
+
+4.4. Performance Analysis 
+
+We evaluate the runtime e ffi ciency and model parameters of NeRF-based and 3DGS-based SLAM systems on Replica [25] and ScanNet [26], as reported in Table 6. Our method achieves the second-highest runtime speed on both datasets, slightly be-low Co-SLAM [18] but faster than all other compared methods. Meanwhile, our method achieves more faithful scene reconstruction and more accurate camera track-ing with a relatively small model size. 26 Table 6                              
+
+> Time and memory analysis. Dataset Method FPS ↑Model Param. (M) ↓
+> Replica NICE-SLAM [14] 0.99 49.85 Co-SLAM [18] 17.24 7.93
+> QQ-SLAM [20] 7.08 7.96 MonoGS [40] 0.70 24.20 SplaTAM [39] 0.20 243.40
+> Ours 12.53 14.72 ScanNet NICE-SLAM [14] 0.73 85.85 Co-SLAM [18] 6.41 9.97 QQ-SLAM [20] 4.25 10.14 MonoGS [40] 2.30 5.60
+> SplaTAM [39] 0.20 156.40
+> Ours 4.92 19.17
+
+5. Conclusion 
+
+This paper presents CHOW-SLAM, a compact and robust NeRF-based dense RGB-D SLAM system. First, our results demonstrate that the scale-aware combination of parametric and hash features can preserve fine geometry and appearance while avoid-ing redundant encoding parameters and hash-collision artifacts. Second, the Com-plementary Overlap Window Optimization provides e ff ective and persistent temporal constraints by jointly exploiting recent, high-overlap local, and historical keyframes, leading to more accurate tracking and consistent mapping. In addition, classical ORB-based feature tracking and geometric pose estimation provide reliable pose initializa-tion, further improving the stability of neural tracking. The proposed representation and optimization principles provide a practical ref-erence for researchers seeking to balance scene representation capability, model size, and persistent historical supervision in online neural SLAM. 
+
+Limitations. Our method remains limited in dynamic environments, outdoor and large-scale scenes, and texture-deficient regions. In future work, we will investigate dynamic-aware scene modeling and motion filtering, integrate loop-closure detection and optimization, and improve robustness in texture-deficient regions, with the goal of extending the system to more complex outdoor and long-term robotic applications. 27 References 
+
+[1] Y. Wang, K.H. Yu, J.T. Jia, Y. Nie, Enhanced visual SLAM and path planning for autonomous navigation of wheeled mobile robots, J. Vis. Exp. 224 (2025) e68794. https://doi.org/10.3791/68794 .[2] Y. Liu, L. Liu, Y. Zheng, Y. Liu, F. Dang, N. Li, et al., Embodied navi-gation, Sci. China Inf. Sci. 68 (2025) 141101. https://doi.org/10.1007/ s11432-024-4303-8 .[3] C. Campos, R. Elvira, J.J. Gómez Rodríguez, J.M.M. Montiel, J.D. Tardós, ORB-SLAM3: An accurate open-source library for visual, visual-inertial, and multimap SLAM, IEEE Trans. Robot. 37 (6) (2021) 1874–1890. https://doi. org/10.1109/TRO.2021.3075644 .[4] T. Qin, P. Li, S. Shen, VINS-Mono: A robust and versatile monocular visual-inertial state estimator, IEEE Trans. Robot. 34 (4) (2018) 1004–1020. https: //doi.org/10.1109/TRO.2018.2853729 .[5] J. Engel, T. Schöps, D. Cremers, LSD-SLAM: Large-scale direct monocular SLAM, in: Proc. Eur. Conf. Comput. Vis., 2014, pp. 834–849. https://doi. org/10.1007/978-3-319-10605-2_54 .[6] Z. Lin, Q. Zhang, Z. Tian, P. Yu, Z. Ye, H. Zhuang, J. Lan, SLAM2: Simultane-ous localization and multimode mapping for indoor dynamic environments, Pat-tern Recognit. 158 (2025) 111054. https://doi.org/10.1016/j.patcog. 2024.111054 .[7] R. Muñoz-Salinas, R. Medina-Carnicer, UcoSLAM: Simultaneous localiza-tion and mapping by fusion of keypoints and squared planar markers, Pat-tern Recognit. 101 (2020) 107193. https://doi.org/10.1016/j.patcog. 2019.107193 .[8] Z. Teed, J. Deng, DROID-SLAM: Deep visual SLAM for monocular, stereo, and RGB-D cameras, Adv. Neural Inf. Process. Syst. 34 (2021) 16558–16569. 28 [9] J. Czarnowski, T. Laidlow, R. Clark, A.J. Davison, DeepFactors: Real-time probabilistic dense monocular SLAM, IEEE Robot. Autom. Lett. 5 (2) (2020) 721–728. https://doi.org/10.1109/LRA.2020.2965415 .[10] Y. Fan, Q. Zhang, Y. Tang, S. Liu, H. Han, Blitz-SLAM: A semantic SLAM in dynamic environments, Pattern Recognit. 121 (2022) 108225. https://doi. org/10.1016/j.patcog.2021.108225 .[11] L. Xia, X. Li, Z. Wang, H. Chen, X. Zhu, L. Fan, DMSAA-SLAM: RGB-D SLAM for dynamic scenes via di ff usion self-attention, Pattern Recognit. 179 (2026) 113576. https://doi.org/10.1016/j.patcog.2026.113576 .[12] B. Mildenhall, P.P. Srinivasan, M. Tancik, J.T. Barron, R. Ramamoorthi, R. Ng, NeRF: Representing scenes as neural radiance fields for view synthesis, in: Proc. Eur. Conf. Comput. Vis., 2020, pp. 405–421. https://doi.org/10.1007/ 978-3-030-58452-8_24 .[13] S. Lai, L. Cui, J. Yin, Fast radiance field reconstruction from sparse inputs, Pat-tern Recognit. 157 (2025) 110863. https://doi.org/10.1016/j.patcog. 2024.110863 .[14] Z. Zhu, S. Peng, V. Larsson, W. Xu, H. Bao, Z. Cui, M.R. Oswald, M. Polle-feys, NICE-SLAM: Neural implicit scalable encoding for SLAM, in: Proc. IEEE /CVF Conf. Comput. Vis. Pattern Recognit., 2022, pp. 12776–12786. 
+
+https://doi.org/10.1109/CVPR52688.2022.01245 .[15] M.M. Johari, C. Carta, F. Fleuret, ESLAM: E ffi cient dense SLAM system based on hybrid representation of signed distance fields, in: Proc. IEEE /CVF Conf. Comput. Vis. Pattern Recognit., 2023, pp. 17408–17419. https://doi.org/ 10.1109/CVPR52729.2023.01670 .[16] T. Müller, A. Evans, C. Schied, A. Keller, Instant neural graphics primitives with a multiresolution hash encoding, ACM Trans. Graph. 41 (4) (2022) 102. 
+
+https://doi.org/10.1145/3528223.3530127 .29 [17] E. Sandström, Y. Li, L. Van Gool, M.R. Oswald, Point-SLAM: Dense neural point cloud-based SLAM, in: Proc. IEEE /CVF Int. Conf. Comput. Vis., 2023, pp. 18433–18444. https://doi.org/10.1109/ICCV51070.2023.01690 
+
+[18] H. Wang, J. Wang, L. Agapito, Co-SLAM: Joint coordinate and sparse paramet-ric encodings for neural real-time SLAM, in: Proc. IEEE /CVF Conf. Comput. Vis. Pattern Recognit., 2023, pp. 13293–13302. https://doi.org/10.1109/ CVPR52729.2023.01277 .[19] G. Li, Q. Chen, Y. Yan, J. Pu, EC-SLAM: E ff ectively constrained neural RGB-D SLAM with TSDF hash encoding and joint optimization, Pattern Recognit. 170 (2026) 112034. https://doi.org/10.1016/j.patcog.2025.112034 .[20] S. Jiang, J. Hua, Z. Han, Query quantized neural SLAM, in: Proc. AAAI Conf. Artif. Intell., vol. 39, 2025, pp. 4057–4065. https://doi.org/10.1609/ aaai.v39i4.32425 .[21] T. Deng, G. Shen, T. Qin, J. Wang, W. Zhao, J. Wang, D. Wang, W. Chen, PLGSLAM: Progressive neural scene representation with local to global bundle adjustment, in: Proc. IEEE /CVF Conf. Comput. Vis. Pattern Recognit., 2024, pp. 19657–19666. https://doi.org/10.1109/CVPR52733.2024.01859 
+
+[22] Z. Gong, F. Tosi, Y. Zhang, S. Mattoccia, M. Poggi, HS-SLAM: Hybrid repre-sentation with structural supervision for improved dense SLAM, in: Proc. IEEE Int. Conf. Robot. Autom., 2025, pp. 8464–8470. https://doi.org/10.1109/ ICRA55743.2025.11127551 .[23] E. Sucar, S. Liu, J. Ortiz, A.J. Davison, iMAP: Implicit mapping and positioning in real-time, in: Proc. IEEE /CVF Int. Conf. Comput. Vis., 2021, pp. 6229–6238. 
+
+https://doi.org/10.1109/ICCV48922.2021.00617 .[24] J. Ortiz, A. Clegg, J. Dong, E. Sucar, D. Novotny, M. Zollhoefer, M. Mukadam, iSDF: Real-time neural signed distance fields for robot perception, in: Proc. Robot. Sci. Syst., 2022. https://doi.org/10.15607/RSS.2022.XVIII. 012 .30 [25] J. Straub, T. Whelan, L. Ma, Y. Chen, E. Wijmans, S. Green, J.J. Engel, R. Mur-Artal, C. Ren, S. Verma, et al., The Replica dataset: A digital replica of in-door spaces, arXiv preprint arXiv:1906.05797 (2019). https://doi.org/10. 48550/arXiv.1906.05797 .[26] A. Dai, A.X. Chang, M. Savva, M. Halber, T. Funkhouser, M. Nießner, Scan-Net: Richly-annotated 3D reconstructions of indoor scenes, in: Proc. IEEE Conf. Comput. Vis. Pattern Recognit., 2017, pp. 5828–5839. https://doi.org/10. 1109/CVPR.2017.261 .[27] V. Cartillier, G. Schindler, I. Essa, SLAIM: Robust dense neural SLAM for on-line tracking and mapping, in: Proc. IEEE /CVF Conf. Comput. Vis. Pattern Recognit. Workshops, 2024, pp. 2862–2871. https://doi.org/10.1109/ CVPRW63382.2024.00292 .[28] R. Mur-Artal, J.D. Tardós, ORB-SLAM2: An open-source SLAM system for monocular, stereo, and RGB-D cameras, IEEE Trans. Robot. 33 (5) (2017) 1255–1262. https://doi.org/10.1109/TRO.2017.2705103 .[29] A.J. Davison, I.D. Reid, N.D. Molton, O. Stasse, MonoSLAM: Real-time single camera SLAM, IEEE Trans. Pattern Anal. Mach. Intell. 29 (6) (2007) 1052– 1067. https://doi.org/10.1109/TPAMI.2007.1049 .[30] R.A. Newcombe, S.J. Lovegrove, A.J. Davison, DTAM: Dense tracking and mapping in real-time, in: Proc. IEEE Int. Conf. Comput. Vis., 2011, pp. 2320– 2327. https://doi.org/10.1109/ICCV.2011.6126513 .[31] T. Whelan, M. Kaess, H. Johannsson, M. Fallon, J.J. Leonard, J. Mc-Donald, Real-time large-scale dense RGB-D SLAM with volumetric fusion, Int. J. Robot. Res. 34 (4–5) (2015) 598–626. https://doi.org/10.1177/ 0278364914551008 .[32] T. Whelan, S. Leutenegger, R.F. Salas-Moreno, B. Glocker, A.J. Davison, Elas-ticFusion: Dense SLAM without a pose graph, in: Proc. Robot. Sci. Syst., 2015. 
+
+https://doi.org/10.15607/RSS.2015.XI.001 .31 [33] T. Schöps, T. Sattler, M. Pollefeys, BAD SLAM: Bundle adjusted direct RGB-D SLAM, in: Proc. IEEE /CVF Conf. Comput. Vis. Pattern Recognit., 2019, pp. 134–144. https://doi.org/10.1109/CVPR.2019.00022 .[34] X. Yang, H. Li, H. Zhai, Y. Ming, Y. Liu, G. Zhang, Vox-Fusion: Dense tracking and mapping with voxel-based neural implicit representation, in: Proc. IEEE Int. Symp. Mixed Augmented Reality, 2022, pp. 499–507. https://doi.org/10. 1109/ISMAR55827.2022.00066 .[35] H. Park, M. Park, G. Nam, J. Kim, LRSLAM: Low-rank representation of signed distance fields in dense visual SLAM system, in: Proc. Eur. Conf. Comput. Vis., 2024, pp. 225–240. https://doi.org/10.1007/978-3-031-72989-8_13 .[36] B. Kerbl, G. Kopanas, T. Leimkühler, G. Drettakis, 3D Gaussian splatting for real-time radiance field rendering, ACM Trans. Graph. 42 (4) (2023) 139. 
+
+https://doi.org/10.1145/3592433 .[37] H. Huang, L. Li, H. Cheng, S.-K. Yeung, Photo-SLAM: Real-time simultane-ous localization and photorealistic mapping for monocular, stereo, and RGB-D cameras, in: Proc. IEEE /CVF Conf. Comput. Vis. Pattern Recognit., 2024, pp. 21584–21593. https://doi.org/10.1109/CVPR52733.2024.02039 .[38] Z. Peng, T. Shao, Y. Liu, J. Zhou, Y. Yang, J. Wang, K. Zhou, RTG-SLAM: Real-time 3D reconstruction at scale using Gaussian splatting, in: Proc. ACM SIGGRAPH Conf. Papers, 2024, pp. 1–11. https://doi.org/10.1145/ 3641519.3657455 .[39] N. Keetha, J. Karhade, K.M. Jatavallabhula, G. Yang, S. Scherer, D. Ramanan, J. Luiten, SplaTAM: Splat, track & map 3D Gaussians for dense RGB-D SLAM, in: Proc. IEEE /CVF Conf. Comput. Vis. Pattern Recognit., 2024, pp. 21357– 21366. https://doi.org/10.1109/CVPR52733.2024.02018 .[40] H. Matsuki, R. Murai, P.H.J. Kelly, A.J. Davison, Gaussian splatting SLAM, in: Proc. IEEE /CVF Conf. Comput. Vis. Pattern Recognit., 2024, pp. 18039–18048. 
+
+https://doi.org/10.1109/CVPR52733.2024.01708 .32 [41] C. Yan, D. Qu, D. Xu, B. Zhao, Z. Wang, D. Wang, X. Li, GS-SLAM: Dense visual SLAM with 3D Gaussian splatting, in: Proc. IEEE /CVF Conf. Comput. Vis. Pattern Recognit., 2024, pp. 19595–19604. https://doi.org/10.1109/ CVPR52733.2024.01853 .[42] H. Wang, Y. Shou, L. Shen, S. Li, Y. Cao, RGD-SLAM: Robust Gaussian splat-ting SLAM for dynamic environments, Pattern Recognit. 175 (2026) 113071. 
+
+https://doi.org/10.1016/j.patcog.2026.113071 .[43] D. Feng, W. Qin, Z. Shi, W. Chen, Y. Duan, L. Xie, E. Yin, MHED-SLAM: Multi-scale hybrid encoding-based decoupled SLAM, in: Proc. AAAI Conf. Artif. Intell., vol. 40, 2026, pp. 18243–18252. https://doi.org/10.1609/ aaai.v40i22.38887 .[44] P. Hedman, P.P. Srinivasan, B. Mildenhall, J.T. Barron, P. Debevec, Bak-ing neural radiance fields for real-time view synthesis, in: Proc. IEEE /CVF Int. Conf. Comput. Vis., 2021, pp. 5855–5864. https://doi.org/10.1109/ ICCV48922.2021.00582 .[45] C.-M. Chung, Y.-C. Tseng, Y.-C. Hsu, X.-Q. Shi, Y.-H. Hua, J.-F. Yeh, W.-C. Chen, Y.-T. Chen, W.H. Hsu, Orbeez-SLAM: A real-time monocular vi-sual SLAM with ORB features and NeRF-realized mapping, in: Proc. IEEE Int. Conf. Robot. Autom., 2023, pp. 9400–9406. https://doi.org/10.1109/ ICRA48891.2023.10160950 .[46] J. Sturm, N. Engelhard, F. Endres, W. Burgard, D. Cremers, A benchmark for the evaluation of RGB-D SLAM systems, in: Proc. IEEE /RSJ Int. Conf. Intell. Robots Syst., 2012, pp. 573–580. https://doi.org/10.1109/IROS.2012. 6385773 .33
