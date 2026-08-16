@@ -1,0 +1,333 @@
+Title: EndoMD-SLAM: Endoscopic Gaussian Splatting SLAM under Optical Degradation with Memory and Static-Transient Decomposition
+
+URL Source: https://arxiv.org/pdf/2608.08949v1
+
+Published Time: Tue, 11 Aug 2026 01:38:53 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# EndoMD-SLAM: Endoscopic Gaussian Splatting SLAM under Optical Degradation with Memory and Static-Transient Decomposition 
+
+Nuo Chen ∗, Kangqi Ni ∗, Lulin Liu, Joga Ivatury, Ying Ding, Farshid Alambeigi, Tianlong Chen, Zhiwen Fan 
+
+Project Website: https://endomd-slam.github.io/ 
+
+Abstract — Dense 3D reconstruction is critical for clinical endoscopic navigation and documentation. While Gaussian Splatting SLAM systems show promise in this domain, they fun-damentally rely on strict multi-view photometric consistency. In routine procedures, this assumption is severely violated by intermittent optical degradations like moving debris and water flushing. Standard systems erroneously fuse these camera-attached artifacts into the persistent 3D geometry, causing se-vere tracking drift and irreversible map corruption. To address this limitation, we propose EndoMD-SLAM, a framework de-signed to maintain stability under optical degradation through specialized tracking and mapping mechanisms. On the tracking side, a memory-driven gating mechanism detects unreliable observations to suspend map updates and utilizes historical keyframes for drift-aware relocalization. On the mapping side, a self-supervised static-transient decomposition isolates visual contaminants into a dedicated transient field. This explicit separation prevents artifacts from structurally entangling with the persistent anatomical map. We curate a degradation-focused benchmark from colonoscopy videos to systematically evaluate these failure modes. Extensive experiments show that while standard baselines fail under severe optical degradation, EndoMD-SLAM preserves geometric integrity, reducing abso-lute trajectory error by 91% and improving rendering fidelity by 9.9 dB PSNR. 
+
+I. I NTRODUCTION 
+
+Endoscopy is a widely used, minimally invasive procedure that visualizes internal anatomy via an onboard camera for screening, diagnosis, and surgery [1], [2]. Supporting these clinical applications requires reliable online tracking and high-quality 3D reconstruction, motivating increasing research efforts on endoscopic SLAM in recent years [3]– [8]. Traditional visual SLAM systems [9]–[13] reconstruct sparse point clouds while estimating camera poses. Al-though efficient, this sparse 3D information lacks the fine-grained surface detail required for clinical diagnosis and holistic anatomical review, posing the need for high-fidelity 3D map visualization during tracking. Recently, the field has moved toward dense, renderable mapping with Neural Radiance Fields (NeRFs) [14], which excel at novel view synthesis from the reconstructed 3D map. However, their implicit formulation introduces computational overhead that limits continuous online tracking in clinical applications. 3D 
+
+> ∗
+
+These authors contributed equally. Nuo Chen and Zhiwen Fan are with Texas A&M University, College Station, TX, USA. Kangqi Ni and Tianlong Chen are with the University of North Carolina at Chapel Hill, Chapel Hill, NC, USA. Lulin Liu is with Texas A&M University, College Station, TX, USA, and the University of Minnesota, Minneapolis, MN, USA. Joga Ivatury, Ying Ding, and Farshid Alambeigi are with the University of Texas at Austin, Austin, TX, USA. Endoscopy Video w/o reloc. 
+
+> Lens Contamination Lens Cleaning
+> Ours with reloc. decomposition
+> +
+> Images
+> Pose Estimation Nominal Frames
+> Erroneous Map Updates
+> Tracking Drift
+
+Fig. 1: SLAM under severe optical degradation. Standard Gaussian Splatting SLAM systems fail under routine optical degradations, suffering severe tracking drift and erroneously mapping updates. With the proposed memory and decompo-sition mechanisms, EndoMD-SLAM isolates these degrada-tions caused by contaminants and water flushing, maintaining robust online tracking and recovering a clean, high-fidelity 3D anatomical reconstruction. Gaussian Splatting (3DGS) [15] addresses this bottleneck by explicitly modeling scene geometry through efficient differ-entiable rasterization, enabling rapid dense reconstruction. Deploying 3DGS for SLAM assumes continuous, unob-structed visual observations, an assumption often challenged by the complex imaging conditions of clinical endoscopy (Fig. 1). In routine endoscopic practice, water droplets and biological debris adhere to the lens [16], creating optical degradations that compromise the camera’s field of view. This necessitates lens cleaning via water flushing to restore visibility [17] during the procedure. These clinically neces-sary events produce unstable visual evidence that directly violates the multi-view photometric consistency required by Gaussian Splatting SLAM. Intermittent degradations from flushing and transient artifacts from moving droplets dis-rupt frame-to-frame visual continuity. Existing endoscopic pipelines [3]–[5] often degrade under these conditions be-cause they are primarily designed and evaluated on relatively clean endoscopic views, lacking dedicated mechanisms for optical degradation. During tracking, water flushing causes sudden visibil-ity loss that degrades observations and induces drift. This motivates mechanisms to pause the mapping process and recover from tracking failures; however, current systems [4] still integrate corrupted poses, triggering erroneous map updates that permanently corrupt the global reconstruction. During mapping, transient droplets and debris act as camera-attached artifacts. When existing works directly fuse these arXiv:2608.08949v1 [cs.CV] 9 Aug 2026 transient observations, they erroneously reconstruct visual contaminants as persistent anatomical structure, which dis-torts rendering and further misguides tracking. Overcoming these coupled vulnerabilities requires explicitly triggering relocalization after degraded intervals and isolating transient artifacts from the persistent anatomy, alongside a memory mechanism to safely gate map updates. To address this gap, we propose EndoMD-SLAM , an endoscopic Gaussian splatting SLAM framework designed to maintain stability during colonoscopy procedures under op-tical degradation. Our approach combines a memory mech-anism with a self-supervised static-transient decomposition. The temporal memory stores clean historical states, enabling drift-aware relocalization to recover pose information and gate Gaussian updates during degraded observations. Concur-rently, the self-supervised static-transient decomposition sep-arates a transient artifact field from a consistent static field. This prevents optical degradations from becoming struc-turally entangled with the static reconstruction (the persistent anatomy) during optimization. To validate our analysis and benchmark prior methods, we curate an optical degradation-focused benchmark from C3VDv2 [18] to systematically evaluate tracking and mapping robustness. Our main contributions are as follows:  
+
+> •
+
+We propose EndoMD-SLAM , an endoscopic Gaussian splatting SLAM framework for colonoscopy 3D visu-alization under optical degradations in routine clinical practice. To prevent tracking drift and map corruption, we analyze the tracking and mapping vulnerabilities caused by these degradations and build a targeted bench-mark suite.  
+
+> •
+
+We introduce a temporal memory that maintains a bank of clean keyframes for tracking recovery and actively gates 3D Gaussian updates during low-confidence ob-servations. By matching the current view to historical keyframes for relocalization, it recovers from tracking loss and prevents drift from corrupting the global map.  
+
+> •
+
+We design a static-transient decomposition to separate persistent anatomy from transient artifacts, optimized in a self-supervised manner without requiring artifact masks or annotations, thereby preserving structural in-tegrity and improving rendering fidelity.  
+
+> •
+
+Extensive experiments systematically reveal common failure modes in tracking and mapping, demonstrating that our method outperforms prior approaches under optical degradation. II. R ELATED WORK 
+
+A. Endoscopic SLAM 
+
+Endoscopic SLAM has evolved from adapting general-purpose visual SLAM pipelines to developing endoscopy-specific systems for tracking and dense reconstruction. Feature-based approaches build on classical foundations such as ORB-SLAM3 [19] for feature extraction, tracking, and relocalization, while endoscopy-specific systems such as CudaSIFT-SLAM [20] improve full-procedure robustness in real colonoscopy through stronger features and multi-map recovery. Dense endoscopic mapping has advanced through learned depth estimation and neural rendering, in-cluding depth-and-motion pipelines [21] and illumination-aware reconstruction such as LightNeuS [22], and more recently through endoscopy-specific 3D Gaussian Splatting systems such as EndoGSLAM [4] and EndoFlow-SLAM [5] that enable real-time dense reconstruction and rendering. Complementary work has explored feature-based endoscopic VSLAM augmented with monocular depth for map den-sification [23], while datasets such as EndoMapper [3] and C3VDv2 [18] have strengthened evaluation for endo-scopic mapping. Recent dense monocular SLAM systems such as MASt3R-SLAM [24] show that learned 3D priors from geometric foundation model [25]–[27] can substantially strengthen monocular tracking and dense geometry recovery, but such systems primarily recover poses and dense point-based geometry rather than maintaining a renderable 3DGS scene model for novel-view synthesis. In contrast, EndoMD-SLAM maintains drift-aware tracking and clean, renderable reconstructions by addressing the vulnerabilities of Gaussian Splatting SLAM under severe optical degradation. 
+
+B. SLAM under Degraded Observations 
+
+Robustness to visual degradation is a critical require-ment in endoscopic SLAM, where lens flushing and tran-sient contaminants violate standard photometric assumptions. Classical direct methods such as DSO [28] highlight the sensitivity of photometric SLAM to illumination and appear-ance changes, motivating endoscopic approaches that treat degradation robustness as a first-class modeling issue; for example, NFL-BA [29] replaces standard photometric bundle adjustment with a near-field-light-aware objective tailored to endoscopy’s moving light source. More broadly, dynamic-scene SLAM has long emphasized separating persistent structure from transient observations: Co-Fusion [30] estab-lished this principle by jointly tracking and reconstructing multiple moving components, and recent dynamic 3DGS systems such as DG-SLAM [31] and DGS-SLAM [32] extend it with motion masking, dynamic filtering, and robust or hybrid pose optimization. In medical and surgical imag-ing, non-static phenomena are further driven by deformable tissue and tools: NR-SLAM [33] models tissue deformation explicitly, while newer 3DGS-based surgical reconstruction methods such as Free-SurgS [34], EndoGS [35], and Endo-4DGS [36] extend Gaussian representations to deformable or time-varying surgical scenes. Dense SLAM systems such as NICE-SLAM [37], Point-SLAM [38], and Gaussian Splat-ting SLAM [39] have also improved online neural and 3DGS mapping in general scenes, but are typically de-veloped under substantially cleaner observation conditions than contamination-heavy endoscopy videos. Recent Gaus-sian rendering methods have increasingly explored decoupled scene representations [40]–[42], with DeSplat and HybridGS explicitly separating persistent scene structure from view-dependent or image-specific transients to improve robustness to distractors and contamination. However, these methods are formulated primarily for offline reconstruction or distractor-free novel-view synthesis from posed image sets rather than for online SLAM. While robust rendering remains offline and online SLAM fails to recover tracking or prevent map cor-ruption, EndoMD-SLAM bridges this gap via static-transient factorization, memory-driven gating, and relocalization. III. M ETHOD 
+
+This section presents Endoscopic SLAM with Mem-ory and Decomposition (EndoMD-SLAM), as illustrated in Fig. 2. Section III-A introduces the temporal memory for drift-aware relocalization and safe mapping. Section III-B introduces the static-transient decomposition for separating a static anatomy field from a transient contamination field, which tightly couples with the temporal tracking process. 
+
+A. Temporal memory for relocalization 
+
+Endoscopic videos contain intermittent degraded intervals caused by lens cleaning or sudden contamination. Under such degradations, pose estimates become unreliable. This is espe-cially harmful for online Gaussian splatting SLAM because pose estimation is tightly coupled with continuous map up-dates. EndoMD-SLAM breaks this error accumulation loop by maintaining a temporal memory of unobstructed states to drive transient-aware tracking, perform relocalization, and safely gate map updates. 
+
+a) Transient-aware tracking: To establish robust cross-frame correspondences in textureless endoscopic environ-ments, we leverage correspondence priors from foundation geometric model [43] for matching and localization. In degraded endoscopic observations with severe appearance collapse and weak texture, conventional feature matching becomes unreliable, making foundation-model features nec-essary to maintain usable correspondences. Given a reference keyframe k, the foundation model effectively lifts matched pixels to 3D pairs {(Ai, Bi)} and assigns base confidence weights wi. While this foundation-level matching provides exceptional robustness, it operates under a general static-scene assumption. Consequently, it accurately matches and assigns high confidence to moving lens contaminants (e.g., water droplets), inadvertently treating these camera-attached artifacts as valid 3D anatomical geometry. To prevent these transient features from skewing the pose estimation, we introduce a transient-aware backend. Rather than utilizing the foundation model’s outputs directly, we explicitly modulate the base weights wi using the transient opacity mask ˆαt 
+
+> t−1
+
+rendered from our transient field. This yields a degradation-aware, re-weighted correspondence: 
+
+w′ 
+
+> i
+
+= wi ·m(ui), m(ui) = max  1− ˆαt
+
+> t−1
+
+(ui), 0γ . (1) If the static-transient decomposition has not yet initialized 
+
+ˆαt
+
+> t−1
+
+, we default to m(ui) = 1 . We then estimate the relative camera pose by solving a depth-metric alignment: 
+
+T ⋆tk = arg min  
+
+> T∈SE(3)
+
+X
+
+> i
+
+w′ 
+
+> i
+
+∥Bi − T Ai∥22 . (2) The current pose is then updated as Tt ← Tk T ⋆tk . By solving Eq. (2) in closed form via weighted Procrustes, we leverage the raw power of the foundation model’s feature matching, but strictly filter the inputs through our transient mask. This guarantees a deterministic and stable pose update that is physically consistent with the static anatomy. This step yields the pose Tt alongside our memory-triggering statistics: the valid correspondence fraction ρt and the depth-valid pair count Nvalid .
+
+b) Reliability gate: Using the correspondence statistics derived from the tracking optimization, we evaluate the geometric consistency of the current observation. We define a binary reliability gate as: 
+
+gt = Iρt ≥ τρ ∧ Nvalid ≥ τn
+
+. (3) EndoMD-SLAM uses gt to trigger memory-based recovery and to control whether static map updates are permitted. 
+
+c) Memory-based relocalization: We maintain a tem-poral memory bank of reliable keyframes together with a retrieval database for instantaneous pose recovery. When the tracking estimate is deemed unreliable ( gt = 0 ), the system must re-establish its pose without accumulating drift. Standard heuristic feature matching frequently fails to bridge the severe visual gaps caused by lens flushing. Therefore, to query our retrieval database, we leverage the robust dense descriptors extracted by the foundation model [43]. This allows us to reliably identify a localized candidate set of historical keyframes Ct.For each candidate k ∈ C t, we re-run our transient-aware depth-metric solver to compute a pose hypothesis T (k) 
+
+> t
+
+and evaluate its geometric match fraction ρ(k) 
+
+> t
+
+. We select the hypothesis that yields the highest consensus: 
+
+k⋆ = arg max 
+
+> k∈C t
+
+ρ(k) 
+
+> t
+
+, Tt ← T (k⋆) 
+
+> t
+
+. (4) We accept the recovered pose only if it satisfies the strict reliability criteria established during tracking ( gt = 1 ). Upon successful recovery, the frame is promoted to a new keyframe and inserted into the retrieval database. This ensures the temporal memory is continuously refreshed with validated, contamination-free states, enabling the system to survive intermittent blinding without relying on computationally prohibitive global map optimizations. 
+
+d) Safe mapping: A key role of temporal memory is to prevent irreversible map corruption. Let Θs denote the parameters of the static map. Using the reliability gate gt, we suspend static updates on unreliable frames and only allow static integration when the pose is reliable: 
+
+Θt+1 s =
+
+(
+
+Θt 
+
+> s
+
+− η∇Θs Lmap (Θ t
+
+> s
+
+, Θt
+
+> t
+
+; Tt, I t, D t) , gt = 1 Θt
+
+> s
+
+, gt = 0 
+
+(5) This safe mapping ensures that frames with unreliable poses do not write erroneous geometry into the static map. When 
+
+gt = 0 , we further allow transient-only fitting to absorb short-lived degradations while keeping the static map fixed. 
+
+B. Static-transient decomposition 
+
+Lens droplets and debris introduce spatially localized tran-sient distractors. Fusing them into a single map biases geom-etry and degrades tracking. EndoMD-SLAM addresses this t0  
+
+> tn
+> ::
+> Global Static
+> Per-view Transient
+> Tracking Optimization
+> Reliable Unreliable Fail Success Candidate Retrieval
+> Keyframe Memory Bank
+> K
+> Reliability Gating
+> Update
+> Query
+> Decomposition Memory
+> Reconstruction Ground Truth Loss
+> Alpha Blended
+> Static Transient
+
+Fig. 2: Overview of the EndoMD-SLAM architecture. Input frames are first evaluated by a reliability gate. Non-degraded observations proceed to tracking optimization and update the global static map. Degraded frames activate the temporal memory, which queries a keyframe memory bank to perform drift-aware relocalization while safely suspending static map updates. Concurrently, a static-transient decomposition explicitly factorizes the scene. It absorbs camera-attached occluders into a per-view transient field, thereby protecting the persistent anatomy within the global static field. The static and transient renders are finally alpha-blended to reconstruct the degraded observation and compute the loss against the ground truth. by employing a static-transient decomposition that factorizes persistent anatomy from transient contamination, explicitly separating these artifacts into a transient field to prevent them from being fused into the static reconstruction. 
+
+a) Static-transient representation and compositing: We represent the scene with two Gaussian fields. The static field models persistent anatomy, while the transient field absorbs lens artifacts. For a pose estimate at time t, we render the static RGB ˆIs 
+
+> t
+
+and the transient RGB ˆIt 
+
+> t
+
+, alongside their respective silhouette alphas ˆαs 
+
+> t
+
+and ˆαt
+
+> t
+
+. The final RGB prediction is composed via an occlusion-style overlay: 
+
+ˆIt = ˆIt 
+
+> t
+
++  1 − ˆαt
+
+> t
+
+ ⊙ ˆIs 
+
+> t
+
+. (6) 
+
+b) Separation objective: During mapping, we optimize the fields using a reconstruction loss Lrgb and a depth loss 
+
+Ld that supervises only the static geometry: 
+
+Lbase = λrgb Lrgb ( ˆIt, I t) + λdLd( ˆDs 
+
+> t
+
+, D t). (7) To encourage clean separation, we regularize transient occu-pancy and static coverage: 
+
+L = Lbase + wtr Eu
+
+ˆαt
+
+> t
+
+(u) + wbg Eu[1 − ˆαs
+
+> t
+
+(u)] . (8) 
+
+c) Transient field initialization: Each frame t is as-signed a fixed-capacity transient Gaussian set of Nt transient Gaussians. Upon first observation, we initialize the transient means by backprojecting sampled valid depth pixels to 3D: 
+
+μt 
+
+> t,i
+
+= T −1
+
+> t
+
+ Dt(ui) K−1 ¯ui
+
+ , i = 1 , . . . , N t. (9) We initialize colors from the sampled RGB values with a small initial opacity. This anchors the transient slot to the current observation, allowing it to capture local artifacts independently of the global static field. 
+
+d) Transient field maintenance: To keep the transient field adaptive, we periodically recycle low-contribution tran-sient Gaussians in the transient field. We define a per-Gaussian activity score at,i and mark inactive elements: 
+
+It = {i | at,i < τ act } . (10) Elements in It are replaced with duplicating informative elements or re-sampling. By explicitly managing the lifecycle of these slots, the transient field remains adaptive to evolving contaminants without accumulating stale artifacts. IV. E XPERIMENTS 
+
+We evaluate EndoMD-SLAM under severe optical degra-dation. We report tracking accuracy, reconstruction quality, and runtime, and provide qualitative analyses of static-transient decomposition and drift-aware relocalization. 
+
+A. Experimental setup a) Degradation focused benchmark: To evaluate track-ing and reconstruction performance under severe lens ob-struction, we constructed a targeted benchmark using the C3VDv2 dataset [18]. By filtering the dataset’s metadata for sequences explicitly tagged with “water on lens” and “de-bris on lens”, we identified ten highly degraded sequences. Following previous works [4], [5], all evaluations on these sequences were conducted at a resolution of 675 × 540 .
+
+b) Baselines: We compare our method against three representative state-of-the-art dense SLAM systems to en-sure a comprehensive evaluation. These include NICE-SLAM [37] as a foundation NeRF-based approach, MonoGS [39] representing general-purpose 3DGS SLAM, and EndoGSLAM [4] as the leading endoscopy-specific 3DGS framework. To ensure a fair comparison, all baselines are evaluated using their official implementations under identical configurations on our curated benchmark. 
+
+c) Evaluation metrics: Following the standard evalu-ation protocols of recent endoscopic SLAM systems [4], [5], we evaluate tracking accuracy using Absolute Trajectory Error (ATE), geometric reconstruction using depth Root Mean Squared Error (RMSE) [44], and novel view synthesis quality using PSNR, SSIM [45], and LPIPS [46]. 
+
+d) Implementation details: We implement EndoMD-SLAM in PyTorch with CUDA and run all experiments on an NVIDIA RTX A6000 server. Following the standard experimental setting of [5], [35], our system utilizes RGB-D sequences as input. For the temporal memory, we retrieve up to |C t| = 10 candidates during relocalization. The tracking reliability gate enforces a minimum match fraction τρ =0.15 and a minimum valid metric point count τn = 500 .For a fair rendering comparison with EndoGSLAM [4], we disable Spherical Harmonics optimization and run exactly 25 Methods PSNR ↑ SSIM ↑ LPIPS ↓ RMSE(mm) ↓ ATE (mm) ↓                    
+
+> MonoGS [39] 6.39 0.298 0.681 35.92 15.88 EndoGSLAM [4] 8.16 0.335 0.628 26.21 35.91 NICE-SLAM [37] 14.20 0.406 0.725 20.01 13.57 EndoMD-SLAM 18.06 0.606 0.416 7.22 3.02
+
+TABLE I: Main results on degradation-focused benchmark. EndoMD-SLAM establishes a new state-of-the-art across all metrics under severe optical degradation. Best results are highlighted in bold .                                    
+
+> Baseline Memory Decomposition PSNR ↑SSIM ↑LPIPS ↓RMSE(mm) ↓ATE (mm) ↓
+> ✓8.16 0.335 0.628 26.21 35.91
+> ✓✓7.79 0.226 0.671 28.58 36.23
+> ✓✓16.21 0.571 0.421 7.11 3.04
+> ✓✓✓18.06 0.606 0.416 7.22 3.02
+
+TABLE II: Quantitative ablation of our proposed components. Both the temporal memory and spatial decomposition modules are critical for maximizing tracking robustness and rendering fidelity. Best results are highlighted in bold .GT EndoGSLAM MonoGS NiceSLAM Ours(static) Ours(transient) Ours(blend) c2_transverse1_t3_v3 
+
+> c1_cecum_t1_v2
+> c2_ascending_t4_v2
+
+Fig. 3: Qualitative comparison of novel view synthesis and field decomposition under severe optical degradation. 
+
+Standard baselines (EndoGSLAM, MonoGS, NICE-SLAM) exhibit prominent rendering artifacts and geometric distortions under degraded visual evidence. EndoMD-SLAM explicitly factorizes the scene via a static-transient decomposition. The transient field (Ours-transient) absorbs optical degradations, yielding a clean anatomical map (Ours-static), while the blended output (Ours-blend) reconstructs the degraded observation. mapping iterations per frame to update the static and transient fields. We allocate Nt = 1000 transient Gaussians per frame and set the transient-aware tracking weight modulation exponent to γ = 2 .0. Loss weights are λrgb = 1 .0, λd = 1 .0,
+
+wtr = 0 .01 , and wbg = 0 .01 .
+
+B. Main Results 
+
+Tab. I presents the quantitative comparison of all meth-ods on our degradation-focused benchmark. Under severe lens obstruction, existing state-of-the-art systems experience significant tracking drift. Specifically, the general-purpose 3DGS SLAM framework, MonoGS [39], and the endoscopy-specific system, EndoGSLAM [4], yield Absolute Trajectory Errors (ATE) of 15.88 mm and 35.91 mm, respectively. These systems intrinsically assume continuous visual re-liability; when sudden optical degradations interrupt this continuity, corrupted poses are inadvertently integrated into the trajectory. Similarly, the NeRF-based baseline, NICE-SLAM [37], struggles to maintain accurate localization under these dynamic disturbances (13.57 mm ATE). By contrast, EndoMD-SLAM achieves a robust ATE of 3.02 mm. This stability is fundamentally enabled by our temporal memory, which acts as a safeguard to detect degraded frames, suspend map updates, and utilize stored reliable states to perform relocalization and recover the trajectory. Furthermore, EndoMD-SLAM demonstrates superior per-formance in scene reconstruction and novel view synthesis. Our method achieves a PSNR of 18.06 dB and limits the depth RMSE to 7.22 mm. In this highly degraded regime, existing frameworks struggle considerably; EndoGSLAM yields 8.16 dB PSNR and 26.21 mm RMSE, while MonoGS drops to 6.39 dB PSNR. This performance gap occurs be-cause baselines lack a mechanism to isolate camera-attached contaminants, frequently fusing transient artifacts such as water droplets and debris directly into the persistent 3D geometry. By employing a static-transient decomposition to explicitly factorize the scene into a static anatomy field and a transient artifact field, EndoMD-SLAM prevents these contaminants from corrupting the global map. This explicit decoupling results in structurally accurate and visually clean dense reconstructions, effectively maintaining the integrity of the anatomical mapping despite severe clinical degradations. 
+
+C. Ablation Study 
+
+To evaluate the individual contributions of our core com-ponents, we conduct an ablation study on the degradation-focused benchmark, calculating all metrics using the exact same sequences and evaluation protocols as the main exper-iments, with quantitative results detailed in Tab. II. 
+
+a) Effectiveness of Temporal Memory: The temporal memory is designed to identify degraded observations, sus-pend map updates, and perform drift-aware relocalization. When this mechanism is disabled, the system cannot re-cover from tracking drifting during severe lens contamina-tion, causing the Absolute Trajectory Error (ATE) to surge to 36.23 mm. Because the system forces these corrupted poses into the mapping pipeline, the global 3D recon-struction is severely compromised, resulting in a degraded PSNR of 7.79 dB. By introducing the temporal memory, EndoMD-SLAM successfully maintains trajectory stability (ATE 3.02 mm) and prevents erroneous geometry from corrupting the static map. 
+
+b) Effectiveness of Decomposition: The static-transient decomposition explicitly factorizes the scene into a persistent static anatomy field and a transient contamination field. When we ablate this module, the system still maintains a relatively robust trajectory (yielding an ATE of 3.04 mm) due to the active temporal memory mechanism. However, without static-transient decomposition, camera-attached con-taminants such as water droplets and debris are inadver-tently fused into the static 3D geometry. This geometric entanglement leads to a noticeable drop in rendering fidelity, reducing the PSNR from 18.06 dB to 16.21 dB. Integrating this decomposition effectively absorbs these local transient distractions, preserving the structural integrity and visual quality of the anatomical map. 
+
+D. Qualitative Results 
+
+We evaluate novel view synthesis and static-transient field decomposition, as shown in Fig. 3. Standard mapping frameworks operate under the strict assumption of continuous photometric consistency. Consequently, when presented with localized lens contamination, MonoGS and EndoGSLAM attempt to reconstruct 2D water droplets and glare as physical 3D structures. This results in catastrophic rendering artifacts characterized by massive black voids and streaking artifacts that obscure the underlying anatomy. Similarly, the implicit representation of NICE-SLAM collapses under degraded multi-view constraints. EndoMD-SLAM bypasses this failure mode via explicit scene factorization. As shown in the right-most columns of Fig. 3, our static-transient decomposition module successfully isolates camera-attached contaminants into the transient field. This prevents the artifacts from leaking into the static field, allowing our system to output a clean, unobstructed reconstruction of the colon tissue while recovering the degraded ground truth via alpha blending. c1_cecum_t1_v2 c2_ascending_t4_v3  
+
+> c2_cecum_t1_v3 c2_transverse2_t1_v3
+
+Fig. 4: Qualitative comparison of estimated camera tra-jectories across diverse colonoscopy sequences. Under severe lens contamination, the baseline method (blue dashed lines) experiences catastrophic tracking drift and frequent localization failures due to the sudden loss of visual continu-ity. In contrast, EndoMD-SLAM (red solid lines) maintains robust and accurate pose estimation that tightly aligns with the Ground Truth (black solid lines). By leveraging our temporal memory to gate map updates and perform failure-aware relocalization, our system successfully recovers from highly degraded intervals and prevents long-term trajectory divergence. Maintaining global map consistency under optical degra-dation requires explicit artifact handling, as visualized in Fig. 5. Under severe optical degradation, EndoGSLAM ex-hibits catastrophic structural breakdown. Because the base-line lacks mechanisms to filter transient artifacts or pause updates during tracking failures, it forcefully integrates cor-rupted poses and 2D contaminants into the global map. This results in a massive accumulation of floating Gaus-sian artifacts and permanently warps the overall topology of the colon. Conversely, EndoMD-SLAM consistently re-covers clean, coherent 3D structures. By leveraging the static-transient decomposition to protect the persistent static anatomy, our system accurately preserves the complex tubu-lar structures and mucosal folds, closely matching the Ground Truth without the severe noisy accumulation ob-served in existing frameworks. To evaluate tracking drift, Fig. 4 plots the estimated camera trajectories. Endoscopic procedures frequently in-volve sudden optical degradations, such as water flushing for lens cleaning, which severely break frame-to-frame visual continuity. Under these conditions, standard baselines suffer from frequent localization failures and their estimat ed trajec-tories wildly diverge from the Ground Truth. By leveraging c1_sigmoid1_t1_v3 c2_transverse1_t3_v3 c2_transverse1_t4_v3 c2_transverse2_t1_v2 c2_transverse2_t4_v1 EndoGSLAM 
+
+> EndoMD-SLAM Ground Truth
+
+Fig. 5: Qualitative 3D reconstruction of global colon anatomy under severe lens contamination. The top row (EndoGSLAM) exhibits catastrophic structural breakdown and geometric distortion caused by the naive fusion of transient artifacts and tracking drift. Conversely, EndoMD-SLAM (middle row) successfully preserves the cohesive 3D anatomy, closely matching the Ground Truth (bottom row). This demonstrates the effectiveness of our memory and decomposition mechanisms in isolating contamination and gating erroneous map updates. our temporal memory module to safely gate map updates and perform failure-aware relocalization during these highly unreliable intervals, EndoMD-SLAM maintains robust pose estimation. Our system successfully recovers from complete visual loss, preventing long-term trajectory drift and ensuring the geometric integrity of the downstream mapping process. 
+
+E. Runtime 
+
+We evaluate the computational efficiency of EndoMD-SLAM against competitive baselines on an NVIDIA RTX A6000 server, with quantitative results detailed in Tab. III. Our system achieves the highest overall throughput at 0.95 FPS, substantially outperforming the closest baseline, En-doGSLAM (0.65 FPS). Furthermore, our framework achieves both the fastest tracking at 0.170 seconds per frame and the fastest mapping at 0.874 seconds per frame. This superior efficiency is a direct result of our architecture specifically tailored for severe optical degradation. Our mapping process is highly efficient because the temporal memory and the decomposition of static and transient fields prevent degraded observations from polluting the persistent Gaussian map. By explicitly filtering out invalid points, our system keeps the representation extremely compact and drastically reduces the optimization cost. Concurrently, our tracking overhead remains exceptionally low due to our reliability gating mech-anism. Instead of forcing the system to painstakingly iterate and track through regions with obviously low confidence, we immediately suspend standard tracking and switch directly to relocalization using our temporal memory. Bypassing these computationally heavy attempts to track unreliable frames ensures that both localization and mapping remain consistently fast throughout the entire procedure. V. C ONCLUSION 
+
+In this work, we presented EndoMD-SLAM, an endo-scopic Gaussian splatting SLAM framework designed to 
+
+Method Throughput Tracking Time Mapping Time (FPS) ↑ (s/frame) ↓ (s/frame) ↓
+
+MonoGS [39] 0.25 1.807 2.139 EndoGSLAM [4] 0.65 0.574 0.973 NICE-SLAM [37] 0.20 0.195 4.814 
+
+EndoMD-SLAM 0.95 0.170 0.874 
+
+TABLE III: Runtime efficiency. Evaluated on an NVIDIA RTX A6000 server at identical input resolutions. By explic-itly gating map updates and preventing the generation of redundant transient geometry, EndoMD-SLAM achieves the highest overall throughput and fastest mapping speed. Best results are highlighted in bold .tackle the severe optical degradations routinely encountered in clinical procedures. We identified that standard systems struggle under optical degradation because they assume clean visual observations, leading to tracking drift and the erroneous fusion of 2D transient artifacts into the global 3D map. To overcome these coupled vulnerabilities, EndoMD-SLAM leverages complementary memory and decomposi-tion mechanisms. Our static-transient decomposition isolates camera-attached contaminants into a dedicated transient field, preserving the structural integrity of the static anatomy. Concurrently, our temporal memory maintains a clean state history to safely gate map updates and enable drift-aware relocalization during highly degraded intervals. Extensive evaluations demonstrate that our approach significantly out-performs existing state-of-the-art baselines in both trajectory accuracy and rendering. While EndoMD-SLAM establishes a highly robust foundation for degradation-aware mapping, further elevating its rendering fidelity and optimizing compu-tational efficiency for strictly real-time clinical deployment remain important avenues for future work. REFERENCES [1] A. Richter, T. Steinmann, J.-C. Rosenthal, and S. J. Rupitsch, “Ad-vances in real-time 3d reconstruction for medical endoscopy,” Journal of imaging , vol. 10, no. 5, p. 120, 2024. [2] G. Ciuti, K. Skonieczna- ˙ Zydecka, W. Marlicz, V. Iacovacci, H. Liu, D. Stoyanov, A. Arezzo, M. Chiurazzi, E. Toth, H. Thorlacius, et al. ,“Frontiers of robotic colonoscopy: A comprehensive review of robotic colonoscopes and technologies,” Journal of clinical medicine , vol. 9, no. 6, p. 1648, 2020. [3] P. Azagra, C. Sostres, ´ A. Ferr´ andez, L. Riazuelo, C. Tomasini, O. L. Barbed, J. Morlana, D. Recasens, V. M. Batlle, J. J. G´ omez-Rodr´ ıguez, 
+
+et al. , “Endomapper dataset of complete calibrated endoscopy proce-dures,” Scientific Data , vol. 10, no. 1, p. 671, 2023. [4] K. Wang, C. Yang, Y. Wang, S. Li, Y. Wang, Q. Dou, X. Yang, and W. Shen, “Endogslam: Real-time dense reconstruction and tracking in endoscopic surgeries using gaussian splatting,” in International Conference on Medical Image Computing and Computer-Assisted Intervention . Springer, 2024, pp. 219–229. [5] T. Wu, Y. Miao, Z. Li, H. Zhao, K. Dang, J. Su, L. Yu, and H. Li, “Endoflow-slam: Real-time endoscopic slam with flow-constrained gaussian splatting,” in International Conference on Medical Image Computing and Computer-Assisted Intervention . Springer, 2025, pp. 202–212. [6] X. Liu, Z. Li, M. Ishii, G. D. Hager, R. H. Taylor, and M. Unberath, “Sage: slam with appearance and geometry prior for endoscopy,” in 
+
+2022 International conference on robotics and automation (ICRA) .IEEE, 2022, pp. 5587–5593. [7] Z. Cao, Y. Zhang, Y. Qian, and Q. Wang, “Coarse-to-fine real-time gs-slam from endoscopic rgbd data,” in Seventeenth International Conference on Digital Image Processing (ICDIP 2025) , vol. 13709. SPIE, 2025, pp. 210–219. [8] J. Kaleta, W. Smolak-Dy˙ zewska, D. Malarz, D. Dall’Alba, P. Ko-rzeniowski, and P. Spurek, “Pr-endo: Physically based relightable gaus-sian splatting for endoscopy,” in International Conference on Medical Image Computing and Computer-Assisted Intervention . Springer, 2025, pp. 391–401. [9] O. G. Grasa, E. Bernal, S. Casado, I. Gil, and J. Montiel, “Visual slam for handheld monocular endoscope,” IEEE transactions on medical imaging , vol. 33, no. 1, pp. 135–146, 2013. [10] N. Mahmoud, A. Hostettler, T. Collins, L. Soler, C. Doignon, and J. M. M. Montiel, “Slam based quasi dense reconstruction for min-imally invasive surgery scenes,” arXiv preprint arXiv:1705.09107 ,2017. [11] C. Wang, M. Oda, Y. Hayashi, T. Kitasaka, H. Honma, H. Takabatake, M. Mori, H. Natori, and K. Mori, “Visual slam for bronchoscope tracking and bronchus reconstruction in bronchoscopic navigation,” in 
+
+Medical Imaging 2019: Image-Guided Procedures, Robotic Interven-tions, and Modeling , vol. 10951. SPIE, 2019, pp. 51–57. [12] J. J. G´ omez-Rodr´ ıguez, J. Lamarca, J. Morlana, J. D. Tard´ os, and J. M. Montiel, “Sd-defslam: Semi-direct monocular slam for deformable and intracorporeal scenes,” in 2021 IEEE international conference on robotics and automation (ICRA) . IEEE, 2021, pp. 5170–5177. [13] T. Teufel, H. Shu, R. D. Soberanis-Mukul, J. E. Mangulabnan, M. Sahu, S. S. Vedula, M. Ishii, G. Hager, R. H. Taylor, and M. Unberath, “Oneslam to map them all: a generalized approach to slam for monocular endoscopic imaging based on tracking any point,” 
+
+International Journal of Computer Assisted Radiology and Surgery ,vol. 19, no. 7, pp. 1259–1266, 2024. [14] B. Mildenhall, P. P. Srinivasan, M. Tancik, J. T. Barron, R. Ramamoor-thi, and R. Ng, “Nerf: Representing scenes as neural radiance fields for view synthesis,” Communications of the ACM , vol. 65, no. 1, pp. 99–106, 2021. [15] B. Kerbl, G. Kopanas, T. Leimk¨ uhler, G. Drettakis, et al. , “3d gaussian splatting for real-time radiance field rendering.” ACM Trans. Graph. ,vol. 42, no. 4, pp. 139–1, 2023. [16] N. Yoshida, Y. Naito, R. Hirose, K. Ogiso, K. T. H. Siah, Y. Inada, O. Dohi, K. Kamada, K. Katada, K. Uchiyama, et al. , “Risk of lens cloudiness during colorectal endoscopic submucosal dissection and ability of a novel lens cleaner to maintain and restore endoscopic view,” Digestive Endoscopy , vol. 27, no. 5, pp. 609–617, 2015. [17] N. Yoshida, Y. Naito, R. Yasuda, T. Murakami, K. Ogiso, R. Hirose, Y. Inada, O. Dohi, T. Okayama, K. Kamada, et al. , “A novel lens cleaner to prevent water drop adhesions during colonoscopy and esophagogastroduodenoscopy,” Endoscopy international open , vol. 5, no. 12, pp. E1235–E1241, 2017. [18] M. V. Golhar, L. S. G. Fretes, L. Ayers, V. S. Akshintala, T. L. Bobrow, and N. J. Durr, “C3vdv2–colonoscopy 3d video dataset with enhanced realism,” arXiv preprint arXiv:2506.24074 , 2025. [19] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. Montiel, and J. D. Tard´ os, “Orb-slam3: An accurate open-source library for visual, visual–inertial, and multimap slam,” IEEE transactions on robotics ,vol. 37, no. 6, pp. 1874–1890, 2021. [20] R. Elvira, J. D. Tard´ os, and J. M. M. Montiel, “Cudasift-slam: Multiple-map visual slam for full procedure mapping in real human endoscopy,” arXiv preprint arXiv:2405.16932 , 2024. [21] D. Recasens, J. Lamarca, J. M. F´ acil, J. M. Montiel, and J. Civera, “Endo-depth-and-motion: Reconstruction and tracking in endoscopic videos using depth networks and photometric constraints,” IEEE Robotics and Automation Letters , vol. 6, no. 4, pp. 7225–7232, 2021. [22] V. M. Batlle, J. M. Montiel, P. Fua, and J. D. Tard´ os, “Lightneus: Neural surface reconstruction in endoscopy using illumination de-cline,” in International Conference on Medical Image Computing and Computer-Assisted Intervention . Springer, 2023, pp. 502–512. [23] X. Anad´ on, J. Rodr´ ıguez-Puigvert, and J. Montiel, “3d densifica-tion for multi-map monocular vslam in endoscopy,” arXiv preprint arXiv:2503.14346 , 2025. [24] R. Murai, E. Dexheimer, and A. J. Davison, “Mast3r-slam: Real-time dense slam with 3d reconstruction priors,” in 2025 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) .IEEE, 2025, pp. 16 695–16 705. [25] J. Wang, M. Chen, N. Karaev, A. Vedaldi, C. Rupprecht, and D. Novotny, “Vggt: Visual geometry grounded transformer,” in Pro-ceedings of the Computer Vision and Pattern Recognition Conference ,2025, pp. 5294–5306. [26] H. Lin, S. Chen, J. Liew, D. Y. Chen, Z. Li, G. Shi, J. Feng, and B. Kang, “Depth anything 3: Recovering the visual space from any views,” arXiv preprint arXiv:2511.10647 , 2025. [27] D. Maggio, H. Lim, and L. Carlone, “Vggt-slam: Dense rgb slam optimized on the sl (4) manifold,” arXiv preprint arXiv:2505.12549 ,2025. [28] J. Engel, V. Koltun, and D. Cremers, “Direct sparse odometry,” IEEE transactions on pattern analysis and machine intelligence , vol. 40, no. 3, pp. 611–625, 2017. [29] A. D. Beltran, D. Rho, M. Niethammer, and R. Sengupta, “Nfl-ba: Near-field light bundle adjustment for slam in dynamic lighting,” arXiv preprint arXiv:2412.13176 , 2024. [30] M. R¨ unz and L. Agapito, “Co-fusion: Real-time segmentation, tracking and fusion of multiple objects,” in 2017 IEEE International Confer-ence on Robotics and Automation (ICRA) . IEEE, 2017, pp. 4471– 4478. [31] Y. Xu, H. Jiang, Z. Xiao, J. Feng, and L. Zhang, “Dg-slam: Robust dynamic gaussian splatting slam with hybrid pose optimization,” 
+
+Advances in Neural Information Processing Systems , vol. 37, pp. 51 577–51 596, 2024. [32] M. Kong, J. Lee, S. Lee, and E. Kim, “Dgs-slam: Gaussian splatting slam in dynamic environment,” arXiv preprint arXiv:2411.10722 ,2024. [33] J. J. G. Rodriguez, J. M. Montiel, and J. D. Tardos, “Nr-slam: Nonrigid monocular slam,” IEEE Transactions on Robotics , vol. 40, pp. 4252– 4264, 2024. [34] J. Guo, J. Wang, D. Kang, W. Dong, W. Wang, and Y.-h. Liu, “Free-surgs: Sfm-free 3d gaussian splatting for surgical scene reconstruc-tion,” in International Conference on Medical Image Computing and Computer-Assisted Intervention . Springer, 2024, pp. 350–360. [35] L. Zhu, Z. Wang, J. Cui, Z. Jin, G. Lin, and L. Yu, “Endogs: Deformable endoscopic tissues reconstruction with gaussian splat-ting,” in International Conference on Medical Image Computing and Computer-Assisted Intervention . Springer, 2024, pp. 135–145. [36] Y. Huang, B. Cui, L. Bai, Z. Guo, M. Xu, M. Islam, and H. Ren, “Endo-4dgs: Endoscopic monocular scene reconstruction with 4d gaussian splatting,” in International Conference on Medical Image Computing and Computer-Assisted Intervention . Springer, 2024, pp. 197–207. [37] Z. Zhu, S. Peng, V. Larsson, W. Xu, H. Bao, Z. Cui, M. R. Oswald, and M. Pollefeys, “Nice-slam: Neural implicit scalable encoding for slam,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , 2022, pp. 12 786–12 796. [38] E. Sandstr¨ om, Y. Li, L. Van Gool, and M. R. Oswald, “Point-slam: Dense neural point cloud-based slam,” in Proceedings of the IEEE/CVF international conference on computer vision , 2023, pp. 18 433–18 444. [39] H. Matsuki, R. Murai, P. H. Kelly, and A. J. Davison, “Gaussian splatting slam,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , 2024, pp. 18 039–18 048. [40] J. Ding, X. Liu, Z. Pan, S. Long, and G. Li, “Extrinsplat: Decoupling geometry and semantics for open-vocabulary understanding in 3d gaussian splatting,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , 2026, pp. 31 019–31 028. [41] Y. Wang, M. Klasson, M. Turkulainen, S. Wang, J. Kannala, and A. Solin, “Desplat: Decomposed gaussian splatting for distractor-free rendering,” in Proceedings of the Computer Vision and Pattern Recognition Conference , 2025, pp. 722–732. [42] J. Lin, J. Gu, L. Fan, B. Wu, Y. Lou, R. Chen, L. Liu, and J. Ye, “Hybridgs: Decoupling transients and statics with 2d and 3d gaussian splatting,” in Proceedings of the Computer Vision and Pattern Recognition Conference , 2025, pp. 788–797. [43] V. Leroy, Y. Cabon, and J. Revaud, “Grounding image matching in 3d with mast3r,” in European conference on computer vision . Springer, 2024, pp. 71–91. [44] J. Sturm, N. Engelhard, F. Endres, W. Burgard, and D. Cremers, “A benchmark for the evaluation of rgb-d slam systems,” in 2012 IEEE/RSJ international conference on intelligent robots and systems .IEEE, 2012, pp. 573–580. [45] Z. Wang, A. C. Bovik, H. R. Sheikh, and E. P. Simoncelli, “Image quality assessment: from error visibility to structural similarity,” IEEE transactions on image processing , vol. 13, no. 4, pp. 600–612, 2004. [46] R. Zhang, P. Isola, A. A. Efros, E. Shechtman, and O. Wang, “The unreasonable effectiveness of deep features as a perceptual metric,” in 
+
+Proceedings of the IEEE conference on computer vision and pattern recognition , 2018, pp. 586–595.

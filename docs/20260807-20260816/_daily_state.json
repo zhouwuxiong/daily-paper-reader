@@ -1,8 +1,297 @@
 {
   "date": "20260807-20260816",
   "date_label": "2026-08-07 ~ 2026-08-16",
-  "generated_at": "2026-08-16 07:21:49 UTC",
+  "generated_at": "2026-08-16 07:53:47 UTC",
   "recommend_exists": true,
-  "run_count": 1,
-  "papers": []
+  "run_count": 2,
+  "papers": [
+    {
+      "paper_id": "2608.09146v1",
+      "route": "20260807-20260816/2608.09146v1-multi-submap-implicit-neural-slam-with-local-to-global-loop-closure-for-large-scale-scene-reconstruction",
+      "title": "Multi-Submap Implicit Neural SLAM with Local-to-Global Loop Closure for Large-Scale Scene Reconstruction",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 10.0,
+      "evidence": "面向大规模场景重建的神经SLAM系统，包含多子图结构和回环闭合",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.07937v1",
+      "route": "20260807-20260816/2608.07937v1-flexsplat-flexible-feed-forward-3d-gaussian-splatting-without-point-cloud-correspondence",
+      "title": "FlexSplat: Flexible Feed-Forward 3D Gaussian Splatting without Point Cloud Correspondence",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "联合估计相机位姿与深度，从无标定多视图图像直接重建三维高斯场景",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.08585v1",
+      "route": "20260807-20260816/2608.08585v1-evtrajgs-accurate-and-efficient-3d-gaussian-splatting-from-unposed-event-streams",
+      "title": "EvTrajGS: Accurate and Efficient 3D Gaussian Splatting from Unposed Event Streams",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向无位姿事件流的位姿-场景联合优化与稠密三维重建",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.08949v1",
+      "route": "20260807-20260816/2608.08949v1-endomd-slam-endoscopic-gaussian-splatting-slam-under-optical-degradation-with-memory-and-static-transient-decomposition",
+      "title": "EndoMD-SLAM: Endoscopic Gaussian Splatting SLAM under Optical Degradation with Memory and Static-Transient Decomposition",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向内窥镜场景的视觉SLAM与稠密三维重建系统",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.09110v1",
+      "route": "20260807-20260816/2608.09110v1-view-adaptive-renderer-for-view-consistent-2d-to-3d-generation",
+      "title": "View-Adaptive Renderer for View-Consistent 2D-to-3D Generation",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "基于单张图像进行3D重建，采用NeRF神经渲染",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.10345v1",
+      "route": "20260807-20260816/2608.10345v1-casdeblurgs-cascaded-2d-to-3d-multi-view-consistency-for-3d-gaussian-splatting-from-two-blurry-images",
+      "title": "CasDeblurGS: Cascaded 2D-to-3D Multi-View Consistency for 3D Gaussian Splatting from Two Blurry Images",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "仅用两张运动模糊图像且无需输入位姿即可重建一致的三维高斯场景",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.10602v1",
+      "route": "20260807-20260816/2608.10602v1-gaussian-sculpting-end-to-end-controllable-surface-reconstruction-via-field-optimization",
+      "title": "Gaussian Sculpting: End-to-End Controllable Surface Reconstruction via Field Optimization",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "在有限视点下通过高斯引导的符号距离场优化实现端到端高质量表面重建",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.07012v1",
+      "route": "20260807-20260816/2608.07012v1-scenix-sparse-view-3d-scene-reconstruction-via-executable-scene-programs",
+      "title": "Scenix: Sparse-View 3D Scene Reconstruction via Executable Scene Programs",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "从少量未标定的RGB视角进行三维场景重建",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.07144v1",
+      "route": "20260807-20260816/2608.07144v1-instancesplat-instance-aware-feed-forward-3d-gaussian-splatting-for-scene-understanding",
+      "title": "InstanceSplat: Instance-Aware Feed-Forward 3D Gaussian Splatting for Scene Understanding",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "基于多视图图像的3D高斯溅射前馈三维重建，并具备实例级场景理解",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.08696v1",
+      "route": "20260807-20260816/2608.08696v1-occanyscene-towards-unified-indoor-outdoor-3d-occupancy-predictio",
+      "title": "OccAnyScene: Towards Unified Indoor-Outdoor 3D Occupancy Predictio",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "基于图像的3D占用预测，属于稠密三维场景重建",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.10708v1",
+      "route": "20260807-20260816/2608.10708v1-self-geometry-gt-free-and-plug-and-play-test-time-adaptation-for-geometrically-consistent-3d-vision-foundation-models",
+      "title": "Self-Geometry: GT-Free and Plug-and-Play Test-Time Adaptation for Geometrically Consistent 3D Vision Foundation Models",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "针对深度、相机位姿和点图预测的测试时几何一致性自适应，是SfM/SLAM的核心问题",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.08132v1",
+      "route": "20260807-20260816/2608.08132v1-when-does-an-extra-view-help-adapting-single-view-3d-reconstruction-with-extra-imagery",
+      "title": "When Does An Extra View Help? Adapting Single-View 3D Reconstruction with Extra Imagery",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "从图像进行单视图三维物体重建，并利用额外视角进行测试时自适应",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.08476v1",
+      "route": "20260807-20260816/2608.08476v1-raylift-lifting-complementary-ray-wise-evidence-with-3d-geometry-priors-for-semantic-scene-completion",
+      "title": "RayLift: Lifting Complementary Ray-Wise Evidence with 3D Geometry Priors for Semantic Scene Completion",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "基于相机图像和立体几何的稠密三维场景补全",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.08531v1",
+      "route": "20260807-20260816/2608.08531v1-erf-gs-reconstructing-fast-motion-from-disjoint-event-rgb-viewpoints",
+      "title": "ERF-GS: Reconstructing Fast Motion from Disjoint Event-RGB Viewpoints",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "利用事件-RGB融合和高斯溅射进行动态3D场景重建，与图像3D重建相关",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.09590v1",
+      "route": "20260807-20260816/2608.09590v1-teamatch-teachable-cross-modal-representation-learning-for-2d-3d-matching",
+      "title": "TeaMatch: Teachable Cross-Modal Representation Learning for 2D-3D Matching",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "图像-点云对应学习直接支持视觉SLAM与二维三维定位任务",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.08115v1",
+      "route": "20260807-20260816/2608.08115v1-sumi-scalable-unified-model-for-3d-point-cloud-inference",
+      "title": "SUMI: Scalable Unified Model for 3D Point Cloud Inference",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "基于扩散模型的三维点云补全用于稠密重建",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.09238v1",
+      "route": "20260807-20260816/2608.09238v1-realdenseface-real-time-monocular-3d-face-reconstruction-from-dense-uv-space-priors",
+      "title": "RealDenseFace: Real-time Monocular 3D Face Reconstruction from Dense UV-space Priors",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "基于单张RGB图像的单目三维人脸重建，属于三维重建任务",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    },
+    {
+      "paper_id": "2608.13147v1",
+      "route": "20260807-20260816/2608.13147v1-geometry-grounded-unified-3d-perception-for-autonomous-driving",
+      "title": "Geometry-Grounded Unified 3D Perception for Autonomous Driving",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "利用重建导向的潜在表示从多相机流中统一三维感知，与图像三维重建相关",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 07:53:47 UTC"
+    }
+  ]
 }
