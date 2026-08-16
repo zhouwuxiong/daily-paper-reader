@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T08:16:52.549045+00:00",
+  "generated_at": "2026-08-16T08:38:05.069583+00:00",
   "updated_date": "20260807-20260816",
   "carryover_days": 9,
   "tag_states": {
@@ -8,43 +8,44 @@
       "carryover_days": 9,
       "items": [
         {
-          "id": "2608.13502v1",
+          "id": "2608.11077v1",
           "source": "arxiv",
-          "title": "GS$^{2}$CI: Robust Gaussian Splatting For Snapshot Compressive Imaging via Large Vision Model Priors",
-          "abstract": "Snapshot Compressive Imaging (SCI) offers an efficient solution for high-speed video acquisition and, under exposure-time camera--scene relative motion, multi-view scene capture by compressing temporal or spatial information into a single 2D measurement. While recent studies have explored SCI for 3D scene reconstruction, existing methods struggle with significant challenges due to information loss, limited viewpoint diversity, and the computational burden of jointly optimizing 3D representations and camera poses. In this work, we propose a novel framework that reconstructs high-quality 3D scenes from a single SCI measurement by leveraging 3D Gaussian Splatting (3DGS) and the powerful priors of large-scale vision foundation models (VFMs). Our primary reconstruction combines measurement-derived 3D VFM initialization with SCI-aware Gaussian optimization. After coarse-stage convergence, an auxiliary 2D VFM provides pseudo-view supervision at synthesized viewpoints for local appearance refinement. To further address the instability caused by ambiguous SCI supervision during 3DGS optimization, we introduce Opacity-Guided Splitting and Growth Regulation (OSGR), an SCI-specific densification strategy that augments split candidates using local opacity statistics, discourages loss-compensating opacity inflation through mean-opacity regulation, and bounds representation growth with explicit candidate-ratio and Gaussian-count constraints. Extensive experiments across multiple benchmarks demonstrate that our method achieves the strongest overall performance, combining leading reconstruction quality and robustness to viewpoint variation with competitive computational efficiency.",
+          "title": "Learning Gaussian Structure: Intervention-Guided Density Control for Feed-Forward Driving Reconstruction",
+          "abstract": "Feed-forward Gaussian reconstruction has recently emerged as an efficient approach for driving scene reconstruction. However, prevailing LiDAR-based methods preserve the initial correspondence between observed points and Gaussian primitives, treating the initialized primitive set as the final representation. Unlike optimization-based 3DGS, these methods cannot accumulate gradients during training to determine how the scenes representation should be densified. Meanwhile, the shared sparse backbone only fuses observations from different timestamps implicitly, without explicitly aggregating cross-time evidence for individual primitives. In this paper, we present Learning Gaussian Structure (LGS), a framework that enhances both Gaussian structure and primitive attributes. Our key observation is that changes in local gradient responses induced by a prune or add intervention reveal whether the corresponding structural adjustment benefits reconstruction. Based on this observation, our Gaussian Densify Policy learns a Densify Map comprising Prune and Addition Scores from controlled interventions, and directly adjusts the Gaussian structure during inference. We further develop a compact Cross-Time Point Query that explicitly retrieves and aggregates neighboring features from Gaussian primitives at other timestamps for reliable attribute prediction. Extensive experiments on the Waymo Open Dataset and PandaSet demonstrate that LGS consistently outperforms existing methods.",
           "authors": [
-            "Yanming Yang",
-            "Chenxi Song",
-            "Ping Wang",
-            "Xin Yuan",
-            "Chi Zhang"
+            "Hang Li",
+            "Jiahe Li",
+            "Meiying Gu",
+            "Jin Zheng",
+            "Lina Yu",
+            "Xiao Bai"
           ],
           "primary_category": "cs.CV",
           "categories": [
             "cs.CV"
           ],
-          "published": "2026-08-13T17:29:53+00:00",
-          "link": "https://arxiv.org/pdf/2608.13502v1",
+          "published": "2026-08-11T15:38:55+00:00",
+          "link": "https://arxiv.org/pdf/2608.11077v1",
           "tags": [
             "keyword:d-slam",
             "query:d-slam"
           ],
           "llm_score": 8.0,
-          "llm_evidence_en": "Efficient 3D scene reconstruction from single snapshot compressive imaging",
-          "llm_evidence_cn": "从快照压缩成像进行高效三维场景重建",
-          "llm_evidence": "从快照压缩成像进行高效三维场景重建",
-          "canonical_evidence": "从快照压缩成像进行高效三维场景重建",
-          "llm_tldr_en": "GS2CI reconstructs high-quality 3D scenes from a single SCI measurement by combining 3D Gaussian Splatting with large vision model priors, addressing information loss and pose optimization burden.",
-          "llm_tldr_cn": "快照压缩成像为高效三维场景获取提供了新思路，但信息丢失与优化负担限制了其重建质量。GS2CI以3D高斯泼溅表征三维场景，并利用大规模视觉基础模型的强先验，在单个SCI测量下联合重建场景几何与外观，同时估计相机位姿，显著提升了对退化观测的鲁棒性和重建效率，为压缩成像三维重建提供了新范式。",
-          "llm_tldr": "快照压缩成像为高效三维场景获取提供了新思路，但信息丢失与优化负担限制了其重建质量。GS2CI以3D高斯泼溅表征三维场景，并利用大规模视觉基础模型的强先验，在单个SCI测量下联合重建场景几何与外观，同时估计相机位姿，显著提升了对退化观测的鲁棒性和重建效率，为压缩成像三维重建提供了新范式。",
+          "llm_evidence_en": "Feed-forward 3D Gaussian reconstruction for driving scenes with explicit density control",
+          "llm_evidence_cn": "面向驾驶场景的前馈三维高斯重建，具备显式密度控制",
+          "llm_evidence": "面向驾驶场景的前馈三维高斯重建，具备显式密度控制",
+          "canonical_evidence": "面向驾驶场景的前馈三维高斯重建，具备显式密度控制",
+          "llm_tldr_en": "LGS enhances feed-forward Gaussian reconstruction by learning where to densify primitives through intervention-guided density control, improving driving scene reconstruction.",
+          "llm_tldr_cn": "前馈高斯重建方法常用于高效驾驶场景重建，但现有方法将初始原语视为最终表示，无法学习场景表示的致密化。LGS提出干预引导的密度控制机制，在训练中显式累积跨时间证据以决定哪些高斯原语需要增密。该方法不依赖传统优化式3DGS，就能在共享稀疏主干下生成更精细的几何。实验表明其重建的驾驶场景细节更丰富，为实时重建提供了新方案。",
+          "llm_tldr": "前馈高斯重建方法常用于高效驾驶场景重建，但现有方法将初始原语视为最终表示，无法学习场景表示的致密化。LGS提出干预引导的密度控制机制，在训练中显式累积跨时间证据以决定哪些高斯原语需要增密。该方法不依赖传统优化式3DGS，就能在共享稀疏主干下生成更精细的几何。实验表明其重建的驾驶场景细节更丰富，为实时重建提供了新方案。",
           "llm_tags": [
             "query:d-slam"
           ],
           "matched_query_tag": "query:d-slam",
-          "matched_query_text": "3D reconstruction from images",
-          "matched_requirement_id": "req-2",
+          "matched_query_text": "dense 3D reconstruction",
+          "matched_requirement_id": "req-4",
           "selection_source": "carryover_cache",
-          "paper_id": "2608.13502v1",
+          "paper_id": "2608.11077v1",
           "carry_days": 1
         }
       ]
