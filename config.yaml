@@ -25,3 +25,50 @@ subscriptions:
     stage: A
     diff_threshold_pct: 15
   keyword_recall_mode: or
+  intent_profiles:
+    - tag: d-slam
+      description: 查找SLAM和三维重建相关的论文
+      enabled: true
+      paper_sources:
+        - arxiv
+      keywords:
+        - keyword: visual SLAM
+          keyword_cn: ''
+          query: visual simultaneous localization and mapping
+        - keyword: 3D reconstruction
+          keyword_cn: ''
+          query: 3D reconstruction from images
+        - keyword: structure from motion
+          keyword_cn: ''
+          query: structure from motion for 3D modeling
+        - keyword: dense reconstruction
+          keyword_cn: ''
+          query: dense 3D reconstruction
+        - keyword: RGB-D SLAM
+          keyword_cn: ''
+          query: RGB-D simultaneous localization and mapping
+        - keyword: monocular SLAM
+          keyword_cn: ''
+          query: monocular simultaneous localization and mapping
+      intent_queries:
+        - query: recent progress in simultaneous localization and mapping with 3D scene reconstruction
+          query_cn: 同时定位与建图及三维场景重建的最新进展
+          enabled: true
+          source: manual
+          note: ''
+      updated_at: '2026-08-16T07:34:08.948Z'
+source_backends:
+  arxiv:
+    papers_table: arxiv_papers
+    use_vector_rpc: true
+    vector_rpc: match_arxiv_papers
+    vector_rpc_exact: match_arxiv_papers_exact
+    use_bm25_rpc: true
+    bm25_rpc: match_arxiv_papers_bm25
+    sync_table: arxiv_sync_status
+    sync_success_value: success
+    schema: public
+    kind: supabase
+    enabled: true
+    url: https://lyucdwgefyfbmaiopjbk.supabase.co
+    anon_key: sb_publishable_lX-oi64Uxyd7SIVv3_w2Uw_MTOojeKq
