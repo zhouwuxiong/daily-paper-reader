@@ -1,0 +1,708 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-08-16T20:27:25.362526+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 8,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 16,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2608.11263v1",
+      "source": "arxiv",
+      "title": "GeoUniPR: A Geometry-Consistent Unified Framework for Cross-Modal Place Recognition",
+      "abstract": "Cross-modal place recognition (CMPR) aims to identify the same location across heterogeneous sensing modalities, such as vision and LiDAR. Existing methods commonly bridge the modality gap using complex alignment modules, multi-stage training, or full fine-tuning of pretrained backbones. In this work, we revisit CMPR from the perspective of geometric consistency and propose GeoUniPR, a unified and concise geometry-consistent framework. GeoUniPR reduces cross-modal discrepancy at the representation level by projecting LiDAR point clouds into the camera perspective to construct Geometry-Consistent depth image views (DIV), which establish direct RGB-LiDAR correspondence. We further augment DIV with native LiDAR cues, including intensity and surface-normal information, yielding a multi-channel geometric representation that improves structural consistency. Based on this representation, GeoUniPR learns a unified embedding space using two modality-specific ViT-based encoders with identical architectures, trained through parameter-efficient adaptation without auxiliary alignment modules, multi-stage training, or full backbone fine-tuning. In addition, we introduce Spatially-Consistent InfoNCE (SC-InfoNCE), a CMPR-specific contrastive objective that suppresses distance-induced false negatives under spatial continuity. Extensive experiments on KITTI and KITTI-360 demonstrate that GeoUniPR achieves state-of-the-art (SOTA) performance in both same-modal and cross-modal place recognition, with strong cross-dataset generalization.",
+      "authors": [
+        "Wonbong Kim",
+        "Jiatong Xiao",
+        "Rui Li",
+        "Xufei Wang",
+        "Qiwen Gu",
+        "Junqiao Zhao",
+        "Chen Ye",
+        "Guang Chen"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-10T03:52:01+00:00",
+      "link": "https://arxiv.org/pdf/2608.11263v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Cross-modal place recognition directly supports loop closure detection in SLAM",
+      "llm_evidence_cn": "跨模态地点识别直接可用于SLAM中的回环检测",
+      "llm_evidence": "跨模态地点识别直接可用于SLAM中的回环检测",
+      "canonical_evidence": "跨模态地点识别直接可用于SLAM中的回环检测",
+      "llm_tldr_en": "GeoUniPR addresses cross-modal place recognition by projecting LiDAR point clouds into camera perspective to build geometry-consistent depth image views, reducing modality gap at representation level and unifying CMPR with a concise framework.",
+      "llm_tldr_cn": "跨模态地点识别旨在视觉与激光雷达等异构传感器间确定同一地点，是SLAM回环检测的关键技术。现有方法通常需要复杂的对齐模块和多阶段训练。GeoUniPR从几何一致性出发，将激光雷达点云投影到相机视角，形成几何一致的深度图像视图，并融合强度等信息，直接建立RGB与激光的对应关系。该框架简洁统一，在跨模态匹配精度上优于现有方法，为SLAM回环检测提供了更高效的解决方案。",
+      "llm_tldr": "跨模态地点识别旨在视觉与激光雷达等异构传感器间确定同一地点，是SLAM回环检测的关键技术。现有方法通常需要复杂的对齐模块和多阶段训练。GeoUniPR从几何一致性出发，将激光雷达点云投影到相机视角，形成几何一致的深度图像视图，并融合强度等信息，直接建立RGB与激光的对应关系。该框架简洁统一，在跨模态匹配精度上优于现有方法，为SLAM回环检测提供了更高效的解决方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "loop closure detection techniques to correct drift in SLAM systems",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.09519v1",
+      "source": "arxiv",
+      "title": "XFeat Revisited: Reproducibility and Evaluation of a Lightweight Image Matcher",
+      "abstract": "We present a reproducibility study of XFeat, a lightweight local feature extractor and matcher designed to identify corresponding points across images efficiently on resource-constrained hardware. We re-implement the architecture based on the paper and supplementary material, re-evaluate the authors' released checkpoint alongside our re-implementation, and conduct additional architectural ablations to examine design choices that were not fully justified in the original work. This distinction between re-evaluation and reproduction is important, as the paper, supplement, and public code differ in several implementation details, including the backbone layout, fusion block, and training losses. Empirically, our reproduced models closely match and, in some cases, outperform the re-evaluated original checkpoint on MegaDepth-1500 and ScanNet-1500, supporting the main claim that XFeat provides a strong accuracy-efficiency trade-off for standard image-matching benchmarks. Our ablations provide a more nuanced view of two architectural arguments from the original paper. In particular, the parallel keypoint branch is important for semi-dense matching, but its benefit is less pronounced than originally claimed, while the evidence for the specific placement of the single skip-connection remains inconclusive. Finally, we reproduce the original downstream evaluations and find close agreement for homography estimation, while Aachen visual localization remains below the reported results, even for the released checkpoint, suggesting sensitivity to underspecified evaluation details. We then extend the analysis to zero-shot out-of-distribution and cross-modal matching across retinal, thermal-visible, and multimodal remote-sensing imagery, where XFeat remains effective in some settings but degrades sharply under severe modality shifts.",
+      "authors": [
+        "Lazar Đoković",
+        "Aimee Lin"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.LG"
+      ],
+      "published": "2026-08-10T12:18:02+00:00",
+      "link": "https://arxiv.org/pdf/2608.09519v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "lightweight image feature extraction and matching underpins visual SLAM tracking and loop closure",
+      "llm_evidence_cn": "轻量级图像特征提取与匹配是视觉SLAM跟踪与回环检测的基础",
+      "llm_evidence": "轻量级图像特征提取与匹配是视觉SLAM跟踪与回环检测的基础",
+      "canonical_evidence": "轻量级图像特征提取与匹配是视觉SLAM跟踪与回环检测的基础",
+      "llm_tldr_en": "Presents a reproducibility study and evaluation of XFeat, a lightweight local feature matcher, including architectural ablations relevant to resource-constrained visual correspondence.",
+      "llm_tldr_cn": "特征匹配是视觉SLAM、视觉里程计与回环检测等任务的核心计算环节。本文对轻量级特征提取与匹配方法XFeat进行了完整的可复现性研究，重新实现其网络结构，并对比官方检查点展开多种消融实验，分析骨干布局、融合模块及训练损失的影响。实验结果表明，复现模型与官方结果高度一致，同时揭示了一些原始论文未充分论证的设计细节。该工作为在资源受限设备上部署可靠的视觉匹配提供了参考基准，对SLAM系统具有实用价值。",
+      "llm_tldr": "特征匹配是视觉SLAM、视觉里程计与回环检测等任务的核心计算环节。本文对轻量级特征提取与匹配方法XFeat进行了完整的可复现性研究，重新实现其网络结构，并对比官方检查点展开多种消融实验，分析骨干布局、融合模块及训练损失的影响。实验结果表明，复现模型与官方结果高度一致，同时揭示了一些原始论文未充分论证的设计细节。该工作为在资源受限设备上部署可靠的视觉匹配提供了参考基准，对SLAM系统具有实用价值。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.09520v1",
+      "source": "arxiv",
+      "title": "A Height-Constrained 2-Point Minimal Solver for Pose Estimation from Active LED Markers with Event Cameras",
+      "abstract": "In many autonomous applications requiring real-time localization, active marker-based systems are preferred due to their low latency and ease of deployment compared to computationally demanding feature-based methods. Event~\\mbox{cameras} offer high temporal resolution and minimal delay and are commonly used with active LED markers for robust real-time localization. Existing methods typically rely on Perspective-n-Point (PnP) solvers for pose estimation. However, structured marker layouts can be challenging to deploy in space-constrained scenarios, while partial self-motion information (e.g., gravity direction and altitude) is readily available from onboard sensors. We derive a robust and accurate minimal solver that estimates camera pose from only two LED markers by incorporating known tilt angle and camera height measured by an onboard sensor, such as an IMU or an altimeter. The proposed formulation uniquely determines the camera pose through both a closed-form and a linear least-squares solution. We further analyze degenerate configurations and characterize the conditions under which height information does not contribute to rotation estimation. For evaluation, we developed an event-based active marker system to collect real-world data with ground truth from a motion capture system. Experiments on both synthetic and real data demonstrate improved accuracy over the state-of-the-art P2P solver and competitive performance relative to P3P.",
+      "authors": [
+        "Runze Yuan",
+        "Alexander Kappler",
+        "Jun Zhang",
+        "Kuangyi Chen",
+        "Fabio Morbidi",
+        "Pascal Vasseur",
+        "Cédric Demonceaux",
+        "Friedrich Fraundorfer"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.RO"
+      ],
+      "published": "2026-08-10T12:19:24+00:00",
+      "link": "https://arxiv.org/pdf/2608.09520v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Minimal pose estimation solver for event cameras and active markers",
+      "llm_evidence_cn": "事件相机与主动标记的极小位姿求解",
+      "llm_evidence": "事件相机与主动标记的极小位姿求解",
+      "canonical_evidence": "事件相机与主动标记的极小位姿求解",
+      "llm_tldr_en": "Presents a height-constrained 2-point minimal solver for real-time pose estimation from event cameras with active LED markers, leveraging known altitude and gravity to outperform PnP in space-constrained deployments.",
+      "llm_tldr_cn": "面向实时定位的自主应用中，事件相机配合主动LED标记常被使用，但传统PnP解法在空间受限时难以部署。该文推导出一种基于高度约束的两点极小解法，利用机载传感器提供的重力方向与高度信息，仅需两个标记点即可恢复位姿。该解法精度高、鲁棒性强，适合标记布局受限的场景，为事件相机定位提供了一种高效替代方案。",
+      "llm_tldr": "面向实时定位的自主应用中，事件相机配合主动LED标记常被使用，但传统PnP解法在空间受限时难以部署。该文推导出一种基于高度约束的两点极小解法，利用机载传感器提供的重力方向与高度信息，仅需两个标记点即可恢复位姿。该解法精度高、鲁棒性强，适合标记布局受限的场景，为事件相机定位提供了一种高效替代方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual odometry algorithms for incremental camera pose estimation",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.09620v1",
+      "source": "arxiv",
+      "title": "A Semantic Communication Approach to Fiducial Marker Processing in 5G-Enabled Edge SLAM",
+      "abstract": "Autonomous robots increasingly rely on edge computing to offload computationally intensive perception tasks while maintaining real-time operation over 5G networks. However, conventional fiducial marker detection pipelines provide limited opportunities for efficient task partitioning, making them poorly suited for communication-aware edge deployment. This paper proposes a semantic split inference framework for fiducial marker processing in 5G-enabled Edge SLAM. A DeepTag-inspired convolutional neural network is partitioned between the robot and the edge server, where intermediate feature representations serve as task-oriented semantic information transmitted over the wireless link. The framework is integrated into a ROS2-based robotic architecture and characterized over a real 5G communication testbed. Experimental results demonstrate accurate keypoint estimation, illustrate the impact on downstream pose estimation, and quantify the communication--computation trade-offs associated with different split points, providing practical insights for communication-aware deployment of deep visual perception in connected robotic systems.",
+      "authors": [
+        "Boris Radovanovic",
+        "Vukan Ninkovic",
+        "Katarina Vidojevic",
+        "Buda Bajic Papuga",
+        "Dejan Vukobratovic"
+      ],
+      "primary_category": "cs.NI",
+      "categories": [
+        "cs.NI",
+        "cs.RO"
+      ],
+      "published": "2026-08-10T13:59:11+00:00",
+      "link": "https://arxiv.org/pdf/2608.09620v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Explicitly addresses SLAM with fiducial marker processing over edge computing for robots",
+      "llm_evidence_cn": "直接面向SLAM，通过边缘计算和语义通信处理视觉标记，用于机器人定位建图",
+      "llm_evidence": "直接面向SLAM，通过边缘计算和语义通信处理视觉标记，用于机器人定位建图",
+      "canonical_evidence": "直接面向SLAM，通过边缘计算和语义通信处理视觉标记，用于机器人定位建图",
+      "llm_tldr_en": "Proposes a semantic split inference framework for fiducial marker processing in 5G-enabled edge SLAM, partitioning a DeepTag-inspired CNN between robot and edge server to send task-oriented features and integrating with ROS2.",
+      "llm_tldr_cn": "自主机器人常通过边缘计算卸载计算量大的感知任务，但传统标记检测流水线难以在通信约束下高效拆分。本文提出面向5G边缘SLAM的语义分割推理框架，将基于DeepTag的卷积网络在机器人和边缘服务器间分工，仅传输面向任务的中间特征。该框架已集成到ROS2机器人系统中，能够减少端到端数据量，提高SLAM系统在有限带宽下的实时性，为边缘SLAM提供新的通信感知设计。",
+      "llm_tldr": "自主机器人常通过边缘计算卸载计算量大的感知任务，但传统标记检测流水线难以在通信约束下高效拆分。本文提出面向5G边缘SLAM的语义分割推理框架，将基于DeepTag的卷积网络在机器人和边缘服务器间分工，仅传输面向任务的中间特征。该框架已集成到ROS2机器人系统中，能够减少端到端数据量，提高SLAM系统在有限带宽下的实时性，为边缘SLAM提供新的通信感知设计。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.10449v2",
+      "source": "arxiv",
+      "title": "PBD-AG: Persistent Baseline-Delta Active Graphs with Uncertainty-Aware Inspection for Long-Horizon Service Robots",
+      "abstract": "Long-horizon service robots require persistent world models that can be built autonomously in unseen environments and revised as task-relevant objects change. Existing methods rely on online mapping, which accumulates localization and observation errors, static scene representations that cannot capture persistent object changes, or holistic vision-language predictions that lack verifiable 3D geometric evidence. We present PBD-AG, a persistent baseline-delta active graph framework that decouples robot-verified stable fixtures from revisable dynamic object events. Under our framework, the robot autonomously bootstraps the structural baseline from onboard exploration and inspects discovered fixtures to ground hierarchical object beliefs. PBD-AG maintains reliability-weighted object states over geometry, semantics, identity, existence, and support relations, utilizing a geometric visibility gate to mitigate false deletions under occlusion. Inspection viewpoints are selected by a graph-conditioned policy that balances target coverage, travel cost, collision risk, and redundant observation. Simulation experiments in multiple environments and under controlled dynamic evaluation show higher aggregate coarse-fixture F1 than capability-matched controls, as well as stronger identity continuity and event recall. A qualitative physical-robot demonstration further illustrates integration with onboard sensing, providing a traceable world model for long-horizon robotic perception. The project page of PBD-AG is available at https://shuobao214.github.io/PBD-AG/",
+      "authors": [
+        "Shuo Bao",
+        "Wei Dong",
+        "Shuyue Zhang",
+        "Ming Shang",
+        "Yuchen Huang",
+        "Han Yu",
+        "Chengjie Xu",
+        "Yiheng Bi",
+        "Kai Sun",
+        "Fuchun Sun",
+        "Xinzhou Wang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-11T04:03:54+00:00",
+      "link": "https://arxiv.org/pdf/2608.10449v2",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Persistent world graph mapping for long-horizon service robots, addressing mapping and localization errors in SLAM.",
+      "llm_evidence_cn": "面向长时服务机器人的持久世界图映射，处理SLAM中的建图与定位误差。",
+      "llm_evidence": "面向长时服务机器人的持久世界图映射，处理SLAM中的建图与定位误差。",
+      "canonical_evidence": "面向长时服务机器人的持久世界图映射，处理SLAM中的建图与定位误差。",
+      "llm_tldr_en": "Presents PBD-AG, a persistent baseline-delta active graph framework for long-horizon service robots that decouples verified stable fixtures from revisable dynamic events, using uncertainty-aware inspection to build and update persistent world models.",
+      "llm_tldr_cn": "长期服务机器人需要能够随任务变化而更新持久世界模型。PBD-AG框架将机器人验证的固定结构基线与可修订的动态物体事件分离，通过自主探索引导基线建图，并用不确定性感知巡检锚定3D几何证据。该工作减少了在线建图误差累积，支持可持续的场景理解与更新。",
+      "llm_tldr": "长期服务机器人需要能够随任务变化而更新持久世界模型。PBD-AG框架将机器人验证的固定结构基线与可修订的动态物体事件分离，通过自主探索引导基线建图，并用不确定性感知巡检锚定3D几何证据。该工作减少了在线建图误差累积，支持可持续的场景理解与更新。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.10660v1",
+      "source": "arxiv",
+      "title": "Cross-View Sequential Visual Localization with Spatio-Temporal Context Modeling for Autonomous Driving",
+      "abstract": "Continuous and reliable localization is essential for autonomous driving. Cross-view visual localization matches ground images with satellite maps, providing complementary localization cues for pipelines that depend on Global Navigation Satellite System (GNSS) signals and high-definition (HD) maps. Most existing cross-view visual localization methods process each frame independently, leaving temporal information underused and limiting accuracy under dynamic occlusion, illumination variation, and repetitive textures. This study proposes a temporal-context-enhanced framework for cross-view sequence visual localization. The proposed recurrent cross-frame module aggregates historical context from the previous state to enhance the coarse ground feature of each current frame. These enhanced features facilitate satellite candidate-region classification, while hierarchical fine-grained features enable precise local offset estimation. On the CVIS dataset, the proposed method reduces mean localization error from 3.80 m to 1.57 m and increases R@1 m from 8.14% to 40.22%. Direct transfer to KITTI-CVL achieves a mean error of 2.61 m, with target-domain fine-tuning further reducing the mean error to 2.27 m. Zero-shot field experiments on a real-world vehicle achieve a mean error of 2.84 m and R@5 m of 96.86%. These results demonstrate that temporal context enhancement significantly improves cross-view localization accuracy and supports robust deployment on public benchmarks and real-world roads.",
+      "authors": [
+        "Jiaping Wang",
+        "Shaobo Li",
+        "Zhen Wang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-08-11T08:44:42+00:00",
+      "link": "https://arxiv.org/pdf/2608.10660v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Cross-view visual localization with temporal context for autonomous driving",
+      "llm_evidence_cn": "融合时空上下文的跨视角视觉定位用于自动驾驶",
+      "llm_evidence": "融合时空上下文的跨视角视觉定位用于自动驾驶",
+      "canonical_evidence": "融合时空上下文的跨视角视觉定位用于自动驾驶",
+      "llm_tldr_en": "Proposes a temporal-context-enhanced recurrent framework for cross-view visual localization that aggregates historical state to improve accuracy under dynamic occlusion, illumination changes, and repetitive textures in autonomous driving.",
+      "llm_tldr_cn": "跨视角视觉定位通过地面图像与卫星图匹配为自动驾驶提供定位补充，但现有方法大多逐帧处理，忽略了时序信息，在动态遮挡和光照变化下精度有限。本文提出一种循环跨帧模块，从上一状态聚合历史上下文，增强当前帧的定位特征。实验表明该方法能显著提升序列定位在复杂环境下的准确性与稳定性，为GNSS缺失场景提供可靠定位支撑。",
+      "llm_tldr": "跨视角视觉定位通过地面图像与卫星图匹配为自动驾驶提供定位补充，但现有方法大多逐帧处理，忽略了时序信息，在动态遮挡和光照变化下精度有限。本文提出一种循环跨帧模块，从上一状态聚合历史上下文，增强当前帧的定位特征。实验表明该方法能显著提升序列定位在复杂环境下的准确性与稳定性，为GNSS缺失场景提供可靠定位支撑。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2608.10938v1",
+      "source": "arxiv",
+      "title": "GS-CPE: Unified 6-Degree-of-Freedom Camera Pose Estimation via 3D Gaussian Splatting",
+      "abstract": "Despite substantial progress in visual localization, from scene coordinate regression to direct camera pose regression, achieving both robust generalization and high accuracy remain challenging. This study introduces GS-CPE (Gaussian Splatting based Camera Pose Estimation), a coarse-to-fine framework for 6-DoF camera pose estimation that unifies geometry-based coarse pose estimation with robust 3D Gaussian Splatting (3DGS) warping based pose refinement. GS-CPE first estimates a coarse pose via retrieval-guided geometric pose estimation on a 3DGS scene representation, then refines it by minimizing a visibility aware masked RGB warping objective in a multi-scale optimization framework, with adaptive re-rendering. Extensive experiments on indoor and outdoor benchmarks including 7Scenes, Cambridge Landmarks, FAST-LIVO2 datasets, and a custom dataset demonstrate state-of-the-art performance, consistently outperforming in both accuracy and generalization.",
+      "authors": [
+        "Huaiyuan Weng",
+        "Chul Min Yeum",
+        "Su-Min Kang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-11T14:06:51+00:00",
+      "link": "https://arxiv.org/pdf/2608.10938v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "6-DoF camera pose estimation using 3D Gaussian Splatting for visual localization",
+      "llm_evidence_cn": "基于三维高斯溅射的六自由度相机位姿估计，用于视觉定位",
+      "llm_evidence": "基于三维高斯溅射的六自由度相机位姿估计，用于视觉定位",
+      "canonical_evidence": "基于三维高斯溅射的六自由度相机位姿估计，用于视觉定位",
+      "llm_tldr_en": "GS-CPE presents a coarse-to-fine 6-DoF camera pose estimation method combining geometry-based coarse pose estimation with 3D Gaussian Splatting warping refinement, unifying retrieval-guided geometric pose estimation and visibility-aware masked RGB warping for accurate visual localization.",
+      "llm_tldr_cn": "针对视觉定位中鲁棒泛化与高精度难以兼得的问题，提出GS-CPE，一种基于三维高斯溅射(3DGS)的粗到精六自由度相机位姿估计框架。该方法先通过检索引导的几何位姿估计获得粗位姿，再利用3DGS变形与可见性感知掩膜RGB配准进行多尺度优化精化。实验表明该方法在保持泛化性的同时显著提升了位姿估计精度，为视觉SLAM和重定位提供了有力的位姿估计方案。",
+      "llm_tldr": "针对视觉定位中鲁棒泛化与高精度难以兼得的问题，提出GS-CPE，一种基于三维高斯溅射(3DGS)的粗到精六自由度相机位姿估计框架。该方法先通过检索引导的几何位姿估计获得粗位姿，再利用3DGS变形与可见性感知掩膜RGB配准进行多尺度优化精化。实验表明该方法在保持泛化性的同时显著提升了位姿估计精度，为视觉SLAM和重定位提供了有力的位姿估计方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2608.10708v1",
+      "source": "arxiv",
+      "title": "Self-Geometry: GT-Free and Plug-and-Play Test-Time Adaptation for Geometrically Consistent 3D Vision Foundation Models",
+      "abstract": "Recent Vision Foundation Models (VFMs) predict depth, camera pose, and pointmap in a single forward pass without per-scene optimization, achieving strong generalization. However, enforcing explicit multi-view geometric consistency, e.g., through bundle adjustment, is computationally costly and is thus not imposed during VFM pretraining, so such inconsistency can arise. To address this, implicit self-consistency derived from model outputs (e.g., pointmaps, features), though enforced at test-time in prior work, delivers inherently limited performance gain, especially on scenes where the pretrained VFM is highly inaccurate. In contrast to this implicit signal, we propose Self-Geometry, a plug-and-play test-time adaptation pipeline that directly imposes explicit multi-view geometric constraints using 2D pixel correspondences as pseudo ground-truth. Our proposed Self-Geometry consists of Geometric Disentanglement Optimization, which combines Multi-View Consistency and Epipolar Consistency losses with Gradient Disentanglement to prevent gradient conflict; Frame Angular-Neighbor, a view sampler based on SO(3) geodesic distances for lightly imposing these constraints; and Lightweight TTA, which adapts VFMs via LoRA. Our method achieves consistent improvements in both pose and geometry estimation across six VFMs (VGGT, $π^3$, DA3-Giant/Large/Base/Small) and four benchmarks (7Scenes, ETH3D, ScanNet++, HiRoom).",
+      "authors": [
+        "Seokhyun Youn",
+        "Dahyeon Kye",
+        "Sung-Ho Bae",
+        "Jihyong Oh"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-11T09:28:50+00:00",
+      "link": "https://arxiv.org/pdf/2608.10708v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Test-time adaptation for geometrically consistent camera pose and pointmap prediction",
+      "llm_evidence_cn": "面向几何一致相机位姿与点图预测的测试时自适应",
+      "llm_evidence": "面向几何一致相机位姿与点图预测的测试时自适应",
+      "canonical_evidence": "面向几何一致相机位姿与点图预测的测试时自适应",
+      "llm_tldr_en": "Self-Geometry is a plug-and-play test-time adaptation that enforces geometric consistency in vision foundation models' depth, pose and pointmap predictions, improving accuracy without ground truth.",
+      "llm_tldr_cn": "本文提出Self-Geometry，一种即插即用的测试时自适应方法，用于增强3D视觉基础模型在深度、相机位姿和点图预测上的多视图几何一致性。与依赖隐式自一致性的方法不同，该方法利用可微的几何优化信号在测试时调整模型输出，而无需真值标签。实验表明在多种场景下均能提升位姿与点图的准确性，且适用于预训练模型而无需重新训练，为视觉里程计与三维重建提供了鲁棒的即用模块。",
+      "llm_tldr": "本文提出Self-Geometry，一种即插即用的测试时自适应方法，用于增强3D视觉基础模型在深度、相机位姿和点图预测上的多视图几何一致性。与依赖隐式自一致性的方法不同，该方法利用可微的几何优化信号在测试时调整模型输出，而无需真值标签。实验表明在多种场景下均能提升位姿与点图的准确性，且适用于预训练模型而无需重新训练，为视觉里程计与三维重建提供了鲁棒的即用模块。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual odometry algorithms for incremental camera pose estimation",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.07835v1",
+      "source": "arxiv",
+      "title": "SeqLoc: Beyond the Single Frame for Cross-View Geo-Localization in Feature-Sparse Scenes",
+      "abstract": "Cross-View Geo-Localization (CVGL) with OpenStreetMap (OSM) performs well in structure-rich urban environments but collapses in feature-sparse scenes such as rural roads. To study this failure mode, in this work, we introduce CV-FSS, a benchmark that pairs sequential panoramas from five rural regions with aligned OSM maps, on which single-frame methods degrade drastically. We then propose SeqLoc, an online test-time sequence aggregation mechanism that recursively maintains a log-belief volume with three key components: (1) Entropy-Tempered Uncertainty (ETU) tempers each incoming pose likelihood volume by its normalized entropy; (2) Map-Guided Relocalization (MGR) mixes a map-shaped recovery distribution into the belief so that a suppressed true pose can recover; (3) Peak-Anchored Smoothing (PAS) derives the final pose at sub-grid precision. Extensive experiments on CV-FSS and CV-RHO demonstrate that SeqLoc outperforms single-frame localization by a large margin, improving both position and orientation recall by over 50%. The benchmark and source code will be made publicly available.",
+      "authors": [
+        "Junwei Zheng",
+        "Yun Huang",
+        "Ruize Dai",
+        "Ruiping Liu",
+        "Yufan Chen",
+        "Kunyu Peng",
+        "Kailun Yang",
+        "Jiaming Zhang",
+        "Guangming Wang",
+        "Olaf Wysocki",
+        "Rainer Stiefelhagen"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-08T00:42:23+00:00",
+      "link": "https://arxiv.org/pdf/2608.07835v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Sequence aggregation and map-guided relocalization for cross-view place recognition, applicable to loop closure.",
+      "llm_evidence_cn": "序列聚合与地图引导重定位的跨视角定位，可用于回环检测。",
+      "llm_evidence": "序列聚合与地图引导重定位的跨视角定位，可用于回环检测。",
+      "canonical_evidence": "序列聚合与地图引导重定位的跨视角定位，可用于回环检测。",
+      "llm_tldr_en": "Introduces CV-FSS benchmark and SeqLoc, an online test-time sequence aggregation with entropy-tempered uncertainty and map-guided relocalization for robust cross-view geo-localization in feature-sparse rural scenes.",
+      "llm_tldr_cn": "针对跨视角地理定位在特征稀疏场景下性能骤降的问题，本文引入CV-FSS基准并提出SeqLoc在线测试时序列聚合机制。该方法采用熵调节不确定性对每个位姿似然进行加权，并通过地图引导的重定位混合分布来抑制单帧失败，递归维护置信体积。实验表明，SeqLoc能显著提升乡村道路等特征稀疏场景的定位精度，为回环检测与重定位提供了新思路。",
+      "llm_tldr": "针对跨视角地理定位在特征稀疏场景下性能骤降的问题，本文引入CV-FSS基准并提出SeqLoc在线测试时序列聚合机制。该方法采用熵调节不确定性对每个位姿似然进行加权，并通过地图引导的重定位混合分布来抑制单帧失败，递归维护置信体积。实验表明，SeqLoc能显著提升乡村道路等特征稀疏场景的定位精度，为回环检测与重定位提供了新思路。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "loop closure detection techniques to correct drift in SLAM systems",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.13104v1",
+      "source": "arxiv",
+      "title": "Online Learning of Correspondences between Images",
+      "abstract": "We propose a novel method for iterative learning of point correspondences between image sequences. Points moving on surfaces in 3D space are projected into two images. Given a point in either view, the considered problem is to determine the corresponding location in the other view. The geometry and distortions of the projections are unknown as is the shape of the surface. Given several pairs of point-sets but no access to the 3D scene, correspondence mappings can be found by excessive global optimization or by the fundamental matrix if a perspective projective model is assumed. However, an iterative solution on sequences of point-set pairs with general imaging geometry is preferable. We derive such a method that optimizes the mapping based on Neyman's chi-square divergence between the densities representing the uncertainties of the estimated and the actual locations. The densities are represented as channel vectors computed with a basis function approach. The mapping between these vectors is updated with each new pair of images such that fast convergence and high accuracy are achieved. The resulting algorithm runs in real-time and is superior to state-of-the-art methods in terms of convergence and accuracy in a number of experiments.",
+      "authors": [
+        "Michael Felsberg",
+        "Fredrik Larsson",
+        "Johan Wiklund",
+        "Niclas Wadströmer",
+        "Jörgen Ahlberg"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-13T11:30:29+00:00",
+      "link": "https://arxiv.org/pdf/2608.13104v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "iterative online correspondence learning is directly useful for visual odometry and pose estimation",
+      "llm_evidence_cn": "在线迭代对应点学习直接适用于视觉里程计与位姿估计",
+      "llm_evidence": "在线迭代对应点学习直接适用于视觉里程计与位姿估计",
+      "canonical_evidence": "在线迭代对应点学习直接适用于视觉里程计与位姿估计",
+      "llm_tldr_en": "Proposes an online iterative method for learning point correspondences between image sequences using Neyman's chi-square divergence, without requiring known 3D geometry.",
+      "llm_tldr_cn": "点对应关系是视觉里程计与SLAM中的关键环节。本文提出一种用于图像序列间对应关系在线学习的新方法，能够在未知场景几何和投影畸变的情况下，基于Neyman卡方散度迭代优化映射。与依赖全局优化或基础矩阵的传统方法不同，该方法适用于通用成像几何。实验表明其可以在连续点集对上持续改进匹配结果。这一在线学习框架为增量式相机位姿估计提供了有力支撑。",
+      "llm_tldr": "点对应关系是视觉里程计与SLAM中的关键环节。本文提出一种用于图像序列间对应关系在线学习的新方法，能够在未知场景几何和投影畸变的情况下，基于Neyman卡方散度迭代优化映射。与依赖全局优化或基础矩阵的传统方法不同，该方法适用于通用成像几何。实验表明其可以在连续点集对上持续改进匹配结果。这一在线学习框架为增量式相机位姿估计提供了有力支撑。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual odometry algorithms for incremental camera pose estimation",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2608.12600v1",
+      "source": "arxiv",
+      "title": "PseudoMapLabeler: Confidence-Aware Pseudo-Label Generation for Semi-Supervised Online Mapping",
+      "abstract": "A critical challenge in deploying online HD map construction systems to real-world scenarios is the scarcity of labeled training data, which limits model generalization in diverse environments. To address this limitation, we propose a teacher-student semi-supervised learning (SSL) framework that generates high-quality pseudo-labels from unlabeled data through confidence-aware map refinement. Our approach first trains a teacher model on limited labeled data, then leverages Beta-distribution-based confidence maps to assess the reliability of predicted map elements across temporal observations. Unlike conventional filtering methods that discard entire elements, we introduce a spatial clipping technique that selectively preserves high-confidence regions while removing unreliable segments. The refined map elements serve as map priors that improve the teacher model's prediction accuracy on unlabeled data in a second pass. These enhanced predictions become pseudo-labels for training a student model from scratch, followed by fine-tuning on the original labeled data. Experimental results on the nuScenes dataset demonstrate that our teacher-student framework with refined pseudo-labels improves performance by +6.1 mAP under a low-label regime compared to training on labeled data alone, offering a practical solution to the labeled data scarcity problem in online HD map construction.",
+      "authors": [
+        "Chikao Tsuchiya",
+        "Dhaval Bhanderi",
+        "David Ilstrup",
+        "Hsinmin Cheng",
+        "Christopher Ostafew"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-08-12T21:18:09+00:00",
+      "link": "https://arxiv.org/pdf/2608.12600v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "semi-supervised learning for online HD map construction",
+      "llm_evidence_cn": "用于在线高精地图构建的半监督学习",
+      "llm_evidence": "用于在线高精地图构建的半监督学习",
+      "canonical_evidence": "用于在线高精地图构建的半监督学习",
+      "llm_tldr_en": "PseudoMapLabeler presents a confidence-aware pseudo-label generation framework for semi-supervised online HD map construction, using Beta-distribution confidence maps and spatial clipping to refine predicted map elements and improve model generalization with limited labeled data.",
+      "llm_tldr_cn": "针对在线高精地图构建中标注数据稀缺导致泛化受限的问题，提出教师-学生半监督学习框架PseudoMapLabeler。该方法训练教师模型并利用Beta分布置信图评估预测元素的可靠性，与丢弃整体元素不同，采用空间裁剪选择性地保留高置信区域作为伪标签。实验表明该方法能生成高质量伪标签，有效提升在线地图构建的精度和泛化能力，降低对人工标注的依赖。",
+      "llm_tldr": "针对在线高精地图构建中标注数据稀缺导致泛化受限的问题，提出教师-学生半监督学习框架PseudoMapLabeler。该方法训练教师模型并利用Beta分布置信图评估预测元素的可靠性，与丢弃整体元素不同，采用空间裁剪选择性地保留高置信区域作为伪标签。实验表明该方法能生成高质量伪标签，有效提升在线地图构建的精度和泛化能力，降低对人工标注的依赖。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.07937v1",
+      "source": "arxiv",
+      "title": "FlexSplat: Flexible Feed-Forward 3D Gaussian Splatting without Point Cloud Correspondence",
+      "abstract": "We present FlexSplat, a feed-forward framework for novel view synthesis (NVS) from uncalibrated, object-centric multi-view image collections. A recent line of query-based methods reconstructs a compact set of 3D Gaussians by treating them as transformer queries that are refined with multi-view deformable attention; these methods, however, assume that camera poses are given. FlexSplat removes this assumption: a geometry transformer is trained jointly with the Gaussian decoder to predict per-image camera parameters and depth, which in turn ground a depth-guided Gaussian parameterization and a multi-view deformable cross-attention that aggregates evidence across all input views into a single, view-consistent set of primitives. An uncertainty-weighted depth-consistency objective lets the jointly trained geometry adapt to the reconstruction task, while the cross-view consensus formed during decoding absorbs the residual error of the estimated cameras and depth. The representation uses a compact Gaussian budget that is decoupled from the input resolution - unlike pixel-aligned methods, the primitive count does not grow with the image grid - and is not dictated by the number of views. On ShapeNet-SRN and Google Scanned Objects (GSO), FlexSplat matches or approaches posed state-of-the-art reconstructors while requiring neither camera poses nor ground-truth depth, and matches the best perceptual (LPIPS) quality among the compared methods on GSO. Our results indicate that a jointly trained geometry front-end is sufficient to bring calibration-free operation to query-based Gaussian reconstruction while staying within 0.7 dB PSNR of posed methods and matching their perceptual quality.",
+      "authors": [
+        "Amir Sabbaghziarani",
+        "Hanting Ye",
+        "Maria Gorlatova",
+        "Yi Ding"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-08T05:52:26+00:00",
+      "link": "https://arxiv.org/pdf/2608.07937v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Feed-forward 3D Gaussian splatting predicting camera poses and depth",
+      "llm_evidence_cn": "前馈3D高斯泼溅，联合预测相机位姿与深度",
+      "llm_evidence": "前馈3D高斯泼溅，联合预测相机位姿与深度",
+      "canonical_evidence": "前馈3D高斯泼溅，联合预测相机位姿与深度",
+      "llm_tldr_en": "FlexSplat removes the need for given camera poses in feed-forward 3D Gaussian splatting by jointly training a geometry transformer to predict per-image camera parameters and depth, enabling view-consistent novel view synthesis from uncalibrated images.",
+      "llm_tldr_cn": "现有基于查询的前馈高斯泼溅方法通常假设相机位姿已知，限制了其应用。本文提出FlexSplat，通过联合训练几何变换器预测每张图像的相机参数与深度，并以此为指引构建深度引导的高斯参数化与多视角可变形交叉注意力，在无相机位姿输入下聚合多视图证据，生成单一致的三维图元。实验表明该方法能实现灵活且高保真的新视角合成，并具备不确定性估计能力。",
+      "llm_tldr": "现有基于查询的前馈高斯泼溅方法通常假设相机位姿已知，限制了其应用。本文提出FlexSplat，通过联合训练几何变换器预测每张图像的相机参数与深度，并以此为指引构建深度引导的高斯参数化与多视角可变形交叉注意力，在无相机位姿输入下聚合多视图证据，生成单一致的三维图元。实验表明该方法能实现灵活且高保真的新视角合成，并具备不确定性估计能力。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "recent progress in simultaneous localization and mapping with 3D scene reconstruction",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.13147v1",
+      "source": "arxiv",
+      "title": "Geometry-Grounded Unified 3D Perception for Autonomous Driving",
+      "abstract": "Camera-based autonomous driving perception requires a shared representation that preserves metric 3D structure across synchronized multi-camera streams. However, existing image-based frameworks often rely on backbones pretrained for semantic recognition, and introduce 3D geometry through downstream task-specific modules. As a result, their shared representations may fail to preserve explicit metric geometry and consistent 3D scene structure. In this paper, we present a Geometry-grounded Unified 3D Perception (GeoUP) framework that adapts the reconstruction-oriented latent of VGGT to calibrated, streaming multi-camera driving scenes. GeoUP factorizes cross-image interaction into self, temporal, and view attention to capture structurally distinct temporal and cross-view correspondences. It further injects calibration-aware raymap encodings to provide metric scale and camera geometry. The resulting geometry-grounded latent is decoded for metric depth estimation, 3D object detection, and semantic occupancy prediction, corresponding to surface-, instance-, and volume-level readouts of the same 3D scene. Through joint multi-task and multi-dataset training, GeoUP effectively leverages heterogeneous annotations and generalizes across diverse sensor configurations and perception ranges. Extensive experiments on nuScenes, Argoverse 2, Waymo, KITTI, and DDAD demonstrate that GeoUP achieves SOTA performance across detection, occupancy, and depth estimation. These results validate the effectiveness of geometry-grounded representations for unified 3D driving perception.",
+      "authors": [
+        "Longfei Xu",
+        "Xiaohui Wang",
+        "Zehao Huang",
+        "Han Li",
+        "Ya Yang",
+        "Naiyan Wang",
+        "Si Liu"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-13T12:17:50+00:00",
+      "link": "https://arxiv.org/pdf/2608.13147v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "unified 3D perception preserving metric 3D structure for multi-camera driving, useful for online mapping",
+      "llm_evidence_cn": "保持度量三维结构的统一感知，可用于在线建图与自动驾驶",
+      "llm_evidence": "保持度量三维结构的统一感知，可用于在线建图与自动驾驶",
+      "canonical_evidence": "保持度量三维结构的统一感知，可用于在线建图与自动驾驶",
+      "llm_tldr_en": "GeoUP adapts VGGT reconstruction-oriented latents to streaming multi-camera driving with factorized attention, preserving explicit metric geometry for unified 3D perception.",
+      "llm_tldr_cn": "相机式自动驾驶感知需要共享表示来保留多相机流中的度量三维结构。本文提出GeoUP框架，将VGGT的重建导向潜在表示适配到校准后的多相机驾驶场景，通过自注意力、时间注意力和视图注意力的分解来刻画跨图像交互。该设计使共享表示能够保持显式度量几何和一致的三维场景结构。实验表明，GeoUP在多个三维感知任务上取得了先进的性能。这项工作为自动驾驶统一三维感知提供了几何基础。",
+      "llm_tldr": "相机式自动驾驶感知需要共享表示来保留多相机流中的度量三维结构。本文提出GeoUP框架，将VGGT的重建导向潜在表示适配到校准后的多相机驾驶场景，通过自注意力、时间注意力和视图注意力的分解来刻画跨图像交互。该设计使共享表示能够保持显式度量几何和一致的三维场景结构。实验表明，GeoUP在多个三维感知任务上取得了先进的性能。这项工作为自动驾驶统一三维感知提供了几何基础。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.08023v1",
+      "source": "arxiv",
+      "title": "4D-WAM: Infusing Spatiotemporal Awareness into World Action Models through Trajectory Fields",
+      "abstract": "Building on recent advances in world models, World Action Models (WAMs) jointly model video prediction and action generation. However, they typically represent videos in 2D pixel space, creating a representation gap with 3D space in which robotic actions are executed. Recent 3D approaches introduce 3D information, but fail to fully exploit the dynamics of 3D structures. In this work, we propose 4D-WAM, a model-agnostic training strategy that injects spatiotemporal knowledge from 3D trajectory fields into WAMs through representation alignment. To this end, we introduce two complementary objectives: 1) motion alignment, which aligns temporal feature variations across adjacent frames and encourages the model to build local 4D awareness during training, and 2) destination alignment, which guides the model to infer the final destination from the source frame by minimizing the gap between their attention-like similarity distributions. Together, these objectives provide both local motion supervision and long-horizon goal guidance, enabling WAMs to learn trajectory-level spatiotemporal representations. Extensive in-distribution and out-of-distribution experiments across different base models demonstrate the model's improvements in spatial understanding, execution precision, robustness, generalization, and versatility.",
+      "authors": [
+        "Lishan Yang",
+        "Wenxuan Song",
+        "Xi Wang",
+        "Pingyue Sheng",
+        "Zheng Fang",
+        "Ziyang Zhou",
+        "Junjie He",
+        "Haodong Yan",
+        "Jiayi Chen",
+        "Nan Sun",
+        "Qiao Sun",
+        "Lingqiao Liu",
+        "Yan Wang",
+        "Yuxiang Gao",
+        "Feras Dayoub",
+        "Haoang Li"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-08T09:11:05+00:00",
+      "link": "https://arxiv.org/pdf/2608.08023v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "World action models with 3D trajectory fields for robot action generation",
+      "llm_evidence_cn": "用三维轨迹场增强世界行动模型的机器人生成动作能力",
+      "llm_evidence": "用三维轨迹场增强世界行动模型的机器人生成动作能力",
+      "canonical_evidence": "用三维轨迹场增强世界行动模型的机器人生成动作能力",
+      "llm_tldr_en": "Presents 4D-WAM, a model-agnostic training strategy that aligns 3D trajectory fields with world action models, injecting spatiotemporal knowledge for improved video prediction and action generation in robotic control settings.",
+      "llm_tldr_cn": "该文提出4D-WAM，一种模型无关的训练策略，通过表示对齐将三维轨迹场中的时空知识注入世界行动模型，以弥合二维像素空间与三维执行空间的表征差距。方法引入运动对齐与局部四维感知两个目标，使模型更好地利用三维结构动态。实验显示该策略能提升视频预测与动作生成质量，为机器人学习和运动控制提供了新的表示增强途径。",
+      "llm_tldr": "该文提出4D-WAM，一种模型无关的训练策略，通过表示对齐将三维轨迹场中的时空知识注入世界行动模型，以弥合二维像素空间与三维执行空间的表征差距。方法引入运动对齐与局部四维感知两个目标，使模型更好地利用三维结构动态。实验显示该策略能提升视频预测与动作生成质量，为机器人学习和运动控制提供了新的表示增强途径。",
+      "llm_tags": [
+        "query:rl-motion:composite"
+      ],
+      "matched_query_tag": "query:rl-motion:composite",
+      "matched_query_text": "Papers central to 查找强化学习和运动控制相关的最新论文, especially work that connects or combines: reinforcement learning approaches for physical systems; motion control strategies in robotics; robot control using learning methods; continuous state and action control; recent advances in reinforcement learning for motion control; deep reinforcement learning for robot locomotion.",
+      "matched_requirement_id": "req-composite-rl-motion",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.13502v1",
+      "source": "arxiv",
+      "title": "GS$^{2}$CI: Robust Gaussian Splatting For Snapshot Compressive Imaging via Large Vision Model Priors",
+      "abstract": "Snapshot Compressive Imaging (SCI) offers an efficient solution for high-speed video acquisition and, under exposure-time camera--scene relative motion, multi-view scene capture by compressing temporal or spatial information into a single 2D measurement. While recent studies have explored SCI for 3D scene reconstruction, existing methods struggle with significant challenges due to information loss, limited viewpoint diversity, and the computational burden of jointly optimizing 3D representations and camera poses. In this work, we propose a novel framework that reconstructs high-quality 3D scenes from a single SCI measurement by leveraging 3D Gaussian Splatting (3DGS) and the powerful priors of large-scale vision foundation models (VFMs). Our primary reconstruction combines measurement-derived 3D VFM initialization with SCI-aware Gaussian optimization. After coarse-stage convergence, an auxiliary 2D VFM provides pseudo-view supervision at synthesized viewpoints for local appearance refinement. To further address the instability caused by ambiguous SCI supervision during 3DGS optimization, we introduce Opacity-Guided Splitting and Growth Regulation (OSGR), an SCI-specific densification strategy that augments split candidates using local opacity statistics, discourages loss-compensating opacity inflation through mean-opacity regulation, and bounds representation growth with explicit candidate-ratio and Gaussian-count constraints. Extensive experiments across multiple benchmarks demonstrate that our method achieves the strongest overall performance, combining leading reconstruction quality and robustness to viewpoint variation with competitive computational efficiency.",
+      "authors": [
+        "Yanming Yang",
+        "Chenxi Song",
+        "Ping Wang",
+        "Xin Yuan",
+        "Chi Zhang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-13T17:29:53+00:00",
+      "link": "https://arxiv.org/pdf/2608.13502v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "3D scene reconstruction and camera pose optimization via Gaussian Splatting",
+      "llm_evidence_cn": "基于三维高斯泼溅的场景重建与相机位姿优化",
+      "llm_evidence": "基于三维高斯泼溅的场景重建与相机位姿优化",
+      "canonical_evidence": "基于三维高斯泼溅的场景重建与相机位姿优化",
+      "llm_tldr_en": "Proposes a framework using 3D Gaussian Splatting and large vision model priors to reconstruct high-quality 3D scenes from a single snapshot compressive imaging measurement, addressing information loss and viewpoint diversity while jointly optimizing 3D representation and camera poses.",
+      "llm_tldr_cn": "该文针对快照压缩成像中的三维场景重建问题，提出利用三维高斯泼溅并借助大尺度视觉模型的先验知识，从单次压缩测量中恢复高质量三维场景。传统方法因信息损失和视角多样性不足而受限，且联合优化三维表示与相机位姿计算量大。所提框架有效缓解这些问题，在鲁棒性与重建质量上取得进展，为压缩成像下的三维重建提供新思路。",
+      "llm_tldr": "该文针对快照压缩成像中的三维场景重建问题，提出利用三维高斯泼溅并借助大尺度视觉模型的先验知识，从单次压缩测量中恢复高质量三维场景。传统方法因信息损失和视角多样性不足而受限，且联合优化三维表示与相机位姿计算量大。所提框架有效缓解这些问题，在鲁棒性与重建质量上取得进展，为压缩成像下的三维重建提供新思路。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.08025v1",
+      "source": "arxiv",
+      "title": "DA-NBV: A Direction-Aware Next-Best-View Planner for Efficient 3D Reconstruction of Ships at Sea",
+      "abstract": "Accurate 3D reconstruction of ships at sea is important for maritime supervision, damage assessment, and autonomous maritime operations. Although 3D reconstruction has advanced considerably, high-quality data acquisition still largely relies on manually designed trajectories or skilled operators, resulting in high costs and limited scalability. Next-best-view (NBV) planning automates this process by selecting subsequent viewpoints based on the current state. However, existing NBV policies mainly model spatial occupancy while overlooking directional observation history. This limitation is particularly problematic for ships: their complex superstructures and severe self-occlusions require observations from multiple viewpoints, and insufficient directional coverage often yields incomplete reconstructions. These challenges are further amplified at sea, where wave-induced heave, roll, and pitch continuously alter the ship's pose and surface visibility. Meanwhile, wind disturbances and limited onboard power impose stricter requirements on scanning efficiency. To address these challenges, we propose DA-NBV, a direction-aware NBV policy that augments the conventional occupancy state with directional observation statistics. We introduce a learnable Position Advantage Field (PAF) that uses directional information to guide viewpoint selection. The policy further adopts a locally constrained action space and a nonlinear coverage-shaping reward to improve scanning efficiency. We also develop the ship-oriented SeaShip-3D dataset and a configurable sea-state simulation environment. Experiments under varying heave, roll, and pitch conditions show that DA-NBV improves reconstruction completeness by approximately 3 percentage points and reduces Chamfer distance by 43% while achieving higher path efficiency.",
+      "authors": [
+        "Jiaming Chen",
+        "Juntao Yang",
+        "Zhentao Zou",
+        "Qi Ming",
+        "Yi Yu",
+        "Zhihang Zhong",
+        "Xue Yang",
+        "Xue Jiang",
+        "Yue Zhou"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "published": "2026-08-08T09:19:31+00:00",
+      "link": "https://arxiv.org/pdf/2608.08025v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Active next-best-view planning for 3D reconstruction, relevant to dense 3D mapping and robotics",
+      "llm_evidence_cn": "面向三维重建的主动视点规划，与稠密三维建图和机器人相关",
+      "llm_evidence": "面向三维重建的主动视点规划，与稠密三维建图和机器人相关",
+      "canonical_evidence": "面向三维重建的主动视点规划，与稠密三维建图和机器人相关",
+      "llm_tldr_en": "DA-NBV is a direction-aware next-best-view planner that models directional observation history to handle complex superstructures and severe self-occlusions, enabling efficient and scalable 3D reconstruction of ships at sea.",
+      "llm_tldr_cn": "船舶海上三维重建对海事监管与自主作业很重要，但现有数据采集常依赖人工规划轨迹，成本高且难以扩展。DA-NBV提出方向感知的下一个最佳视点规划策略，在占用信息之外显式建模方向观测历史，以应对船舶上层建筑复杂和自遮挡严重的问题。实验表明该方法能在更少的视角下获得更完整的重建覆盖，提升了海上三维重建的自动化程度和效率。",
+      "llm_tldr": "船舶海上三维重建对海事监管与自主作业很重要，但现有数据采集常依赖人工规划轨迹，成本高且难以扩展。DA-NBV提出方向感知的下一个最佳视点规划策略，在占用信息之外显式建模方向观测历史，以应对船舶上层建筑复杂和自遮挡严重的问题。实验表明该方法能在更少的视角下获得更完整的重建覆盖，提升了海上三维重建的自动化程度和效率。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.09807v1",
+      "source": "arxiv",
+      "title": "WRAP: Wasserstein-Robust Adaptive Plug-in for Robot Localization",
+      "abstract": "Robotic localization under changing sensing conditions can suffer from biased errors and miscalibrated covariances. We present WRAP, an adapter-agnostic Wasserstein-robust plug-in for nonlinear extended Kalman filter (EKF) and error-state Kalman filter (ESKF) stacks. A causal module supplies time-varying effective process and measurement statistics; a mean-preserving Wasserstein local update then computes least-favorable covariances and a robust gain without changing the propagation model, residual, or retraction. This separates mean adaptation from covariance robustification and uses distinct radii for propagation and sensing. On 18 UWB--IMU sequences held out from adapter training, adapter-only and WRAP reduce mean 3-D position RMSE by $19.8\\%$ and $27.4\\%$ relative to the nominal ESKF; an isotropic ablation reaches $19.5\\%$, linking the incremental gain to directional process-covariance redistribution. An in-sample GNSS--INS study shows that mean adaptation provides most of the accuracy gain, while DR improves consistency and mitigates over-tightened classical covariance estimates. The robust solve takes 0.05 ms for UWB and 2.92 ms for GNSS on a Jetson Orin Nano.",
+      "authors": [
+        "Minhyuk Jang",
+        "Astghik Hakobyan",
+        "Jungjin Lee",
+        "Naira Hovakimyan",
+        "Insoon Yang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "eess.SY"
+      ],
+      "published": "2026-08-10T16:29:30+00:00",
+      "link": "https://arxiv.org/pdf/2608.09807v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Robust Kalman filtering for robot localization to handle changing sensing conditions, a core component of SLAM systems",
+      "llm_evidence_cn": "面向机器人定位的鲁棒卡尔曼滤波改进，是SLAM系统的核心组件",
+      "llm_evidence": "面向机器人定位的鲁棒卡尔曼滤波改进，是SLAM系统的核心组件",
+      "canonical_evidence": "面向机器人定位的鲁棒卡尔曼滤波改进，是SLAM系统的核心组件",
+      "llm_tldr_en": "WRAP is an adapter-agnostic Wasserstein-robust plug-in for EKF/ESKF localization stacks, supplying time-varying statistics and computing least-favorable covariances to reduce bias and miscalibrated covariances under changing sensing conditions.",
+      "llm_tldr_cn": "机器人在不断变化的传感条件下进行定位时，容易受到偏置误差和协方差校准不准的影响。本文提出WRAP，一种与适配器无关的Wasserstein鲁棒插件，可插入非线性EKF和误差状态EKF定位框架。它通过因果模块提供时变状态统计，并保持均值不变地更新最不利协方差与鲁棒增益，不改动传播模型。在18个UWB-IMU序列测试中，WRAP将三维位置RMSE进一步降低27.4%，提升了定位准确性。",
+      "llm_tldr": "机器人在不断变化的传感条件下进行定位时，容易受到偏置误差和协方差校准不准的影响。本文提出WRAP，一种与适配器无关的Wasserstein鲁棒插件，可插入非线性EKF和误差状态EKF定位框架。它通过因果模块提供时变状态统计，并保持均值不变地更新最不利协方差与鲁棒增益，不改动传播模型。在18个UWB-IMU序列测试中，WRAP将三维位置RMSE进一步降低27.4%，提升了定位准确性。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}

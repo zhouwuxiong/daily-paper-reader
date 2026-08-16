@@ -1,0 +1,583 @@
+Title: A Height-Constrained 2-Point Minimal Solver for Pose Estimation from Active LED Markers with Event Cameras
+
+URL Source: https://arxiv.org/pdf/2608.09520v1
+
+Published Time: Tue, 11 Aug 2026 02:16:18 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# A Height-Constrained 2-Point Minimal Solver for Pose Estimation from Active LED Markers with Event Cameras 
+
+Runze Yuan 1, Alexander Kappler 1, Jun Zhang 1, Kuangyi Chen 1, Fabio Morbidi 2,Pascal Vasseur 2, C´ edric Demonceaux 3, and Friedrich Fraundorfer 1
+
+Abstract — In many autonomous applications requiring real-time localization, active marker-based systems are preferred due to their low latency and ease of deployment com-pared to computationally demanding feature-based methods. Event cameras offer high temporal resolution and minimal delay and are commonly used with active LED markers for robust real-time localization. Existing methods typically rely on Perspective-n-Point (PnP) solvers for pose estimation. However, structured marker layouts can be challenging to deploy in space-constrained scenarios, while partial self-motion informa-tion (e.g., gravity direction and altitude) is readily available from onboard sensors. We derive a robust and accurate minimal solver that estimates camera pose from only two LED markers by incorporating known tilt angle and camera height measured by an onboard sensor, such as an IMU or an altimeter. The proposed formulation uniquely determines the camera pose through both a closed-form and a linear least-squares solution. We further analyze degenerate configurations and characterize the conditions under which height information does not contribute to rotation estimation. For evaluation, we developed an event-based active marker system to collect real-world data with ground truth from a motion capture system. Experiments on both synthetic and real data demonstrate improved accuracy over the state-of-the-art P2P solver and competitive performance relative to P3P. 
+
+I. INTRODUCTION Fast and accurate camera pose estimation is essential for vision-based robotic systems operating in GNSS-denied environments, such as indoor spaces or underground tunnels. In most of the cases, PnP solvers [1]–[3] are utilized as standard techniques to determine the 6-DoF (Degrees of Freedom) camera pose relative to a known 3D map, which requires both prior map creation and maintenance. They are frequently used in settings where a large number of 3D-2D correspondences are available by feature matching, between the map and the current view. In these conditions, feature detection, matching, and outlier rejection are necessary but computationally expensive operations, which can degrade real-time performance. In contrast, infrastructure-based localization like marker-based methods (e.g., AprilTag, ArUco, or active LED markers), avoids map building in advance and achieves pose estimation using only a few 3D-2D matches. Under these provisions, pose estimation algorithms are supposed to work with the minimal number of matches required, to keep the number of markers low, e.g., to facilitate practical deployment. It is therefore important to devise pose     
+
+> 1Institute of Visual Computing, Graz University of Technology
+> 2MIS laboratory, University of Picardie Jules Verne
+> 3ICB laboratory, University of Burgundy Europe Event Camera
+> Active LED Markers
+> OptiTrack Markers
+> Fig. 1. Overview of our experimental setup . Three active LED markers are fixed on a rig with known 3D positions from an OptiTrack system. A freely moving event camera is used to estimate its 3-DoF pose from the detected LED markers, given the height and tilt angle as priors. Note that our solution only requires two markers: the third one is utilized for the P3P solver, as a baseline.
+
+estimation algorithms that work well in practice and that are accurate with the minimal number of data points. Traditional marker-based methods rely on standard optical cameras to track markers at constant frame rates. Such an operating mode limits their performance when handling scenarios with fast motion and variable light conditions. 
+
+Event cameras are neuromorphic sensors inspired by bio-logical vision, which record light-intensity changes asyn-chronously, at individual pixels. This mechanism guaran-tees high temporal resolution and a significantly expanded dynamic range, compared to conventional cameras. These properties make them ideal for low-latency tracking of ac-tively blinking markers for camera localization, even under challenging ambient light conditions [4]. Motivated by the previous observations, this paper develops a robust and accurate minimal solver for marker-based pose estimation with an event camera. To this end, we design an event-based active marker system with two LED light sources that are programmable in frequency for detection, and a simple but effective marker detection pipeline from the event stream (see Fig. 1). On this basis, we formulate the P2P problem with known vertical direction and camera height. In the major-ity of mobile robots, such as ground or aerial vehicles, these two quantities can be reliably obtained from onboard sensors (e.g., IMUs or altimeters). We provide two solutions to deter-mine the camera pose: a closed-form and a linearized least-squares solution. Compared to the state-of-the-art P2P [5] arXiv:2608.09520v1 [cs.CV] 10 Aug 2026 and P3P [6] solvers, our P2P solver returns a unique solution without requiring extra points to resolve pose ambiguity, and achieves better accuracy in deriving the position of the camera, especially under larger viewing distances from the markers. In conclusion, the main contributions of this paper can be summarized as follows:  
+
+> •
+
+We derive a robust, accurate, and ambiguity-free P2P solver incorporating tilt angle and height priors, admit-ting both a closed-form solution and a linearized least-squares formulation. In addition, we present a compre-hensive theoretical analysis of the proposed solver, iden-tifying degenerate configurations and conditions where the height prior does not influence rotation estimation.  
+
+> •
+
+We propose an event-based active marker system to facilitate the development and benchmarking of minimal-point solvers for precise pose estimation with event cameras.  
+
+> •
+
+We conduct extensive evaluations on synthetic and real data, demonstrating the effectiveness and advantage of our proposed minimal solver against the state-of-the-art P2P and P3P solvers. The remainder of this article is organized as follows. In Sect. II, the related work is presented, while in Sect. III the problem studied in the paper is formulated. The results of synthetic and real-world experiments are discussed in Sect. IV. Finally, conclusions are drawn in Sect. V. II. RELATED WORK 
+
+1) Event-based Active Marker Systems: Marker-based lo-calization systems using event cameras have made steady progress in recent years [7]–[12]. Censi et al. [7] presented the first pose tracking system based on an event camera with active LED markers and formulate LED tracking as a probabilistic inference problem, demonstrating robust per-formance under fast and aggressive motions. In contrast, Xu et al. [8] employed a frequency-filtering and cluster-ing pipeline followed by a PnP solver, and validated their method in low-light conditions. Inspired by [7], Chen et al. [9] further incorporated a Gaussian mixture probability hypothesis density (GM-PHD) filter for multi-LED tracking, achieving high accuracy indoor localization while avoiding conventional image processing. Salah et al. [10] subsequently developed an event-based relative localization framework between a drone and a ground vehicle, fusing active LED observations with inertial measurements for enhanced ro-bustness. Later, Ebmer et al. [11] proposed a low-latency localization system that exploits bias and timing priors to further reduce estimation delay. A more recent development [12] further refines detection and fusion strategies toward a monocular event-based motion capture system. It is worth noting that most marker-based methods employ PnP solvers with at least three point correspondences for pose estimation. Such configurations typically require multiple active LED markers, which increase power consumption and hardware complexity in practical deployments. 
+
+2) Existing 2-point and 3-point Algorithms: Modern P3P algorithms [6], [13]–[15] primarily focus on improving nu-merical stability and computational efficiency by utilizing closed-form algebraic solutions, instead of the classical geo-metric method [16]. As an example, a direct parametrization is proposed in [6] to compute the camera position and orientation in a unique coordinate frame, avoiding inter-mediate distance calculations, hence reducing computational overhead. Instead of solving a quartic equation, in [15] the authors take advantage of a unique “twist” transformation and a small system of equations to enhance accuracy in degenerate configurations. Note that all these P3P algorithms generally return up to four possible solutions, and a fourth point is usually required to determine the unique solution. A P2P solver can further reduce computational complexity by using only two points, which is possible when additional information is available, such as known vertical direction or motion prior [5], [17]–[20]. For instance, an efficient two-point solver is proposed in [19] to compute the absolute pose of a single or multi-camera system with knowledge of vertical direction. In [5], the authors further improved the numerical stability and accuracy by introducing a quadratic polynomial involving only one variable about the orientation from the geometric constraints. However, such two-point solvers generally yield two feasible solutions, requiring an additional point correspondence to resolve the ambiguity, which consequently increases the hardware cost and system complexity of marker-based setups. Motivated by the availability of height measurements in robotic systems, we reformulate the P2P problem with an additional height prior to better constrain the camera position and improve robustness, particularly at large viewing distances. In contrast to existing marker-based localization systems, the proposed solver requires only two point cor-respondences and does not rely on an additional point to resolve solution ambiguity. III. PROBLEM FORMULATION In this section, we consider the problem shown in Fig. 2. An event camera is attached to the body frame of a robot (e.g., a drone) via a known extrinsic transformation Tcb =h Rcb tcb  
+
+> 01
+
+i
+
+. The vertical direction dup and altitude h are observ-able from onboard sensors (e.g., IMU and altimeter). Two Ground plane ( zworld = 0)       
+
+> xworld yworld
+> zworld
+> Camera
+> b1
+> b2
+> P1
+> P2
+> Body
+> Tcb
+> h
+> Tbw =?
+> h′
+> Fig. 2. Graphical illustration of the problem studied in Sect. III . The red, green, and blue axes denote the x-, y-, and z-axes, respectively.
+
+LED markers, P1 and P2, are located in the world frame and are observable by the event camera. Their spatial coordinates 
+
+P1 = [ X1, Y1, Z1]⊤, P2 = [ X2, Y2, Z2]⊤ are assumed to be known. The objective is to find the Euclidean transformation from the world frame to the body frame, Tbw =
+
+h Rbw tbw  
+
+> 01
+
+i
+
+.We parameterize the rotation using the Euler angles, 
+
+Rbw = RxRyRz, where Rx, Ry and Rz are the elementary rotation matrices about the x-, y-, and z-axes, respectively. Considering the calibrated perspective camera model with intrinsic matrix K ∈ R3×3, each image measurement xi could be expressed as a unit vector pointing from the camera center to the marker, i.e., the bearing vector bi ∈ R3 [21] given by, 
+
+bi = K−1xi
+
+∥K−1xi∥ ≜ si
+
+ui
+
+vi
+
+1
+
+,
+
+where si is a positive scale factor and “ ≜” denotes equality by definition. In the general case, we can enforce the point-ray collinearity constraint, 
+
+bi × (Rcb RxRyRzPi + Rcb tbw + tcb ) = 0, i ∈ { 1, 2}, (1) where “ ×” denotes the cross product. With the knowledge of the vertical direction (e.g., measured by an IMU), the tilt component RxRy can be solved in closed form via 
+
+RxRydup = ez,
+
+where ez = [ 0, 0, 1]⊤. Given the tilt rotation and the extrinsic calibration, Eq. (1) can be recast as follows: 
+
+(R⊤ 
+
+> y
+
+R⊤ 
+
+> x
+
+R⊤
+
+> cb
+
+bi) × (RzPi + R⊤ 
+
+> y
+
+R⊤ 
+
+> x
+
+tbw + R⊤ 
+
+> y
+
+R⊤ 
+
+> x
+
+R⊤
+
+> cb
+
+tcb ) = 0.
+
+(2) In Eq. (2), we note that: 1) b′ 
+
+> i
+
+≜ R⊤ 
+
+> y
+
+R⊤ 
+
+> x
+
+R⊤
+
+> cb
+
+bi is the bearing vector expressed in the tilt-compensated robot body frame. 2) t′ ≜ R⊤ 
+
+> y
+
+R⊤ 
+
+> x
+
+tbw + R⊤ 
+
+> y
+
+R⊤ 
+
+> x
+
+R⊤
+
+> cb
+
+tcb is the sum of the trans-lation vector of the tilt-compensated body frame and a constant tilt-compensated extrinsic offset, which will be referred to as t∆.We explicitly define the remaining unknowns Rz and t′ as 
+
+Rz =
+
+cos θ − sin θ 0sin θ cos θ 00 0 1
+
+, t′ =
+
+
+
+tx + t∆x
+
+ty + t∆y
+
+−h + t∆z
+
+ ≜
+
+
+
+t′
+
+> x
+
+t′
+
+> y
+
+−h′
+
+. (3) In particular, the z-component of vector t′ is simply the negative robot’s height plus an offset, which remains constant over time. Consequently, the parameter vector to be solved for is just [θ , t′
+
+> x
+
+, t′
+
+> y
+
+]⊤. Eq. (2) can be further simplified, leading to: 
+
+[b′
+
+> i
+
+]×(RzPi + t′) = 0, (4) where [b′
+
+> i
+
+]× is the skew-symmetric matrix associated with b′
+
+> i
+
+.Substituting Eq. (3) into Eq. (4) and expanding yields:                      
+
+> 0−s′
+> is′
+> iv′
+> i
+> s′
+> i0−s′
+> iu′
+> i
+> −siv′
+> isiu′
+> i0
+> cos θ−sin θ0sin θcos θ0001
+> Xi
+> Yi
+> Zi
+> +
+> 
+> t′
+> x
+> t′
+> y
+> −h′
+> =0.
+
+(5) Although Eq. (5) consists of three rows, it only yields two independent equations, since the skew-symmetric matrix 
+
+[b′
+
+> i
+
+]× is rank deficient. By discarding the redundant equation, We obtain four independent equations from two point corre-spondences, i.e., the system 
+
+Ax = b, (6) where 
+
+A =
+
+
+
+X1 −Y1 1 0Y1 X1 0 1X2 −Y2 1 0Y2 X2 0 1
+
+, x =
+
+
+
+cos θ
+
+sin θ
+
+t′
+
+> x
+
+t′
+
+> y
+
+, b =
+
+
+
+u′
+
+> 1
+
+(Z1 − h′)
+
+v′
+
+> 1
+
+(Z1 − h′)
+
+u′
+
+> 2
+
+(Z2 − h′)
+
+v′
+
+> 2
+
+(Z2 − h′)
+
+.
+
+By incorporating the trigonometric-identity constraint (i.e. cos 2 θ + sin 2 θ = 1), system (6) becomes overdetermined (in fact, it comprises five constraints over three unknowns). Different from [5], [19], which rely on an additional point correspondence to resolve pose ambiguity, the proposed formulation incorporates a height prior to yield a unique solution. This property is particularly useful for active marker–based pose estimation. In the next section, we will present two alternative solution strategies. 
+
+A. Closed-Form Solution 
+
+We first derive a closed-form solution to system (6). Under the trigonometric-identity constraint, the rotation angle can be estimated independently of the translation. Specifically, we can eliminate t′ 
+
+> x
+
+by combining the first and third row of Eq. (6), and we can eliminate t′ 
+
+> y
+
+by combining the second and fourth row, yielding 
+
+∆X cos θ − ∆Y sin θ = u′
+
+> 1
+
+(Z1 − h′) − u′
+
+> 2
+
+(Z2 − h′), (7) 
+
+∆Y cos θ + ∆X sin θ = v′
+
+> 1
+
+(Z1 − h′) − v′
+
+> 2
+
+(Z2 − h′), (8) where ∆X = X1 − X2 and ∆Y = Y1 − Y2. Following the substitution proposed in [5], we can drop the trigonometric-identity constraint by introducing the reparameterization s =
+
+tan (θ /2), under which the sine and cosine terms can be rewritten as sin θ = 2s
+
+1 + s2 , cos θ = 1 − s2
+
+1 + s2 . (9) Plugging (9) into (7) and (8), yields two independent quadratic equations in s,
+
+ais2 + bis + ci = 0, i ∈ { 1, 2}, (10) whose coefficients are given by 
+
+a1 = α1 + ∆X, b1 = 2∆Y, c1 = α1 − ∆X,
+
+a2 = α2 + ∆Y, b2 = −2∆X, c2 = α2 − ∆Y,
+
+with 
+
+α1 ≜ u′
+
+> 1
+
+(Z1 − h′) − u′
+
+> 2
+
+(Z2 − h′),
+
+α2 ≜ v′
+
+> 1
+
+(Z1 − h′) − v′
+
+> 2
+
+(Z2 − h′).
+
+The closed-form solutions of Eqs. (10) are given by 
+
+si = −bi ± 2
+
+q
+
+∆X2 + ∆Y2 − α2
+
+> i
+
+2ai
+
+, i ∈ { 1, 2}.A non-trivial implication of Eqs. (10) is that, given a height prior, the rotation angle can be recovered solely from the x-or y-components of the 2D measurements. In practice, however, it is not immediately clear which of the two quadratic equations in (10) should be used to compute the solution. From a numerical standpoint, the system becomes severely ill-conditioned as the discriminant approaches zero [22], i.e., when ∆X2 + ∆Y2 − α2 
+
+> i
+
+≈ 0. Since 
+
+∆X2 + ∆Y2 is constant in our setting, we adopt a simple yet effective discriminant-based selection criterion: we choose the quadratic equation associated with the smaller value of 
+
+|αi|, which corresponds to a better-conditioned formulation. The remaining equation then serves as an independent con-straint for resolving the ambiguity, yielding a unique solu-tion. Once the rotation angle is determined, the translation vector can be recovered by substituting it into Eq. (6). 
+
+B. Linear Least-Squares Solution 
+
+With four equations available for 3 DoF, a least-squares (LS) solution to system (6) can be found, while temporarily ignoring the trigonometric-identity constraint. The system can then be solved via Singular Value Decomposition (SVD), 
+
+x = A+ b,
+
+where A+ denotes the Moore–Penrose pseudoinverse. After back-substituting x using Eq. (3), the resulting ˜Rz is not necessarily a valid rotation matrix and it must be mapped back onto SO (3) by performing an SVD on ˜Rz = UΣV⊤
+
+and setting Rz = UV ⊤.
+
+C. Theoretical Analysis of the Proposed Solver 
+
+Like other minimal solvers, our approach also suffers from certain limitations. Therefore, we present here a compre-hensive analysis of the proposed solver under degenerate and special cases. In particular, we analyze degenerate con-figurations in which the formulation either fails to yield a meaningful solution or becomes highly sensitive to noise. In addition, we consider a special case where the height mea-surement does not contribute to rotation estimation, under which the proposed solver reduces to the method presented in [5]. Geometrically, degeneracy can arise either from the spatial configuration of the observed 3D points or from the camera motion itself. We thereby analyze cases from these two complementary perspectives. 
+
+1) Spatial Configuration of Two Points:  
+
+> •
+
+A simple degenerate case arises from the structure of matrix A in Eq. (6). Specifically, the determinant of A
+
+is given by det (A) = ( X1 − X2)2 + ( Y1 − Y2)2.
+
+It follows that det (A) = 0 if and only if (X1, Y1) = (X2, Y2). Geometrically, this corresponds to the case where the two points P1 and P2 have identical planar coordinates and differ only along the vertical direction.  
+
+> •
+
+Another special configuration arises when the points P1
+
+and P2 have identical heights, i.e. Z ≜ Z1 = Z2. In this case, system (6) can be written as 
+
+Ax = λ b′,
+
+where λ = Z − h′ is a scalar factor and b′ =[u′
+
+> 1
+
+, v′
+
+> 1
+
+, u′
+
+> 2
+
+, v′
+
+> 2
+
+]⊤. Since b′ is independent of the height prior, the height information collapses into a scale factor λ , which is subsequently removed during the projection onto SO (3). Consequently, the rotation esti-mation relies solely on two-point correspondences with-out height constraints and reduces to the formulation in [5]. Importantly, this behavior is specific to the linear LS formulation. The closed-form derivation analytically eliminates translation and preserves the influence of the height prior on rotation estimation. Therefore, the height information continues to contribute to rotation estimation even when P1 and P2 share the same height. 
+
+2) Camera Motion:  
+
+> •
+
+Certain camera motions can also lead to degenerate solutions or ill-conditioned estimation problems. In par-ticular, when the camera is located at the same height as one of the two points, i.e., when Z i − h′ = 0 for 
+
+i ∈ { 1, 2}, the corresponding two rows of the observation vector b in Eq. (6) vanish. As a result, the constraints associated with that point no longer provide useful information. In the extreme case where the height of 
+
+P1, P2 and the camera is the same height, b = 0, and the linear system only admits the trivial solution x = 0.The previous analysis indicates that both point selection and camera motion play a critical role in ensuring observ-ability. From a practical point of view, degenerate cases can be avoided by selecting 3D points with sufficient horizontal separation and height diversity. Moreover, the camera should maintain an adequate height difference with respect to the observed points. For example, in aerial robotics, placing the two points on non-planar terrain naturally satisfies this requirement. IV. EXPERIMENTS This section presents the experimental evaluation of the proposed P2P solver. We first conduct a synthetic analysis to evaluate the robustness of the solver under varying pixel noise levels and target distances. The degenerate configura-tions identified in Sect. III-C are also explicitly evaluated to validate our findings. We then present the real-world experimental setup, including the hardware configuration and the 2D keypoint detection pipeline. Finally, real-world experiments are conducted to demonstrate the practical ap-plicability of the proposed approach. For comparison, we include the P3P solver of Kneip et al. [6], and the P2P solver proposed by Li et al. [5] as baselines. Both the closed-form and the LS of our method are considered in our comparative analysis. 
+
+A. Analysis on Synthetic Data 
+
+For the synthetic evaluation, we systematically sampled camera poses on spherical surfaces centered at the target’s 0 1 2 3 4 5
+
+Image Noise(pix) 
+
+> 0.00 0.05 0.10 0.15 0.20 0.25 0.30
+> Error(m)
+
+Median Translation Error      
+
+> P3P P2P(Li) P2P(Closed-Form) P2P(LS) 012345
+
+Image Noise(pix) 
+
+> 012345
+> Error(deg)
+
+Median Rotation Error 
+
+> P3P P2P(Li) P2P(Closed-Form) P2P(LS)
+
+(a) Median translation (m) and rotation (deg) errors under varying pixel noise levels. 0 5 10 15 20 25 30 
+
+Distance(m) 
+
+> 0.00 0.20 0.40 0.60 0.80
+> Error(m)
+
+Median Translation Error       
+
+> P3P P2P(Li) P2P(Closed-Form) P2P(LS) 0510 15 20 25 30
+
+Distance(m) 
+
+> 0.0 1.0 2.0 3.0 4.0 5.0
+> Error(deg)
+
+Median Rotation Error 
+
+> P3P P2P(Li) P2P(Closed-Form) P2P(LS)
+
+(b) Median translation (m) and rotation (deg) errors under different target distances. Fig. 3. Translation and rotation errors with respect to the ground truth pose under different target distances and varying pixel noise levels. The proposed two P2P variants perform similarly in translation, and the LS variant shows comparable rotation accuracy to [5]. The proposed P2P solvers show slightly higher errors under short-range or low-noise conditions, but demonstrate improved robustness and superior performance as the distance or noise level increases. 
+
+centroid with varying radii, to simulate different camera-to-target distances. Each camera is oriented toward the target’s center to ensure all three points remain within the field of view. To emulate realistic operating conditions, independent zero-mean Gaussian perturbations are added to the sampled poses, with standard deviations of 1 ◦ for roll and pitch, and 0.03 m for height. In event-based pose estimation with active markers, the observations correspond to spatially-distributed event clusters rather than idealized point features. This spatial dispersion inherently introduces localization uncertainty in the extracted keypoints. To quantitatively assess the sensitivity of the proposed solver to such measurement uncertainty, we eval-uated its robustness under varying levels of pixel noise. Specifically, 1000 camera poses are sampled on a spherical surface with a radius of 10 m, and zero-mean Gaussian noise with standard deviations ranging from 0 to 5 pixels was added to the 2D point measurements. Fig. 3(a) presents the median translation and rotation errors under growing levels of pixel noise. As the noise magnitude increases, all P2P-based methods demonstrate improved robustness in rotation estimation compared to P3P. However, incorporating the height prior yields a rotation performance nearly identical to that of [5], indicating that the two methods behave similarly for rotation estimation. As far as translation estimation is concerned, the closed-form and LS variants of the proposed method exhibit nearly identical performances, both consistently outperforming [6] and [5] once the image noise becomes sufficiently large. While the previous experiment focused on measurement noise, pose estimation accuracy is also affected by geometric factors, particularly the distance between the camera and the target. To analyze this effect, we fixed the pixel noise at σ =
+
+2 px and sampled 1000 camera poses on spherical surfaces with radii ranging from 1 m to 30 m. Fig. 3(b) presents the median translation and rotation errors across varying target distances, while Table I sum-marizes the quantitative results. At short distances, the proposed P2P method achieves comparable translation and rotation accuracy to the approach of [5], while all P2P-                                                                                                        
+
+> Distance (m) Method Position Error (m) Orientation Error (deg.) Median Mean Std Median Mean Std 5P3P [6] 0.021 0.025 0.016 0.692 0.791 0.479
+> P2P [5] 0.037 0.059 0.069 1.114 1.264 0.744 P2P (Closed Form) 0.061 0.083 0.077 1.191 1.454 1.086 P2P (LS) 0.061 0.083 0.078 1.116 1.263 0.755 10 P3P [6] 0.078 0.096 0.072 1.430 1.615 0.976
+> P2P [5] 0.096 0.143 0.160 1.216 1.377 0.815 P2P (Closed Form) 0.109 0.158 0.155 1.284 1.565 1.143 P2P (LS) 0.109 0.158 0.155 1.228 1.370 0.791 20 P3P [6] 0.302 0.376 0.296 2.942 3.267 1.835 P2P [5] 0.313 0.426 0.416 1.509 1.691 0.963 P2P (Closed Form) 0.217 0.325 0.329 1.601 1.901 1.324 P2P (LS) 0.217 0.325 0.329 1.505 1.678 0.961
+> 30 P3P [6] 0.684 0.862 0.723 4.428 4.976 2.912 P2P [5] 0.658 0.868 0.828 1.797 2.041 1.239 P2P (Closed Form) 0.327 0.476 0.475 1.878 2.254 1.570 P2P (LS) 0.327 0.476 0.475 1.794 2.027 1.224
+
+TABLE I QUANTITATIVE RESULTS UNDER DIFFERENT TARGET DISTANCES .BEST VALUES ARE BOLD .0.0 2.5 5.0 7.5 10.0     
+
+> Height(m)
+> 0123456
+> Error(m)
+> 3
+> Median Translation Error
+> P3P P2P(Li) P2P(Closed-Form) P2P(LS) 0.0 2.5 5.0 7.5 10.0
+> Height(m)
+> 020 40 60 80 100
+> Error(deg)
+> 3
+> Median Rotation Error
+> P3P P2P(Li) P2P(Closed-Form) P2P(LS)
+
+(a) Pose estimation results under the degenerate configuration where two marker points have identical height (3 m). 0.0 2.5 5.0 7.5 10.0       
+
+> Height(m)
+> 0123
+> Error(m)
+> 34
+> Median Translation Error
+> P3P P2P(Li) P2P(Closed-Form) P2P(LS) 0.0 2.5 5.0 7.5 10.0
+> Height(m)
+> 020 40 60 80 100 120 140
+> Error(deg)
+> 34
+> Median Rotation Error
+> P3P P2P(Li) P2P(Closed-Form) P2P(LS)
+
+(b) Pose estimation results under the degenerate configuration where two marker points have different height (3 m and 4 m). Fig. 4. Pose estimation performance as a function of camera height. The top row corresponds to the configuration where the two marker points share identical height (3 m). In this case, all P2P-based methods become degenerate at a camera height of 3 m, exhibiting severe numerical instability. The bottom row represents the configuration where the two marker points lie at different heights (3 m and 4 m). The proposed P2P methods exhibit degeneracy only when the camera height approaches either point height, consistent with the theoretical analysis, whereas the method of [5] shows degenerate behavior in configurations not explicitly discussed in the original paper. In contrast, P3P remains well-conditioned under all tested configurations. 
+
+based methods underperform compared to P3P. As the target distance increases, however, the P2P-based methods exhibit superior robustness in rotation estimation relative to P3P. For translation estimation, both variants of the proposed solver consistently yield lower errors than [6] and [5] at larger distances. In summary, in the synthetic evaluations, P2P-based meth-ods demonstrated superior rotation robustness compared to P3P under image measurement uncertainty, whether induced by detection noise or increased viewing distance. Although the height prior has limited impact on rotation accuracy, it significantly improves translation robustness. The closed-form variant, however, is more sensitive to noise in rotation estimation than the LS formulation. 
+
+B. Degeneracy Analysis 
+
+We also conducted synthetic experiments to validate the degenerate configurations identified in the theoretical analy-sis. The trivial degenerate configuration in which the two 3D points differ only in height leads to a rank-deficient system with no solution, and it is therefore excluded from quantitative evaluation. We first considered the configuration where the two points lie at the same height (3 m) but differ in their horizontal coordinates. To facilitate the comparison with the P3P baseline, an additional non-collinear 3D point was introduced. Camera poses were sampled on horizontal planes at varying heights. For each height, 1000 poses were generated by applying random horizontal translations to ensure statistical generality. The same noise configuration as described in the previous subsection was applied. Fig. 4(a) presents the median translation and rotation errors under this configuration. As expected, the solutions of the P3P solver are not degenerate in this scenario. In contrast, both the closed-form and LS variants of the proposed P2P method become numerically unstable as the camera height approaches that of the 3D points (3 m), which is consistent with our observability analysis. The method in [5] exhib-ited a similar degenerate behavior. This aligns with their theoretical finding that the solver fails when both image rays become orthogonal to the rotation axis. Furthermore, outside the degenerate region, Li et al. ’s method achieves rotation accuracy identical to that of the LS variant of the proposed formulation, confirming the equivalence discussed in Sect. III-C. We further evaluated the case where the two 3D points lie at different heights (3 m and 4 m), while keeping the experimental setup unchanged. As shown in Fig. 4(b), both variants of the proposed method exhibit numerical instability when the camera’s height approaches that of either 3D point, indicating that degeneracy arises whenever the vertical separation between the camera and one of the observed points vanishes. Interestingly, [5] also exhibits degeneracy within a certain camera height range under this configuration, even though the corresponding image rays are not orthogonal to the rotation axis [5]. This phenomenon is not explicitly discussed in the original paper and suggests that additional geometric degeneracies might exist beyond those already identified by the authors. Overall, the degenerate cases are fully consistent with our theoretical analysis. With the height prior incorporated, degeneracy arises when the vertical configuration fails to provide sufficient geometric constraints, resulting in ill-conditioning and amplified noise sensitivity. These findings emphasize the importance of adequate height diversity be-tween the camera and observed points to ensure stable pose estimation using the proposed solver. 
+
+C. Validation on Real Data 1) Experiment Setup: To demonstrate the practical ap-plicability and robustness of the proposed method under real-world conditions, we carried out real-world experiments using a dedicated hardware platform (see Fig. 5). The system is built upon an EVK4 HD camera from Prophesee, which incorporates an IMX636ES event-based vision sensor with a resolution of 1280 × 720 pixels, together with a Soyo SFA0820-5M lens. As the active target, three high-power LEDs with broad emission angles are rigidly mounted on a custom-designed structure to ensure fixed spatial geometry. The LEDs are driven by an ESP32 microcontroller using PWM signals to generate stable and frequency-controlled blinking patterns. The operating frequencies are set to 1000 Hz, 1150 Hz, and 850 Hz, respectively, to ensure sufficient frequency spacing for reliable separation in the event stream. Led1(1150hz) 
+
+> Led2(850hz)
+> Led0(1000hz)
+> Circuit Board
+
+Fig. 5. Real-world experimental setup . (Left) LED-based target with active markers and (Right) EVK4 HD event camera. 
+
+The ground-truth camera poses and the 3D positions of the LED markers were obtained with an OptiTrack motion capture system. The event camera was intrinsically calibrated using the Prophesee SDK with a blinking chessboard pattern. In addition, hand–eye calibration [23] between the event camera and the OptiTrack coordinate frame was performed using the OpenCV library. The positions of 3D LED markers, together with their associated blinking frequencies, were provided to the localization system as prior information. The ground-truth tilt angle was given to [5], while the proposed P2P solvers were provided with the ground-truth height. 
+
+2) LED Marker Detection: In order to detect frequency-modulated LED markers in the event stream, we designed a simple two-stage clustering-based pipeline, operating in Seq1 Seq2 Seq3 Seq4 −0.2 −0.1 0.0 0.1 0.2 0.3 0.4    
+
+> mean ± std (m)
+> Translation Error
+> Method P3P P2P(Li) P2P(Closed-Form) P2P(LS) Seq1 Seq2 Seq3 Seq4 −4 −2 02468
+> mean ± std (deg)
+> Rotation Error
+> Method P3P P2P(Li) P2P(Closed-Form) P2P(LS)
+
+Fig. 6. Translation and rotation error distribution in the real-world experiments. The mean and standard deviation of the error are presented for all methods over the four sequences. Sequence Method Position Error (m) Orientation Error (deg.) Median Mean Std Median Mean Std Seq. 1 P3P [6] 0.035 0.051 0.123 1.106 1.450 3.046 P2P [5] 0.075 0.081 0.038 2.046 2.130 0.727                                                                                     
+
+> P2P (Closed Form) 0.055 0.063 0.040 1.335 1.377 0.753 P2P (LS) 0.043 0.051 0.037 1.220 1.289 0.765 Seq. 2 P3P [6] 0.041 0.046 0.021 1.184 1.234 0.441 P2P [5] 0.050 0.055 0.028 1.710 1.742 0.652
+> P2P (Closed Form) 0.042 0.051 0.039 1.412 1.442 0.762 P2P (LS) 0.041 0.046 0.028 1.438 1.494 0.678 Seq. 3 (Target distance: 1.25 - 2.75 m) P3P [6] 0.053 0.083 0.211 1.209 1.932 5.049 P2P [5] 0.062 0.076 0.102 1.637 1.919 2.088 P2P (Closed Form) 0.050 0.065 0.098 1.511 1.746 1.923 P2P (LS) 0.051 0.066 0.107 1.477 1.686 2.021
+> Seq. 4 (Target distance: 3.4 - 4.6 m) P3P [6] 0.066 0.071 0.030 1.563 1.698 0.700 P2P [5] 0.113 0.127 0.063 2.876 3.026 1.266 P2P (Closed Form) 0.078 0.093 0.059 1.529 1.739 1.235 P2P (LS) 0.062 0.075 0.053 1.469 1.681 1.196
+
+TABLE II QUANTITATIVE RESULTS IN THE REAL -WORLD EXPERIMENTS .
+
+the spatial and temporal domains. Specifically, events are accumulated within a 20 ms time window to ensure sufficient signal density. Within this window, spatial clustering is per-formed in the image plane using DBSCAN [24] to identify candidate LED regions. This step forms spatial clusters for each LED and removes scattered noise events. For each spa-tial cluster, a further temporal clustering step is performed to estimate the blinking frequency. By examining the temporal distribution of events, the dominant modulation frequency associated with each cluster is determined. Finally, for each detected frequency, the pixel coordinates of the associated events are averaged to produce a single observation point. The resulting frequency-labeled pixel locations are then used as the input measurements for pose estimation. 
+
+3) Real-World Experimental Results: In the real-world experiments, only LED1 and LED2 (see Fig. 5) are used in the P2P-based solver to avoid the same-height special configuration discussed in Sect III-C, under which the two solvers become equivalent. In contrast to the proposed solver, the formulations in [6] and [5] both admit multiple valid solu-tions. For a fair comparison, the solution yielding the lowest pose error with respect to the ground truth was selected for evaluation. Four trajectory sequences were collected for real-world evaluation. Seq. 1 and Seq. 2 involve arbitrary motions within the workspace to validate the feasibility of the proposed method in practical scenarios. Seq. 3 and Seq. 4 correspond to motions performed in relatively near and far regions, respectively, to assess the performance of the proposed approach at different target distances. Fig. 6 shows the translation and rotation error distribution across all sequences, while Table II reports the corresponding quantitative statistics in detail. As P3P operates under a stronger three-point assumption, it is shaded in gray as a reference baseline, while the primary evaluation is performed within the two-point setting. Boldface indicates the best per-formance among the P2P methods. As reported in Table II, P3P achieves the lowest mean rotation error in most se-quences, while its translation performance is competitive, but not consistently superior to that of the proposed P2P solver. However, a relatively larger standard deviation is observed in certain cases, suggesting increased sensitivity to mea-surement noise and occasional false detections. In contrast, the proposed method exhibits consistently lower variance, indicating improved numerical stability and robustness. Within the P2P framework, the proposed solver con-sistently outperforms [5] in both translation and rotation accuracy. The improvement is particularly evident in the far-range sequence (Seq. 4), where the estimation is more sensitive to measurement noise. Both the LS and closed-form variants achieve comparable performance, with the LS variant attaining slightly lower errors and exhibiting improved robustness. Overall, the incorporation of height information enhances the robustness of the proposed P2P formulation, particularly in translation estimation. Moreover, unlike multi-solution minimal solvers, such as [5], [6], the proposed approach delivers a unique solution, which makes it highly attractive in real-world applications. V. CONCLUSION In this paper, we presented a robust and accurate 2-point solver for event-based pose estimation from active LED markers. We formulated the P2P problem with an extra prior on the camera height, derived a closed-form and a least-squares solution, and conducted a rigorous theoretical analy-sis, which shed light on the properties of the proposed solver. We performed extensive evaluations on both synthetic and real data, including a detailed degeneracy study. The results indicate that our solver, with height prior, provides a unique solution with better estimates of the camera’s translation, and that it is robust against large viewing distances from the markers. Overall, it offers improved accuracy over the state-of-the-art P2P solvers [5], and it remains competitive with the P3P baseline [6]. VI. ACKNOWLEDGEMENT This work was supported by the French and Austrian Na-tional Research Agencies (FWF, ANR) through the EVELOC project (ANR-23-CE33-0011, I 6747-N), 2024-2028. REFERENCES [1] V. Lepetit, F. Moreno-Noguer, and P. Fua, “EPnP: An accurate O(n) solution to the PnP problem,” International Journal of Computer Vision , vol. 81, no. 2, pp. 155–166, 2009. [2] J. A. Hesch and S. I. Roumeliotis, “A direct least-squares (DLS) method for PnP,” in Proc. IEEE International Conference on Computer Vision , 2011, pp. 383–390. [3] L. Kneip, H. Li, and Y. Seo, “UPnP: An Optimal O(n) Solution to the Absolute Pose Problem with Universal Applicability,” in Proc. European Conference on Computer Vision , 2014, pp. 127–142. [4] N. Jabbari Tofighi, M. Robic, F. Morbidi, and P. Vasseur, “A Sur-vey on Event-based Optical Marker Systems,” arXiv preprint arXiv:2504.20736 , 2025. [5] B. Li, Y. Shang, B. Guan, and Y. Li, “A Generalized 2-Point Solution for Absolute Camera Pose With Known Rotation Axis,” IEEE Access ,vol. 11, pp. 96 043–96 051, 2023. [6] L. Kneip, D. Scaramuzza, and R. Siegwart, “A novel parametrization of the perspective-three-point problem for a direct computation of absolute camera position and orientation,” in Proc. IEEE Conference on Computer Vision and Pattern Recognition , 2011, pp. 2969–2976. [7] A. Censi, J. Strubel, C. Brandli, T. Delbruck, and D. Scaramuzza, “Low-latency localization by active LED markers tracking using a dynamic vision sensor,” in Proc. IEEE/RSJ International Conference on Intelligent Robots and Systems , 2013, pp. 891–898. [8] X. Jianhong, G. Jianwen, W. Yan, L. Yuheng, L. Yongdong, C. Xi-aochang, and Y. Guoliang, “Method of pose tracking by event camera using LED marker points,” in Proc. 14th IEEE International Confer-ence on Electronic Measurement & Instruments , 2019, pp. 381–386. [9] G. Chen, W. Chen, Q. Yang, Z. Xu, L. Yang, J. Conradt, and A. Knoll, “A Novel Visible Light Positioning System With Event-Based Neuromorphic Vision Sensor,” IEEE Sensors Journal , vol. 20, no. 17, pp. 10 211–10 219, 2020. [10] M. Salah, M. Chehadah, M. Humais, M. Wahbah, A. Ayyad, R. Az-zam, L. Seneviratne, and Y. Zweiri, “A Neuromorphic Vision-Based Measurement for Robust Relative Localization in Future Space Ex-ploration Missions,” IEEE Transactions on Instrumentation and Mea-surement , vol. 73, pp. 1–12, 2024. [11] G. Ebmer, A. Loch, M. N. Vu, R. Mecca, G. Haessig, C. Hartl-Nesic, M. Vincze, and A. Kugi, “Real-Time 6-DoF Pose Estimation by an Event-Based Camera Using Active LED Markers,” in Proc. IEEE Winter Conference on Applications of Computer Vision , 2024, pp. 8122–8131. [12] L. Bauersfeld and D. Scaramuzza, “A Monocular Event-Camera Motion Capture System,” arXiv preprint arXiv:2502.12113 , 2025. [13] X.-S. Gao, X.-R. Hou, J. Tang, and H.-F. Cheng, “Complete solution classification for the perspective-three-point problem,” IEEE Transac-tions on Pattern Analysis and Machine Intelligence , vol. 25, no. 8, pp. 930–943, 2003. [14] T. Ke and S. I. Roumeliotis, “An Efficient Algebraic Solution to the Perspective-Three-Point Problem,” in Proc. IEEE Conference on Computer Vision and Pattern Recognition , 2017, pp. 7225–7233. [15] M. Persson and K. Nordberg, “Lambda Twist: An Accurate Fast Robust Perspective Three Point (P3P) Solver,” in Proc. European Conference on Computer Vision , 2018, pp. 318–332. [16] J. A. Grunert, “Das pothenotische problem in erweiterter gestalt nebst bber seine anwendungen in der geodasie,” Grunerts Archiv fur Mathematik und Physik , pp. 238–248, 1841. [17] C. Troiani, A. Martinelli, C. Laugier, and D. Scaramuzza, “2-Point-based outlier rejection for camera-IMU systems with applications to micro aerial vehicles,” in Proc. IEEE International Conference on Robotics and Automation , 2014, pp. 5530–5536. [18] S.-I. Choi and S.-Y. Park, “A new 2-point absolute pose estimation algorithm under planar motion,” Advanced Robotics , vol. 29, no. 15, pp. 1005–1013, 2015. [19] C. Sweeney, J. Flynn, B. Nuernberger, M. Turk, and T. H¨ ollerer, “Efficient Computation of Absolute Pose for Gravity-Aware Aug-mented Reality,” in Proc. IEEE International Symposium on Mixed and Augmented Reality , 2015, pp. 19–24. [20] Y. Gao, J. Chen, K. Zhang, and B. Jia, “A 2-point pose estimation algorithm for monocular visual odometry of ground vehicles,” in Proc. IEEE/RSJ International Conference on Intelligent Robots and Systems ,2017, pp. 1610–1615. [21] L. Kneip and P. Furgale, “OpenGV: A unified and generalized approach to real-time calibrated geometric vision,” in Proc. IEEE International Conference on Robotics and Automation , 2014, pp. 1–8. [22] N. J. Higham, Accuracy and stability of numerical algorithms , 2nd ed. SIAM, 2002. [23] K. Daniilidis, “Hand-Eye Calibration Using Dual Quaternions,” 
+
+The International Journal of Robotics Research , vol. 18, no. 3, pp. 286–298, 1999. [24] E. Schubert, J. Sander, M. Ester, H. Kriegel, and X. Xu, “DBSCAN Revisited, Revisited: Why and How You Should (Still) Use DBSCAN,” 
+
+ACM Transactions on Database Systems , vol. 42, no. 3, 2017, article n. 19.

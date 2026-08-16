@@ -1,0 +1,199 @@
+Title: A Semantic Communication Approach to Fiducial Marker Processing in 5G-Enabled Edge SLAM
+
+URL Source: https://arxiv.org/pdf/2608.09620v1
+
+Published Time: Tue, 11 Aug 2026 02:23:02 GMT
+
+Number of Pages: 6
+
+Markdown Content:
+# A Semantic Communication Approach to Fiducial Marker Processing in 5G-Enabled Edge SLAM 
+
+Boris Radovanovic ∗, Vukan Ninkovic ∗† , Katarina Vidojevic ∗, Buda Bajic Papuga ∗, Dejan Vukobratovic ∗∗Faculty of Technical Sciences, University of Novi Sad, Serbia 
+
+> †
+
+The Institute for Artificial Intelligence Research and Development of Serbia, Serbia 
+
+Abstract —Autonomous robots increasingly rely on edge com-puting to offload computationally intensive perception tasks while maintaining real-time operation over 5G networks. However, conventional fiducial marker detection pipelines provide limited opportunities for efficient task partitioning, making them poorly suited for communication-aware edge deployment. This paper proposes a semantic split inference framework for fiducial marker processing in 5G-enabled Edge SLAM. A DeepTag-inspired convolutional neural network is partitioned between the robot and the edge server, where intermediate feature represen-tations serve as task-oriented semantic information transmitted over the wireless link. The framework is integrated into a ROS2-based robotic architecture and characterized over a real 5G com-munication testbed. Experimental results demonstrate accurate keypoint estimation, illustrate the impact on downstream pose estimation, and quantify the communication–computation trade-offs associated with different split points, providing practical insights for communication-aware deployment of deep visual perception in connected robotic systems. 
+
+Index Terms —5G/6G, SLAM, Fiducial Markers, Connected Robotics 
+
+I. I NTRODUCTION 
+
+The emergence of connected robotics is transforming the deployment of autonomous systems across industrial automa-tion, logistics, and smart manufacturing environments [1]. By integrating robots with 5G and beyond communication networks, computationally intensive perception and decision-making tasks can be offloaded from resource-constrained robotic platforms to nearby edge servers, thereby improving scalability, efficiency, and real-time operation while maintain-ing low end-to-end latency [2], [3]. In this context, reliable visual perception is essential for accurate localization and navigation of autonomous robots. Among the available ap-proaches, fiducial marker-based simultaneous localization and mapping (SLAM) [4] has emerged as a practical solution owing to its robustness, computational efficiency, and reliable pose estimation in structured indoor environments. Despite the benefits of edge-enabled robotic perception, conventional fiducial marker processing remains communi-cation intensive. Existing implementations typically transmit raw camera images or fixed intermediate representations such as detected corners, resulting in communication overhead that increases latency and limits scalability in bandwidth-constrained deployments [5]. Recent advances in deep learning have demonstrated that learned keypoint regression networks can significantly improve localization accuracy while naturally supporting split inference, where the processing pipeline is partitioned between the robot and the edge server [6], [7]. However, existing split inference approaches primarily focus on computational partitioning, whereas the transmitted in-termediate representations inherently constitute task-oriented semantic information that can be jointly optimized for efficient communication and downstream perception. This perspective has received limited attention in the context of fiducial marker processing for Edge SLAM [8], [9]. Motivated by these observations, this paper proposes a semantic split inference framework for fiducial marker pro-cessing in 5G-enabled Edge SLAM. A DeepTag-based key-point regression network [10] is employed as the perception module, whose encoder can be partitioned at multiple locations to generate intermediate representations with different com-munication and computational characteristics. The proposed framework is implemented within a ROS2-based [11] robotic architecture and evaluated on a real 5G-enabled edge com-puting testbed. Experimental results demonstrate that accurate downstream localization can be maintained while substantially reducing the communication overhead over the 5G link, and analyze the communication–computation trade-offs associated with different split points. II. B ACKGROUND 
+
+A. Fiducial Marker Processing Pipeline in SLAM 
+
+Fiducial markers are widely used in robotics, photogramme-try, camera calibration, and machine vision for reliable pose estimation. A fiducial marker system consists of a predefined marker dictionary and a corresponding detection algorithm, with numerous designs proposed to improve detection effi-ciency and robustness. In fiducial marker-based SLAM, the detected markers provide geometric observations that enable robot localization and mapping, making the fiducial marker processing pipeline a fundamental component of the overall system, as illustrated in Fig. 1. 
+
+1) Fiducial Marker Processing via Image Processing: For years, fiducial marker detection has relied on classical image-processing techniques [12]. These methods can be coarsely divided into a two-stage pipeline: first, candidate marker regions are detected and isolated; second, the marker payload within each candidate is decoded to determine its identity. The output of the pipeline is the set of image-space keypoints of each detected marker together with its decoded identifier. This is illustrated in Fig. 1, using the AprilTag 2 detector [13] as a representative example. arXiv:2608.09620v1 [cs.NI] 10 Aug 2026 Fig. 1. Fiducial Marker Processing Pipeline in SLAM. 
+
+As shown in the figure, the candidate-detection stage op-erates on the full input image. For AprilTag 2, it comprises three steps: binarization of the input image via adaptive thresh-olding; connected-component segmentation and clustering of the resulting black-and-white regions; and the fitting of a quadrilateral to each resulting cluster of boundary pixels. The second stage then operates only at the few candidate locations: each candidate is decoded through an O(1) hash-table lookup, and optionally, its corners are refined to improve localization accuracy. The output of this stage is the set of valid tag detections, each represented by its four corner keypoints and its tag identifier. A key advantage of classical fiducial marker detectors is their high computational efficiency, enabling real-time execu-tion on resource-constrained devices. They also achieve very low false-positive rates through marker coding with a large minimum Hamming distance and decoding within a small Hamming radius (typically one or two bit errors). However, these pipelines provide no suitable point for edge offloading, since the data exchanged between successive stages remains comparable to the input image size and may even increase during intermediate processing (e.g., segmentation). Although the candidate-detection stage produces a compact output, offloading the remaining processing offers little benefit, as it consists primarily of identifier decoding and corner refinement. Furthermore, classical detectors exhibit limited robustness to marker occlusion and image degradation, such as motion blur. 
+
+2) Fiducial Marker Processing via Deep Learning: With the rapid advancement of deep learning (DL), convolutional neural networks (CNNs) have become the dominant approach for computer vision tasks such as localization, tracking, and fiducial marker detection [14], [15]. Unlike classical pipelines, learned approaches are not constrained by predefined coding and decoding schemes, enabling custom marker designs and end-to-end optimization. DeepTag [10] is a representative CNN-based framework for accurate fiducial marker detection that also supports custom markers. Similar to the classical pipeline, it consists of two stages: region-of-interest (ROI) detection and keypoint regression (Fig. 1, lower part). In the first stage, an ROI detection network processes the input image, identifies candidate marker regions, and decodes their identities. Each ROI is subsequently passed to a second network that estimates the marker keypoints. The final out-put consists of the image-space keypoints together with the corresponding marker identifier. Compared with conventional detection, learning-based approaches offer improved robust-ness to occlusion and image degradation while supporting split inference. The intermediate feature representations generated within the network provide multiple candidate split points, enabling different trade-offs between onboard computation, communication overhead, and edge-side processing. 
+
+B. 5G-Enabled Edge SLAM 
+
+SLAM is a fundamental capability of autonomous mobile robots, enabling simultaneous estimation of the robot pose and reconstruction of an unknown environment from sensor observations. Modern visual SLAM algorithms rely on contin-uous streams of high-resolution sensor data and increasingly incorporate computationally demanding perception modules, such as feature extraction, semantic segmentation, object de-tection, and graph optimization. Executing these workloads entirely onboard resource-constrained robots can significantly limit operating time, sensing quality, and achievable autonomy. To overcome these limitations, recent research has proposed Edge SLAM, where computationally intensive SLAM com-ponents are offloaded to edge servers over high-performance wireless networks. Ben Ali et al. [8] dynamically partition visual SLAM between the robot and the edge according to network and computational conditions, while Xu et al. [9] offload semantic perception tasks to edge infrastructure. These studies demonstrate the potential of edge computing to im-prove robotic perception while preserving localization accu-racy. However, they primarily focus on computation partition-ing, treating the communication network as an ideal transport mechanism and providing limited insight into the impact of wireless communication on end-to-end SLAM performance. The emergence of private 5G networks and mobile edge computing (MEC) has made practical deployment of Edge SLAM increasingly feasible. Recent studies have demon-strated end-to-end SLAM over both private industrial 5G de-ployments [16] and commercial 5G networks [17], confirming that 5G can support offloading of visual perception tasks while maintaining real-time operation. Nevertheless, existing implementations largely treat the robotic middleware and com-munication system as independent components. As a result, the interaction between ROS2 publish–subscribe communication, DDS/RTPS transport, and the underlying 5G user plane re-mains largely unexplored, despite its direct impact on latency, bandwidth utilization, and reliability. Moreover, recent indus-trial developments have demonstrated the practical integration of ROS2 DDS communication with 5G infrastructures [18], Fig. 2. Fiducial Marker Processing Pipeline in 5G-Enabled Edge SLAM. 
+
+further motivating communication-aware optimization of dis-tributed robotic perception systems. III. F IDUCIAL MARKER PROCESSING PIPELINE IN 
+
+5G-E NABLED EDGE SLAM 
+
+A. System Model and Architecture 
+
+Fig. 2 illustrates the proposed system architecture for 5G-enabled Edge SLAM based on fiducial marker processing. The system consists of three tightly integrated components: i) a mobile unmanned ground vehicle (UGV) equipped with a camera and a 5G user equipment (UE), ii) a 5G com-munication infrastructure compliant with the 3GPP/O-RAN architecture, and iii) an edge server executing the remaining stages of the visual processing pipeline and SLAM. The software architecture follows the ROS2 distributed ex-ecution model, in which functional modules are implemented as ROS2 nodes communicating via the publish–subscribe paradigm. On the UGV, the camera node acquires image frames and forwards them to the fiducial marker processing node, which executes either the complete pipeline or only its initial stages before transmitting the intermediate repre-sentation to the edge server. The edge executes the remaining processing stages, estimates the relative six-degree-of-freedom (6D) camera-to-marker pose, and forwards it to the SLAM node for localization and mapping. Communication between the UGV and the edge is provided by the ROS2 middleware, where messages are serialized using DDS/RTPS and trans-ported over UDP/IP through the 5G network. Let the image acquired by the onboard camera be denoted by x ∈ RH×W ×C , where H, W , and C represent the image height, width, and number of channels, respectively. The first stage of the fiducial marker processing pipeline detects and identifies fiducial markers, producing a ROI for each detected marker (Fig. 1) and yielding R = {(rm, d m)}Mm=1 , where M
+
+is the number of detected markers, rm denotes the ROI of the 
+
+m-th marker, and dm its decoded identifier. The corresponding ROIs are then processed by the keypoint extraction stage, producing K = {(km, d m)}Mm=1 , where km denotes the set of image-space keypoints associated with the m-th marker, including both the marker corners and, depending on the detection algorithm, additional learned feature points. Finally, the pose estimation stage computes Y = {(Tm, d m)}Mm=1 ,
+
+where Tm denotes the relative 6D camera-to-marker pose. Accordingly, the complete fiducial marker processing pipeline is represented as Y = F(x).
+
+The communication infrastructure follows the 3GPP/O-RAN architecture. The UE embedded within the UGV commu-nicates over the NR-Uu interface with a disaggregated gNB comprising an O-DU and O-CU interconnected through the F1 interface. User-plane traffic is forwarded through the 5G Core Network (5GCN), including the User Plane Function (UPF), towards the edge server hosting the edge server side fiducial marker processing and SLAM application. From the viewpoint of the ROS2 application, the 5G system provides transparent end-to-end transport of ROS2 messages while simultaneously determining the communication latency that directly contributes to the overall task execution time .Unlike conventional Edge SLAM, where the primary op-timization concerns the allocation of entire SLAM modules between the robot and the edge, this work focuses on the fiducial marker processing pipeline itself. As illustrated in Fig. 2, the pipeline may be partitioned at different locations, resulting in different amounts of data transmitted over the 5G link. Let the fiducial marker processing pipeline consist of an ordered sequence of processing blocks P = {P1, P 2, . . . , P N },where each block Pi implements the processing function fi(·).The pipeline progressively transforms the captured image x
+
+into the marker pose set Y consumed by the SLAM algorithm, and can therefore be expressed as F = fN ◦ fN −1 ◦ · · · ◦ f1.A split point k, where 1 ≤ k < N , partitions the pipeline into the onboard subset PU GV = {P1, . . . , P k} and the edge subset PES = {Pk+1 , . . . , P N }.Accordingly, the processing functions executed on the UGV and edge server are defined as FU GV = fk ◦ · · · ◦ f1 and 
+
+FES = fN ◦ · · · ◦ fk+1 , respectively, such that F = FES ◦FU GV . The onboard subsystem generates the intermediate representation z = FU GV (x), which is transmitted to the edge server through the ROS2/5G communication stack, where the final output is computed as Y = FES (z). The optimal split depends on the computational capabilities of the UGV and edge server, the wireless network characteristics, and the size of the transmitted representation. Unlike conventional image-processing pipelines, which produce compact outputs only after most computations are completed, DL-based pipelines naturally support split inference by transmitting intermediate feature representations that preserve task-relevant information. 
+
+B. A Semantic Communications Approach 
+
+The partitioned processing model (Section III-A) naturally establishes the connection between split inference and seman-tic communications [19]. The onboard function generates the intermediate representation z = FU GV (x), which serves as the input to the edge-side function FES . Since the network is trained end-to-end, FU GV learns a latent representation that retains only the information required for downstream pose estimation rather than reconstructing the input image. Consequently, z constitutes a task-oriented semantic represen-tation that suppresses redundant information while preserving features necessary for accurate marker pose estimation. This property fundamentally changes the role of the commu-nication subsystem. In conventional Edge SLAM, transmitted information typically consists of raw images or handcrafted visual descriptors whose representation is independent of the downstream task. In contrast, the proposed framework communicates the learned latent representation z, explicitly optimized for the edge-side processing function FES . Conse-quently, the communication objective shifts from reliable bit-level transmission to preserving the task-relevant information required for accurate downstream inference. From a system perspective, the overall performance is jointly determined by the selected split point and the se-mantic representation transmitted over the wireless link. The split point defines the onboard processing subset PU GV =
+
+{P1, P 2, . . . , P k}, thereby determining both the distribution of computational workload between the UGV and the edge server and the characteristics of the intermediate representation 
+
+z. Consequently, it directly affects the onboard computational complexity, communication overhead, and, ultimately, the de-lay and accuracy of the downstream localization task. IV. I MPLEMENTATION AND EXPERIMENTAL RESULTS 
+
+A. DeepTag Implementation and Training 1) Network Architecture: The proposed DeepTag imple-mentation follows an encoder–regressor architecture that sup-ports the split inference framework introduced in Section III. As discussed in Section II-A, the first stage relies on the classical AprilTag 2 detector, which detects fiducial markers, decodes their identifiers, and extracts an ROI around each detected tag. This stage is not learned in the present work, although fully learned two-stage detectors [10] and end-to-end architectures remain promising directions for future work. The network takes as input a grayscale ROI of size 256 ×256 
+
+pixels and predicts the normalized coordinates of K = 16 
+
+image-space keypoints arranged as a 4 × 4 grid. It consists of a VGG-style convolutional encoder followed by a regression head. The encoder comprises five convolutional blocks, each containing two 3 × 3 convolutional layers followed by batch normalization, ReLU activation, and 2 × 2 max-pooling, pro-gressively reducing the feature-map dimensions ( H × W × C)as 256 × 256 × 1 → 128 × 128 × 32 → 64 × 64 × 64 →
+
+32 × 32 × 128 → 16 × 16 × 256 → 8 × 8 × 256 . The regression head consists of a 3 × 3 convolutional layer, adaptive average pooling, and two fully connected layers ( 4096 → 512 → 32 ). The complete network contains approximately 5.06 × 10 6
+
+trainable parameters. Each encoder block defines a candidate split point, whose output feature map serves as the inter-mediate representation z transmitted to the edge server. The resulting communication–computation trade-offs are evaluated in Section IV-B. 
+
+2) Dataset Generation: Since sub-pixel ground-truth key-point annotations are difficult to obtain from real imagery, the network is trained primarily on a synthetic dataset with exact labels available by construction. Each sample is generated by rendering a planar AprilTag from the tag36h11 family under a randomly sampled six-degree-of-freedom (6-DoF) pose using a calibrated camera model matching the onboard camera ( fx ≈ fy ≈ 1045 px, 1280 × 720 resolution). Camera orientation and distance are sampled independently to cover diverse viewing conditions, while the corresponding ground-truth keypoints are obtained by exact perspective projection. To improve robustness, the rendered images are augmented using random brightness and contrast variations, Gaussian blur, additive Gaussian noise, gamma correction, and ran-domized background textures. In addition, the detected tag quadrilateral is randomly perturbed before warping to the fixed 256 × 256 network input, following the Stage-2 training strategy of DeepTag [10]. The resulting dataset comprises 10,000 samples, randomly partitioned into training and test subsets using a 70/30 split. To reduce the domain gap, the network is subsequently fine-tuned on 8,000 photorealistic images rendered in Gazebo Harmonic. The simulated environment contains complete 3D scenes with realistic lighting, materials, and viewpoints while retaining pixel-accurate annotations. AprilTag markers are placed at known poses and observed from randomly sampled camera viewpoints, with ground-truth keypoints obtained by exact projection. The dataset is randomly partitioned into training and test subsets using a 70/30 split. 
+
+3) Training: Training is performed in two stages. The network is first trained from scratch on the synthetic dataset and subsequently fine-tuned on the rendered dataset to improve generalization to realistic deployment conditions. Training Fig. 3. Uplink RTT vs. payload size, with fitted link model. 
+
+employs a spatially weighted variant of the Wing loss [20], which places greater emphasis on small localization errors than the mean-squared-error (MSE) loss and is therefore well suited to keypoint regression. The base loss is defined as: 
+
+ℓ(δ) = 
+
+(w ln 
+
+
+
+1 + |δ|
+
+> ϵ
+
+
+
+, |δ| < w, 
+
+|δ| − C, otherwise , (1) where δ denotes the coordinate-wise prediction error, w = 10 ,
+
+ϵ = 2 , and C = w − w ln(1 + w/ϵ ) ensures continuity. To reduce the influence of boundary keypoints on down-stream PnP pose estimation, each keypoint is assigned aweight according to its normalized distance from the nearest patch edge, dedge = min c∈{ x,y } min( kc, 1 − kc), where kc
+
+denotes the ground-truth normalized coordinate. The weight is computed as ω = clamp( dedge /0.5, 0.3, 1.0) , yielding the training objective: 
+
+L = 1
+
+KB 
+
+> B
+
+X
+
+> b=1
+> K
+
+X
+
+> k=1
+
+ω(b) 
+
+> k
+
+ℓ
+
+ˆk(b) 
+
+> k
+
+− k(b)
+
+> k
+
+
+
+, (2) where B is the mini-batch size, K = 16 is the number of keypoints, and ˆk(b) 
+
+> k
+
+and k(b) 
+
+> k
+
+denote the predicted and ground-truth normalized coordinates of the k-th keypoint in the b-th training sample, respectively. The network is optimized using Adam [21] with cosine annealing for 70 epochs, a batch size of 32 , and initial learning rates of 3 × 10 −4 and 5 × 10 −5
+
+during pretraining and fine-tuning, respectively. 
+
+B. Communication Performance 
+
+The measurements were performed on the 5G O-RAN testbed described in [22], based on a 20 MHz bandwidth srsRAN/Open5GS setup. The communication link was char-acterized by transmitting synthetic payloads sized to each candidate split point and measuring round-trip time (RTT) over 200 repetitions per size. As RTT is measured on a single clock, it requires no time synchronization between the UGV and the server, and the results can be described by the model: 
+
+RTT = t0 + β · S, (3) where t0 is payload-independent floor, β the marginal cost per kilobyte, and S the payload size (Fig. 3). A least-squares fit over the full payload range gives β =0.18 ms/kB. We report the measured floor latency, t0 =39 .9 ms, rather than the fitted intercept ( 37 .7 ms), since the  
+
+> Fig. 4. Representative keypoint regression result - Ground-truth (blue) and predicted (yellow) keypoints.
+
+link is not perfectly linear. Payloads below ∼32 kB exhibit the same latency, indicating a radio scheduling floor rather than transfer time. Consequently, further payload reduction provides no additional latency benefit. Increasing the allocated uplink resources (by balancing uplink/downlink TDD slots) improved β by a factor of ∼3 (14 .2 → 43 .5 Mbps) while leaving t0 unchanged. 
+
+C. Perception and Localization Performance 1) Perception Performance: The perception performance of the proposed keypoint regression network is evaluated on a held-out test set unseen during training. Prediction accu-racy is quantified by the mean absolute pixel error, epx =
+
+> SK
+
+PKi=1 ∥ˆki −ki∥2, where S = 256 is the patch size and K =16 , and the relative keypoint error, erel = ( epx /L tag ) × 100% ,where Ltag = S∥kmax − kmin ∥2 is the projected diagonal of the ground-truth keypoint grid. The proposed network achieves a mean absolute keypoint error of 1.47 px ( σ = 0 .79 px), corresponding to a mean relative keypoint error of 0.90% 
+
+(σ = 0 .47% ), demonstrating accurate and consistent keypoint estimation under diverse viewing conditions. Fig. 4 shows a representative test sample, illustrating the close agreement between the predicted and ground-truth keypoint locations across the entire 4 × 4 grid. 
+
+2) Localization Performance: To assess the impact of the predicted keypoints on downstream localization, the repre-sentative test sample from Fig. 4 is processed using a PnP algorithm to estimate the relative camera-to-marker pose. The estimated pose is compared with the simulator ground truth using the translation error, et = ∥ˆt−t∥2, and the rotation error, 
+
+er = arccos 
+
+
+
+(tr( ˆRR ⊤) − 1) /2
+
+
+
+, where (ˆ t, ˆR) and (t, R)
+
+denote the estimated and ground-truth translation and rotation, respectively. The proposed approach achieves a translation error of 0.83 cm and a rotation error of 2.04 ◦. Using the same PnP solver, the conventional AprilTag pipeline yields a translation error of 1.52 cm and a rotation error of 0.37 ◦. Since the primary objective of this work is to validate the proposed semantic split inference framework, localization performance is illustrated on a representative example, while the perception module is evaluated over the complete test set. 
+
+3) Split Point Analysis: Table I lists, for each candidate split point, the size of the transmitted representation and the cumulative on-board compute required to produce it, profiled Fig. 5. Split point cost on the 5G uplink ( ⋆ = optimum). 
+
+single-threaded on an x86 CPU (Intel Core i7-1165G7) with-out GPU acceleration. Compute accumulates progressively while payload decreases monotonically, so that the two costs trade-off against one another. 
+
+TABLE I PAYLOAD SIZE AND CUMULATIVE COMPUTE AT EACH SPLIT POINT .
+
+Split point k Payload S(k) [kB] Cumulative compute C(k) [ms] 
+
+Block 1 1024 13.6 Block 2 512 24.9 Block 3 256 33.7 Block 4 128 43.3 Block 5 32 47.3 AvgPool 8 48.1 Full (keypoints) 0.06 48.3 
+
+Combining the measured link model (Eq. (3)) with the per-block compute profile yields the end-to-end cost of each candidate split: 
+
+T (k) = γ · C(k) + t0 + β · S(k), (4) where γ is a scaling factor, introduced to evaluate the optimum across a range of on-board compute capabilities, since C(k)
+
+is at present profiled only on an x86 CPU rather than on the UGV’s embedded processor. Fig. 5 evaluates Eq. (4) using the measured 5G uplink. The end-to-end cost exhibits a clear minimum whose location depends on the onboard computational capability. For γ ≤ 2,the optimum lies at the deepest layers, as transmitting a 256 kB representation requires ∼80 ms while offloading the remaining layers saves only ∼14 ms of computation. For γ ≥ 4, the optimum shifts toward earlier layers. These results motivate adaptive semantic partitioning instead of a fixed split. V. C ONCLUSIONS AND FUTURE WORK 
+
+This paper presented a semantic split inference framework for fiducial marker processing in 5G-enabled Edge SLAM, in which a DeepTag-inspired keypoint regression network is partitioned between the robot and the edge server. Interme-diate feature representations are interpreted as task-oriented information, enabling communication-aware deployment over ROS2 and 5G. Experimental results confirmed accurate key-point estimation and quantified communication–computation trade-offs at different split points. Future work will investigate adaptive split selection under dynamic network conditions and joint optimization of the semantic representation and wireless transmission for end-to-end robotic perception. ACKNOWLEDGMENTS 
+
+Supported by the Serbian Ministry of Science, Technologi-cal Development and Innovation (Project No. 00101957 2025 13440 003 000 620 021) and China’s National Key R&D Program (Grant 2024YFE0197400). REFERENCES [1] M. Ghassemian et al. , “6G Empowering Future Robotics: A Vision for Next-Generation Autonomous Systems,” IEEE Commun. Mag. , 2026. [2] D. E. Boubiche et al. , “The Next Generation of Internet of Robotic Things (IoRT): Leveraging 6G for Intelligence, Connectivity, and Scal-ability,” IEEE Internet Things Mag. , early access. [3] IEEE Std. P1955, “Standard for 6G Empowering Robotics.” [Online]. Available: https://standards.ieee.org/ieee/1955/11660/ [4] H. Durrant-Whyte and T. Bailey, “Simultaneous Localization and Map-ping: Part I,” IEEE Robot. Autom. Mag. , vol. 13, no. 2, pp. 99–110, 2006. [5] R. Bezerra et al. , “AI-IoT-Robotics Integration: Survey of Frameworks, Emerging Trends, and the Path Toward Connected Robotics,” IEEE Internet Things J. , vol. 13, no. 10, pp. 20398–20412, 2026. [6] N. G. Evgenidis et al. , “Split Learning in Computer Vision for Semantic Segmentation Delay Minimization,” IEEE J. Sel. Areas Commun. , vol. 43, no. 12, pp. 3955–3968, 2025. [7] C. Xue et al. , “Adaptive Multi-Robot Cooperative Localization Based on Distributed Consensus Learning of Unknown Process Noise Uncer-tainty,” IEEE Trans. Autom. Sci. Eng. , vol. 22, pp. 8738–8761, 2025. [8] A. J. Ben Ali, Z. S. Hashemifar, and K. Dantu, “Edge-SLAM: Edge-Assisted Visual Simultaneous Localization and Mapping,” in Proc. 18th Int. Conf. Mobile Syst., Appl., Services (MobiSys) , 2020, pp. 325–337. [9] J. Xu et al. , “Edge assisted mobile semantic visual SLAM,” in Proc. IEEE Conf. Comput. Commun. (INFOCOM) , 2020, pp. 1828–1837. [10] Z. Zhang, Y. Hu, G. Yu, and J. Dai, “DeepTag: A General Framework for Fiducial Marker Design and Detection,” IEEE Trans. Pattern Anal. Mach. Intell. , vol. 45, no. 3, pp. 2931–2944, 2023. [11] S. Macenski et al. , “Robot Operating System 2: Design, Architecture, and Uses in the Wild,” Science Robotics , vol. 7, no. 66, 2022. [12] M. Fiala, “ARTag, a Fiducial Marker System Using Digital Techniques,” in Proc. IEEE Comput. Soc. Conf. Comput. Vis. Pattern Recognit. (CVPR) , vol. 2, pp. 590–596, 2005. [13] J. Wang and E. Olson, “AprilTag 2: Efficient and Robust Fiducial Detection,” in Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) ,2016, pp. 4193–4198 [14] D. Hu, D. DeTone, and T. Malisiewicz, “Deep ChArUco: Dark ChArUco Marker Pose Estimation,” in Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2019, pp. 8436–8444. [15] M. B. Yaldiz, A. Meuleman, H. Jang, H. Ha, and M. H. Kim, “Deep-FormableTag: End-to-End Generation and Recognition of Deformable Fiducial Markers,” ACM Trans. Graph. , vol. 40, no. 4, pp. 1–14, 2021. [16] P. Sosalla, “Multi-Access Edge Computing for Mobile Robots,” Ph.D. dissertation, Technische Universit¨ at Dresden, Dresden, Germany, 2025. [17] P. T. Karfakis, M. S. Couceiro, and D. Portugal, “NR5G-SAM: A SLAM framework for field robot applications based on 5G New Radio,” 
+
+Sensors , vol. 23, no. 11, Art. no. 5354, 2023. [18] eProsima, “eProsima and Ericsson simplify 5G integration in ROS 2,” 2022. [Online]. Available: https://www.eprosima.com/news/eprosima-and-ericsson-simplify-5g-integration-in-ros2. Accessed: Apr. 2026. [19] J. Choi et al. , ”Semantics Alignment via Split Learning for Resilient Multi-User Semantic Communication,” IEEE Trans. Veh. Technol., vol. 73, no. 10, pp. 15815-15819, 2024. [20] Z.-H. Feng et al. , “Wing Loss for Robust Facial Landmark Localisation With Convolutional Neural Networks,” in Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2018, pp. 2235–2245. [21] D. P. Kingma and J. L. Ba, “Adam: A method for stochastic optimiza-tion,” in Proc. Int. Conf. Learn. Representation (ICLR), 2015, pp. 1–41. [22] B. Radovanovic, S. Talosi, S. Sobot, and D. Vukobratovic, “CSI-Assisted Edge SLAM Testbed Platform for 5G Connected Unmanned Autonomous Vehicles,” arXiv preprint arXiv:2607.10394 , 2026.

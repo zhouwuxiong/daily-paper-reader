@@ -1,0 +1,841 @@
+Title: DA-NBV: A Direction-Aware Next-Best-View Planner for Efficient 3D Reconstruction of Ships at Sea
+
+URL Source: https://arxiv.org/pdf/2608.08025v1
+
+Published Time: Tue, 11 Aug 2026 00:40:56 GMT
+
+Number of Pages: 16
+
+Markdown Content:
+# DA-NBV: A Direction-Aware Next-Best-View Planner for Efficient 3D Reconstruction of Ships at Sea 
+
+# Jiaming Chen 1∗, Juntao Yang 1∗, Zhentao Zou 2, Qi Ming 3,Yi Yu 4, Zhihang Zhong 2, Xue Yang 2, Xue Jiang 2, Yue Zhou 1†
+
+> 1
+
+East China Normal University 
+
+> 2
+
+Shanghai Jiao Tong University 
+
+> 3
+
+Beijing University of Technology 
+
+> 4
+
+The Ohio State University 
+
+Abstract 
+
+Accurate 3D reconstruction of ships at sea is important for maritime supervision, damage assessment, and autonomous maritime operations. Although 3D reconstruction has ad-vanced considerably, high-quality data acquisition still largely relies on manually designed trajectories or skilled operators, resulting in high costs and limited scalability. Next-best-view (NBV) planning automates this process by selecting subse-quent viewpoints based on the current state. However, exist-ing NBV policies mainly model spatial occupancy while over-looking directional observation history. This limitation is par-ticularly problematic for ships: their complex superstructures and severe self-occlusions require observations from multiple viewpoints, and insufficient directional coverage often yields incomplete reconstructions. These challenges are further am-plified at sea, where wave-induced heave, roll, and pitch con-tinuously alter the ship’s pose and surface visibility. Mean-while, wind disturbances and limited onboard power impose stricter requirements on scanning efficiency. To address these challenges, we propose DA-NBV, a direction-aware NBV pol-icy that augments the conventional occupancy state with direc-tional observation statistics. We introduce a learnable Position Advantage Field (PAF) that uses directional information to guide viewpoint selection. The policy further adopts a locally constrained action space and a nonlinear coverage-shaping reward to improve scanning efficiency. We also develop the ship-oriented SeaShip-3D dataset and a configurable sea-state simulation environment. Experiments under varying heave, roll, and pitch conditions show that DA-NBV improves recon-struction completeness by approximately 3 percentage points and reduces Chamfer distance by 43% while achieving higher path efficiency. 
+
+# Introduction 
+
+Three-dimensional reconstruction of ships at sea using un-manned aerial vehicles (UAVs) is important for vessel main-tenance, maritime supervision, and digital asset manage-ment (Shah et al. 2021; Liu et al. 2022). Accurate models support structural measurement, corrosion and damage as-sessment, vessel identification, modification detection, cargo load assessment, and port management, while reducing the risks associated with manual inspection at height or near 
+
+> ∗
+
+These authors contributed equally. 
+
+> †
+
+Corresponding author. 
+
+water. They also provide a geometric foundation for digi-tal twins, simulation, and lifecycle records. Moreover, UAVs can reconstruct vessels while they are underway without re-quiring berthing or disrupting voyage schedules. Operating in such dynamic scenes, however, requires policies that can adapt to vessel motion. Although advances in 3D reconstruction have simplified image-based digitization, image acquisition remains costly and inefficient because it is still largely manual. To streamline real-world digitization, recent studies have explored next-best-view (NBV) policies for automatic image acquisition using drones (Maboudi et al. 2023; Peralta et al. 2020; Chen et al. 2024). Heuristic NBV policies can achieve high cover-age in specific scenes but generalize poorly (Connolly 1985; Pito 1999; Isler et al. 2016; Delmerico et al. 2018). RL-based methods improve generalization while maintaining high cov-erage (Peralta et al. 2020; Chen et al. 2024). GenNBV addi-tionally encodes geometry with a probabilistic 3D grid (Chen et al. 2024). As illustrated in Fig. 1, a fundamental limitation of existing occupancy-based NBV policies is that they record whether a voxel has been observed, but not the diversity of directions from which it has been viewed. Once a voxel becomes visi-ble, it is often treated as sufficiently covered, even when its geometry remains poorly captured. This limitation is partic-ularly significant for ships, whose complex superstructures and extensive self-occlusions require observations from mul-tiple complementary directions. Without directional aware-ness, the policy may repeatedly select similar viewpoints or viewpoints with limited surface visibility, resulting in re-dundant observations, persistent blind spots, and inefficient trajectories. These challenges become even more severe in maritime environments, where wave-induced heave, roll, and pitch continuously change the pose and surface visibility of the ship. Meanwhile, wind disturbances increase UAV en-ergy consumption, and limited opportunities for landing or recharging may leave the UAV with only one chance to com-plete the scan. Reconstructing ships at sea therefore requires efficient trajectories, high reconstruction quality, and robust policies (Liu et al. 2022). To meet these requirements and extend NBV planning to dynamic reconstruction scenarios, we propose DA-NBV, a arXiv:2608.08025v1 [cs.RO] 8 Aug 2026 Figure 1: Comparison of conventional and DA-NBV scanning strategies. Conventional NBV methods are primarily designed for static objects and rely on occupancy-based representations that distinguish unknown, free, and occupied space. Their global action spaces can also lead to redundant observations and unnecessarily long trajectories. In contrast, DA-NBV is robust to dynamic targets, uses missing-direction information to acquire complementary views of the same region, and adopts a local action space to generate more efficient scanning trajectories. Direction-Aware Next-Best-View Planner for Efficient 3D Reconstruction of Ships at Sea. The core idea is that geometrically complex regions de-serve observations from a more diverse set of directions. Although one or two observations may suffice for smooth hull surfaces, complex structures such as ship superstruc-tures require complementary views from multiple directions to support high-quality reconstruction. We extend the occupancy-based planning pipeline through three coupled components: a direction-aware reconstruction state with a learnable Position Advantage Field (PAF), a locally constrained autoregressive action policy, and nonlin-ear coverage shaping. Together, these components encourage complementary observations while simplifying local search and reducing unnecessary flight. We also construct the ship-oriented SeaShip-3D dataset and use it to build a physics-based maritime scanning en-vironment for training and evaluation. Experiments demon-strate that DA-NBV achieves greater path efficiency, fewer blind spots, and improved reconstruction quality compared with existing NBV planning methods. 
+
+# Related Work 
+
+Next-best-view (NBV) planning selects the next sensor view-point according to the current reconstruction state (Bajcsy 1988; Scott, Roth, and Rivest 2003; Vasquez-Gomez, Lopez-Damian, and Sucar 2009). Traditional methods typically gen-erate a set of candidate viewpoints and rank them using hand-crafted utility functions based on information gain, unknown-space coverage, visibility, or motion cost (Connolly 1985; Pito 1999; Kriegel et al. 2011; Doumanoglou et al. 2016; Isler et al. 2016; Delmerico et al. 2018). Although these methods perform well in specific environments, their effec-tiveness strongly depends on manually designed functions. Consequently, they often exhibit limited generalization. Learning-based NBV methods can be broadly divided into scene-specific online optimization methods and poli-cies pretrained offline (Hepp et al. 2018; Zeng, Zhao, and Liu 2020; Jin et al. 2025; Xu et al. 2025; Tao et al. 2025). NeRF-based active reconstruction methods usually optimize a scene-specific neural representation while selecting subse-quent observations (Mildenhall et al. 2020; Pan et al. 2022; Lee et al. 2022; Yan et al. 2023; Xue et al. 2024; Xiao et al. 2024; Jiang, Lei, and Daniilidis 2024). For example, Ac-tiveRMAP alternates between radiance-field reconstruction and path optimization during scanning (Zhan et al. 2022). Although these methods can directly exploit the current neu-ral scene representation, they require repeated scene-level optimization and rendering, resulting in substantial compu-tational overhead and limiting their suitability for real-time deployment. In contrast, reinforcement-learning-based meth-ods train reusable policies in simulation and generate the next viewpoint through feedforward inference during deployment. Scan-RL demonstrates the feasibility of learning a scanning policy from image histories (Peralta et al. 2020). GenNBV further combines probabilistic 3D geometry, image features, and action history, enabling stronger cross-dataset general-ization (Chen et al. 2024). The effectiveness of NBV policies depends strongly on how the evolving reconstruction state is represented (Hor-nung et al. 2013; Guédon, Monasse, and Lepetit 2022; Per-alta et al. 2020; Chen et al. 2024). NBV-Net and GenNBV use probabilistic occupancy grids to represent whether individual voxels have been observed (Mendoza et al. 2020; Chen et al. 2024). Hestia further models the observation states of the six voxel faces, providing a finer-grained representation of reconstruction progress (Lu et al. 2026). Nevertheless, these representations primarily characterize spatial coverage. Con-sequently, they may not adequately distinguish repeated ob-servations from similar viewpoints from complementary ob-servations acquired from previously unexplored directions. Therefore, high surface coverage does not always guaran-tee accurate reconstruction, particularly for self-occluded re-gions and fine geometric structures (Frahm et al. 2025). Existing methods also differ substantially in their action-space designs. Traditional approaches usually select view-points from limited predefined candidate sets (Connolly 1985; Pito 1999), whereas recent methods allow viewpoint selection over larger and more flexible action spaces (Chen et al. 2024; Lu et al. 2026). However, expanding the global action space makes policy optimization more difficult and often results in redundant back-and-forth trajectories. More-over, selecting viewpoints according to one-step utility does not directly optimize long-term path efficiency (Schmid et al. 2012; Roberts et al. 2017; Hepp, Nießner, and Hilliges 2018; Maboudi et al. 2023). In contrast, DA-NBV explicitly main-tains voxel-level historical observation directions and con-structs a direction-aware Position Advantage Field to iden-tify candidate positions that provide complementary obser-vations. Its locally constrained autoregressive policy first se-lects a relative position and then predicts the camera orien-tation and termination action. This factorization reduces the single-step search space while allowing the UAV to progres-sively explore a larger free space through successive local movements. 
+
+# Method 
+
+DA-NBV Framework 
+
+We formulate DA-NBV planning as a Markov decision pro-cess (MDP) M = ( S, A, P, R, γ ), where S denotes the reconstruction-state space, A denotes the viewpoint-action space, P denotes the state transition induced by UAV mo-tion, ship motion, and new depth observations, R denotes the scanning reward, and γ denotes the discount factor. Although the complete ship geometry is not directly observable, the ac-cumulated reconstruction grids and action history provide a compact state approximation for sequential decision making. As shown in Fig. 2, DA-NBV forms a closed-loop process from depth-based state construction to direction-aware position scoring and action prediction. At decision step t, the policy receives the state representation st =
+
+{Gt, D t, C t, ξ t, H t}, where Gt encodes occupied, free, and unknown space (Thrun, Burgard, and Fox 2005); Dt encodes voxel-wise viewing-direction vectors and their accumulated observation states; Ct describes local geometric complexity; 
+
+ξt denotes the current UAV pose and motion state; and Ht
+
+contains the recently executed actions. The current depth image is back-projected into a point cloud Pt. Since wave-induced heave, roll, pitch, and trans-lation continuously alter the ship’s pose, directly integrating observations in a static world coordinate system would intro-duce ghosting and geometric distortion. We therefore main-tain a unified ship-centered reconstruction map. The first observation initializes the accumulated map M0. At each subsequent step, iterative closest point (ICP) estimates the relative transformation Tt between the current point cloud and the historical map. The aligned point cloud ePt = TtPt
+
+is then fused with Mt−1 to obtain the updated map Mt (Besl and McKay 1992). The aligned observations are used to up-date Gt, Dt, and Ct, ensuring that the policy operates on a spatially consistent reconstruction state. Given st, the pol-icy selects an action at ∈ A . After the action is executed, the UAV acquires a new observation. The environment then transitions to a state st+1 sampled from P(· | st, a t), and the agent receives reward rt = R(st, a t, s t+1 ).The PAF derives structured candidate-position guidance from Gt, Dt, and Ct. The locally constrained autoregressive policy defines the action distribution π(at | st), while the reward function evaluates the resulting directional coverage, surface coverage, and path efficiency. Following the three encoding branches in Fig. 2, the occupancy encoder processes Gt, the PAF en-coder processes Ut, and the state encoder processes 
+
+ξt and Ht. Their outputs are concatenated as ht =Concat( Focc (Gt), F PAF (Ut), F state (ξt, H t)) , where ht is used by the subsequent action branches. 
+
+Position Advantage Field (PAF) 
+
+The MDP state st must capture not only which regions have already been observed but also which viewing directions re-main underexplored and how important each region is for reconstruction. DA-NBV therefore represents each valid ob-servation as a unit direction vector and accumulates these vectors at the voxel level. The resulting vector-based direc-tional state distinguishes between redundant observations from similar directions and complementary observations from new directions. In addition, we estimate each region’s geometric complexity online to quantify its importance for reconstruction. Using this state, DA-NBV constructs a 3D PAF from directional incompleteness, local geometric com-plexity, and candidate-position visibility. The resulting field 
+
+Ut provides state-dependent guidance. For each visible voxel, DA-NBV represents the corre-sponding observation as a unit viewing-direction vector. To store these vectors in a fixed-size voxel representation, we discretize the unit sphere into Nd approximately uniformly distributed directional bins {bj }Nd
+
+> j=1
+
+. Each bin represents an angular range, so small changes caused by ship oscillation can still activate the same bin, improving robustness while preserving directional guidance. For a voxel v centered at 
+
+xv and a camera located at p, the voxel-centered viewing-direction vector is defined as 
+
+d(v, p ) = p − xv
+
+∥p − xv ∥ . (1) When voxel v is visible in the current depth observation, we identify the directional bin whose vector bj is most aligned with d(v, p ) and set Bt(v, j ) = 1 . Here, Bt(v, j ) ∈ { 0, 1}
+
+records whether voxel v has been physically observed from a direction aligned with bj by time step t.At each decision step, DA-NBV estimates voxel-wise geo-metric complexity online from the accumulated depth obser-vations. We incrementally maintain local point statistics and compute a PCA-based descriptor ˆct(v) comprising linear-ity, scattering, and curvature (Weinmann et al. 2015). This observation-derived descriptor provides an online estimate of voxel importance for the LPAS and PAF construction. Visibility estimation prevents occluded voxels from in-correctly increasing the advantage of a candidate position. Since exact ray tracing over all voxel–candidate pairs is com-putationally expensive, we approximate the transmittance of each occupied voxel using the axis-aligned bounding box of its accumulated point cloud. Let ∆k(u) = xmax  
+
+> u,k
+
+− xmin 
+
+> u,k
+
+denote its extent along axis k. The transmittance along axis 
+
+k ∈ { x, y, z } is estimated as 
+
+τk(u) = 1 − ∆i(u)∆ j (u)
+
+Aij 
+
+, {i, j, k } = {x, y, z }, (2) Figure 2: Overview of DA-NBV. Motion-compensated depth observations update the occupancy grid Gt, voxel-wise direction-vector grid Dt, and geometric complexity grid Ct. The Learnable Position Advantage Scorer (LPAS) evaluates voxel–candidate-position pairs using viewing-direction alignment, visibility, distance, and geometric complexity, and aggregates their utilities into the PAF Ut. The encoded occupancy, PAF, UAV state, and action history are fused to predict position, orientation, and termination. where Aij is the corresponding voxel-face area perpendicular to axis k. For an arbitrary viewing direction d, the directional transmittance is obtained by cosine-weighted interpolation: 
+
+τ (u, d) = 
+
+P 
+
+> k∈{ x,y,z }
+
+|dk|τk(u)
+
+P 
+
+> k∈{ x,y,z }
+
+|dk| + ε . (3) Given a target voxel v and candidate position q, we sample the occupied voxels R(v, q ) along the line segment connecting 
+
+v and q and estimate the overall visibility as 
+
+Vis( v, q ) = Y
+
+> u∈R (v,q )
+
+τ (u, d (v, q )) . (4) This conservative approximation may overestimate occlu-sion, but it efficiently suppresses contributions from invisible voxels without expensive exact ray tracing. For a candidate position q, the unit direction vector from the voxel center toward the candidate is denoted by d(v, q ).We evaluate whether the candidate provides a missing view-ing direction by comparing d(v, q ) with the unobserved di-rection vectors {bj }:
+
+ρt(v, q ) = max  
+
+> j:Bt(v,j )=0
+
+d(v, q )⊤bj . (5) A high value of ρt(v, q ) indicates that the candidate viewing-direction vector is strongly aligned with a direction that has not yet been observed. Within the local action region, we uniformly sample a structured set of representative positions Qt. As illustrated in Fig. 2, the Learnable Position Advantage Scorer (LPAS) evaluates each voxel–candidate pair (v, q ) using its voxel-to-candidate distance δt(v, q ), visibility Vis( v, q ), missing-direction alignment ρt(v, q ), and the online geometric de-scriptor ˆct(v). The latter comprises the linearity, scattering, and curvature of voxel v.For each candidate position, the LPAS estimates a pairwise utility for every active voxel from the corresponding voxel– candidate features. These voxel-wise utilities are summed to obtain a single advantage score for the candidate. This aggregation favors not only positions that are highly infor-mative for individual voxels but also positions that can jointly observe multiple active regions from previously unobserved directions. The LPAS and the policy network are jointly op-timized in an end-to-end manner. The candidate advantages are then placed at their corre-sponding coordinates in the local 3D candidate space to con-struct the PAF Ut. This structured tensor provides position guidance for the downstream policy. 
+
+Locally Constrained Autoregressive Action Policy 
+
+Within the MDP formulation, the action space A determines how the UAV changes the current reconstruction state. To simplify 3D viewpoint search and maintain motion continu-ity between adjacent views, we define a locally constrained discrete action at = ( apos  
+
+> t
+
+, a ori  
+
+> t
+
+, b stop  
+
+> t
+
+). It comprises the po-sition action apos  
+
+> t
+
+= (∆ xt, ∆yt, ∆zt), the orientation action 
+
+aori  
+
+> t
+
+= ( ψt, ϕ t), and the binary termination decision bstop  
+
+> t
+
+.Here, ∆xt, ∆yt, and ∆zt denote displacements relative to the current UAV position, whereas ψt and ϕt denote the tar-get yaw and pitch angles, respectively. The stop action allows the agent to terminate scanning once it determines that the reconstruction task is sufficiently complete. Constraining motion to local relative displacements re-duces the single-step position-search space and simplifies policy optimization. Meanwhile, relative actions allow the UAV to progressively explore a workspace beyond any fixed global candidate set. This design also discourages large jumps and repeated backtracking, produces smoother tran-sitions between successive viewpoints, and facilitates fine-grained scanning of occluded regions, blind spots, and geo-metrically complex structures. As shown in Fig. 2, the position and termination decisions are jointly predicted from the shared representation ht, i.e., 
+
+apos  
+
+> t
+
+, b stop  
+
+> t
+
+∼ πpos −stop (apos  
+
+> t
+
+, b stop  
+
+> t
+
+| ht). After the position action is determined, the target position is encoded into a po-sition embedding epos  
+
+> t
+
+. The orientation branch then predicts the camera direction conditioned on the shared state and the selected position as aori  
+
+> t
+
+∼ πori (aori  
+
+> t
+
+| ht, e pos  
+
+> t
+
+). Together, the position–termination and orientation branches define the MDP policy π(at | st). The policy therefore captures a con-ditional sequence: first deciding where to move and then where to look upon arrival. 
+
+Reward Design and Policy Optimization 
+
+Within the MDP, the reward function R(st, a t, s t+1 ) eval-uates how the selected action changes the reconstruction state. We train the policy using proximal policy optimiza-tion (PPO) (Schulman et al. 2017) in the simulation envi-ronment and design the reward based on the principle that geometrically complex regions should be observed from a more diverse set of directions. Specifically, we use direc-tional coverage gain as the primary reward, together with step, path-length, and terminal terms. Complexity-weighted directional coverage is defined as 
+
+Cdir  
+
+> t
+
+=
+
+P 
+
+> v
+
+cv
+
+P 
+
+> j
+
+M (v, j )Bt(v, j )
+
+P 
+
+> v
+
+cv
+
+P 
+
+> j
+
+M (v, j ) , (6) where Bt(v, j ) indicates whether direction j of voxel v has been covered, M (v, j ) masks unobservable directions, and 
+
+cv denotes the geometric complexity. Weighting coverage by 
+
+cv encourages more diverse observations of complex regions. Both M (v, j ) and cv are computed from ground-truth data and used exclusively for reward computation rather than as policy inputs. As coverage increases, obtaining new valid observation di-rections becomes progressively more difficult. To strengthen the learning signal during the later stages of scanning, we apply a monotonically increasing convex function to nonlin-early shape the directional-coverage increment: 
+
+rdir  
+
+> t
+
+= f  Cdir 
+
+> t+1
+
+ − f  Cdir 
+
+> t
+
+ , (7) where f (·) is a convex function that increases monotonically. This design assigns a larger reward to the same coverage in-crement at higher coverage levels, encouraging the policy to continue searching for directions that are difficult to observe. The complete reward function is 
+
+rt = λdir rdir  
+
+> t
+
+− λlen ∆lt − λstep + rterm  
+
+> t
+
+, (8) where ∆lt is the path-length increment, and λstep is the per-step sensing and decision cost. A proper termination deci-sion is rewarded according to the final reconstruction quality, whereas the policy is penalized for collisions, or producing excessively long trajectories. The resulting policy is optimized to maximize the ex-pected discounted return with discount factor γ. We train DA-NBV using PPO in multiple parallel simulation envi-ronments (Schulman et al. 2017). Our implementation uses Stable-Baselines3 and follows the massively parallel train-ing structure of Legged Gym (Raffin et al. 2021; Rudin et al. 2022). The value network estimates the current state value 
+
+V (st) from the shared representation ht. During training, the policy collects trajectories and computes advantage estimates from the observed rewards and predicted state values. PPO then updates the policy using a clipped surrogate objective, which limits excessive deviations from the previous policy and improves training stability. The overall objective com-bines the policy loss, value prediction loss, and an entropy term that encourages exploration. 
+
+Maritime Simulation Environment and Dataset 
+
+For training and evaluation, we build a sea-state-aware ship-scanning simulation environment in NVIDIA Isaac Gym (Makoviychuk et al. 2021). The simulated UAV is modeled after the Crazyflie 2.0 quadrotor platform (Gier-nacki et al. 2017). For each sea-state level, we superim-pose multiple wave components with physically sampled wavelengths, heights, and directions to generate the ocean surface, following spectrum-based and real-time irregular-wave modeling principles (Pierson and Moskowitz 1964; Zheleznyakova 2020). To efficiently approximate the wave-induced heave, roll, and pitch components of ship motion, we sample four points on the waterline plane: the longitu-dinal and lateral height differences determine pitch and roll, respectively, while their mean height determines heave. The time-varying ocean surface is also used to model occlusion of the lower hull caused by rising waves. In addition, we sim-ulate a spatially varying wind field with sampled wind speed, direction, and vertical shear, and incorporate its influence on UAV motion and flight efficiency (Liu et al. 2022). We further construct the SeaShip-3D dataset, which con-tains 300 ship models with diverse geometric structures and detailed textures. All models are calibrated according to their waterlines and normalized by ship length. Surface point clouds of the portions above the waterline are pre-sampled us-ing Poisson-disk sampling implemented in Open3D for cov-erage and reconstruction-quality evaluation (Yuksel 2015; Zhou, Park, and Koltun 2018). 
+
+# Experiments 
+
+We evaluate DA-NBV in both dynamic maritime and static object-reconstruction environments. The main experiments are conducted on SeaShip-3D under different sea states, with additional ablation and cross-dataset experiments on Houses3K and OmniObject3D. Method SeaShip-3D (dynamic) Houses3K (static) OmniObject3D (static) All CR ↑ CD ↓ As ↑ Ap ↑ CR ↑ CD ↓ As ↑ Ap ↑ CR ↑ CD ↓ As ↑ Ap ↑ CR ↑ CD ↓ As ↑ Ap ↑                                                                                                
+
+> Random 55.15 22.08 51.22 50.50 61.13 23.17 53.28 54.94 54.59 32.13 49.67 48.41 56.96 25.79 51.39 51.28 A-RMAP 79.68 14.09 75.53 75.42 78.29 15.74 75.03 74.70 79.72 17.85 74.77 73.44 79.23 15.89 75.11 74.52 Scan-RL 83.07 14.11 76.59 77.21 81.08 14.86 75.16 75.30 82.85 17.34 75.09 76.94 82.33 15.44 75.61 76.48 GenNBV 90.20 9.97 86.62 85.26 90.69 11.65 85.66 82.79 89.09 13.97 83.56 83.76 89.99 11.86 85.28 83.94 Hestia 95.53 6.49 92.15 91.50 96.03 6.18 94.04 91.37 95.46 6.47 92.91 90.50 95.67 6.38 93.03 91.12 DA-NBV 98.49 3.68 93.04 94.35 98.28 3.29 93.02 94.84 97.11 4.25 92.62 94.37 97.96 3.74 92.89 94.52
+
+Table 1: Quantitative comparison on SeaShip-3D, Houses3K, and OmniObject3D. The “All” columns report the arithmetic mean over the three datasets. Metrics are coverage rate (CR), Chamfer distance (CD), coverage–step area under the curve ( As), and coverage–path-length area under the curve ( Ap).                                 
+
+> Components Metrics Reward Action PAF CR ↑DCR ↑Dist. ↓
+> ✓92.70 61.38 306.77
+> ✓94.13 63.77 135.71
+> ✓95.40 85.99 415.62
+> ✓✓95.51 68.12 131.76
+> ✓✓96.36 87.26 412.01
+> ✓✓97.40 90.47 207.29
+> ✓✓✓98.49 92.06 196.22
+
+Table 2: Ablation study of the nonlinear reward design, the locally constrained autoregressive action policy, and the PAF. Metrics are coverage rate (CR), directional coverage rate (DCR), and travel distance (Dist.). 
+
+Experimental Setup 
+
+SeaShip-3D is randomly divided into mutually exclusive training and test sets for training and evaluation. Static-scene experiments are additionally conducted in the simulation en-vironment using splits of Houses3K (Peralta et al. 2020) and a 200-object subset of OmniObject3D (Wu et al. 2023), covering a wide variety of object categories and geometric structures. All objects are normalized to a maximum dimen-sion of 15 m .At each reset, we randomly sample the initial UAV pose, position, ship heading, and wind–wave conditions according to the selected sea-state level. For fairness, all methods use the same coordinate-registration procedure to compensate for ship motion. We evaluate all methods using the same fixed number of views. The simulated camera has a resolution of 400 × 400 pix-els and a vertical field of view of 90 ◦. All experiments are conducted on an NVIDIA RTX 4090 GPU. All methods are trained and evaluated under identical conditions. The main comparison in Table 1 reports CR, CD, As,and Ap, whereas the ablation study in Table 2 reports CR, DCR, and Dist. Coverage rate (CR, %) is the fraction of ground-truth points within a distance threshold of the recon-struction (Knapitsch et al. 2017). Chamfer distance (CD, cm) measures point-set discrepancy (Fan, Su, and Guibas 2017). We compute CD and perform batched point-cloud process-ing using PyTorch3D (Ravi et al. 2020). Coverage–step area under the curve ( As, %) (Chen et al. 2024) and coverage– path-length area under the curve ( Ap, %) quantify coverage efficiency with respect to the number of scanning steps and UAV travel distance, respectively. Directional coverage rate (DCR, %) measures observation completeness across view-ing directions, and UAV travel distance (Dist., m) measures the cumulative straight-line distance between consecutive se-lected viewpoints. 
+
+Performance Comparison 
+
+We compare DA-NBV with Random, ActiveRMAP (A-RMAP) (Zhan et al. 2022), Scan-RL (Peralta et al. 2020), GenNBV (Chen et al. 2024), and Hestia (Lu et al. 2026). 
+
+Quantitative comparison. As shown in Table 1, DA-NBV outperforms the baselines in reconstruction completeness, accuracy, and acquisition efficiency across the evaluated dy-namic sea environment and both static datasets. Compared with existing methods, DA-NBV achieves greater surface coverage with higher path efficiency. Moreover, DA-NBV remains competitive on Houses3K and OmniObject3D, in-dicating its generalizability to different types of static objects. 
+
+Qualitative comparison. We perform Screened Poisson surface reconstruction using Open3D (Kazhdan and Hoppe 2013; Zhou, Park, and Koltun 2018). As shown in Fig. 3, DA-NBV produces more complete reconstructions with finer geometric details. Compared with other methods, it more reliably recovers complex structures, supporting the effec-tiveness of our strategy and the principle that geometrically complex regions should be observed from a more diverse set of directions. 
+
+Ablation Studies 
+
+We conduct ablation studies to evaluate the contributions of the nonlinear reward design, the locally constrained au-toregressive action policy, and the PAF. Across matched configurations in Table 2, the PAF consistently increases DCR by guiding the policy toward regions with insufficient directional observations. The action policy consistently re-duces Dist. by discouraging large viewpoint transitions and repeated backtracking. The nonlinear reward improves CR, DCR, and Dist. by strengthening the learning signal for dif-ficult regions and missing directions. Figure 3: Qualitative comparison of reconstruction results. Both Hestia and DA-NBV achieve nearly complete reconstruction of the ship. However, DA-NBV preserves substantially finer geometric details with fewer missing regions. 
+
+Figure 4: Comparison of different shaping functions for the directional-coverage reward. These trends reveal complementary roles: the PAF primar-ily improves directional coverage, the action policy enhances path efficiency, and the nonlinear reward helps the policy ex-ploit both designs. The complete model achieves the highest CR and DCR, whereas the reward–action variant yields the shortest travel distance. 
+
+Additional Analysis 
+
+Policy optimization efficiency. We further analyze the ef-fects of nonlinear reward shaping. As shown in Fig. 4, mul-tiple convex shaping functions consistently outperform the linear formulation with steeper learning curves, exhibiting better final performance and faster convergence. These re-sults validate the effectiveness of our reward-shaping design. 
+
+Computational efficiency. To assess computational ef-ficiency, we benchmark the complete DA-NBV decision-making pipeline, excluding the Isaac Gym simulation. Across three runs of 1,000 iterations, DA-NBV achieves an average decision latency of 8.697 ± 0.324 ms, demonstrating real-time computational feasibility on the evaluated hardware.                            
+
+> Method Sea State 0 Sea State 9 CR ↑CD ↓As↑Ap↑CR ↑CD ↓As↑Ap↑
+> Random 56.57 20.93 51.92 52.62 56.91 22.82 52.23 49.65 A-RMAP 80.61 14.28 75.54 75.04 76.60 15.71 73.17 74.50 Scan-RL 83.75 14.01 77.22 78.30 80.52 14.99 75.10 76.71 GenNBV 91.15 8.86 87.08 85.81 88.14 11.27 86.93 85.19 Hestia 96.51 6.03 92.76 90.93 94.14 7.16 91.37 90.67 DA-NBV 98.75 3.44 93.57 95.19 97.86 4.32 91.63 93.66
+
+Table 3: Quantitative comparison on SeaShip-3D under calm (Sea State 0) and severe (Sea State 9) maritime conditions. Metrics are coverage rate (CR), Chamfer distance (CD), coverage–step area under the curve ( As), and coverage–path-length area under the curve ( Ap). 
+
+Robustness to dynamic maritime conditions. As shown in Table 3, a comparison of Sea States 0 and 9 shows that DA-NBV exhibits limited performance degradation under severe maritime disturbances. Its CR decreases by only 0.89 per-centage points, while CD increases by only 0.88 cm. These changes are smaller than those of the strongest reconstruc-tion baselines, Hestia and GenNBV. DA-NBV also maintains high efficiency under Sea State 9, achieving 91 .63% As and 
+
+93 .66% Ap. These results demonstrate that DA-NBV remains effective under maritime disturbances. 
+
+# Conclusion 
+
+We present DA-NBV, a direction-aware next-best-view plan-ner for efficient 3D reconstruction of ships. By incorporating voxel-level directional observations, a Position Advantage Field, a reward design aligned with practical scanning objec-tives, and a locally constrained autoregressive policy, DA-NBV integrates directional awareness into state representa-tion, viewpoint scoring, and action selection. Experiments on SeaShip-3D and the static datasets show that DA-NBV out-performs the baselines in reconstruction completeness and accuracy while achieving higher path efficiency. Future work will focus on real-world UAV deployment. References 
+
+Bajcsy, R. 1988. Active Perception. Proceedings of the IEEE ,76(8): 966–1005. Besl, P. J.; and McKay, N. D. 1992. A Method for Registration of 3-D Shapes. IEEE Transactions on Pattern Analysis and Machine Intelligence , 14(2): 239–256. Chen, X.; Li, Q.; Wang, T.; Xue, T.; and Pang, J. 2024. GenNBV: Generalizable Next-Best-View Policy for Active 3D Reconstruction. In Proceedings of the IEEE/CVF Confer-ence on Computer Vision and Pattern Recognition (CVPR) ,16436–16445. Connolly, C. I. 1985. The Determination of Next Best Views. In Proceedings of the IEEE International Conference on Robotics and Automation , 432–435. Delmerico, J.; Isler, S.; Sabzevari, R.; and Scaramuzza, D. 2018. A Comparison of Volumetric Information Gain Metrics for Active 3D Object Reconstruction. Autonomous Robots , 42(2): 197–208. Doumanoglou, A.; Kouskouridas, R.; Malassiotis, S.; and Kim, T.-K. 2016. Recovering 6D Object Pose and Predicting Next-Best-View in the Crowd. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , 3583–3592. Fan, H.; Su, H.; and Guibas, L. J. 2017. A Point Set Gener-ation Network for 3D Object Reconstruction From a Single Image. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , 605–613. Frahm, N.; Zhao, D.; Beltran, A. D.; Alterovitz, R.; Frahm, J.-M.; Oliva, J.; and Sengupta, R. 2025. VIN-NBV: A View Introspection Network for Next-Best-View Selection for Resource-Efficient 3D Reconstruction. arXiv:2505.06219. Giernacki, W.; Skwierczyński, M.; Witwicki, W.; Wroński, P.; and Kozierski, P. 2017. Crazyflie 2.0 Quadrotor as a Platform for Research and Education in Robotics and Control Engineering. In 2017 22nd International Conference on Methods and Models in Automation and Robotics , 37–42. Guédon, A.; Monasse, P.; and Lepetit, V. 2022. SCONE: Sur-face Coverage Optimization in Unknown Environments by Volumetric Integration. In Advances in Neural Information Processing Systems , volume 35. Hepp, B.; Dey, D.; Sinha, S. N.; Kapoor, A.; Joshi, N.; and Hilliges, O. 2018. Learn-to-Score: Efficient 3D Scene Ex-ploration by Predicting View Utility. In Computer Vision – ECCV 2018 , 455–472. Hepp, B.; Nießner, M.; and Hilliges, O. 2018. Plan3D: Viewpoint and Trajectory Optimization for Aerial Multi-View Stereo Reconstruction. ACM Transactions on Graphics ,38(1): 1–17. Hornung, A.; Wurm, K. M.; Bennewitz, M.; Stachniss, C.; and Burgard, W. 2013. OctoMap: An Efficient Probabilistic 3D Mapping Framework Based on Octrees. Autonomous Robots , 34(3): 189–206. Isler, S.; Sabzevari, R.; Delmerico, J.; and Scaramuzza, D. 2016. An Information Gain Formulation for Active Volumet-ric 3D Reconstruction. In Proceedings of the IEEE Interna-tional Conference on Robotics and Automation , 3477–3484. Jiang, W.; Lei, B.; and Daniilidis, K. 2024. FisherRF: Active View Selection and Mapping with Radiance Fields Using Fisher Information. In Computer Vision – ECCV 2024 , 422– 440. Jin, L.; Zhong, X.; Pan, Y.; Behley, J.; Stachniss, C.; and Popović, M. 2025. ActiveGS: Active Scene Reconstruction Using Gaussian Splatting. IEEE Robotics and Automation Letters , 10(5): 4866–4873. Kazhdan, M.; and Hoppe, H. 2013. Screened Poisson Sur-face Reconstruction. ACM Transactions on Graphics , 32(3): 29:1–29:13. Knapitsch, A.; Park, J.; Zhou, Q.-Y.; and Koltun, V. 2017. Tanks and Temples: Benchmarking Large-Scale Scene Re-construction. ACM Transactions on Graphics , 36(4): 78:1– 78:13. Kriegel, S.; Bodenmüller, T.; Suppa, M.; and Hirzinger, G. 2011. A Surface-Based Next-Best-View Approach for Auto-mated 3D Model Completion of Unknown Objects. In Pro-ceedings of the IEEE International Conference on Robotics and Automation , 4869–4874. Lee, S.; Chen, L.; Wang, J.; Liniger, A.; Kumar, S.; and Yu, F. 2022. Uncertainty Guided Policy for Active Robotic 3D Reconstruction Using Neural Radiance Fields. IEEE Robotics and Automation Letters , 7(4): 12070–12077. Liu, T.; Shen, R.; Lei, Z.; Huo, Y.; Zhao, J.; and Xu, X. 2022. Wind Resistance Aerial Path Planning for Efficient Reconstruction of Offshore Ship. International Journal of Digital Earth , 15(1): 1881–1904. Lu, C.-Y.; Zhuang, Z.; Le, N. T. T.; Xiao, D.; Chang, Y.-C.; Do, T.; Sridhar, S.; and Lin, C.-T. 2026. Hestia: Voxel-Face-Aware Hierarchical Next-Best-View Acquisition for Efficient 3D Reconstruction. In Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV) ,5302–5312. Maboudi, M.; Homaei, M. R.; Song, S.; Malihi, S.; Saadat-seresht, M.; and Gerke, M. 2023. A Review on Viewpoints and Path Planning for UAV-Based 3-D Reconstruction. IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing , 16: 5026–5048. Makoviychuk, V.; Wawrzyniak, L.; Guo, Y.; Lu, M.; Storey, K.; Macklin, M.; Hoeller, D.; Rudin, N.; Allshire, A.; Handa, A.; and State, G. 2021. Isaac Gym: High Performance GPU-Based Physics Simulation for Robot Learning. In Proceed-ings of the Neural Information Processing Systems Track on Datasets and Benchmarks , volume 1. Mendoza, M.; Vasquez-Gomez, J. I.; Taud, H.; Sucar, L. E.; and Reta, C. 2020. Supervised Learning of the Next-Best-View for 3D Object Reconstruction. Pattern Recognition Letters , 133: 224–231. Mildenhall, B.; Srinivasan, P. P.; Tancik, M.; Barron, J. T.; Ramamoorthi, R.; and Ng, R. 2020. NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis. In 
+
+Computer Vision – ECCV 2020 , 405–421. Pan, X.; Lai, Z.; Song, S.; and Huang, G. 2022. ActiveNeRF: Learning Where to See with Uncertainty Estimation. In 
+
+Computer Vision – ECCV 2022 , 230–246. Peralta, D.; Casimiro, J.; Nilles, A. M.; Aguilar, J. A.; Atienza, R.; and Cajote, R. 2020. Next-Best View Policy for 3D Reconstruction. In Computer Vision – ECCV 2020 Workshops , 558–573. Pierson, W. J.; and Moskowitz, L. 1964. A Proposed Spectral Form for Fully Developed Wind Seas Based on the Similarity Theory of S. A. Kitaigorodskii. Journal of Geophysical Research , 69(24): 5181–5190. Pito, R. 1999. A Solution to the Next Best View Problem for Automated Surface Acquisition. IEEE Transactions on Pattern Analysis and Machine Intelligence , 21(10): 1016– 1030. Raffin, A.; Hill, A.; Gleave, A.; Kanervisto, A.; Ernestus, M.; and Dormann, N. 2021. Stable-Baselines3: Reliable Re-inforcement Learning Implementations. Journal of Machine Learning Research , 22(268): 1–8. Ravi, N.; Reizenstein, J.; Novotny, D.; Gordon, T.; Lo, W.-Y.; Johnson, J.; and Gkioxari, G. 2020. Accelerating 3D Deep Learning with PyTorch3D. arXiv:2007.08501. Roberts, M.; Shah, S.; Dey, D.; Truong, A.; Sinha, S.; Kapoor, A.; Hanrahan, P.; and Joshi, N. 2017. Submodular Trajectory Optimization for Aerial 3D Scanning. In Proceedings of the IEEE International Conference on Computer Vision (ICCV) ,5334–5343. Rudin, N.; Hoeller, D.; Reist, P.; and Hutter, M. 2022. Learn-ing to Walk in Minutes Using Massively Parallel Deep Rein-forcement Learning. In Faust, A.; Hsu, D.; and Neumann, G., eds., Proceedings of the 5th Conference on Robot Learning ,volume 164 of Proceedings of Machine Learning Research ,91–100. PMLR. Schmid, K.; Hirschmüller, H.; Dömel, A.; Grixa, I.; Suppa, M.; and Hirzinger, G. 2012. View Planning for Multi-View Stereo 3D Reconstruction Using an Autonomous Mul-ticopter. Journal of Intelligent & Robotic Systems , 65(1–4): 309–323. Schulman, J.; Wolski, F.; Dhariwal, P.; Radford, A.; and Klimov, O. 2017. Proximal Policy Optimization Algorithms. arXiv:1707.06347. Scott, W. R.; Roth, G.; and Rivest, J.-F. 2003. View Plan-ning for Automated Three-Dimensional Object Reconstruc-tion and Inspection. ACM Computing Surveys , 35(1): 64–96. Shah, F. M.; Gaggero, T.; Gaiotti, M.; and Rizzo, C. M. 2021. Condition Assessment of Ship Structure Using Robot As-sisted 3D-Reconstruction. Ship Technology Research , 68(3): 129–146. Tao, Y.; Ong, D.; Murali, V.; Spasojevic, I.; Chaudhari, P.; and Kumar, V. 2025. RT-GuIDE: Real-Time Gaussian Splat-ting for Information-Driven Exploration. IEEE Robotics and Automation Letters , 10(11): 11594–11601. Thrun, S.; Burgard, W.; and Fox, D. 2005. Probabilistic Robotics . MIT Press. Vasquez-Gomez, J. I.; Lopez-Damian, E.; and Sucar, L. E. 2009. View Planning for 3D Object Reconstruction. In 
+
+Proceedings of the IEEE/RSJ International Conference on Intelligent Robots and Systems , 4015–4020. Weinmann, M.; Jutzi, B.; Hinz, S.; and Mallet, C. 2015. Se-mantic Point Cloud Interpretation Based on Optimal Neigh-borhoods, Relevant Features and Efficient Classifiers. ISPRS Journal of Photogrammetry and Remote Sensing , 105: 286– 304. Wu, T.; Zhang, J.; Fu, X.; Wang, Y.; Ren, J.; Pan, L.; Wu, W.; Yang, L.; Wang, J.; Qian, C.; Lin, D.; and Liu, Z. 2023. OmniObject3D: Large-Vocabulary 3D Object Dataset for Re-alistic Perception, Reconstruction and Generation. In Pro-ceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 803–814. Xiao, W.; Santa Cruz, R.; Ahmedt-Aristizabal, D.; Salvado, O.; Fookes, C.; and Lebrat, L. 2024. NeRF Director: Re-visiting View Selection in Neural Volume Rendering. In 
+
+Proceedings of the IEEE/CVF Conference on Computer Vi-sion and Pattern Recognition (CVPR) , 20742–20751. Xu, Z.; Jin, R.; Wu, K.; Zhao, Y.; Zhang, Z.; Zhao, J.; Gao, F.; Gan, Z.; and Ding, W. 2025. HGS-Planner: Hierarchical Planning Framework for Active Scene Reconstruction Using 3D Gaussian Splatting. In Proceedings of the IEEE Inter-national Conference on Robotics and Automation , 14161– 14167. Xue, S.; Dill, J.; Mathur, P.; Dellaert, F.; Tsiotras, P.; and Xu, D. 2024. Neural Visibility Field for Uncertainty-Driven Active Mapping. In Proceedings of the IEEE/CVF Confer-ence on Computer Vision and Pattern Recognition (CVPR) ,18122–18132. Yan, D.; Liu, J.; Quan, F.; Chen, H.; and Fu, M. 2023. Active Implicit Object Reconstruction Using Uncertainty-Guided Next-Best-View Optimization. IEEE Robotics and Automa-tion Letters , 8(10): 6395–6402. Yuksel, C. 2015. Sample Elimination for Generating Poisson Disk Sample Sets. Computer Graphics Forum , 34(2): 25–32. Zeng, R.; Zhao, W.; and Liu, Y.-J. 2020. PC-NBV: A Point Cloud Based Deep Network for Efficient Next Best View Planning. In Proceedings of the IEEE/RSJ International Conference on Intelligent Robots and Systems , 7050–7057. Zhan, H.; Zheng, J.; Xu, Y.; Reid, I.; and Rezatofighi, H. 2022. ActiveRMAP: Radiance Field for Active Mapping and Planning. arXiv:2211.12656. Zheleznyakova, A. L. 2020. Physically-Based Method for Real-Time Modelling of Ship Motion in Irregular Waves. 
+
+Ocean Engineering , 195: 106686. Zhou, Q.-Y.; Park, J.; and Koltun, V. 2018. Open3D: A Modern Library for 3D Data Processing. arXiv:1801.09847. Supplementary Material 
+
+# Implementation Details 
+
+Network Inputs and Action Heads 
+
+The policy uses three complementary state streams. The oc-cupancy branch encodes the single-channel 3D occupancy grid with two 3D convolutional layers into a 256-dimensional geometric embedding. The motion branch processes the re-cent relative-pose and action history using sinusoidal po-sitional encoding followed by two MLP layers; the current relative pose is encoded separately as a 64-dimensional lin-ear embedding and fused with the history feature. The Posi-tion Advantage Field (PAF) branch encodes a single-channel scalar field Ut defined over the local 3D candidate-position lattice. Two 3D convolutional layers map Ut to a 128-dimensional feature. The three embeddings are concatenated and mapped to a 256-dimensional shared representation used by both the PPO policy and value networks. The learnable position-advantage scorer (LPAS) con-structs this field from voxel–candidate pairs. For a candidate position q and an active voxel v, its input combines voxel-state attributes—position, observation support and count, geometric complexity, and the coverage states of 12 direc-tional bins—with candidate-dependent distance, visibility, and missing-direction alignment. Its scalar pairwise output is 
+
+ℓ(v, q ) = w⊤ 
+
+> 2
+
+σ(W1g(v, q ) + b1) + b2, (9) where g(v, q ) denotes the concatenated voxel–candidate fea-tures and σ is a nonlinear activation. Aggregating ℓ(v, q ) over the active, visibility-valid voxel set Vvalid  
+
+> t
+
+gives one scalar advantage for each candidate, 
+
+Ut(q) = X
+
+> v∈V valid
+> t
+
+ℓ(v, q ). (10) Placing the values Ut(q) at their corresponding coordinates produces the single-channel PAF Ut ∈ RNx×Ny ×Nz . Thus, the voxel attributes are LPAS inputs, whereas the PAF con-tains one aggregated scalar per candidate position and guides translation selection in the first action stage. Importantly, the policy does not greedily select the can-didate with the largest instantaneous advantage Ut(q). Such a rule maximizes one-step expected coverage gain and can therefore improve the coverage–step area under the curve (As). However, a locally high-value candidate can be far from the current viewpoint or on the opposite side of the target. Repeatedly pursuing these isolated maxima can pro-duce long, back-and-forth trajectories and overlook nearby viewpoints that jointly expose the remaining surface. Con-sequently, strong per-step gain need not yield strong cover-age per unit travel, and the coverage–path-length area under the curve ( Ap) can be low. Instead, the policy concatenates the encoded single-channel PAF with occupancy-grid and motion-history features before action prediction. This joint representation enables it to trade off immediate geometric gain, travel cost, spatial continuity, and the reachability of useful future viewpoints, thereby making long-horizon de-cisions rather than repeatedly selecting the largest one-step advantage. The policy factorizes the discrete action into two stages. The first stage jointly predicts the relative translation 
+
+(xt, y t, z t) and the binary stop decision. Conditioned on the selected translation, the attitude head predicts pitch and yaw; roll is fixed to zero. Let ρt = ( xt, y t, z t) and define the element-wise transformed translation ˜ρt = asinh( ρt). We encode it with two Fourier frequencies ω1 and ω2 and con-catenate the result with the state feature st:
+
+zt = [ st; ˜ ρt; sin( ω1 ˜ρt); cos( ω1 ˜ρt); sin( ω2 ˜ρt); cos( ω2 ˜ρt)] .
+
+(11) The attitude distribution is therefore parameterized as 
+
+π(pitch t, yaw t | zt). The complete factorization is 
+
+π(at | ot) = π(xt, y t, z t, stop t | st)
+
+π(pitch t, yaw t | zt), (12) with at = [ xt, y t, z t, 0, pitch t, yaw t, stop t].
+
+Visibility Approximation 
+
+Exact ray tracing over every voxel–candidate pair is too costly during planning. We therefore estimate visibility from the axis-aligned bounding box of the accumulated point cloud in each occupied voxel, as described in the main paper. When aggregating the candidate advantage in Eq. (10), a voxel contribution is masked when its estimated visibility is below 
+
+0.10 . The continuous visibility value is nevertheless retained as an LPAS input, allowing the scorer to distinguish partially visible candidates from clearly visible ones. For an occupied voxel u, let ∆k(u) = xmax  
+
+> u,k
+
+−xmin  
+
+> u,k
+
+denote its extent along axis k. Let Aij be the area of the voxel face orthogonal to axis k, where {i, j, k } = {x, y, z }. The axis-aligned transmittance is 
+
+τk(u) = 1 − ∆i(u)∆ j (u)
+
+Aij 
+
+. (13) For an arbitrary unit viewing direction d, we interpolate these estimates using the magnitudes of the directional com-ponents: 
+
+τ (u, d) = 
+
+P 
+
+> k∈{ x,y,z }
+
+|dk|τk(u)
+
+P 
+
+> k∈{ x,y,z }
+
+|dk| + ε . (14) Given a target voxel v and a candidate position q, we sample occupied voxels R(v, q ) along the line segment from v to q
+
+and estimate the path visibility as 
+
+Vis( v, q ) = Y
+
+> u∈R (v,q )
+
+τ  u, d (v, q ). (15) We validated the visibility approximation on 200 objects drawn from the ship, house, and everyday-object datasets, using 20 viewpoints uniformly sampled from the object-centered hemisphere for each object. Visibility labels were obtained by back-projecting rendered depth images. At the 
+
+0.10 threshold, 88.3% of truly invisible voxels were masked, whereas 13.4% of truly visible voxels were falsely masked. These errors were concentrated in small, marginally visible regions and had limited influence on action selection. Geometric Complexity and Reward Shaping 
+
+Shared PCA Descriptor Definitions For an active voxel 
+
+v, let Pt(v) = {pi}mt(v) 
+
+> i=1
+
+denote its accumulated local point set at time t, where mt(v) is the number of fused 3D points. We compute the centroid and covariance matrix as 
+
+¯pt(v) = 1
+
+mt(v)
+
+> mt(v)
+
+X
+
+> i=1
+
+pi,
+
+Σt(v) = 1
+
+mt(v)
+
+> mt(v)
+
+X
+
+> i=1
+
+
+
+pi − ¯pt(v)
+
+ 
+
+pi − ¯pt(v)
+
+⊤
+
+.
+
+(16) Let λ1 ≥ λ2 ≥ λ3 ≥ 0 be the eigenvalues of Σt(v). We define the PCA descriptors as 
+
+Lt(v) = λ1 − λ2
+
+λ1 + ε ,St(v) = λ3
+
+λ1 + ε ,Ct(v) = λ3
+
+λ1 + λ2 + λ3 + ε ,
+
+(17) where Lt, St, and Ct are linearity, scattering, and curvature, respectively, and ε is a small constant for numerical stability. Linearity is large for locally one-dimensional structures; scat-tering increases when the point distribution spreads across all three principal directions; curvature measures the relative variation along the local normal direction. The following two branches use this shared descriptor definition but never use the same point set: online descriptors are computed from ac-cumulated back-projected observations as voxel-side LPAS inputs, whereas ground-truth descriptors are computed from ground-truth surface points only for reward weighting and visualization. 
+
+Ground-truth Reward Complexity The following scalar is computed from the ground-truth descriptors, rather than from online observations, and is used only for reward con-struction and evaluation-side visualization: 
+
+cGT ,raw (v) = SGT (v) + CGT (v) − LGT (v). (18) For reward construction, the ground-truth score is piecewise-linearly remapped over all voxels of a ship to the inter-val [1 , 3] , yielding the directional-coverage weight cv . This strictly positive weighting preserves a contribution from sim-ple regions while assigning up to three times the weight to geometrically complex ones. 
+
+Online Complexity for LPAS Inputs For the online branch, the preceding PCA equations are applied to the accu-mulated back-projected point set, yielding Lraw  
+
+> t
+
+(v), Sraw  
+
+> t
+
+(v),and Craw  
+
+> t
+
+(v). Online estimates from very few points are un-reliable: a small number of outliers can produce misleading PCA descriptors. We therefore attenuate each online descrip-tor by a monotone observation-confidence factor, 
+
+α N obs  
+
+> t
+
+(v) = 1 − exp 
+
+
+
+− N obs  
+
+> t
+
+(v)
+
+κ
+
+
+
+, κ = 1 , (19) 
+
+ˆLt(v) = α N obs  
+
+> t
+
+(v)Lraw  
+
+> t
+
+(v), (20) 
+
+ˆSt(v) = α N obs  
+
+> t
+
+(v)Sraw  
+
+> t
+
+(v), (21) 
+
+ˆCt(v) = α N obs  
+
+> t
+
+(v)Craw  
+
+> t
+
+(v). (22) Here, N obs  
+
+> t
+
+(v) is the number of depth observations that con-tribute at least one fused point to v, which is distinct from the fused-point count mt(v) used in the covariance esti-mate. With κ = 1 , the confidence values after one, two, and three observations are approximately 0.632 , 0.865 , and 
+
+0.950 , respectively. The corrected online descriptors are used exclusively as voxel-side LPAS inputs and affect the PAF only through the learned pairwise utilities; the ground-truth branch above is used exclusively for reward computation. 
+
+Unobservable-direction Mask For each voxel–direction pair (v, j ), we precompute an observability mask M (v, j )
+
+from the ground-truth geometry. We uniformly sample a ray set Rv,j within a virtual camera frustum centered on voxel 
+
+v and oriented along the center of bin j, and perform ray casting against the ground-truth mesh. Let first( r) denote the surface element at the first hit of ray r, and let S(v) be the ground-truth local surface associated with v. We set 
+
+M (v, j ) = I[∃r ∈ R v,j : first( r) ∈ S (v)] . (23) Thus, a direction is valid only if at least one ray first hits the target local surface; directions fully blocked by other ship parts or the sea surface are excluded. The complexity-weighted directional coverage is 
+
+Cdir  
+
+> t
+
+=
+
+P 
+
+> v
+
+cv
+
+P 
+
+> j
+
+M (v, j )Bt(v, j )
+
+P 
+
+> v
+
+cv
+
+P 
+
+> j
+
+M (v, j ) . (24) 
+
+Nonlinear Reward Shaping In the main experiments, we apply the nonlinear shaping function f (x) = x3 to the cov-erage increment, 
+
+rdir  
+
+> t
+
+= f  Cdir 
+
+> t+1
+
+ − f  Cdir 
+
+> t
+
+. (25) Because f is convex and monotone, an equal coverage incre-ment receives a larger reward at higher coverage. The design principle is that completing a more difficult part of the task should earn more reward. Coverage difficulty grows nonlin-early: late in an episode, most readily accessible viewpoints have already been used, and finding a new valid viewing direction becomes substantially harder. The shaping there-fore counters the tendency to terminate after easy regions are covered and encourages continued search for the remaining difficult directions. 
+
+Voxel-level Direction Bins We discretize directional state into 12 spherical bins. Let bj denote the unit center direction of bin j. Each valid viewing direction is assigned to the single bin with the greatest directional alignment: 
+
+bin( d) = arg max  
+
+> j∈{ 1,..., 12 }
+
+d⊤bj . (26) Each bin therefore represents a finite angular region rather than a single exact vector. Views that remain within the same region after small roll or pitch perturbations activate the same bin, providing robustness to small vessel oscillations with-out removing the incentive for multi-directional coverage. We use 12 approximately equal-area directional bins. Each Figure 5: Ground-truth complexity visualizations used for reward-side analysis. From top to bottom: representative high-quality meshes, scattering maps, and combined complexity maps derived from scattering, curvature, and linearity. Figure 6: PCA-derived complexity maps computed from ground-truth surface points for the cross-category generalization data. The upper three rows show Houses3K examples; the lower three rows show OmniObject3D examples. Colors indicate the normalized complexity score. bin has nominal solid angle 4π/ 12 = π/ 3 sr; the equal-area spherical-cap radius is θeq = arccos(5 /6) ≈ 33 .6◦, equiv-alently a center-alignment threshold of cos θeq = 5 /6 ≈
+
+0.833 . The exact Voronoi boundary is set by the fixed bin centers; this equivalent angle quantifies the angular resolu-tion. Fewer bins do not adequately promote multi-directional scanning, whereas substantially more bins make the state unnecessarily sparse and redundant. 
+
+# Experimental Protocol 
+
+Baselines and Motion Compensation 
+
+Random samples 5-DoF viewpoint actions uniformly from the same action domain and serves as a no-information refer-ence. ActiveRMAP is a neural-radiance-field method for ac-tive mapping and planning that evaluates candidate views us-ing the current neural scene representation. Scan-RL learns a next-best-view policy for active 3D reconstruction. For ActiveRMAP and Scan-RL, we sample actions on the ship-centered hemisphere and transform them using the vessel’s instantaneous roll and pitch. 
+
+GenNBV is a generalizable policy for active 3D recon-struction based on a spatial reconstruction state. Hestia 
+
+adopts a voxel-face-aware hierarchical acquisition strategy that explicitly models the observation states of individual voxel faces. For GenNBV, Hestia, and DA-NBV, we apply the same motion compensation procedure to their respective re-construction state representations before viewpoint planning. This ensures that the performance differences are primarily attributed to the planning policies rather than motion-induced ghost occupancy. 
+
+Coverage Metric and Threshold 
+
+Let PGT and Prec denote the ground-truth and reconstructed surface point sets. We compute coverage rate as the ground-truth-to-reconstruction recall 
+
+CR = 1
+
+|PGT |
+
+X
+
+> p∈PGT
+
+I
+
+
+
+min 
+
+> q∈Prec
+
+∥p − q∥2 < τ 
+
+
+
+,τ = 4 cm .
+
+(27) where I[·] is the indicator function. We use τ = 4 cm to balance camera resolution against avoiding substantial geo-metric error. In an ideal efficient acquisition, the complete 15 m vessel is captured within the 400-pixel image dimension, giving the limiting sampling scale 15 /400 = 3 .75 cm per pixel. We therefore choose a slightly larger 4 cm tolerance: it avoids an unrealistically subpixel criterion while limiting the accepted geometric deviation. The same threshold is used for every method and evaluation split. 
+
+Evaluation Splits and Efficiency Metrics 
+
+SeaShip-3D is randomly divided into mutually exclusive training and test sets. All learning-based methods are trained on the training split and evaluated on unseen test ships. The static-scene experiments use an object-disjoint 50-model test split of Houses3K and a 200-object subset of OmniObject3D. 
+
+Dynamic maritime protocol. For each sea-state level, we evaluate 50 test ships, with 10 independently randomized episodes per ship. Each reset samples an initial UAV pose, ship heading, and wind–wave conditions according to the selected sea-state level. The ship undergoes the wave-induced heave, roll, pitch, and translation described below, and all methods use the same coordinate-registration procedure to compensate for this motion before planning. 
+
+Static-object protocol. We evaluate 50 Houses3K models and 200 OmniObject3D objects, with 10 independently ran-domized episodes per object. Each episode begins from an independently sampled initial UAV pose on the upper hemi-sphere around the target. The same camera model, relative action domain, candidate-grid construction, and fixed view budget are used for all methods. Under each protocol, all methods are evaluated under matched conditions. In addition to CR and Chamfer distance (CD), the main comparison reports the coverage–step area under the curve (As) and the coverage–path-length area under the curve ( Ap). These metrics quantify coverage efficiency with respect to the number of scanning steps and UAV travel distance, respec-tively. The ablation study further reports directional cover-age rate (DCR), which measures observation completeness across viewing directions, and travel distance (Dist.), defined as the cumulative straight-line distance between consecutive selected viewpoints. 
+
+Training and Action Settings 
+
+We train with 256 parallel environments for 1,000 itera-tions. PPO uses 128 rollout steps, 5 optimization epochs, a batch size of 128, a learning rate of 10 −4, and seed 1. All networks are randomly initialized and trained end-to-end; training takes approximately 20 hours on an RTX 4090. The reference-scale relative translation action range is ±5 malong each axis, with a 0.2 m step. The candidate lattice Qt
+
+is a uniformly sampled 10 × 10 × 10 grid with 1 m spacing, and the PAF is evaluated on this lattice. At runtime, these UAV-related lengths are multiplied by the ship-specific nor-malization coefficient defined under Dataset Construction and Scale Normalization .
+
+# Maritime Simulation Details 
+
+Dataset Construction and Scale Normalization 
+
+SeaShip-3D. The dataset contains 300 ship models. To place each model consistently with the water surface, we vertically position the still-water plane so that the portion below it con-tains 25% of the ship mesh volume; this defines the waterline alignment. For a ship with original length Lorig , we normal-ize its length to Lnorm = 15 m and retain the ship-specific normalization coefficient 
+
+ηL = Lnorm 
+
+Lorig 
+
+. (28) Every length-valued quantity in the maritime environment is transformed from its reference-scale value according to 
+
+ℓsim = ηLℓref . The same coefficient is applied to the ship geometry, wave amplitudes and wavelengths, UAV standoff and action distances, and candidate-lattice spacing. Conse-quently, the relative geometry between the ship, wave field, Figure 7: Examples from the SeaShip-3D dataset after waterline alignment and scale normalization. and UAV trajectory is preserved after normalization. We uni-formly sample 10 6 points from the portion of each normal-ized mesh above the waterline using Poisson-disk sampling; these dense ground-truth points are used for coverage evalu-ation, visibility labels, and complexity supervision. 
+
+Cross-category generalization. To assess whether the method is specific to ship geometry, we additionally use 50 house models from Houses3K and 200 everyday objects from OmniObject3D. Each non-ship object is normalized to a longest axis of 15 m , keeping the motion scale and recon-struction precision comparable across categories. 
+
+Wave Field, Sea States, and Sea-surface Occlusion 
+
+For each episode, we randomly sample a sea-state level 
+
+s ∈ { 0, . . . , 9}. The water surface is constructed from eight traveling sinusoidal components, 
+
+h(x, y, t ) = 
+
+> 8
+
+X
+
+> i=1
+
+Ai sin  kid⊤ 
+
+> i
+
+[x, y ]⊤ − ωit + ϕi
+
+, (29) where Ai, ki, ωi, ϕi, and di denote the simulation-space amplitude, wave number, angular frequency, random initial phase, and propagation-direction unit vector, respectively. The dominant wave direction is randomized for each episode, and the eight components are distributed around it. Given reference-scale wave parameters, the ship normalization co-efficient is applied as 
+
+Asim  
+
+> i
+
+= ηLAref  
+
+> i
+
+, Hsim  
+
+> s
+
+= ηLHref  
+
+> s
+
+,λsim  
+
+> i
+
+= ηLλref  
+
+> i
+
+, ksim  
+
+> i
+
+= kref 
+
+> i
+
+ηL
+
+. (30) We correct the component frequencies through an equivalent-gravity parameter. Under the deep-water disper-sion relation used to construct the wave components, we set 
+
+geq = ηLg, ωsim  
+
+> i
+
+=
+
+q
+
+geq ksim  
+
+> i
+
+=
+
+q
+
+gk ref  
+
+> i
+
+= ωref  
+
+> i
+
+.
+
+(31) Thus, spatial quantities are scaled by ηL while the reference time scale is retained, tsim = tref . Equivalently, the wave                         
+
+> State Hs(m) Uref (m/s) 000–0.2 10–0.1 0.3–1.5 20.1–0.5 1.6–3.3 30.5–1.25 3.4–5.4 41.25–2.5 5.5–7.9 52.5–4 8.0–10.7 64–6 10.8–13.8 76–9 13.9–17.1 89–14 17.2–20.7 914–20 20.8–24.4
+
+Table 4: Reference-scale sea-state parameter ranges before ship-specific normalization. At runtime, Hs and Uref are multiplied by ηL.phase ωit and the ratios Hs/L and λi/L are preserved. The equivalent gravity is used for wave-frequency construction; it does not introduce an additional force term into the UAV controller. The reference-scale significant-wave-height and wind-speed ranges are listed in Table 4; their runtime simulation values are obtained using Eqs. (30) and (35). Sea-surface occlusion is approximated by height comparison: a camera-to-target ray is marked as occluded if the sampled water-surface height exceeds the ray height at any sampled point. This avoids repeated expensive mesh intersections with the dynamic surface. 
+
+Wave-induced Vessel Motion 
+
+We define bow, stern, port, and starboard anchor points on the waterline, with surface heights hbow , hstern , hport , and 
+
+hstarboard . For vessel length L and beam B, the simplified rigid-body response is 
+
+zheave = hbow + hstern + hport + hstarboard 
+
+4 , (32) 
+
+θpitch = arctan hbow − hstern 
+
+L , (33) θroll = arctan hport − hstarboard 
+
+B . (34) The vessel’s yaw relative to the world frame is randomized at reset. Thereafter, the vessel undergoes wave-driven trans-lation, roll, and pitch, yielding time-varying motion that per-turbs reconstruction without introducing an unrelated high-fidelity six-degree-of-freedom hydrodynamic model. 
+
+Wind Field and Effective Flight Time 
+
+Wind direction is randomized relative to the dominant wave direction. We also model vertical wind shear: wind speed is lower near the sea surface because of friction and increases with altitude toward the episode-level reference speed. To remain consistent with the unchanged time scale in Eq. (31), UAV and wind velocities are scaled by the same normaliza-tion coefficient as spatial distances: 
+
+Wsim = ηLWref ,V sim  
+
+> a
+
+= ηLV ref  
+
+> a
+
+,vsim  
+
+> g
+
+= ηLvref  
+
+> g
+
+.
+
+(35) Let W be the scaled local wind vector, u the unit vector from the UAV to the target viewpoint, and Va the scaled static-air speed. Decomposing the wind into parallel and lateral components, W∥ = ( W⊤u)u and W⊥ = W − W∥, the effective ground speed along the desired track is 
+
+vg = W⊤u +
+
+q
+
+V 2 
+
+> a
+
+− ∥ W − (W⊤u)u∥22. (36) For a voxel v with center xv and a candidate position q, we use the Euclidean straight-line distance 
+
+δt(v, q ) = ∥q − xv ∥2 (37) as the distance feature. This approximation is inexpensive, is consistent with the local action parameterization, and pro-vides the scorer with a smooth measure of the travel and viewing-scale trade-off without introducing an additional path planner inside the candidate evaluator. For a reference-scale target distance dref , the runtime dis-tance is dsim = ηLdref . Because distance and velocity use the same coefficient, the corresponding flight duration satisfies 
+
+∆tsim = dsim 
+
+vsim 
+
+> g
+
+= dref 
+
+vref 
+
+> g
+
+= ∆ tref . (38) During this interval, the wave field and ship pose continue to evolve. Thus, headwind increases the time before the next observation and indirectly increases the magnitude of un-modeled ship motion between consecutive frames; tailwind has the opposite effect. We use the reference-scale airspeed 
+
+V ref  
+
+> a
+
+= 25 m/s and set the runtime value to V sim  
+
+> a
+
+= 25 ηL
+
+m/s. 
+
+Initial State and Camera 
+
+At reset, the UAV is sampled from the upper hemisphere at a reference-scale distance of 5–10 m from the ship cen-ter, corresponding to a runtime distance of 5ηL–10 ηL m, and approximately faces the center with a random angular perturbation of ±30 ◦. The simulated camera resolution is 
+
+400 × 400 pixels, and its vertical field of view is 90 ◦.

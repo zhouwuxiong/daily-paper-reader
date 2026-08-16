@@ -41,17 +41,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-08-07 ~ 2026-08-16</span>
+      <span class="dpr-home-dashboard-kicker">2026-08-16</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 21 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 17 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
     <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>10</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
     <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>11</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-08-16 10:15:32 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-08-16 20:33:24 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,9 +62,7 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日聚焦SLAM与三维重建，精读两篇满分论文，速读三篇场景表示工作。</p>
-<p>最值得关注的是多子图隐式神经SLAM的大规模回环优化，以及自适应样条视觉惯性导航的鲁棒3D残差设计。</p>
-<p>建议优先精读这两篇满分论文，再以速读列表中的稀疏视角重建与语义映射作为扩展补充。</p>
+<p>今日共读17篇论文，其中6篇精读、11篇速读，核心聚焦跨模态场景识别与几何一致性匹配。最值得关注的是《GeoUniPR》（9.0/10）提出的几何一致统一框架，以及轻量级图像匹配器XFeat的重现评估（8.0/10），两者均指向鲁棒视觉定位。建议普通读者优先从GeoUniPR入手，理解跨模态融合思路，再对比XFeat的轻量高效设计。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -73,12 +71,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">10 篇</strong>
+    <strong class="dpr-home-dashboard-count">6 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Multi-Submap Implicit Neural SLAM with Local-to-Global Loop Closure for Large-Scale Scene Reconstruction">Multi-Submap Implicit Neural SLAM with Local-to-Global Loop Closure for Large-Scale Scene Reconstruction</span></li><li><span class="dpr-home-dashboard-paper-title" title="ASPIRE-VINS: Adaptive Spline-based Visual-inertial Navigation System With Robust 3D Measurement Residuals">ASPIRE-VINS: Adaptive Spline-based Visual-inertial Navigation System With Robust 3D Measurement Residuals</span></li><li><span class="dpr-home-dashboard-paper-title" title="Unordered Landmark Visual Navigation">Unordered Landmark Visual Navigation</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="GeoUniPR: A Geometry-Consistent Unified Framework for Cross-Modal Place Recognition">GeoUniPR: A Geometry-Consistent Unified Framework for Cross-Modal Place Recognition</span></li><li><span class="dpr-home-dashboard-paper-title" title="XFeat Revisited: Reproducibility and Evaluation of a Lightweight Image Matcher">XFeat Revisited: Reproducibility and Evaluation of a Lightweight Image Matcher</span></li><li><span class="dpr-home-dashboard-paper-title" title="A Height-Constrained 2-Point Minimal Solver for Pose Estimation from Active LED Markers with Event Cameras">A Height-Constrained 2-Point Minimal Solver for Pose Estimation from Active LED Markers with Event Cameras</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>10</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>6</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -89,7 +87,7 @@
     <strong class="dpr-home-dashboard-count">11 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Scenix: Sparse-View 3D Scene Reconstruction via Executable Scene Programs">Scenix: Sparse-View 3D Scene Reconstruction via Executable Scene Programs</span></li><li><span class="dpr-home-dashboard-paper-title" title="M2-SMap: Memory-Efficient Semantic Mapping with Hierarchical Multi-Model Representation">M2-SMap: Memory-Efficient Semantic Mapping with Hierarchical Multi-Model Representation</span></li><li><span class="dpr-home-dashboard-paper-title" title="RayLift: Lifting Complementary Ray-Wise Evidence with 3D Geometry Priors for Semantic Scene Completion">RayLift: Lifting Complementary Ray-Wise Evidence with 3D Geometry Priors for Semantic Scene Completion</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="GS-CPE: Unified 6-Degree-of-Freedom Camera Pose Estimation via 3D Gaussian Splatting">GS-CPE: Unified 6-Degree-of-Freedom Camera Pose Estimation via 3D Gaussian Splatting</span></li><li><span class="dpr-home-dashboard-paper-title" title="Online Learning of Correspondences between Images">Online Learning of Correspondences between Images</span></li><li><span class="dpr-home-dashboard-paper-title" title="Self-Geometry: GT-Free and Plug-and-Play Test-Time Adaptation for Geometrically Consistent 3D Vision Foundation Models">Self-Geometry: GT-Free and Plug-and-Play Test-Time Adaptation for Geometrically Consistent 3D Vision Foundation Models</span></li></ul>
   </div>
   <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>10</strong></span><span class="dpr-home-dashboard-tag">rl-motion <strong>1</strong></span></div>
 </section>

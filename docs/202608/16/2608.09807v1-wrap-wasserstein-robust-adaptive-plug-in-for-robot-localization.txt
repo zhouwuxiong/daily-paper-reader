@@ -1,0 +1,685 @@
+Title: WRAP: Wasserstein-Robust Adaptive Plug-in for Robot Localization
+
+URL Source: https://arxiv.org/pdf/2608.09807v1
+
+Published Time: Tue, 11 Aug 2026 02:35:15 GMT
+
+Number of Pages: 16
+
+Markdown Content:
+# WRAP: Wasserstein-Robust Adaptive Plug-in for Robot Localization ∗
+
+Minhyuk Jang, Astghik Hakobyan, Jungjin Lee, Naira Hovakimyan, and Insoon Yang †
+
+Abstract 
+
+Robotic localization under changing sensing conditions can suffer from biased errors and miscalibrated covariances. We present WRAP, an adapter-agnostic Wasserstein-robust plug-in for nonlinear extended Kalman filter (EKF) and error-state Kalman filter (ESKF) stacks. A causal module supplies time-varying effective process and measurement statistics; a mean-preserving Wasserstein local update then computes least-favorable covariances and a robust gain without changing the propagation model, residual, or retraction. This separates mean adapta-tion from covariance robustification and uses distinct radii for propagation and sensing. On 18 UWB–IMU sequences held out from adapter training, adapter-only and WRAP reduce mean 3-D position RMSE by 19 .8% and 27 .4% relative to the nominal ESKF; an isotropic ablation reaches 19 .5%, linking the incremental gain to directional process-covariance redistribution. An in-sample GNSS–INS study shows that mean adaptation provides most of the accuracy gain, while DR improves consistency and mitigates over-tightened classical covariance estimates. The robust solve takes 0 .05 ms for UWB and 2 .92 ms for GNSS on a Jetson Orin Nano. 
+
+# 1 Introduction 
+
+Robot localization encounters abrupt sensing changes across outdoor and indoor operation. GNSS can be biased by multipath, UWB links can become non-line-of-sight (NLOS), and odometry, cameras, or LiDAR can degrade with contact or scene conditions [1–5]. The resulting error law may change not only in magnitude but also in center, scale, correlation, or upper-quantile behavior, making a previously calibrated filter biased or miscalibrated; see Fig. 1. Extended Kalman filter (EKF) and error-state Kalman filter (ESKF) localization remain attrac-tive because they combine nonlinear or manifold-valued propagation with closed-form local updates in real time [6, 7]. Their performance, however, depends on the nominal process and measurement noise law supplied to each update. Nominal means enter the propagated state and predicted mea-surement, while nominal covariances determine the propagated and innovation covariances and, 
+
+> ∗
+
+This work was supported in part by the Information and Communications Technology Planning and Evaluation (IITP) grants funded by MSIT No. 2022-0-00124, No. 2022-0-00480 and No. RS-2021-II211343, Artificial Intel-ligence Graduate School Program (Seoul National University), the National Research Foundation of Korea (NRF) grant funded by MSIT No. RS-2026-25477173 and No. RS-2026-25504174, the National Aeronautics and Space Ad-ministration (NASA) under Grant 80NSSC22M0070, the National Science Foundation (NSF) under Grants CMMI 2135925, CPS 2311085 and IIS 2331878, and the Higher Education and Science Committee of the RA under Grant 24IRF-2B002. 
+
+> †
+
+M. Jang and N. Hovakimyan are with the Department of Mechanical Science and Engineering, Grainger College of Engineering, University of Illinois Urbana-Champaign, Urbana, IL, USA {jang64, nhovakim }@illinois.edu .A. Hakobyan is with the Center for Scientific Innovation and Education and the National Polytechnic University of Armenia, Yerevan, Armenia astghik.hakobyan@csie.am . J. Lee and I. Yang are with the Department of Electrical and Computer Engineering and Automation and Systems Research Institute, Seoul National University, Seoul, South Korea {jungbbal, insoonyang }@snu.ac.kr .
+
+1arXiv:2608.09807v1 [cs.RO] 10 Aug 2026 Figure 1: Overview of WRAP. The adaptive module supplies nominal process and measurement statistics. A Wasserstein DR local-estimation problem admits a covariance reformulation that yields least-favorable covariances and a robust Kalman gain, while the EKF/ESKF core remains unchanged. consequently, the Kalman gain. Mean mismatch can therefore shift the innovation center and in-troduce systematic error, whereas covariance mismatch can misweight propagation and sensing. Because the two enter different parts of the recursion, correcting one does not resolve the other. Particle, sigma-point, and iterated filters still require transition, likelihood, or noise mod-els [8–10]. Adaptive Kalman filters estimate noise statistics through innovation matching, au-tocovariance, or Bayesian tracking [11–17], but their estimates can remain inaccurate under abrupt or unrepresented deployment shifts. Learned filters and uncertainty models [18–20] likewise supply gains or noise statistics from data, but remain nominal under distribution shift. We ask how an existing real-time EKF/ESKF can adapt its nominal noise law while protecting its gain against residual covariance mismatch. Distributionally robust (DR) estimation optimizes against the worst-case distribution in an ambiguity set around a nominal model [21–23]. Under Wasserstein ambiguity [24], established MMSE results for the affine–Gaussian, mean-preserving setting reduce the minimax problem to least-favorable covariances and an affine estimator [25]. Wasserstein DR Kalman filtering has since been studied in several settings [26–29], with recent adaptive [30] and residual-aware EKF exten-sions [31]. WRAP builds on this literature but targets a different interface: whereas [31] absorbs linearization residuals into the ambiguity model, WRAP retains the baseline EKF/ESKF lineariza-tion and couples separate mean-preserving ambiguity sets on the process- and measurement-noise laws with any causal nominal-law adapter. This division of labor is deliberate: adaptation can update the nominal mean, whereas covariance robustification cannot remove persistent mean error. WRAP accepts effective process and measurement statistics from a learned, classical, Bayesian, or hybrid causal module, with unspecified components retained from the baseline. The local Wasser-stein update robustifies the gain while leaving the nonlinear propagation, residual, gating structure, state representation, and retraction unchanged. The contributions are: 
+
+• an adapter-agnostic noise-model interface for supplying any subset of effective process and measurement means and covariances to an existing EKF/ESKF; • a mean-preserving, noise-centric Wasserstein update with separate process and measurement ambiguity sets, using the established affine–Gaussian reduction without replacing model-specific filtering machinery; and 
+
+• real-data component studies on 18 UWB–IMU sequences held out from adapter training, classical and isotropic ablations, an explicitly in-sample GNSS–INS mechanism study, and embedded runtime. 
+
+# 2 Problem Formulation 
+
+2.1 Robot Model and Nominal Noise 
+
+We consider a discrete-time nonlinear robot model 
+
+xt+1 = ft(xt, u t, w t),yt = ht(xt, v t),
+
+where xt ∈ X is the robot state, ut ∈ Rnu is a known input, yt ∈ Rny is the measurement, and 
+
+wt ∈ Rnw and vt ∈ Rnv are the process and measurement uncertainties. The state space X may be Euclidean or manifold-valued; nx denotes the dimension of the local coordinate in which the EKF/ESKF error and covariance are represented. The objective is recursive state estimation from the inputs and measurements available up to time t.The formulation covers both conventional EKFs and error-state EKFs. When the state contains rotations or poses, the nominal state evolves on the corresponding manifold, while corrections are computed in local coordinates and injected through the baseline filter’s retraction. WRAP operates only at this local filtering interface: it does not change the propagation model, residual definition, Jacobians, or state representation used by the baseline estimator. 
+
+Example 1 (GNSS-aided inertial navigation) . Consider the GNSS–inertial navigation system (INS) in Fig. 1, with state 
+
+xt =   pt, ˙pt, R t, b at , b gt
+
+,
+
+containing position, velocity, attitude, and IMU biases. Raw IMU readings drive propagation, while 
+
+wt collects IMU noise, bias random walks, and residual propagation uncertainty. GNSS provides 
+
+yt = pt + vt, (1) 
+
+where vt is the GNSS position error. Near structures that block line of sight or cause multipath, vt
+
+may have both a nonzero mean and a miscalibrated covariance. 
+
+At the filtering interface, process and measurement uncertainty are represented by effective nominal Gaussian laws ˆQw,t = N ( ˆ wt, ˆΣw,t ), ˆQv,t = N (ˆ vt, ˆΣv,t ), (2) with ˆΣw,t ∈ Snw 
+
+> ++
+
+and ˆΣv,t ∈ Snv
+
+> ++
+
+. These nominal statistics may be fixed, sensor-reported, or produced by an adaptive module; they parameterize the local filtering surrogate and need not uniquely identify the physical sensor-noise law. In Example 1, (ˆ vt, ˆΣv,t ) describe the nominal GNSS position-error mean and covariance, while ( ˆ wt, ˆΣw,t ) describe the nominal IMU and propagation uncertainty. In particular, ˆ wt may capture residual systematic propagation error not represented by the nominal bias states. The nominal laws in (2) are useful but need not be exact. GNSS multipath, partial occlusion, and degraded satellite geometry can bias the measurement error, while imperfect inertial bias compensation, slip, or unmodeled motion can corrupt the propagation model. The next subsection makes the filtering interface explicit by identifying where the nominal means and covariances enter the EKF/ESKF recursion. 
+
+2.2 Baseline EKF/ESKF Interface 
+
+We summarize the nominal EKF/ESKF recursion to identify where the noise statistics enter. WRAP supplies adapted nominal statistics and replaces the nominal gain covariances with least-favorable ones. Let Yt := {y0, . . . , y t} denote the measurement history. Before incorporating yt, the filter has a prior estimate ¯ x− 
+
+> t
+
+; after the update, it returns a posterior estimate ¯ xt. Let the corresponding estimation errors, expressed in the baseline filter’s local coordinates, be 
+
+e− 
+
+> t
+
+:= xt ⊟ ¯x− 
+
+> t
+
+, et := xt ⊟ ¯xt.
+
+For a Euclidean EKF, ⊟ reduces to ordinary subtraction; for an ESKF, it denotes the baseline local error map. In Example 1, for example, the attitude error lies in the tangent space of SO(3) and is injected through the chosen retraction. We initialize the local prior law as ˆQ− 
+
+> x, 0
+
+= N (ˆ x− 
+
+> 0
+
+, ˆΣ−
+
+> x, 0
+
+), with ˆΣ− 
+
+> x, 0
+
+∈ Snx
+
+> ++
+
+.Given the previous posterior estimate ¯ xt−1 and the nominal process noise mean ˆ wt−1, the prior state is ¯x− 
+
+> t
+
+= ft−1(¯ xt−1, u t−1, ˆwt−1). (3) The predicted measurement and innovation are ˆyt = ht(¯ x− 
+
+> t
+
+, ˆvt), νt := yt − ˆyt. (4) Linearizing the propagation model around (¯ xt−1, ˆwt−1) and the measurement model around (¯ x− 
+
+> t
+
+, ˆvt)gives the Jacobians At−1 := ∂f t−1 
+
+> ∂x
+
+, Gt−1 := ∂f t−1 
+
+> ∂w
+
+, Ct := ∂h t 
+
+> ∂x
+
+, Dt := ∂h t 
+
+> ∂v
+
+, each evaluated at its corresponding linearization points. In the GNSS–INS example, these are the standard INS error-state matrices [32]; the position update (1) gives Ct = [ I 0 0 0 0 ] and Dt = I. We assume that 
+
+Dt has full row rank. The resulting local prior-error and innovation models are 
+
+e− 
+
+> t
+
+≈ At−1et−1 + Gt−1(wt−1 − ˆwt−1), (5) 
+
+νt ≈ Cte− 
+
+> t
+
++ Dt(vt − ˆvt). (6) Using the nominal process covariance, the baseline prior covariance is ˆΣ− 
+
+> x,t
+
+= At−1Σx,t −1A⊤ 
+
+> t−1
+
++ Gt−1 ˆΣw,t −1G⊤
+
+> t−1
+
+. (7) The nominal innovation covariance and Kalman gain are ˆSt = Ct ˆΣ−
+
+> x,t
+
+C⊤ 
+
+> t
+
++ Dt ˆΣv,t D⊤ 
+
+> t
+
+, ˆKt = ˆΣ−
+
+> x,t
+
+C⊤ 
+
+> t
+
+ˆS−1 
+
+> t
+
+. (8) Finally, the posterior update is 
+
+δx t = ˆKtνt, ¯xt = ¯ x− 
+
+> t
+
+⊞ δx t, Σx,t = ˆΣ− 
+
+> x,t
+
+− ˆKt ˆSt ˆK⊤ 
+
+> t
+
+. (9) For a Euclidean EKF, ⊞ denotes addition. For an ESKF, it denotes the baseline retraction, after which the baseline covariance-reset map is applied. The recursion in (3)–(9) exposes the two failure modes. The means ˆ wt−1 and ˆ vt enter the prop-agated state and predicted measurement, so mean mismatch shifts the innovation center and can introduce systematic error. The covariances ˆΣw,t −1 and ˆΣv,t determine the propagated and inno-vation covariances and, consequently, the Kalman gain and gating statistic. Covariance mismatch therefore causes the filter to misweight propagation and sensing and may also alter measurement acceptance. 
+
+# 3 Wasserstein-Robust Adaptive Plug-in 
+
+WRAP augments the noise-model interface of a baseline EKF/ESKF, as illustrated in Fig. 1. A causal adaptive module supplies time-varying nominal process and measurement statistics. Cen-tered on these estimates, a mean-preserving Wasserstein DR step selects least-favorable covariances for the local affine–Gaussian model and computes the robust Kalman gain. Adaptation therefore updates the nominal center of the noise law, while robustification protects the gain against residual covariance mismatch. 
+
+3.1 Adaptive Module 
+
+The nominal law in (2) need not be fixed. In WRAP, it is generated online by a causal adaptive module, 
+
+At : ( Yt−1, u 0: t−1, s t, ¯xt−1, Σx,t −1) 7 → ( ˆ wt−1, ˆΣw,t −1, ˆvt, ˆΣv,t ), (10) where st denotes current exogenous sensor metadata available before forming the innovation, such as reported covariance, signal quality, or measurement identity. The module uses only information available before forming the current innovation, including past measurements, inputs, filter estimates, residuals, covariances, and available sensor metadata. Neither the current measurement value yt nor its innovation νt is used to predict the nominal law for the same update. After the correction at time t, they may be appended to the history used by 
+
+At+1 .The interface may use any causal classical, Bayesian, learned, or hybrid adaptive method [11– 17, 33, 34] and update any subset of the statistics in (10), with the remainder retained from the baseline. The resulting law is an effective local surrogate rather than a certified physical noise model: its means affect propagation and measurement prediction, while its covariances encode the confidence used by the filter. 
+
+3.2 DR Local State Estimation via Covariance Update 
+
+The adaptive module supplies the nominal process and measurement laws ˆQw,t −1 = N ( ˆ wt−1, ˆΣw,t −1)and ˆQv,t = N (ˆ vt, ˆΣv,t ). Because these laws may remain inaccurate, WRAP asks the following local minimax question: among nearby process and measurement laws, which ones make the current correction most difficult, and which correction minimizes the resulting worst-case error? 
+
+We use the local models in (5)–(6) and, for a nominal law ˆQ ∈ P 2(Rd) of a random vector ξ,define the mean-preserving Wasserstein ambiguity set 
+
+D( ˆQ, θ ) := 
+
+n
+
+Q ∈ P 2(Rd) W2(Q, ˆQ) ≤ θ, EQ[ξ] = EˆQ[ξ]
+
+o
+
+,where P2(Rd) := {Q : EQ∥ξ∥2 < ∞} and W2 is the type-2 Wasserstein distance [24]. The equality constraint preserves the adapted mean, while θ quantifies residual distributional uncertainty around the nominal law. Conditioned on Yt−1, approximate the previous posterior error law by Pe,t −1 := N (0 , Σx,t −1). For admissible ( Qw,t −1, Qv,t ), define the product law Pt := Pe,t −1 ⊗Qw,t −1 ⊗Qv,t .1 WRAP minimizes the worst-case first-order posterior mean-square error (MSE): min  
+
+> ψt(·)
+
+max 
+
+> Qw,t −1∈D( ˆQw,t −1,θ w,t −1)
+> Qv,t ∈D( ˆQv,t ,θ v,t )
+
+EPt
+
+∥e− 
+
+> t
+
+− ψt(νt)∥2 . (11) Here, ψt(νt) is the local correction inferred from the innovation. The inner maximization stress-tests the update against admissible process and measurement laws, while the outer minimization selects the correction with the smallest worst-case MSE. The two radii parameterize distinct sources of residual uncertainty. The process radius θw,t −1
+
+acts on propagation uncertainty, such as drift, slip, or unmodeled motion, while the measurement radius θv,t acts on sensing uncertainty, such as multipath, NLOS effects, or covariance miscalibra-tion. Setting both radii to zero recovers the adapter-only update. Because W2 is defined in the selected noise coordinates, the numerical radii inherit their units and scaling; they are therefore tuned and interpreted only within a fixed estimator parameterization. 
+
+Remark 1. The adaptive module sets the nominal means and covariances. The mean-preserving DR step keeps the adapted means fixed and robustifies only the covariances used in the Kalman gain. It can therefore change the relative weighting of propagation and sensing, but cannot correct an erroneous adapted mean. 
+
+Under the local affine models, Gaussian nominal laws, mutual independence, and full row rank of Dt, established Wasserstein MMSE results imply an affine minimax correction and Gaussian least-favorable laws [25, Theorem 3.1 and Corollary 4.1]. With Gt−1 and Dt mapping the two noise terms, the noise-centric extension [29, Lemma 1 and Remark 3] reduces (11) to the covariance program below. This is a stagewise result for the linearized update, not a global minimax or stability result for the nonlinear recursion. Because the adapted means are fixed, the Wasserstein constraints reduce to Bures–Wasserstein constraints [35, 36]. Following [25, 29], redundant nominal eigenvalue lower bounds preserve the optimum while keeping the candidate covariances positive definite. Given the previous posterior covariance Σ x,t −1, the local minimax problem (11) admits the following equivalent covariance re-formulation: max 
+
+> Σw,t −1,Σv,t
+> Σ−
+> x,t ,S t
+
+Tr 
+
+
+
+Σ− 
+
+> x,t
+
+− Σ−
+
+> x,t
+
+C⊤ 
+
+> t
+
+S−1 
+
+> t
+
+CtΣ−
+
+> x,t
+
+
+
+s.t. B2(Σ w,t −1, ˆΣw,t −1) ≤ θ2
+
+> w,t −1
+
+B2(Σ v,t , ˆΣv,t ) ≤ θ2
+
+> v,t
+
+Σ− 
+
+> x,t
+
+= At−1Σx,t −1A⊤ 
+
+> t−1
+
++ Gt−1Σw,t −1G⊤
+
+> t−1
+
+St = CtΣ−
+
+> x,t
+
+C⊤ 
+
+> t
+
++ DtΣv,t D⊤
+
+> t
+
+Σw,t −1 ⪰ λmin ( ˆΣw,t −1)Inw
+
+Σv,t ⪰ λmin ( ˆΣv,t )Inv .
+
+(12)  
+
+> 1As in standard local Kalman filtering, the previous estimation error, process uncertainty, and measurement uncertainty are assumed mutually independent. The derivation is exact for the affine–Gaussian stage and applied recursively as a local EKF/ESKF approximation.
+
+Here, B denotes the Bures–Wasserstein distance, 
+
+B2(Σ , ˆΣ) := Tr 
+
+
+
+Σ + ˆΣ − 2( ˆΣ1/2Σ ˆΣ1/2)1/2
+
+, Σ, ˆΣ ⪰ 0.
+
+For fixed candidate covariances, the objective is the trace of the posterior error covariance Σ x,t ;the maximization therefore selects the covariances yielding the largest posterior MSE of the local affine–Gaussian surrogate. Since ˆΣv,t ≻ 0, the measurement lower bound implies Σ v,t ≻ 0. Together with the full row rank of Dt, this guarantees St ≻ 0, so its inverse is well defined. Let (Σ ∗
+
+> w,t −1
+
+, Σ∗
+
+> v,t
+
+, Σ−,∗ 
+
+> x,t
+
+, S ∗ 
+
+> t
+
+) maximize (12). The corresponding minimax correction in (11) has the affine Kalman form ψ∗ 
+
+> t
+
+(νt) = K∗ 
+
+> t
+
+νt, where 
+
+K∗ 
+
+> t
+
+= Σ −,∗ 
+
+> x,t
+
+C⊤ 
+
+> t
+
+(S∗ 
+
+> t
+
+)−1. (13) The posterior update is 
+
+δx ∗ 
+
+> t
+
+= K∗ 
+
+> t
+
+νt, ¯xt = ¯ x− 
+
+> t
+
+⊞ δx ∗ 
+
+> t
+
+, Σx,t = Σ −,∗ 
+
+> x,t
+
+− K∗ 
+
+> t
+
+S∗ 
+
+> t
+
+K∗⊤  
+
+> t
+
+. (14) For an ESKF, the baseline error-state injection and covariance reset are applied after the correction. Thus, the covariance reformulation implements the Wasserstein DR local-estimation problem in Kalman form. WRAP uses the adapted means in state propagation and measurement predic-tion, the least-favorable covariances in the gain computation, and the baseline state-injection and covariance-reset operations. 
+
+3.3 Implementation and Algorithm 
+
+WRAP approximately solves (12) online using the warm-started Frank–Wolfe method of [25, Sec-tion 6]. Since the objective in (12) is concave in the decision covariances and the feasible set is convex and compact [25, 35], the Frank–Wolfe gap upper-bounds the suboptimality of the returned solution. At each accepted update, the solver is warm-started from the preceding solution and returns least-favorable process and measurement covariances used to form the robust Kalman gain. Algorithm 1 summarizes one WRAP update. The adaptive module first supplies the nominal noise law, after which the baseline filter computes the prior, innovation, and Jacobians. The baseline gate is evaluated using the adapted nominal innovation covariance ˆSt. If the measurement is accepted, the DR covariance step solves (12), forms the robust gain, and applies the baseline correction. 
+
+Remark 2. The baseline gate precedes DR: rejected updates retain the adapted nominal prior, whereas accepted updates use the robust gain. Adaptation may change acceptance through νt and 
+
+ˆSt; WRAP does not claim robust gating or gross-outlier rejection. 
+
+When both radii are zero, the ambiguity sets reduce to their adapted nominal laws, so the Frank–Wolfe solve can be skipped and the adapter-only EKF/ESKF update is recovered. 
+
+# 4 Experimental Results 
+
+We evaluate WRAP on two robot-localization settings: UWB–IMU indoor localization and GNSS– INS outdoor localization. 2 Within each dataset, the baseline EKF/ESKF stack is held fixed.  
+
+> 2Source code is available at https://github.com/jangminhyuk/WRAP
+
+Algorithm 1: WRAP EKF/ESKF update for t ≥ 1
+
+Input: Previous posterior (¯ xt−1, Σx,t −1), input ut−1, measurement yt, adaptive module At,radii ( θw,t −1, θ v,t ), gate radius γ 
+
+> 1
+
+Run At to obtain ( ˆ wt−1, ˆΣw,t −1, ˆvt, ˆΣv,t ) 
+
+> 2
+
+Compute ¯ x− 
+
+> t
+
+= ft−1(¯ xt−1, u t−1, ˆwt−1) and ˆ yt = ht(¯ x− 
+
+> t
+
+, ˆvt) 
+
+> 3
+
+Compute the innovation νt = yt − ˆyt 
+
+> 4
+
+Compute At−1, Gt−1, Ct, Dt, the nominal prior covariance ˆΣ−
+
+> x,t
+
+, and the nominal innovation covariance ˆSt using (7)–(8)  
+
+> 5
+
+if ν⊤ 
+
+> t
+
+ˆS−1 
+
+> t
+
+νt > γ 2 then  
+
+> 6
+
+Set ¯ xt = ¯ x− 
+
+> t
+
+and Σ x,t = ˆΣ− 
+
+> x,t
+> 7
+
+else  
+
+> 8
+
+Apply the Frank–Wolfe solver to (12) to obtain Σ ∗ 
+
+> w,t −1
+
+and Σ ∗
+
+> v,t
+
+, Σ −,∗ 
+
+> x,t
+
+, and S∗ 
+
+> t
+> 9
+
+Compute K∗ 
+
+> t
+
+using (13)  
+
+> 10
+
+Compute the local correction δx ∗ 
+
+> t
+
+= K∗ 
+
+> t
+
+νt 
+
+> 11
+
+Set ¯ xt = ¯ x− 
+
+> t
+
+⊞ δx ∗ 
+
+> t
+
+and compute Σ x,t using (14)  
+
+> 12
+
+For an ESKF, apply the baseline covariance-reset map  
+
+> 13
+
+end  
+
+> 14
+
+Update the causal history available to At+1 
+
+The variants differ only in the nominal noise law and, when the DR covariance step is enabled, the covariances used to form the Kalman gain. The experiments quantify trajectory root-mean-square error (RMSE) and examine when nominal-law adaptation, covariance robustification, or their combination is most useful. 
+
+4.1 Evaluation Protocol 
+
+Primary component comparison. Each sequence is evaluated using the same EKF/ESKF architecture under four variants: 1. Nominal : fixed or sensor-provided nominal noise law, with θw = θv = 0. 2. Adapter-only : adaptive nominal noise law, with θw = θv = 0. 3. DR-only : fixed or sensor-provided nominal noise law with the DR covariance step enabled. 4. WRAP : adaptive nominal noise law with the DR covariance step enabled. These variants isolate nominal-law adaptation, covariance robustification, and their combination. 
+
+Radius selection and data splits. The radii θw and θv are selected from {0, 0.01 , 0.05 , 0.1, 0.5,
+
+1.0, 2.0, 5.0}. Because their values depend on the noise-coordinate parameterization and scaling, they are tuned separately for each estimator and are neither compared nor transferred across parameterizations. For UWB–IMU, the adapter is trained on trials 1–3 and 7 and evaluated on trials 4–6. Each evaluation trial uses radii selected on the other two, so the trials are held out from adapter training but do not form a fully frozen hyperparameter test set. For GNSS–INS, the same six sequences are used for adapter training and evaluation; this is an in-sample mechanism study, not a generalization test. Its radii use leave-one-sequence-out selection. All variants share the metric, mask, and baseline estimator within each dataset. Post-hoc diagnostics. Beyond trajectory RMSE, we use three ground-truth-based diagnostics to characterize the nominal error regime. For non-overlapping windows i, let ei,k denote the position-error samples and ¯ ei their mean. We define 
+
+β := 
+
+ P  
+
+> i
+
+∥¯ei∥21/2
+
+(P 
+
+> i
+
+Tr Cov k(ei,k )) 1/2 , Hw := 1 −
+
+rms 
+
+
+
+yt − ht(xgt  
+
+> t
+
+)
+
+
+
+rms 
+
+
+
+ht(¯ x− 
+
+> t
+
+) − ht(xgt  
+
+> t
+
+)
+
+ , T := q0.99 (|r|)2.576 .
+
+Here, β compares windowwise bias with within-window scatter, with β > 1 indicating a bias-dominant regime. Process headroom Hw > 0 means that the measurement error is smaller than the prior-prediction error in measurement space, while T > 1 indicates upper-tail and/or scale mismatch relative to the scalar Gaussian reference. Residuals are mean-centered within each window and normalized per axis by the provider’s nominal standard deviation. For UWB, r is the scalar standardized TDOA residual; for GNSS, it pools the standardized horizontal components. Windows are 5 s for UWB and 30 s for GNSS. To summarize covariance-related headroom, we define the heuristic DR-headroom proxy as max {Hw, T − 1}. The diagnostics are computed per sequence and provider and summarized by provider medians. They are descriptive proxies, not theoretical conditions or calibrated predictors, and are never used for training, radius selection, gating, or online selection. 
+
+Scope of comparison. These are component studies within fixed EKF/ESKF stacks, not a comprehensive method ranking. Learned adapters use offline ground-truth supervision, whereas Sage–Husa and VB-AKF adapt online; the comparison tests interaction with WRAP, not equal-supervision architecture quality. 
+
+4.2 Adaptive Modules and Implementation 
+
+We evaluate two families of adaptive implementations for the interface in (10). The first consists of learned sequence adapters based on the multimodal architecture of MUSE [34]. For UWB–IMU localization, we instantiate this architecture with Mamba [37], Transformer [38], and gated recurrent unit (GRU) [39] sequence backbones. GNSS–INS uses Mamba. The second family consists of two classical online adaptive estimators: Sage–Husa [40] and a variational Bayesian adaptive Kalman filter (VB-AKF) [13]. We adapt MUSE’s multimodal architecture to predict nominal noise statistics rather than pose corrections. Its camera branch is replaced by historical UWB or GNSS measurements, the IMU branch uses a pretrained RoNIN encoder [41], and the filter branch uses recent state estimates, residuals, and covariance features. For UWB–IMU, the output head predicts process and measure-ment noise means and covariances; for GNSS–INS, it predicts only the measurement-noise mean while retaining the receiver-reported covariance. All learned-adapter inputs are causal: measurement-derived and residual features used at time 
+
+t end at t − 1, so neither yt nor νt enters the current prediction. The UWB–IMU variants differ only in their sequence backbone and use width d = 128, four blocks, and a 100-step window. The GNSS–INS model uses width d = 256, two blocks, and a 10-step window. The nominal law is refreshed at 1 Hz in both settings and retained between refreshes. These architectural choices are not required by WRAP, which only requires nominal statistics through (10). 30 5 10 15 20 25 30 
+
+> RMSE improvement over ESKF baseline [%]
+> Mamba GRU Transformer Mamba Transformer GRU DR-only
+> +27.4% +25.2% +24.7% +19.8% +19.3% +16.5% +3.9%
+> WRAP Adapter-only
+
+Figure 2: Mean 3-D position RMSE improvement on 18 UWB–IMU evaluation sequences (held out from adapter training; radii cross-validated). 
+
+4.3 UWB–IMU Localization 
+
+We evaluate WRAP on 18 TDOA2 flight sequences from trials 4–6 of the UTIL dataset [2], all held out from adaptive-module training. The dataset provides UWB time-difference-of-arrival (TDOA) measurements, IMU data, and motion-capture reference trajectories from Crazyflie flights. We use its fixed-nominal ESKF baseline, with a scalar UWB TDOA residual at each update. Moving obstacles intermittently create NLOS conditions and time-varying measurement errors. The learned adapters are trained end-to-end by unrolling the ESKF and minimizing position-tracking MSE. We also regularize the predicted measurement covariance with a Student-t negative log-likelihood of the ground-truth measurement error at all measurement times, including gated-out updates. This provides heavy-tailed supervision for measurement-error scale beyond the tracking loss. Fig. 2 shows that adaptation provides most of the average improvement, while adding DR raises the observed average for all three backbones. This supports complementarity across the tested adapters but does not establish statistical superiority among backbones. Mamba has the highest observed average and is used below. Because each UWB update is scalar, the full and isotropic measurement-side searches coincide. We therefore compare Mamba-based WRAP with an ablation that restricts both covariances to isotropic inflations of their nominal values, using the same radius-selection protocol. 4 The isotropic ablation achieves 19 .5% improvement, close to adapter-only at 19 .8%, whereas the full covariance search achieves 27 .4%. Within this ablation, the observed incremental gain is therefore attributable to process-side redistribution of uncertainty across directions rather than scalar inflation alone. Table 1 reports per-constellation RMSE for the Mamba backbone. WRAP achieves the lowest mean RMSE on constellations #1, #2, and #4. Constellation #3 is the exception: the adapter is not beneficial in this setting, and DR-only performs best. This contrast motivates the post-hoc           
+
+> 3The DR covariance problem is solved using a warm-started Frank–Wolfe method, capped at 50 iterations with a duality-gap tolerance of 10 −4.
+> 4For c≥1, B(cˆΣ,ˆΣ) = ( √c−1)
+> q
+> Tr( ˆΣ), so each radius determines one inflation factor c(θ) =
+> 
+> 1 + θ/
+> q
+> Tr( ˆΣ)
+> 2
+> .
+
+Table 1: UWB–IMU TDOA2 localization RMSE (m) on the held-out trials, reported as mean ± standard deviation across sequences in each anchor constellation. 
+
+Const. ESKF DR-only Adapter-only (Mamba) WRAP (Mamba) #1 0.116 ± 0.005 0.115 ± 0.005 0.071 ± 0.010 0.065 ± 0.009 
+
+#2 0.107 ± 0.011 0.106 ± 0.010 0.069 ± 0.006 0.067 ± 0.008 
+
+#3 0.211 ± 0.012 0.178 ± 0.018 0.224 ± 0.016 0.209 ± 0.012 #4 0.487 ± 0.108 0.487 ± 0.108 0.375 ± 0.075 0.327 ± 0.053 −1.0 −0.5 0.0 0.5 1.0 1.5         
+
+> DR headroom
+> 0.5 124
+> bias-to-noise ratio of the ESKF error  Bias-dominant Bias + tail/scale mismatch Tail/scale mismatch Well-specified
+> const1 const2 const3 const4 Adp DR WRAP Adp DR WRAP Adp DR WRAP −20 −10 010 20 30 40 50 60
+> RMSE improvement vs baseline  (%)  Bias + tail/scale mismatch Bias-dominant Tail/scale mismatch
+> +22 +0 +32 +38 +1 +39 -7 +18 +1
+
+Figure 3: Error-regime analysis on the UTIL TDOA2 sequences, with Mamba used for the adaptive variants. Left : each sequence is positioned by the bias-to-noise ratio and DR headroom of the nominal ESKF; background shading denotes the diagnostic regimes, and marker shape denotes the anchor constellation. Right : median RMSE improvement over the nominal ESKF for adapter-only, DR-only, and WRAP in each populated regime; dots denote individual sequences. regime analysis below. For all UWB sequences, Hw ≤ 0, so the DR-headroom proxy is determined by T − 1. As shown in Fig. 3, constellations #1 and #2 occupy the bias-dominant regime, where adapter-only and WRAP achieve median improvements of 38% and 39%, respectively. Constellation #4 exhibits both bias and tail/scale mismatch; WRAP achieves 32%, compared with 22% for adapter-only and 0% for DR-only. Constellation #3 lies in the low-bias, tail/scale-mismatch regime, where adapter-only degrades RMSE by 7% and DR-only achieves an 18% median improvement. These post-hoc associations suggest a possible role for regime-aware selection, but the diagnostics require ground truth and are neither an online rule nor evidence of a causal performance predictor. The adaptive interface is not restricted to learned models. VB-AKF adapts the measurement covariance from innovations, while Sage–Husa adapts both the measurement mean and covariance. As shown in Table 2, both perform below the fixed-nominal baseline when used without the DR step. One possible explanation is that a persistent measurement bias partly absorbed into the estimated state may leave only a weak signature in the subsequent innovation sequence, limiting innovation-driven mean and covariance adaptation. In contrast, the learned adapter receives supervision from ground-truth trajectory and measurement-error signals during training, which can expose systematic error patterns that are difficult to identify from online innovations alone. The post-hoc diagnostics are consistent with this difference: the classical adapters leave β at the baseline value of 1 .7, whereas the learned adapter reduces it to 1 .1. Applying the DR covariance step raises the classical variants slightly above the baseline, while WRAP with the learned adapter achieves the largest improvement, 27 .4%. Table 2: UWB–IMU TDOA2 mean RMSE improvement (%) over the fixed-nominal ESKF (0 .230 m); DR headroom denotes the heuristic proxy.                     
+
+> Nominal-law provider βDR headroom Without DR With DR Fixed 1.7 +0 .31 0.03.9Learned adapter 1.1 +0 .42 19 .827 .4
+> Sage–Husa 1.7 +0 .83 −3.11.8VB-AKF 1.7 +0 .66 −2.51.3
+
+Table 3: GNSS–INS mean horizontal RMSE improvement (%) over the nominal KF-GINS filter (1 .85 m).                     
+
+> Nominal-law provider βDR headroom Without DR With DR Receiver 4.1 +0 .05 0.04.2Learned adapter 2.7 +0 .05 16 .115 .7Sage–Husa 5.2 +2 .65 −38 .63.0VB-AKF 4.0 +1 .61 −24 .07.1
+
+4.4 GNSS–INS Localization 
+
+We evaluate WRAP on the i2Nav-Robot dataset [42], which provides robot trajectories with MEMS IMU, GNSS, and post-processed reference data. The implementation is based on KF-GINS [32], whose state includes position, velocity, attitude, and inertial biases. Each GNSS update provides a three-dimensional position measurement. The Mamba adapter is trained by supervised maximum likelihood on the ground-truth GNSS measurement errors. The classical adaptive filters require no offline training, and their covariance estimates are clipped relative to the receiver-reported covariance to prevent divergence. We evaluate horizontal error on the six outdoor sequences, which are also used to train the learned adapter; the results therefore illustrate mechanism behavior, not out-of-sample general-ization. In Table 3, the nominal KF-GINS RMSE is 1 .85 m; DR-only, adapter-only, and WRAP improve it by 4 .2%, 16 .1%, and 15 .7%. With the receiver-reported covariance, β = 4 .1 indicates a bias-dominant regime, with approximately 94% of the nominal filter’s squared error associated with the window means. 5 Meanwhile, T = 0 .31 and a DR-headroom proxy of +0 .05 indicate little under-dispersion in this diagnostic, consistent with mean adaptation providing most of the point-accuracy gain and WRAP remaining close to adapter-only. Consistency statistics support this interpretation. 6 The nominal filter has a median sequence-level mean normalized innovation squared (NIS) of 0 .13, versus an ideal of 3 .0, but a median sequence-level mean normalized estimation error squared (NEES) of 22 .7. Thus, the innovations are much smaller than ˆSt predicts, while the true position error exceeds that implied by Σ x,t , consistent with measurement bias being absorbed into the state. Adapter-only and WRAP nevertheless lower NEES to 13 .8 and 11 .6, while DR-only reaches 4 .0, closest to the ideal. No variant is fully consistent, suggesting residual mean-model error that the mean-preserving DR step cannot remove. The same behavior limits innovation-driven adaptation: an absorbed bias can leave innovations apparently well behaved while trajectory error grows. Sage–Husa and VB-AKF therefore reduce         
+
+> 5Within window i,1
+> ni
+> P
+> k∥ei,k ∥2=∥¯ei∥2+Tr Cov( ei); hence β2/(1+ β2) is the fraction of squared error associated with the window mean.
+> 6For each sequence, NIS and position NEES are averaged over the 3D GNSS updates, and medians of these sequence-level means are reported across the six outdoor sequences; the ideal mean is 3. NEES uses the post-update position covariance and post-processed reference. All variants accept the same GNSS updates.
+
+the measurement standard deviation to about one tenth of the receiver-reported value, degrading RMSE by 38 .6% and 24 .0%. The DR covariance step raises both above the nominal baseline, yielding 3 .0% and 7 .1% improvements. Its effect is small for the receiver and learned adapter, which leave little DR headroom, and largest for the over-tightened classical estimates. This in-sample study illustrates WRAP’s intended division of labor: mean adaptation addresses systematic bias, while covariance robustification limits sensitivity to residual covariance misspecification, most visibly for the over-tightened classical estimates. 
+
+4.5 Runtime Evaluation 
+
+We measure runtime on an NVIDIA Jetson Orin Nano Super Developer Kit with a six-core Arm Cortex-A78AE CPU and a 1024-core Ampere GPU. The adaptive module runs on the GPU, while the C++ Frank–Wolfe solver runs on one CPU thread. All reported times are median latencies over 100 runs after warm-up, measured with CUDA events for inference and wall-clock timing for the covariance solve. For the TDOA2 sequences of the UTIL dataset, UWB updates arrive at 55 Hz after downsam-pling, leaving approximately 18 ms per update. The DR covariance problem is solved at every accepted measurement update and requires 0.05 ms. Adaptive inference requires 21–30 ms, depend-ing on the backbone, but runs at 1 Hz, with its latest output retained between refreshes. For the GNSS–INS experiments on the i2Nav-Robot dataset, GNSS updates arrive at 1 Hz, with IMU prop-agation at 200 Hz. Adaptive inference requires 23–26 ms, while the DR covariance solve requires 2.92 ms. Both fit comfortably within the 1 s update interval. At the evaluated 1 Hz adapter refresh, both components meet the timing budgets of the two localization stacks; the refresh rate is configurable. 
+
+# 5 Conclusion 
+
+WRAP couples causal effective-noise adaptation with a mean-preserving Wasserstein robust gain inside an unchanged EKF/ESKF stack. UWB–IMU results show complementary observed gains, particularly when post-hoc mean and upper-quantile/scale mismatch co-occur. The in-sample GNSS–INS study is bias-dominant: adaptation supplies most of the accuracy gain, while DR im-proves consistency and mitigates over-tightened classical covariances. The UWB trials are held out from adapter training but cross-validated for radii; GNSS is in-sample. Moreover, the minimax interpretation is local, radii depend on noise coordinates, and the baseline gate is not robustified. Future work will study frozen out-of-domain tests, normalized or data-calibrated radii, and online regime selection. 
+
+# References 
+
+[1] P. D. Groves, Principles of GNSS, Inertial, and Multisensor Integrated Navigation Systems ,2nd ed. Artech House, 2013. [2] W. Zhao, A. Goudar, X. Qiao, and A. P. Schoellig, “UTIL: An ultra-wideband time-difference-of-arrival indoor localization dataset,” Int. J. Robot. Res. , vol. 43, no. 10, pp. 1443–1456, 2024. [3] P. Geneva, K. Eckenhoff, W. Lee, Y. Yang, and G. Huang, “OpenVINS: A research platform for visual-inertial estimation,” in Proc. IEEE Int. Conf. Robot. Autom. , 2020, pp. 4666–4672. [4] W. Xu, Y. Cai, D. He, J. Lin, and F. Zhang, “FAST-LIO2: Fast direct LiDAR-inertial odom-etry,” IEEE Trans. Robot. , vol. 38, no. 4, pp. 2053–2073, Aug. 2022. [5] R. Hartley, M. Ghaffari, R. M. Eustice, and J. W. Grizzle, “Contact-aided invariant extended Kalman filtering for robot state estimation,” Int. J. Robot. Res. , vol. 39, no. 4, pp. 402–430, Mar. 2020. [6] R. E. Kalman, “A new approach to linear filtering and prediction problems,” J. Basic Eng. ,vol. 82, pp. 35–45, 1960. [7] J. Sol` a, J. Deray, and D. Atchuthan, “A micro Lie theory for state estimation in robotics,” 
+
+arXiv preprint arXiv:1812.01537 , 2018. [8] N. J. Gordon, D. J. Salmond, and A. F. M. Smith, “Novel approach to nonlinear/non-Gaussian Bayesian state estimation,” IEEE Proc. F Radar Signal Process. , vol. 140, no. 2, pp. 107–113, 1993. [9] S. J. Julier and J. K. Uhlmann, “Unscented filtering and nonlinear estimation,” Proc. IEEE ,vol. 92, no. 3, pp. 401–422, 2004. [10] B. M. Bell and F. W. Cathey, “The iterated Kalman filter update as a Gauss-Newton method,” 
+
+IEEE Trans. Autom. Control , vol. 38, no. 2, pp. 294–297, 1993. [11] R. Mehra, “On the identification of variances and adaptive Kalman filtering,” IEEE Trans. Autom. Control , vol. 15, no. 2, pp. 175–184, 1970. [12] B. J. Odelson, M. R. Rajamani, and J. B. Rawlings, “A new autocovariance least-squares method for estimating noise covariances,” Automatica , vol. 42, no. 2, pp. 303–308, 2006. [13] S. S¨ arkk¨ a and A. Nummenmaa, “Recursive noise adaptive Kalman filtering by variational Bayesian approximations,” IEEE Trans. Autom. Control , vol. 54, no. 3, pp. 596–600, 2009. [14] Y. Huang, Y. Zhang, Z. Wu, N. Li, and J. Chambers, “A novel adaptive Kalman filter with inaccurate process and measurement noise covariance matrices,” IEEE Trans. Autom. Control ,vol. 63, no. 2, pp. 594–601, 2018. [15] H. Zhu, G. Zhang, Y. Li, and H. Leung, “An adaptive Kalman filter with inaccurate noise covariances in the presence of outliers,” IEEE Trans. Autom. Control , vol. 67, no. 1, pp. 374–381, 2022. [16] T. Kruse, T. Griebel, and K. Graichen, “Adaptive Kalman filtering: Measurement and process noise covariance estimation using Kalman smoothing,” IEEE Access , vol. 13, pp. 11 863–11 875, 2025. [17] A. H. Mohamed and K. P. Schwarz, “Adaptive Kalman filtering for INS/GPS,” J. Geodesy ,vol. 73, no. 4, pp. 193–203, 1999. [18] G. Revach, N. Shlezinger, X. Ni, A. L. Escoriza, R. J. G. van Sloun, and Y. C. Eldar, “Kalman-Net: Neural network aided Kalman filtering for partially known dynamics,” IEEE Trans. Signal Process. , vol. 70, pp. 1532–1547, 2022. [19] A. Kloss, G. Martius, and J. Bohg, “How to train your differentiable filter,” Auton. Robots ,vol. 45, pp. 561–578, 2021. [20] W. Liu, D. Caruso, E. Ilg, J. Dong, A. I. Mourikis, K. Daniilidis, V. Kumar, and J. Engel, “TLIO: Tight learned inertial odometry,” IEEE Robot. Autom. Lett. , vol. 5, no. 4, pp. 5653– 5660, 2020. [21] W. Wiesemann, D. Kuhn, and M. Sim, “Distributionally robust convex optimization,” Oper. Res. , vol. 62, no. 6, pp. 1358–1376, 2014. [22] P. Mohajerin Esfahani and D. Kuhn, “Data-driven distributionally robust optimization using the Wasserstein metric: Performance guarantees and tractable reformulations,” Math. Pro-gram. , vol. 171, no. 1, pp. 115–166, 2018. [23] R. Gao and A. Kleywegt, “Distributionally robust stochastic optimization with Wasserstein distance,” Math. Oper. Res. , vol. 48, no. 2, pp. 603–655, 2023. [24] C. Villani, Optimal Transport: Old and New . Springer, 2009, vol. 338. [25] V. A. Nguyen, S. Shafieezadeh-Abadeh, D. Kuhn, and P. Mohajerin Esfahani, “Bridging Bayesian and minimax mean square error estimation via Wasserstein distributionally robust optimization,” Math. Oper. Res. , vol. 48, no. 1, pp. 1–37, 2023. [26] K. Si, P. Li, Z.-P. Yuan, K. Qiao, B. Wang, and X. He, “Distributionally robust Kalman filtering for INS/GPS tightly coupled integration with model uncertainty and measurement outlier,” IEEE Trans. Instrum. Meas. , vol. 72, pp. 1–13, 2023. [27] T. Kargin, J. Hajar, V. Malik, and B. Hassibi, “Distributionally robust Kalman filtering over finite and infinite horizon,” arXiv preprint arXiv:2407.18837 , 2024. [28] M. Jang, A. Hakobyan, and I. Yang, “On the steady-state distributionally robust Kalman filter,” in Proc. IEEE Conf. Decis. Control , 2025, pp. 2385–2392. [29] ——, “Distributionally robust Kalman filter,” arXiv preprint arXiv:2512.06286 , 2025. [30] Q. Wang, D. Zhou, Y. Li, and S. Li, “A stability guaranteed distributionally robust adaptive Kalman filter for dual uncertainties in model and noise,” IEEE Trans. Instrum. Meas. , vol. 75, 2026. [31] M. Jang, J. Lee, A. Hakobyan, N. Hovakimyan, and I. Yang, “Residual-aware distributionally robust EKF: Absorbing linearization mismatch via Wasserstein ambiguity,” arXiv preprint arXiv:2604.02749 , 2026. [32] X. Niu, L. Wang, Q. Chen, H. Tang, Q. Zhang, and T. Zhang, “KF-GINS: An open-sourced software for GNSS/INS integrated navigation,” GPS Solut. , vol. 29, no. 4, Sep. 2025, art. no. 202. [33] J. Dun´ ık, O. Straka, O. Kost, and J. Havl´ ık, “Noise covariance matrices in state-space mod-els: A survey and comparison of estimation methods—part I,” Int. J. Adapt. Control Signal Process. , vol. 31, no. 11, pp. 1505–1543, 2017. [34] M. Kim, H. Che, B. Chandaka, B. Pramuanpornsatid, C. Yang, S. Cheng, X. Wang, N. Hov-akimyan, and S. Wang, “MUSE: Multimodal uncertainty quantification of state estimation,” 
+
+arXiv preprint arXiv:2605.17421 , 2026. [35] M. Gelbrich, “On a formula for the L2 Wasserstein metric between measures on Euclidean and Hilbert spaces,” Math. Nachr. , vol. 147, no. 1, pp. 185–203, 1990. [36] R. Bhatia, T. Jain, and Y. Lim, “On the Bures–Wasserstein distance between positive definite matrices,” Expo. Math. , vol. 37, no. 2, pp. 165–191, 2019. [37] A. Gu and T. Dao, “Mamba: Linear-time sequence modeling with selective state spaces,” 
+
+arXiv preprint arXiv:2312.00752 , 2023. [38] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. Kaiser, and I. Polosukhin, “Attention is all you need,” in Adv. Neural Inf. Process. Syst. , vol. 30, 2017, pp. 5998–6008. [39] K. Cho, B. van Merri¨ enboer, C. Gulcehre, D. Bahdanau, F. Bougares, H. Schwenk, and Y. Bengio, “Learning phrase representations using RNN encoder–decoder for statistical ma-chine translation,” in Proc. Conf. Empirical Methods Nat. Lang. Process. , Doha, Qatar, 2014, pp. 1724–1734. [40] A. P. Sage and G. W. Husa, “Adaptive filtering with unknown prior statistics,” in Proc. Joint Automatic Control Conf. , 1969, pp. 760–769. [41] S. Herath, H. Yan, and Y. Furukawa, “RoNIN: Robust neural inertial navigation in the wild: Benchmark, evaluations, and new methods,” in Proc. IEEE Int. Conf. Robot. Autom. , 2020, pp. 3146–3152. [42] H. Tang, T. Zhang, L. Wang, X. Ding, M. Yuan, Z. Xiang, J. Chen, Y. Bian, S. Liu, Y. Wang, G. Wang, and X. Niu, “i2Nav-Robot: A large-scale indoor–outdoor robot dataset for multi-sensor fusion navigation and mapping,” arXiv preprint arXiv:2508.11485 , 2025.
