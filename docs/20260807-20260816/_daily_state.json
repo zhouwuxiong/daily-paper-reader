@@ -1,9 +1,9 @@
 {
   "date": "20260807-20260816",
   "date_label": "2026-08-07 ~ 2026-08-16",
-  "generated_at": "2026-08-16 08:08:31 UTC",
+  "generated_at": "2026-08-16 08:21:01 UTC",
   "recommend_exists": true,
-  "run_count": 3,
+  "run_count": 4,
   "papers": [
     {
       "paper_id": "2608.09146v1",
@@ -17,9 +17,9 @@
         }
       ],
       "score": 10.0,
-      "evidence": "大规模神经SLAM与场景重建",
+      "evidence": "神经隐式SLAM系统，包含多子地图与回环检测，面向大规模场景重建。",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.07144v1",
@@ -33,9 +33,9 @@
         }
       ],
       "score": 9.0,
-      "evidence": "从多视角图像进行前馈三维高斯重建",
+      "evidence": "基于多视图图像的三维高斯溅射前馈重建",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.07937v1",
@@ -49,9 +49,25 @@
         }
       ],
       "score": 9.0,
-      "evidence": "联合预测相机位姿与深度，实现无标定的三维重建",
+      "evidence": "多视图图像的联合相机位姿估计与三维重建",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
+    },
+    {
+      "paper_id": "2608.08132v1",
+      "route": "20260807-20260816/2608.08132v1-when-does-an-extra-view-help-adapting-single-view-3d-reconstruction-with-extra-imagery",
+      "title": "When Does An Extra View Help? Adapting Single-View 3D Reconstruction with Extra Imagery",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "利用额外视图自适应提升单视图三维重建",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.08585v1",
@@ -65,9 +81,9 @@
         }
       ],
       "score": 9.0,
-      "evidence": "从事件流进行位姿-场景联合优化的三维重建",
+      "evidence": "从事件流进行稠密三维重建并联合优化位姿与场景",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.08949v1",
@@ -81,9 +97,9 @@
         }
       ],
       "score": 9.0,
-      "evidence": "面向光学退化的高斯溅射SLAM与稠密三维重建",
+      "evidence": "内窥镜中的稠密视觉SLAM与三维场景重建",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.09110v1",
@@ -97,9 +113,9 @@
         }
       ],
       "score": 9.0,
-      "evidence": "通过视点自适应渲染进行单图像三维重建",
+      "evidence": "单张图像三维重建并保持视角一致性",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.10345v1",
@@ -113,9 +129,9 @@
         }
       ],
       "score": 9.0,
-      "evidence": "从两张无位姿图像进行三维场景重建",
+      "evidence": "从两张模糊图像重建一致3D场景，采用级联2D到3D一致性与3D高斯泼溅。",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.10602v1",
@@ -129,9 +145,41 @@
         }
       ],
       "score": 9.0,
-      "evidence": "基于三维高斯的图像表面重建",
+      "evidence": "基于可微高斯-SDF优化的图像高质量表面重建",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
+    },
+    {
+      "paper_id": "2608.10712v1",
+      "route": "20260807-20260816/2608.10712v1-compact-feed-forward-3d-gaussians-via-saliency-guided-primitive-merging",
+      "title": "Compact Feed-Forward 3D Gaussians via Saliency-Guided Primitive Merging",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "基于高斯泼溅前馈式三维场景重建，输入稀疏视角",
+      "first_seen_at": "2026-08-16 08:08:31 UTC",
+      "updated_at": "2026-08-16 08:21:01 UTC"
+    },
+    {
+      "paper_id": "2608.12825v1",
+      "route": "20260807-20260816/2608.12825v1-locusgs-spatially-grounded-tokens-for-feed-forward-3d-gaussian-splatting",
+      "title": "LocusGS: Spatially Grounded Tokens for Feed-Forward 3D Gaussian Splatting",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "基于多视图图像的前馈三维高斯溅射场景重建",
+      "first_seen_at": "2026-08-16 08:21:01 UTC",
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.07012v1",
@@ -145,9 +193,9 @@
         }
       ],
       "score": 8.0,
-      "evidence": "从少量未标定RGB视图进行稀疏视角3D场景重建，恢复全局一致空间配置",
+      "evidence": "从稀疏未标定RGB图像进行3D场景重建",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.08696v2",
@@ -161,9 +209,9 @@
         }
       ],
       "score": 8.0,
-      "evidence": "从图像预测稠密三维占据用于场景重建",
+      "evidence": "跨异构场景从图像进行密集三维占用预测",
       "first_seen_at": "2026-08-16 08:08:31 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.10708v1",
@@ -177,9 +225,25 @@
         }
       ],
       "score": 8.0,
-      "evidence": "对深度、相机位姿和点图预测强制多视图几何一致性",
+      "evidence": "为深度、相机位姿与点图预测施加多视图几何一致性，类似束调整。",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
+    },
+    {
+      "paper_id": "2608.10938v1",
+      "route": "20260807-20260816/2608.10938v1-gs-cpe-unified-6-degree-of-freedom-camera-pose-estimation-via-3d-gaussian-splatting",
+      "title": "GS-CPE: Unified 6-Degree-of-Freedom Camera Pose Estimation via 3D Gaussian Splatting",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "利用3D高斯泼溅进行相机位姿估计，与视觉SLAM定位紧密相关",
+      "first_seen_at": "2026-08-16 08:08:31 UTC",
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.11077v1",
@@ -193,9 +257,9 @@
         }
       ],
       "score": 8.0,
-      "evidence": "基于可学习高斯增密的密集三维重建",
+      "evidence": "用于驾驶场景的前馈高斯重建，与图像稠密三维重建相关",
       "first_seen_at": "2026-08-16 08:08:31 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.08696v1",
@@ -214,9 +278,9 @@
       "updated_at": "2026-08-16 07:53:47 UTC"
     },
     {
-      "paper_id": "2608.08132v1",
-      "route": "20260807-20260816/2608.08132v1-when-does-an-extra-view-help-adapting-single-view-3d-reconstruction-with-extra-imagery",
-      "title": "When Does An Extra View Help? Adapting Single-View 3D Reconstruction with Extra Imagery",
+      "paper_id": "2608.08476v1",
+      "route": "20260807-20260816/2608.08476v1-raylift-lifting-complementary-ray-wise-evidence-with-3d-geometry-priors-for-semantic-scene-completion",
+      "title": "RayLift: Lifting Complementary Ray-Wise Evidence with 3D Geometry Priors for Semantic Scene Completion",
       "section": "quick",
       "tags": [
         {
@@ -225,9 +289,9 @@
         }
       ],
       "score": 7.0,
-      "evidence": "利用额外图像改进单视图三维重建，直接对应图像三维重建需求",
+      "evidence": "从相机图像中恢复3D几何结构进行场景补全",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.08531v1",
@@ -241,9 +305,25 @@
         }
       ],
       "score": 7.0,
-      "evidence": "利用高斯泼溅进行动态三维场景重建，融合事件与RGB数据",
+      "evidence": "基于事件与RGB融合的高斯泼溅动态3D场景重建",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
+    },
+    {
+      "paper_id": "2608.09238v1",
+      "route": "20260807-20260816/2608.09238v1-realdenseface-real-time-monocular-3d-face-reconstruction-from-dense-uv-space-priors",
+      "title": "RealDenseFace: Real-time Monocular 3D Face Reconstruction from Dense UV-space Priors",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "从单张RGB图像进行单目三维人脸重建",
+      "first_seen_at": "2026-08-16 07:53:47 UTC",
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.09590v1",
@@ -257,14 +337,14 @@
         }
       ],
       "score": 7.0,
-      "evidence": "图像与点云匹配用于视觉定位与SLAM数据关联",
+      "evidence": "面向运动恢复结构的鲁棒2D-3D匹配",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
-      "paper_id": "2608.10712v1",
-      "route": "20260807-20260816/2608.10712v1-compact-feed-forward-3d-gaussians-via-saliency-guided-primitive-merging",
-      "title": "Compact Feed-Forward 3D Gaussians via Saliency-Guided Primitive Merging",
+      "paper_id": "2608.08115v1",
+      "route": "20260807-20260816/2608.08115v1-sumi-scalable-unified-model-for-3d-point-cloud-inference",
+      "title": "SUMI: Scalable Unified Model for 3D Point Cloud Inference",
       "section": "quick",
       "tags": [
         {
@@ -272,42 +352,26 @@
           "label": "d-slam"
         }
       ],
-      "score": 7.0,
-      "evidence": "从稀疏输入视图进行前馈3D场景重建，生成紧凑的3D高斯表示",
-      "first_seen_at": "2026-08-16 08:08:31 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
-    },
-    {
-      "paper_id": "2608.10938v1",
-      "route": "20260807-20260816/2608.10938v1-gs-cpe-unified-6-degree-of-freedom-camera-pose-estimation-via-3d-gaussian-splatting",
-      "title": "GS-CPE: Unified 6-Degree-of-Freedom Camera Pose Estimation via 3D Gaussian Splatting",
-      "section": "quick",
-      "tags": [
-        {
-          "kind": "query",
-          "label": "d-slam"
-        }
-      ],
-      "score": 7.0,
-      "evidence": "视觉定位中的六自由度相机位姿估计",
-      "first_seen_at": "2026-08-16 08:08:31 UTC",
-      "updated_at": "2026-08-16 08:08:31 UTC"
-    },
-    {
-      "paper_id": "2608.08476v1",
-      "route": "20260807-20260816/2608.08476v1-raylift-lifting-complementary-ray-wise-evidence-with-3d-geometry-priors-for-semantic-scene-completion",
-      "title": "RayLift: Lifting Complementary Ray-Wise Evidence with 3D Geometry Priors for Semantic Scene Completion",
-      "section": "quick",
-      "tags": [
-        {
-          "kind": "query",
-          "label": "d-slam"
-        }
-      ],
-      "score": 7.0,
-      "evidence": "基于相机图像和立体几何的稠密三维场景补全",
+      "score": 6.0,
+      "evidence": "面向稠密三维重建的点云补全扩散精化方法",
       "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 07:53:47 UTC"
+      "updated_at": "2026-08-16 08:21:01 UTC"
+    },
+    {
+      "paper_id": "2608.10660v1",
+      "route": "20260807-20260816/2608.10660v1-cross-view-sequential-visual-localization-with-spatio-temporal-context-modeling-for-autonomous-driving",
+      "title": "Cross-View Sequential Visual Localization with Spatio-Temporal Context Modeling for Autonomous Driving",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "面向自动驾驶的时空上下文序列视觉定位，与视觉SLAM相关",
+      "first_seen_at": "2026-08-16 08:21:01 UTC",
+      "updated_at": "2026-08-16 08:21:01 UTC"
     },
     {
       "paper_id": "2608.08016v1",
@@ -340,38 +404,6 @@
       "evidence": "为结构光三维重建提供逐点协方差建模，支持稠密三维重建的不确定性估计",
       "first_seen_at": "2026-08-16 08:08:31 UTC",
       "updated_at": "2026-08-16 08:08:31 UTC"
-    },
-    {
-      "paper_id": "2608.08115v1",
-      "route": "20260807-20260816/2608.08115v1-sumi-scalable-unified-model-for-3d-point-cloud-inference",
-      "title": "SUMI: Scalable Unified Model for 3D Point Cloud Inference",
-      "section": "quick",
-      "tags": [
-        {
-          "kind": "query",
-          "label": "d-slam"
-        }
-      ],
-      "score": 6.0,
-      "evidence": "基于扩散模型的三维点云补全用于稠密重建",
-      "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 07:53:47 UTC"
-    },
-    {
-      "paper_id": "2608.09238v1",
-      "route": "20260807-20260816/2608.09238v1-realdenseface-real-time-monocular-3d-face-reconstruction-from-dense-uv-space-priors",
-      "title": "RealDenseFace: Real-time Monocular 3D Face Reconstruction from Dense UV-space Priors",
-      "section": "quick",
-      "tags": [
-        {
-          "kind": "query",
-          "label": "d-slam"
-        }
-      ],
-      "score": 6.0,
-      "evidence": "基于单张RGB图像的单目三维人脸重建，属于三维重建任务",
-      "first_seen_at": "2026-08-16 07:53:47 UTC",
-      "updated_at": "2026-08-16 07:53:47 UTC"
     },
     {
       "paper_id": "2608.13147v1",
