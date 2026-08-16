@@ -1,0 +1,434 @@
+Title: Sensor-Informed Per-Point Covariance for Structured-Light 3D Imaging
+
+URL Source: https://arxiv.org/pdf/2608.10888v1
+
+Published Time: Wed, 12 Aug 2026 01:22:14 GMT
+
+Number of Pages: 10
+
+Markdown Content:
+> 1
+
+# Sensor-Informed Per-Point Covariance for Structured-Light 3D Imaging 
+
+Sehoon Tak , and Jae-Sang Hyun 
+
+Abstract —Per-point uncertainty models are important in structured-light 3D reconstruction for probabilistic registration, fusion, and quality assessment. In practice, however, point-cloud covariances are often modeled as isotropic constants or inferred from local surface geometry and therefore do not explicitly reflect the measurement process. This is a limitation in fringe projec-tion profilometry (FPP), where phase noise propagates through calibrated reconstruction and produces strongly anisotropic 3D uncertainty. This paper presents a sensor-informed first-order method for constructing a per-point 3 × 3 covariance field from experimentally measured phase precision and calibrated phase-to-depth and phase-to-3D mappings. The formulation separates a rank-1 phase-induced covariance from an effective full-rank completion obtained by incorporating fitted lateral image-space perturbation scales. Repeated-plane experiments under fixed imaging conditions show close alignment of the dominant co-variance direction with the viewing ray, and consistency between the dominant phase-induced uncertainty scale and scalar depth uncertainty. In G-ICP registration, the proposed covariance substantially improves over a constant isotropic model while providing a sensor-derived uncertainty representation comple-mentary to conventional geometry-based covariances. 
+
+Index Terms —structured light, fringe projection profilometry, uncertainty propagation, per-point covariance, probabilistic reg-istration, G-ICP 
+
+I. I NTRODUCTION 
+
+# STRUCTURED-LIGHT 3D reconstruction is widely used in industrial inspection, biomedical imaging, and robotic perception because it provides dense and accurate surface measurements over a wide range of scales [1]–[3]. As these systems are used increasingly in registration, fusion, and uncertainty-aware decision making, reporting only nominal point coordinates is no longer sufficient. Practical reconstruc-tion pipelines also require a principled per-point uncertainty representation [4]–[6]. In Gaussian point-based formulations, this uncertainty is naturally represented by a 3 × 3 covariance matrix for each reconstructed point, which enables anisotropic confidence ellipsoids and Mahalanobis-weighted estimation [6], [7]. In many registration pipelines, however, per-point covari-ances are not derived from the sensing process. Instead, they are often modeled as isotropic constants or estimated from local surface neighborhoods, for example by assigning small variance along an estimated normal direction and larger variances in tangential directions [6], [7]. Such constructions 
+
+Corresponding author: Jae-Sang Hyun Sehoon Tak and Jae-Sang Hyun are with the Department of Mechanical Engineering, Yonsei University, Seoul 03722, South Korea. Jae-Sang Hyun is also with the Yonsei Institute for Embodied Intelligence, Yonsei University, Seoul 03722, South Korea. (e-mail: hyun.jaesang@yonsei.ac.kr). 
+
+encode local geometric structure effectively, but they do not explicitly describe measurement uncertainty. This distinction matters in fringe projection profilometry (FPP). A projector emits phase-shifted fringe patterns, acamera records the deformed fringes, and phase retrieval yields an absolute phase map that is monotonically related to depth along each camera ray [3], [8]. Because phase errors perturb range much more strongly than lateral posi-tion, structured-light measurements exhibit pronounced axial– lateral anisotropy [4], [9]. This anisotropy arises primarily from sensing geometry and the phase measurement process rather than from local surface smoothness. Prior analyses of structured-light uncertainty often focus on scalar depth precision by relating phase noise to range error through system geometry and phase sensitivity [4], [9]. While valuable, such analyses do not directly provide the full per-point covariance required for probabilistic 3D registration. A remaining gap is a practical connection between experimen-tally measured phase precision, calibrated reconstruction, and the 3 × 3 covariance used in uncertainty-aware estimation. This connection can be established through the calibrated relationship between absolute phase and depth. Many modern structured-light pipelines avoid an explicit geometric projector model and instead estimate a per-pixel or locally parameterized phase-to-depth mapping that absorbs projector non-idealities, lens distortion, and system geometry into a calibrated model [10]–[12]. When phase precision is characterized experimen-tally, this mapping provides a direct route for propagating phase uncertainty into 3D covariance without relying on local surface neighborhoods. More broadly, uncertainty evaluation in metrology is often framed through the GUM law of propagation of uncertainty and, when linearization is inadequate, through Monte Carlo propagation of distributions [13], [14]. The present work does not attempt a complete GUM-style uncertainty budget for all system parameters. Instead, it develops a sensor-informed first-order covariance model from measured phase precision and calibrated reconstruction. In practical optical-metrology settings, pointwise measurement capability is also shaped by spatial-resolution limits, viewing geometry, and surface-dependent effects, including pointwise accuracy–precision tradeoffs, surface-normal sensitivity, and the validity limits of linearized transfer-function descriptions [15]–[18]. In this work, we propose a sensor-informed first-order covariance model for structured-light reconstruction by prop-agating experimentally measured phase precision through cal-ibrated phase-to-depth and phase-to-3D mappings. The for-mulation distinguishes a physically primary phase-induced arXiv:2608.10888v1 [cs.CV] 11 Aug 2026 2
+
+covariance from a practical full-rank completion used for downstream registration. The proposed covariance is inde-pendent of local surface neighborhoods and remains directly interpretable in terms of phase precision, reconstruction sen-sitivity, and imaging geometry. To measure phase precision reproducibly, the experiments are conducted under a controlled operating condition with approximately constant-SNR. We then evaluate the resulting covariance field in generalized ICP (G-ICP) registration against a constant isotropic model and a conventional geometry-derived covariance model. The main contributions of this paper are as follows: 1) We formulate a sensor-informed per-point covariance model for structured-light reconstruction by propagating experimentally measured phase variance through cali-brated phase-to-depth and phase-to-3D mappings, with-out relying on local surface neighborhood geometry. The formulation distinguishes a physically primary phase-induced covariance from a practical full-rank completion used in probabilistic registration. 2) We characterize the resulting covariance field and show that it captures the characteristic axial–lateral anisotropy of structured-light measurements in terms of measured phase precision, reconstruction sensitivity, and imaging geometry. 3) We evaluate the proposed covariance field in down-stream uncertainty-aware rigid registration using G-ICP, and compare it against a constant isotropic model and a conventional geometry-derived covariance model under controlled structured-light imaging conditions. Figure 1 summarizes the overall workflow of the proposed method, from phase-precision measurement and phase-to-depth calibration to covariance construction and downstream evaluation in G-ICP registration. The remainder of this paper is organized as follows. Sec-tion II reviews the measurement model, calibrated recon-struction, and registration background needed for the method. Section III presents the covariance formulation and its nu-merical implementation. Section IV describes the experimen-tal protocol and implementation details. Section V reports phase-variance measurements, mapping residuals, covariance characterization, and registration results. Section VI discusses limitations and extensions, including spatially varying SNR and hybrid sensor–geometry covariance models. II. M EASUREMENT , R ECONSTRUCTION , AND 
+
+REGISTRATION BACKGROUND 
+
+This section reviews the measurement and reconstruction ingredients needed for the proposed covariance model: phase retrieval and phase precision in fringe projection profilometry (FPP), calibrated phase-to-depth and phase-to-3D mapping, coordinate conventions, and the generalized ICP (G-ICP) formulation used for downstream evaluation. The covariance derivation itself is deferred to Section III. 
+
+A. Absolute phase retrieval and phase precision 
+
+We consider a standard fringe projection profilometry sys-tem in which a projector emits phase-shifted sinusoidal fringe patterns and a camera records the deformed intensity images. For an N -step phase-shifting scheme, the captured intensity at camera pixel (u, v ) is modeled as 
+
+In(u, v ) = I0(u, v ) + Im(u, v ) cos  ϕ(u, v ) − 2πn/N , (1) where n ∈ { 0, . . . , N − 1} is the phase-shift index, I0(u, v )
+
+denotes the average intensity, Im(u, v ) denotes the fringe modulation, and ϕ(u, v ) is the wrapped phase [3]. Using the standard N -step phase-shifting formulation, the wrapped phase is estimated as 
+
+ϕ(u, v ) = tan −1
+
+PN −1 
+
+> n=0
+
+In(u, v ) sin(2 πn/N )
+
+PN −1 
+
+> n=0
+
+In(u, v ) cos(2 πn/N ) . (2) Because the recovered phase is modulo 2π, Gray-code-assisted temporal phase unwrapping is used to obtain the absolute phase Φ( u, v ) [19], [20]. The subsequent uncertainty analysis is restricted to valid regions without detected fringe-order errors, so that the repeated variability of Φ( u, v ) can be treated as the phase-precision input to the covariance model. Under fixed acquisition conditions, phase precision is de-fined as the standard deviation of repeated absolute-phase measurements at a fixed pixel. Noise-induced phase error in phase-shifting profilometry depends on image noise, fringe modulation, and the phase-shifting design [21], [22]. Practi-cal FPP systems can exhibit systematic phase error arising from nonlinear or nonsinusoidal fringe response, for which dedicated compensation methods have been developed [23]. The present work characterizes repeatable phase variance rather than separately modeling individual deterministic error components. Spatial correlations between neighboring phase errors are neglected in the present first-order formulation. 
+
+B. Calibrated phase-to-depth and phase-to-3D mapping 
+
+A calibrated FPP system requires a deterministic mapping from camera pixel coordinates and absolute phase to 3D geom-etry. Following common structured-light calibration practice, we separate this mapping into a phase-to-depth relationship and a 3D reconstruction map [10], [11]. We write 
+
+z = f (Φ; u, v ), (3) where z denotes the depth coordinate in the calibrated camera frame and f (·) is estimated from phase-to-depth calibration data. Existing phase-to-depth calibration methods include pixel-dependent and pixel-independent formulations, as well as more flexible pixel-wise or locally parameterized mappings [12], [24], [25]. These calibrated models are attractive because they absorb projector non-idealities, distortion, and departures from ideal geometry into the fitted mapping. In the present work, the calibrated relationship is repre-sented by a smooth fitted mapping so that local sensitivities can be evaluated reliably. In the simplest case, the phase-to-depth relationship can be modeled as locally affine, 
+
+z(u, v ) = A Φ( u, v ) + B(u, v ), (4) where A is approximately constant over the field and B(u, v )
+
+varies slowly with image position. To account for weak 3(a) System setup & repeated planar measurements (b) Differentiable phase-to-3D mapping (c) Per-point covariance for G-ICP             
+
+> Fixed acquisition settings (approximately constant SNR)
+> Camera Projector vary z slight tilt 1) Repeated captures Phase precision 2) Calibration pairs
+> Phase/depth samples Fit mapping Smooth calibrated fit Differentiable mapping
+> Measurement-space Jacobian Local reconstruction Jacobian
+> Phase variance from repeated captures Rank-1 phase term
+> Dominant axis ≈ viewing ray
+> Effective full-rank covariance
+> Phase term + Lateral completion Sensor-informed full-rank covariance
+> Use in G-ICP
+> σφ(u, v )
+> · · ·
+> ( ¯ Φ, z ref )
+> Φ1Φ2ΦNΦ
+> zref
+
+X = h(u, v, Φ)                 
+
+> Jm=∂h ∂(u, v, Φ)
+> vu
+> Jm= [ jujvjφ]
+> ju=∂X
+> ∂u
+> jv=∂X
+> ∂v
+> jφ=∂X
+> ∂¯Φ
+> σ2
+> φ(u, v )
+> zuv
+
+ΣX = JmΣmJT    
+
+> m
+> (Σ p+RΣqRT)−1
+
+Fig. 1. Overview of the proposed sensor-informed covariance pipeline for structured-light reconstruction. (a) Phase precision and phase–depth calibration data are obtained from repeated planar measurements under an approximately constant-SNR operating condition. (b) A smooth calibrated mapping provides local reconstruction sensitivities. (c) Phase uncertainty is propagated from a rank-1 phase-induced covariance to an effective full-rank per-point covariance, which is subsequently characterized and evaluated in downstream G-ICP registration. 
+
+departures from this behavior caused by distortion or non-ideal geometry, a weakly projective form can also be used, 
+
+z(u, v ) = A Φ( u, v ) + B(u, v )1 + ρ C Φ( u, v ) + D(u, v ) , (5) where A and C are scalar coefficients, B(u, v ) and D(u, v ) are slowly varying functions of pixel position, and ρ is chosen so that the denominator remains close to unity over the calibrated range. The depth value is then converted to a 3D point through a calibrated phase-to-3D mapping, 
+
+X =
+
+
+
+xyz
+
+ = h(u, v, Φ) . (6) Equation (6) is written in this general form to accommodate either an analytic camera model or a smooth calibrated phase-to-3D mapping. This distinction matters because the covari-ance model in Section III relies on local differentiation of the calibrated mapping. 
+
+C. Coordinate system and measurement variables 
+
+All reconstructed 3D points are expressed in the reference camera coordinate frame C. The image coordinates (u, v ) are defined on the undistorted reference-camera pixel grid, and the depth variable z denotes the z-coordinate in frame C. Under this convention, the reconstruction mapping h(u, v, Φ) returns 3D coordinates in metric units. For later uncertainty propagation, we use the local measure-ment state m = [ u, v, Φ] ⊤, from which the reconstructed point is obtained through h. Uncertainty in these variables is propagated through the local Jacobian of the calibration mapping in Section III. 
+
+D. Probabilistic registration with G-ICP 
+
+To assess the downstream utility of the proposed covariance field, we use the generalized iterative closest point (G-ICP) framework for rigid point-cloud registration [6]. For a cor-respondence between target point pi and transformed source point Rq π(i) +t, the objective can be written as a Mahalanobis-weighted residual of the form 
+
+E(R, t ) = X
+
+i
+
+r⊤
+
+i C−1
+
+i ri, (7) 
+
+ri = pi − (Rq π(i) + t), (8) 
+
+Ci = Σ pi + RΣqπ(i) R⊤. (9) Conventional G-ICP commonly derives per-point covari-ances from local surface neighborhoods so that they encode local geometric structure [6]. This geometry-derived construc-tion is used here as a registration baseline rather than as an estimate of the same quantity as the proposed sensor-informed covariance. Because the Mahalanobis objective requires anumerically invertible covariance, the downstream application also motivates the effective full-rank covariance developed in Section III. 4
+
+III. S ENSOR -INFORMED PER -P OINT COVARIANCE 
+
+FORMULATION 
+
+Section II introduced the ingredients used by the proposed uncertainty model: measured phase precision, a calibrated phase-to-depth relationship, and a differentiable phase-to-3D mapping. This section uses those ingredients to construct a per-point 3 × 3 covariance field for structured-light reconstruction in the reference camera coordinate frame C. The formulation proceeds in three steps: phase precision is related to depth uncertainty through the calibrated phase-to-depth mapping in Eq. (3), the resulting phase-induced uncertainty is propagated to 3D under a fixed-pixel model, and an effective full-rank covariance is formed for practical use in probabilistic regis-tration. 
+
+A. Covariance construction framework 
+
+Using the calibrated phase-to-depth mapping in Eq. (3) and the calibrated phase-to-3D mapping in Eq. (6), the reconstruc-tion model is written in terms of a scalar phase-to-depth trans-fer and a local phase-to-3D mapping. Here, f (Φ; u, v ) denotes the calibrated phase-to-depth transfer at camera pixel (u, v ),whereas h(u, v, Φ) denotes the corresponding local phase-to-3D reconstruction map used for covariance propagation. Depending on the implementation, h may be available either directly or through the composition of the calibrated phase-to-depth mapping with a depth-to-3D reconstruction model. We distinguish two covariance quantities. The first is the 
+
+phase-induced covariance , obtained by propagating phase uncertainty while holding (u, v ) fixed. This is the physically primary covariance in the present formulation because it captures the uncertainty anisotropy generated directly by phase measurement and local reconstruction sensitivity. The second is the effective full-rank covariance used in registration. It is obtained by propagating uncertainty in the local measurement vector m = [u, v, Φ] ⊤ through the calibrated mapping h. This completion preserves the dominant phase-driven anisotropy while introducing finite transverse uncertainty for downstream probabilistic methods that require a nonsingular per-point covariance. 
+
+B. Depth uncertainty from measured phase precision 
+
+We first relate phase precision to depth uncertainty using the calibrated phase-to-depth mapping z = f (Φ; u, v ) introduced in Section II-B. At fixed (u, v ), first-order propagation gives 
+
+δz ≈ ∂f ∂Φ δΦ,σ2 
+
+> z
+
+(u, v ) ≈
+
+ ∂f ∂Φ
+
+2
+
+σ2Φ(u, v ).
+
+(10) For the affine model in Eq. (4), ∂f /∂ Φ = A, and therefore 
+
+σz = |A|σΦ. For the weakly projective model in Eq. (5), the local sensitivity is 
+
+∂f ∂Φ = A (1 + ρ(CΦ + D)) − (AΦ + B)ρC 
+
+(1 + ρ(CΦ + D)) 2 , (11) where the spatially varying terms are evaluated at the corre-sponding image position. Thus, the propagated depth uncertainty is determined by two physically meaningful quantities: the measured phase variance σ2Φ(u, v ) and the local phase-to-depth reconstruction sensitivity ∂f /∂ Φ. Spatial variation in σ2 
+
+> z
+
+(u, v ) therefore reflects variation in phase precision, calibrated reconstruction sensitivity, or both, rather than local surface-neighborhood regularization [4], [5]. 
+
+C. Phase-induced 3D covariance under fixed-pixel recon-struction 
+
+We next propagate phase uncertainty to 3D while treating the image coordinates (u, v ) as fixed. The local sensitivity of the reconstructed point to phase is 
+
+JΦ(u, v, Φ) = ∂h ∂Φ = ∂X ∂z ∂z ∂Φ , (12) where the final equality applies when the reconstruction is viewed as the composition of the phase-depth mapping and a depth-to-3D reconstruction model. Using the first-order propagation, the phase-induced 3D covariance is 
+
+Σ(Φ)  
+
+> X
+
+(u, v, Φ) ≈ JΦ(u, v, Φ) σ2Φ(u, v ) JΦ(u, v, Φ) ⊤. (13) This covariance captures the anisotropy induced directly by the phase measurement process. Because a scalar phase perturbation produces a one-dimensional perturbation in 3D under this fixed-pixel model, Σ(Φ)  
+
+> X
+
+is rank-1. In a pinhole-like reconstruction geometry, the dominant direction is ap-proximately aligned with the local viewing ray, producing the characteristic axial-lateral imbalance of structured-light measurement. 
+
+D. Effective full-rank covariance from measurement-space propagation 
+
+For downstream probabilistic methods that require a non-singular per-point covariance, we augment the phase-induced model by propagating uncertainty in the local measurement state m = [ u, v, Φ] ⊤. Its covariance is modeled as 
+
+Σm(u, v ) = 
+
+
+
+σ2 
+
+> u
+
+0 00 σ2 
+
+> v
+
+00 0 σ2Φ(u, v )
+
+ , (14) where σ2Φ(u, v ) is measured from repeated phase observations and σu, σv are global effective image-space perturbation scales for transverse uncertainty contributions that are not represented by phase perturbation alone, including finite sampling, interpo-lation, and residual calibration effects. These scales are distinct from the numerical step sizes used to evaluate the Jacobian. They are estimated once from pooled repeated-plane 3D mea-surements by fitting the unexplained transverse repeatability after accounting for the phase-driven rank-1 contribution. The resulting fitted values are nearly equal, indicating that the effective lateral perturbation scale is approximately isotropic in the image plane under the selected operating condition. The Jacobian of the calibrated mapping with respect to the measurement vector is 
+
+Jm(u, v, Φ) = ∂h ∂(u, v, Φ) =  ∂h ∂u ∂h ∂v ∂h ∂Φ
+
+ ∈ R3×3. (15) 5
+
+When an analytic form is not available, the Jacobian is evaluated numerically by central differences, 
+
+∂h ∂u ≈ h(u + ∆ u, v, Φ) − h(u − ∆u, v, Φ) 2∆ u
+
+,∂h ∂v ≈ h(u, v + ∆ v , Φ) − h(u, v − ∆v , Φ) 2∆ v
+
+,∂h ∂Φ ≈ h(u, v, Φ + ∆ Φ) − h(u, v, Φ − ∆Φ)2∆ Φ
+
+.
+
+(16) The effective full-rank covariance is written as 
+
+ΣX (u, v, Φ) ≈ Jm(u, v, Φ) Σ m(u, v ) Jm(u, v, Φ) ⊤. (17) Retaining only the phase term in Σm recovers the phase-induced covariance in Eq. (13). With nonzero σu and σv , the additional image-space terms provide the transverse comple-tion required for a practical full-rank covariance, while the dominant scale and direction are still governed by the phase-propagation branch through ∂h/∂ Φ and σ2Φ(u, v ).
+
+E. SPD regularization and practical construction 
+
+The covariance matrix in Eq. (17) is symmetric by con-struction, but small eigenvalues may arise in practice when the phase-induced anisotropy is dominant or when local numerical sensitivities are nearly degenerate. For stable inversion, we apply the eigenvalue floor 
+
+ΣX = QΛQ⊤,
+
+Σreg  
+
+> X
+
+= QeΛQ⊤, eλj = max( λj , ϵ ). (18) This regularization is introduced for numerical stability rather than physical modeling, and does not alter the intended physical interpretation of the covariance for a sufficiently small 
+
+ϵ compared to the measured eigenvalues. The resulting regu-larized field is used in the subsequent experimental analysis. IV. E XPERIMENTAL PROTOCOL AND IMPLEMENTATION 
+
+This section summarizes the procedures used to measure phase precision, fit and validate the phase-to-depth mapping, construct the proposed covariance field, and evaluate it in uncertainty-aware registration. Implementation details that do not require separate figures or tables are reported inline. 
+
+A. Coordinate conventions, units, and region of interest 
+
+All reconstructed 3D points and covariances are expressed in the reference camera coordinate frame C and reported in millimeters. The image coordinates (u, v ) are defined on the undistorted reference-camera grid at resolution 640 × 480 .Unless otherwise stated, depth refers to the z-coordinate in frame C.All phase-variance, mapping-residual, and covariance anal-yses are restricted to a valid ROI defined by thresholding fringe modulation and excluding saturated or otherwise invalid pixels. In the present experiments, the modulation threshold was fixed at 0.05. The same ROI definition is used throughout unless otherwise noted. 
+
+B. Hardware and imaging configuration 
+
+The structured-light system consists of a monochrome camera (FLIR GS3-U3-32S4M, 2448 × 2048 pixels), and a digital light processing (DLP) projector (Texas Instruments LightCrafter4500, 912 × 1140 pixels). To reduce radial dis-tortion effects, the ROI was limited to the central 640 × 480 
+
+pixels as noted. The reference camera defines the coordinate frame C and indexes the absolute phase map Φ( u, v ).The nominal working distance was d = 300 mm, and the calibrated depth range used in this study was 240–340 mm. Unless otherwise stated, all phase-variance and phase-to-depth experiments were conducted on a planar homogeneous target or calibration board placed at multiple depths spanning this range. The repeated-plane dataset comprised 10 depth posi-tions, 7 tilt configurations, and 20 repetitions per condition. To realize the approximately constant-SNR operating condi-tion used throughout the paper, exposure, projected brightness, optical aperture, and target material were held fixed across repeated captures. All repeated-plane data were acquired in a single session under controlled illumination. These settings were chosen so that fringe modulation remained approximately stable within each repetition set and over the usable depth range. 
+
+C. Camera calibration and undistortion quality 
+
+The reference camera and projector were calibrated using a pinhole model with planar-target calibration based on an asymmetric circle grid with 147 feature points. A total of 20 calibration images were acquired over the usable field of view and working depth range. Calibration quality was evaluated by reprojection error on the detected target points. The resulting reference-camera reprojection residuals were 0.043 px mean RMSE, 0.038 px median, and 0.016 px interquartile range, indicating that the camera calibration was sufficiently accurate for the subsequent undistortion, phase processing, and reconstruction steps. All subsequent phase processing and reconstruction were performed on the undis-torted reference-camera grid. 
+
+D. Acquisition of phase-to-depth calibration data 
+
+To estimate the calibrated phase-to-depth mapping z =
+
+f (Φ; u, v ), depth labels are required on the undistorted reference-camera grid. In this study, these labels are obtained from planar measurements acquired at multiple depths across the calibrated reconstruction range. For each depth position, a planar target was measured and the corresponding absolute phase map Φ( u, v ) was reconstructed on the reference-camera grid. The resulting depth label field is denoted zref (u, v ) and paired with the measured phase to form calibration samples 
+
+(Φ( u, v ), z ref (u, v )) . Validation was performed using five held-out plane captures not included in fitting. 
+
+E. Estimation and validation of the phase-to-depth mapping 
+
+Using the calibration pairs (Φ( u, v ), z ref (u, v )) , we estimate the fitted phase-to-depth mapping described in Section II-B. The fitting model is weakly projective, with globally shared 6                    
+
+> TABLE I RESIDUAL ERROR ezOF THE FITTED PHASE -TO -DEPTH MAPPING USING A MAXIMUM BOUND OF 2μm. A LL UNITS ARE μm.Dataset RMSE Median (IQR) Max |∇ ez|Max |ez|.Training 0.1059 0.0668 (0.1527) 0.2343 0.9035 Held-out 0.1084 0.0705 (0.1560) 0.2023 0.8927
+
+phase coefficients and smooth spatial terms in the image coor-dinates. Its parameters are estimated by nonlinear optimization initialized from a least-squares solution and regularized to enforce smooth, low-amplitude residual structure. During op-timization, a hard bound of 2 μm is imposed on the correction term, although no pixels reach this bound at convergence. Additional details of the loss design and parameterization are given in [26]. To assess the adequacy of the fitted mapping for uncertainty propagation, we report residual depth error on both the fitting data and held-out planar validation data. On the held-out plane(s), the per-pixel residual is computed as ez (u, v ) =
+
+zest (u, v ) − zref (u, v ), and summarized by RMSE, median, and interquartile range over the valid ROI. 
+
+F. Phase-precision measurement protocol 
+
+Phase precision is measured from repeated acquisitions of a planar target under the fixed imaging settings described above. At each depth position, 20 PSP sequences are captured, and an absolute phase map Φr (u, v ) is reconstructed for each repetition r. Over valid pixels, the phase variance is estimated as 
+
+σ2Φ(u, v ) = Var r
+
+ Φr (u, v ). (19) The same repeated captures are also used to estimate the spatial fringe modulation Im(u, v ) and to verify that the constant-SNR operating condition is approximately satisfied over the ROI and depth range. The phase-precision analysis is repeated for 10 plane positions spanning the calibrated depth range. In addition to the repeated phase measurements used to estimate σ2Φ(u, v ), the repeated-plane acquisitions are also used to estimate the global effective image-space perturbation scales σu and σv for the full-rank covariance model. This estimation is performed once over all repeated-plane datasets by fitting the residual transverse 3D repeatability, after sub-tracting the phase-driven contribution predicted by the rank-1 covariance branch. The resulting values are then held fixed for all covariance-field computations and downstream registration experiments. 
+
+G. Covariance construction settings 
+
+The proposed sensor-informed covariance was computed as described in Section III. Using the pooled repeated-plane datasets, the global effective image-space perturbation scales were estimated as σu = 0 .0193 px and σv = 0 .0193 px. The two values are nearly identical, indicating no measurable directional imbalance in the effective lateral perturbation scale under the selected operating condition. These values are also close to the independently derived target-floor estimate, and are of the same order as conventional subpixel error scales encountered in calibration and interpolation, although they do not represent the same quantity as camera-calibration reprojection RMSE. Numerical Jacobians were evaluated by central differences using ∆u = 0 .1 px, ∆v = 0 .1 px, and ∆Φ = 10 −3 in phase units. To ensure stable inversion in Mahalanobis-weighted registration, a small SPD floor of ϵ = 10 −10 was applied to the covariance eigenvalues. Sensitivity to these settings is assessed in the covariance characterization results. 
+
+H. Registration dataset, G-ICP configuration, and evaluation protocol 
+
+To evaluate the proposed sensor-informed covariance in probabilistic registration, we acquired a sequence of structured-light scans of a rigid statue with curved surfaces, local geometric detail, and moderate self-occlusion under the same imaging settings used in the repeated-plane experiments. Pairwise registrations were evaluated between adjacent views, with viewpoint spacing chosen so that neighboring scans retained approximately 85% overlap. The acquisition protocol used fixed camera locations established by physical markers, yielding 14 source–target scan pairs. Initialization was provided by coarse alignment from the nominal acquisition geometry. The resulting registration exper-iment is intended as a downstream comparison of covariance usefulness under a fixed registration protocol rather than as a direct validation of covariance accuracy in isolation. Rigid registration was performed using the G-ICP imple-mentation in the Point Cloud Library (PCL) in C++. All covariance models used the same point-cloud preprocessing, correspondence search, and termination criteria. Unless other-wise stated, the point-clouds were voxel-downsampled with a voxel size of 0.1 mm to approximately 2×10 4 points per scan, correspondences were rejected above a distance threshold of 0.1 mm, and optimization terminated after 200 iterations or when the update fell below 10 −4 mm. For the geometry-derived baseline, local neighborhood PCA was computed with 
+
+k = 20 neighbors. Three covariance models were compared: 1) Proposed sensor-informed covariance from Section III, 2) Constant isotropic covariance σ2I with σ = 0 .01 ,3) Geometry-derived covariance estimated from local neighborhood PCA with k = 20 neighbors. We report translation RMSE, rotation RMSE, and the median and IQR of both errors. All covariance models use the same initialization and registration parameters; only the covariance assigned to each point is changed. For compact comparison within a single pose-error table, both translation and rotation errors are reported in millimeters. Rotational error is converted to a translation-equivalent displacement using the nominal working-distance scale of 300 mm. This conversion is used only for reporting convenience and does not imply that the translation and rotation components are combined into a single 6-DoF pose metric. 7
+
+V. R ESULTS AND EVALUATION 
+
+This section evaluates the proposed covariance field in four steps: phase precision under the selected operating condition, adequacy of the fitted phase-to-depth mapping for uncertainty propagation, structure of the resulting covariance field, and downstream performance in rigid registration. 
+
+A. Approximately Constant-SNR Verification and Phase Vari-ance 
+
+We first verify that the imaging condition used for phase-precision measurement is consistent with the intended approx-imately constant-SNR operating condition. Figure 2(a) shows a representative fringe-modulation map Im(u, v ) within the valid ROI, while Fig. 2(b) shows the corresponding map of the measured phase standard deviation σΦ(u, v ). The within-ROI distribution of σΦ(u, v ) is summarized by the histogram in Fig. 2(c), and the depth-wise behavior of the median and interquartile range is shown in Fig. 2(d). Across the ten sampled depth positions, the median phase standard deviation remained between 0.0138 and 0.0161 rad, with interquartile ranges between 0.0132 and 0.0197 rad. The valid-ROI fraction remained above 99.99% throughout the calibrated depth range. Although the fringe modulation is not perfectly uniform over the image because of projector geometry, surface reflectance, and ambient illumination, its spatial pattern remains stable under fixed acquisition settings. More importantly, the measured phase precision remains low and varies only modestly across the valid ROI and over the tested depth range. Together, these results support the use of an approximately constant-SNR operating condition for the present first-order uncertainty analysis. The spatial pattern of the measured phase standard deviation also broadly follows the modulation pattern in Fig. 2(a) and (b), which is consistent with the expected influence of fringe modulation on phase precision under fixed acquisition settings. This observation is used here only as an empirical consistency check for the controlled operating condition; the subsequent covariance model relies on the measured phase variance itself rather than on modulation as a surrogate quantity. 
+
+B. Phase-to-depth mapping residuals and held-out validation 
+
+We next evaluate whether the fitted phase-to-depth mapping is sufficiently accurate to support uncertainty propagation. The corresponding quantitative summary is reported in Table I. Held-out validation is essential here, because low residual error on planes excluded from fitting supports the use of the calibrated mapping as the transfer function in the covariance model over the valid ROI. In addition to residual magnitude, Table I also reports the maximum residual-gradient magnitude. This is included to check whether omitted residual-gradient terms could mate-rially affect the local sensitivity used in uncertainty propa-gation. In the present formulation, uncertainty propagation is performed through the fitted smooth phase-to-depth mapping, whereas residual fitting error is treated as a modeling error term rather than as part of the nominal transfer function. The                      
+
+> TABLE II SUMMARY STATISTICS OF THE COVARIANCE FIELD OVER THE VALID ROI. EIGENVALUES ARE REPORTED IN MM 2,AND ANGULAR DEVIATION IS REPORTED IN DEGREES .Quantity Mean Median IQR Largest eigenvalue λ10.0137 0.0113 0.0091 Smallest eigenvalue λ35.72e-5 5.51e-5 3.55e-5 Anisotropy ratio λ1/λ 3383.0 205.5 311.3 Angle to local viewing ray 0.90 0.70 0.80
+
+reported residual magnitude and spatial smoothness indicate that this modeling error remains small relative to the propa-gated measurement scale, so it is neglected in the first-order Jacobian model. 
+
+C. Covariance field characterization 
+
+We next evaluate whether the proposed covariance field exhibits the expected sensor-informed structure. Figure 3shows the spatial distribution of three representative covari-ance summaries: the largest eigenvalue, the anisotropy ratio, and the angular deviation between the dominant eigenvec-tor and the local viewing direction. Figure 4 provides two complementary consistency checks: agreement between scalar depth standard deviation and the dominant standard deviation of the phase-induced rank-1 covariance, and the relationship between anisotropy and angle to the viewing ray. It also shows one representative covariance ellipsoid together with the local viewing ray and scalar uncertainty comparisons. The quantitative summary of the covariance field is reported in Table II. The dominant eigenvalue remains substantially larger than the smallest eigenvalue throughout the valid ROI, confirming that the proposed covariance field is strongly anisotropic. At the same time, the angle between the dominant eigenvector and the local viewing ray remains small, indicating that the principal covariance direction stays close to the expected reconstruction direction. Taken together, the spatial maps, the summary statistics, and the companion consistency checks support three key observations. First, the dominant covariance scale remains consistent with the scalar depth uncertainty predicted from phase propagation, indicating that the rank-1 branch preserves the physically meaningful range scale. Second, the covari-ance field remains strongly anisotropic over the valid ROI. Third, the dominant axis remains closely aligned with the local viewing direction, showing that the effective full-rank completion preserves the sensor-informed ray-like structure. These results therefore support the internal consistency of the proposed covariance construction. 
+
+D. Registration accuracy comparison 
+
+Finally, Table III summarizes G-ICP registration accuracy over the 14 source–target pairs. The constant isotropic covari-ance produces the largest translation and rotation errors, while the conventional geometry-derived covariance gives the lowest errors on the present dataset. The proposed sensor-informed covariance lies between these baselines and improves over the isotropic model in both RMSE and median error. The implications of this difference are discussed in Section VI. 8(a) Modulation ratio map, ;(u,v) 
+
+100 200 300 400 500 600 
+
+u (pixel) 
+
+100 200 300 400 
+
+> v (pixel)
+
+0.75 0.8 0.85 0.9 0.95 
+
+> Modulation ratio
+
+(b) Phase precision map, <)(u,v) 
+
+100 200 300 400 500 600 
+
+u (pixel) 
+
+100 200 300 400 
+
+> v (pixel)
+
+0.01 0.015 0.02 0.025 0.03 
+
+> <) (rad)
+
+0.01 0.02 0.03 0.04 0.05 
+
+<)(u,v) (rad) 
+
+020 40 60 80 100 
+
+> Probability density
+
+(c) Distribution of <)(u,v) 
+
+Median = 0.01606 rad IQR = [0.01324, 0.01968] rad 2 4 6 8 10 
+
+Depth index 
+
+0.01 0.012 0.014 0.016 0.018 0.02 
+
+> Median  <) (rad)
+
+(d) Depth-wise variation of median <)                         
+
+> Fig. 2. Verification of the approximately constant-SNR operating condition and measured phase precision over the valid ROI and calibrated depth range. (a) Representative fringe-modulation map Im(u, v )at a reference depth. (b) Corresponding map of the measured phase standard deviation σΦ(u, v ). (c) Histogram of σΦ(u, v )over the valid ROI, showing the within-ROI distribution of phase precision. (d) Depth-wise median and interquartile range of σΦ(u, v )
+> over the sampled depth positions. The figure shows that, although modulation is not perfectly uniform over the image, the measured phase precision remains sufficiently stable across the ROI and over depth to support the approximately constant-SNR operating condition used in the covariance model. TABLE III RIGID REGISTRATION RESULTS FOR G-ICP UNDER DIFFERENT COVARIANCE MODELS .Model T-RMSE T-Med. (IQR) R-RMSE R-Med. (IQR) Isotropic 0.7176 0.2061 (0.2132) 1.1340 1.257 (0.3021) Geometric 0.1097 0.0887 (0.1023) 0.3516 0.3023 (0.1061) Proposed 0.2135 0.1441 (0.1535) 0.4216 0.4051 (0.1857)
+
+VI. D ISCUSSION 
+
+The experiments support the proposed covariance model at two complementary levels. First, the phase-driven component is grounded directly in repeated phase measurements and the calibrated smooth phase-to-depth mapping. Phase precision remains stable under the selected operating condition, the fitted mapping exhibits low held-out residual error, and the dominant standard deviation of the rank-1 phase-induced covariance agrees with the scalar depth uncertainty predicted from phase propagation. Together with the observed ray alignment, these results support the physical interpretation of the phase-induced component as the dominant uncertainty direction of the present structured-light system. Second, the effective full-rank covariance extends this phase-induced model with global image-space perturbation scales σu and σv . They should be interpreted as effective lateral scales rather than independently identified physical noise sources. The diagonal form of Σm likewise constitutes a first-order approximation in which cross-correlations among 
+
+u, v, and Φ are neglected. The present experiments establish the internal consistency and practical plausibility of the resulting covariance field rather than a complete multivariate validation against independent 3D perturbation ground truth. Calibration-parameter uncertainty, undistortion uncertainty, phase-to-depth model uncertainty, and inter-pixel error correlation are not propagated explicitly, and the model is evaluated under the controlled imaging regime used to estimate its phase and lateral precision. Ex-tending this model to spatially varying operating conditions and explicitly propagating these additional uncertainty sources would provide a more complete error description. The G-ICP experiment provides a downstream comparison 9(a) Largest eigenvalue map 
+
+200 400 600 
+
+u (pixel) 
+
+100 200 300 400 
+
+> v (pixel)
+
+0.01 0.02 0.03 0.04 
+
+> 61 [mm 2]
+
+(b) Anisotropy ratio map 
+
+200 400 600 
+
+u (pixel) 
+
+100 200 300 400 
+
+> v (pixel)
+
+10 2.0 
+
+10 2.5 
+
+10 3.0 
+
+> log 10 (61 / 63)
+
+(c) Angular deviation map 
+
+200 400 600 
+
+u (pixel) 
+
+100 200 300 400 
+
+> v (pixel)
+
+123    
+
+> Angle to viewing ray [deg]
+> Fig. 3. Spatial characterization of the proposed covariance field over the valid ROI. (a) Largest eigenvalue map λ1(u, v ), showing the dominant uncertainty scale. (b) Anisotropy ratio map λ1(u, v )/λ 3(u, v ), showing the degree of covariance elongation. (c) Angular deviation between the dominant eigenvector and the local viewing ray, showing how closely the principal covariance direction follows the expected reconstruction direction.
+> Fig. 4. Interpretation and consistency checks for the proposed covariance field. (a) Scalar depth standard deviation versus the dominant standard deviation of the phase-induced rank-1 covariance, showing agreement of the phase-driven depth scale. (b) Angle-to-ray versus anisotropy, showing a clear structural relationship across the valid ROI. (c) Representative covariance ellipsoid with principal axes, local viewing ray, and scalar uncertainty comparisons, illustrating how the full-rank covariance extends the phase-driven model while preserving its dominant ray-like structure.
+
+of covariance utility. The proposed covariance improves sub-stantially over a constant isotropic model but remains less accurate than the conventional geometry-derived covariance on the present dataset. This difference is consistent with the distinct information represented by the two constructions: the proposed covariance describes sensor-informed measurement uncertainty, whereas the geometry-derived covariance directly encodes local surface constraints that are particularly favor-able for G-ICP. Combining these complementary sources of information in a hybrid sensor-geometry model is a natural direction for future work. VII. C ONCLUSION 
+
+This paper presented a sensor-informed first-order method for constructing a per-point 3 × 3 covariance field for structured-light 3D reconstruction from measured phase preci-sion and calibrated phase-to-depth and phase-to-3D mappings. In contrast to conventional geometry-derived covariance mod-els, the proposed formulation does not depend on local surface neighborhoods and remains directly interpretable in terms of phase precision, reconstruction sensitivity, and imaging geom-etry. The formulation distinguishes a physically primary phase-induced covariance from a practical full-rank completion used for probabilistic registration. Under an approximately constant-SNR operating condition, the experiments showed that phase precision can be measured reproducibly over the working range and that the fitted phase-to-depth mapping is accurate enough for first-order propa-gation. The resulting covariance field exhibited the expected anisotropic structure of structured-light measurement, includ-ing strong axial–lateral imbalance, close alignment of the dominant axis with the local viewing direction, and consis-tency between the rank-1 phase-induced scale and scalar depth uncertainty. In G-ICP registration, the proposed covariance provided a clear improvement over a constant isotropic model, but remained less accurate than a geometry-derived covariance on the present dataset. This outcome is consistent with the different roles of the two models: the proposed covariance rep-resents sensor-informed measurement uncertainty, whereas the 10 
+
+geometry-derived covariance encodes local surface constraint that is especially favorable for G-ICP. Future work will extend the formulation to spatially varying SNR, explicit treatment of spatial correlation and model uncertainty, stronger covariance-validation experiments, and hybrid sensor–geometry covari-ance models. ACKNOWLEDGEMENTS 
+
+This research was supported by the Culture, Sports and Tourism R&D Program through the Korea Creative Content Agency grant funded by the Ministry of Culture, Sports and Tourism in 2024 (Project Name: Global Talent for Genera-tive AI Copyright Infringement and Copyright Theft, Project Number: RS-2024-00398413, Contribution Rate: 95%), Yonsei University Research Fund (Project Number: 2024-22-0483, Contribution Rate: 4%), and International Joint Research Grant by Yonsei Graduate School (Contribution Rate: 1%). REFERENCES [1] J. Geng, “Structured-light 3D surface imaging: A tutorial,” Adv. Opt. Photon. , vol. 3, no. 2, pp. 128–160, 2011. [2] J. Salvi, S. Fernandez, T. Pribanic, and X. Llado, “A state of the art in structured light patterns for surface profilometry,” Pattern Recognit. ,vol. 43, no. 8, pp. 2666–2680, 2010. [3] C. Zuo, S. Feng, L. Huang, T. Tao, W. Yin, and Q. Chen, “Phase shifting algorithms for fringe projection profilometry: A review,” Opt. Lasers Eng. , vol. 109, pp. 23–59, 2018. [4] J. Molimard and L. Navarro, “Uncertainty on fringe projection tech-nique: A Monte-Carlo-based approach,” Opt. Lasers Eng. , vol. 51, no. 7, pp. 840–847, 2013. [5] N. M. O’Dowd, A. J. Wachtor, and M. D. Todd, “A probability density function model describing height estimation uncertainty due to image pixel intensity noise in digital fringe projection measurements,” Opt. Lasers Eng. , vol. 138, p. 106422, 2021. [6] A. V. Segal, D. H¨ ahnel, and S. Thrun, “Generalized-ICP,” in Proc. Robotics: Science and Systems (RSS) , Seattle, WA, USA, 2009. [7] X. Huang, G. Mei, J. Zhang, and R. Abbas, “A comprehensive survey on point cloud registration,” arXiv preprint arXiv:2103.02690 , 2021. [8] S. Zhang, “Absolute phase retrieval methods for digital fringe projection profilometry: A review,” Opt. Lasers Eng. , vol. 107, pp. 28–37, 2018. [9] H. Liu, W.-H. Su, K. Reichard, and S. Yin, “Calibration-based phase-shifting projected fringe profilometry for accurate absolute 3D surface profile measurement,” Opt. Commun. , vol. 216, no. 1–3, pp. 65–80, 2003. [10] T. Huang, X. Fu, X. Li, C. Zhang, F. Duan, J. Jiang, and H. Tan, “Phase-to-depth calibration in fringe projection profilometry based on blockwise surface fitting,” Opt. Laser Technol. , vol. 122, p. 105844, 2020. [11] S. Feng, C. Zuo, L. Zhang, T. Tao, Y. Hu, W. Yin, J. Qian, and Q. Chen, “Calibration of fringe projection profilometry: A comparative review,” 
+
+Opt. Lasers Eng. , vol. 143, p. 106622, 2021. [12] S.-J. Son, Y. An, and J.-S. Hyun, “Quasi-calibration method for struc-tured light system with auxiliary camera,” Opt. Laser Technol. , vol. 179, p. 111369, 2024. [13] Joint Committee for Guides in Metrology (JCGM), “Evaluation of mea-surement data—guide to the expression of uncertainty in measurement,” BIPM, S` evres, France, Tech. Rep. JCGM 100:2008, 2008. [14] ——, “Evaluation of measurement data—supplement 1 to the GUM: Propagation of distributions using a Monte Carlo method,” BIPM, S` evres, France, Tech. Rep. JCGM 101:2008, 2008. [15] L. Hinz, S. Metzner, P. M¨ uller, R. Schulte, H.-B. Besserer, S. Wack-enrohr, C. Sauer, M. K¨ astner, T. Hausotte, S. H¨ ubner, F. N¨ urnberger, B. Schleich, B.-A. Behrens, S. Wartzack, M. Merklein, and E. Reith-meier, “Fringe projection profilometry in production metrology: A multi-scale comparison in sheet-bulk metal forming,” Sensors , vol. 21, no. 7, p. 2389, 2021. [16] A. Dickins, T. Widjanarko, D. Sims-Waterhouse, A. Thompson, S. Lawes, N. Senin, and R. Leach, “Multi-view fringe projection system for surface topography measurement during metal powder bed fusion,” 
+
+J. Opt. Soc. Am. A , vol. 37, no. 9, pp. B93–B105, 2020. [17] P. K¨ uhmstedt, C. Br¨ auer-Burchardt, and G. Notni, “Measurement ac-curacy of fringe projection depending on surface normal direction,” in 
+
+Proc. SPIE , vol. 7432, 2009, p. 743203. [18] B. Zhang, A. Davies, and C. Evans, “Validity of the instrument transfer function for fringe projection metrology,” Appl. Opt. , vol. 57, no. 11, p. 2795, 2018. [19] C. Zuo, L. Huang, M. Zhang, Q. Chen, and A. Asundi, “Temporal phase unwrapping algorithms for fringe projection profilometry: A comparative review,” Opt. Lasers Eng. , vol. 85, pp. 84–103, 2016. [20] S. Zhang, “Recent progresses on real-time 3d shape measurement using digital fringe projection techniques,” Optics and Lasers in Engineering ,vol. 48, no. 2, pp. 149–158, 2010, fringe Projection Techniques. [21] Y. Surrel, “Additive noise effect in digital phase detection,” Appl. Opt. ,vol. 36, no. 1, pp. 271–276, 1997. [22] J. Wang, “Evaluation method for noise-induced phase error in fringe projection profilometry,” Appl. Opt. , vol. 61, no. 21, pp. 6167–6176, 2022. [23] J. Wang and Y. Yang, “Triple N-step phase shift algorithm for phase error compensation in fringe projection profilometry,” IEEE Transactions on Instrumentation and Measurement , vol. 70, pp. 1–9, 2021. [24] X. Pei, J. Liu, Y. Yang, M. Ren, and L. Zhu, “Phase-to-coordinates calibration for fringe projection profilometry using gaussian process regression,” IEEE Transactions on Instrumentation and Measurement ,vol. 71, pp. 1–12, 2022. [25] B. Zhang, K. Jiang, and J. Lin, “A novel in situ calibration method based on virtual planes for fringe projection profilometry,” IEEE Transactions on Instrumentation and Measurement , vol. 73, pp. 1–8, 2024. [26] S. Tak and J.-S. Hyun, “Spatially Coupled Phase-to-Depth Calibration for Fringe Projection Profilometry,” 2026.

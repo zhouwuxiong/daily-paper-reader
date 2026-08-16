@@ -1,0 +1,322 @@
+Title: Learning Gaussian Structure: Intervention-Guided Density Control for Feed-Forward Driving Reconstruction
+
+URL Source: https://arxiv.org/pdf/2608.11077v1
+
+Published Time: Wed, 12 Aug 2026 01:19:39 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# Learning Gaussian Structure: Intervention-Guided Density Control for Feed-Forward Driving Reconstruction 
+
+## Hang Li 1, Jiahe Li 1, Meiying Gu 1, Jin Zheng 1,2,3 ∗, Lina Yu 4, Xiao Bai 1,2 
+
+> 1
+
+School of Computer Science and Engineering, Beihang University 
+
+> 2
+
+State Key Laboratory of Software Development Environment, Jiangxi Research Institute, Beihang University 
+
+> 3
+
+State Key Laboratory of Virtual Reality Technology and System, Beihang University 
+
+> 4
+
+AnnLab, Institute of Semiconductors, Chinese Academy of Sciences {lihang13, jinzheng}@buaa.edu.cn 
+
+Abstract 
+
+Feed-forward Gaussian reconstruction has recently emerged as an efficient approach for driving scene reconstruction. How-ever, prevailing LiDAR-based methods preserve the initial correspondence between observed points and Gaussian prim-itives, treating the initialized primitive set as the final repre-sentation. Unlike optimization-based 3DGS, these methods cannot accumulate gradients during training to determine how the scenes representation should be densified. Mean-while, the shared sparse backbone only fuses observations from different timestamps implicitly, without explicitly ag-gregating cross-time evidence for individual primitives. In this paper, we present Learning Gaussian Structure (LGS), a framework that enhances both Gaussian structure and prim-itive attributes. Our key observation is that changes in local gradient responses induced by a prune or add intervention re-veal whether the corresponding structural adjustment benefits reconstruction. Based on this observation, our Gaussian Den-sify Policy learns a Densify Map comprising Prune and Addi-tion Scores from controlled interventions, and directly adjusts the Gaussian structure during inference. We further develop a compact Cross-Time Point Query that explicitly retrieves and aggregates neighboring features from Gaussian primitives at other timestamps for reliable attribute prediction. Extensive experiments on the Waymo and PandaSet demonstrate that LGS consistently outperforms existing methods. 
+
+## 1 Introduction 
+
+Reconstructing dynamic driving scenes from LiDAR points captured at different timestamps and multi-camera images is fundamental to autonomous driving, simulation, and sen-sor synthesis. Neural radiance fields (Mildenhall et al. 2020) and 3D Gaussian Splatting (Kerbl et al. 2023) have achieved impressive rendering quality, but most approaches require costly optimization for each scene individually (Yang et al. 2024; Peng et al. 2024). Recently, feed-forward reconstruc-tion (Yang et al. 2025; Shi et al. 2025; Chi et al. 2026) has emerged as an efficient alternative that directly maps sensor observations to dynamic Gaussian scenes. Prevailing feed-forward methods initialize Gaussian prim-itives from pixels (Charatan et al. 2023; Chen et al. 2024; Szy-manowicz, Rupprecht, and Vedaldi 2024), points (Miao et al. 2025), voxels (Shi et al. 2025), or learned structures (Chi et al. 2026; Wang et al. 2026b). While significant progress 
+
+> ∗
+
+Corresponding author: Jin Zheng (jinzheng@buaa.edu.cn) 
+
+Figure 1: Learning Gaussian Structure for feed-forward driv-ing reconstruction. Existing methods preserve the initial mapping from LiDAR points to Gaussian primitives, which can leave insufficient density in regions requiring additional representation capacity. The Gaussian Densify Policy pre-dicts a Densify Map to restructure the Gaussian representa-tion and improve reconstruction quality. has been achieved, one critical limitation lies in the con-struction of the Gaussian representation. In LiDAR-based reconstruction, each LiDAR point initializes one Gaussian primitive, after which a 3D backbone predicts its attributes and motion. This design preserves metric geometry and en-ables efficient prediction. However, it also retains the initial mapping throughout inference and treats the initialized Gaus-sian set as the final representation. Continuous regression can update the position and other attributes of an existing prim-itive, but it cannot determine whether that primitive should be pruned or another primitive should be added. As illus-trated in Figure 1, the resulting sparse representation fails to recover fine scene structures and produces blurred details. Introducing densification into feed-forward reconstruction arXiv:2608.11077v1 [cs.CV] 11 Aug 2026 is non-trivial. Conventional 3DGS (Kerbl et al. 2023) pro-gressively prunes and densifies primitives according to gra-dients accumulated during optimization. In contrast, a feed-forward model directly predicts the Gaussian representation of an unseen scene and cannot rely on such an optimization procedure. Learning Gaussian structure adjustment therefore requires both a transferable densification mechanism and a training signal that indicates whether each primitive should be pruned or added. To obtain such a training signal, we ob-serve that controlled structural interventions reveal whether a Gaussian primitive benefits the local representation. Prun-ing or adding a primitive redistributes the rendering gradi-ents among its spatial neighbors. An operation that reduces the local gradient response indicates that the surrounding representation can better explain the observations. These responses therefore provide direct supervision for learning structural adjustment. A separate limitation concerns reli-able Gaussian attribute prediction from LiDAR observations at different timestamps. Although a shared sparse backbone allows these observations to interact in a common 3D feature space, their information is fused only implicitly through spa-tial convolution. It does not explicitly retrieve and aggregate cross-time features for individual Gaussian primitives. These two limitations motivate us to learn Gaussian structure ad-justment while explicitly incorporating cross-time informa-tion into attribute prediction. To address these limitations, we present Learning Gaus-sian Structure (LGS). For Gaussian structure adjustment, its 
+
+Gaussian Densify Policy predicts a Densify Map comprising a Prune Score and an Addition Score for each Gaussian prim-itive. During training, original, prune, and addition branches measure the local responses induced by the two operations and construct supervision for the policy. These intervention branches are discarded after training. For reliable Gaussian attribute prediction, we further introduce Cross-Time Point Query , which retrieves neighboring features from Gaussian primitives at other timestamps and fuses them with the cur-rent decoder feature. The fused features guide Gaussian at-tribute prediction and are also provided to the Gaussian Den-sify Policy. Together, the two components learn the compo-sition and attributes of the Gaussian representation. Exten-sive experiments on Waymo and PandaSet demonstrate that LGS consistently outperforms existing methods in driving scene reconstruction. Component analyses verify the indi-vidual and complementary effects of Gaussian density ad-justment and cross-time feature aggregation. In summary, our main contributions are as follows: 
+
+• We present LGS, which formulates feed-forward driving-scene reconstruction as learning both the discrete com-position of the Gaussian set and the continuous attributes of each primitive. 
+
+• We propose a Gaussian Densify Policy that distills local responses induced by prune and add interventions into a Densify Map for Gaussian structure adjustment. 
+
+• We develop a Cross-Time Point Query that explicitly ag-gregates neighboring features from Gaussian primitives at other timestamps, providing complementary evidence for reliable Gaussian attribute prediction. 
+
+## 2 Related Work 
+
+2.1 Feed-forward Gaussian reconstruction. 
+
+Early driving-scene reconstruction methods rely on per-scene optimization and represent large-scale outdoor environments through static-dynamic decomposition, geometric priors, or specialized scene models (Turki et al. 2023; Yang et al. 2023; Tonderski et al. 2024; Yang et al. 2024; Guo et al. 2023; Wu et al. 2023b). Although these methods achieve high-quality rendering, they require a separate optimization process for each scene. Feed-forward methods instead learn a generalizable mapping from sensor observations to scene representations. Early works predict pixel-aligned Gaussians from one or multiple images (Charatan et al. 2023; Chen et al. 2024; Szymanowicz, Rupprecht, and Vedaldi 2024). Recent driving-scene methods construct 3D-aligned repre-sentations: EVolSplat (Miao et al. 2025) initializes volume-based primitives, UniSplat builds a latent 3D scaffold, Point-Forward (Chi et al. 2026) places queries in world space, Ground4D (Wang et al. 2026b) adopts spatially grounded voxel queries, and Flux4D (Wang et al. 2026a) anchors Gaus-sians on LiDAR points aggregated across timestamps. Build-ing on this LiDAR-anchored formulation, we explicitly en-hance the composition of the initialized Gaussian set instead of only regressing its continuous states. 
+
+2.2 Gaussian densification and pruning. 
+
+The quality and efficiency of Gaussian Splatting depend on both primitive attributes and the composition of the primitive set. The original 3DGS (Kerbl et al. 2023) adapts an initial-ized point cloud along a scene-specific optimization through gradient-based densification. Since feed-forward models lack such optimization, recent approaches transfer density control into learned reconstruction. One line of work learns where additional capacity should be generated. Generative Densi-fication (Nam et al. 2025) upsamples backbone features as-sociated with selected coarse Gaussians and produces fine Gaussians in a single forward pass. F4Splat (Kim et al. 2026) predicts per-region densification scores over multi-scale Gaussian maps and allocates a controllable Gaussian budget according to spatial complexity and multi-view over-lap. Another line of work constructs the compact represen-tation. SparseSplat (Zhang et al. 2026) adapts entropy prob-abilistic sampling and predicts Gaussian attributes from lo-cal 3D neighborhoods. Complementarily, importance-based methods remove redundancy from an existing representation. RAP (Yang et al. 2026) infers per-primitive importance from intrinsic Gaussian attributes and neighborhood statistics, en-abling rendering-free feed-forward pruning. These approaches transfer density control through gener-ation, adaptive initialization, or importance-based removal. LGS instead treats LiDAR-derived Gaussians as a mutable candidate set and learns scene-dependent structural adjust-ments. Rather than using image entropy, a direct densifica-tion cue, or a generic importance objective, it supervises candidate-level interventions through changes in neighbor-ing gradient responses. The learned policy transfers these decisions to unseen clips without intervention rendering or per-scene optimization at inference. Figure 2: Overview of LGS. Given multi-camera images and LiDAR points captured at different timestamps, the sparse 3D backbone and Cross-Time Point Query produce enhanced point features, from which the Gaussian head iteratively refines primitive states. The Gaussian Densify Policy transforms these features into a Densify Map composed of Addition Scores and Prune Scores. The intervention branches supervise the two score components during training and are discarded at inference. 
+
+## 3 Method 
+
+3.1 Overview 
+
+Preliminaries. The overall architecture follows the feed-forward Gaussian reconstruction frameworks of EVolSplat and Flux4D (Miao et al. 2025; Wang et al. 2026a). Given a clip containing LiDAR points from T timestamps and syn-chronized images from C cameras, we aim to predict a dy-namic Gaussian representation of the observed scene. Us-ing the known sensor poses, we transform the LiDAR points captured at different timestamps into a shared coordinate sys-tem. Specifically, gaussian primitive i retains its acquisition timestamp ti and have the following attributes: 
+
+gi = [ xi, qi, si, α i, ci], (1) where x, q, s, α, and c denote the position, rotation, scale, opacity, and color, respectively. A sparse-convolution back-bone (Tang et al. 2022) takes the Gaussian attributes and timestamps as input and predicts an attribute residual ∆gi
+
+together with an initial velocity vi. To render the scene at time t, each Gaussian is translated from its acquisition time 
+
+ti according to the predicted velocity. The rendering loss is defined as: 
+
+Lrender = λ1L1 + λssim LSSIM + λdLdepth + λv Lvelocity .
+
+(2) Then, the backbone further updates both the Gaussian states and velocities for three iterations according to the render-ing loss. Static and dynamic regions are therefore learned through the predicted motion rather than specified by an in-put partition. They additionally model the image background with a separate static Gaussian branch. 
+
+Learning Gaussian Structure. Although this backbone pre-dicts complete Gaussian attributes and motion, the number and membership of the Gaussian set remain fixed by initial-ization, while observations from other timestamps interact only through generic convolution. Building on this formula-tion, LGS learns both the composition of Gaussian represen-tation and explicit cross-time evidence for each primitive. As illustrated in Figure 2, we introduce Gaussian Densify Pol-icy to adjust the primitive set and Cross-Time Point Query to retrieve informative features from other timestamps. 
+
+3.2 Gaussian Densify Policy 
+
+The rendering loss provides gradients for updating the at-tributes of existing Gaussian primitives, but it does not di-rectly indicate whether a primitive should be pruned or a new primitive should be added. Moreover, a pruned primitive is removed from the representation and can no longer receive gradients. To obtain direct supervision for these operations, we apply controlled prune and add interventions and mea-sure their effects on the rendering gradients of neighboring primitives. The resulting responses are used to supervise the Gaussian Densify Policy, as illustrated in Figure 3. 
+
+Gaussian interventions. At each training iteration, we sam-ple a subset of primitives with probability ρ and repeat this process for several rounds to improve coverage. Starting from the same predicted Gaussian set, we construct three branches. The original branch remains unchanged. The prune branch prunes the sampled primitives, while the addition branch adds a perturbed copy of each sampled primitive. All three branches use the same target views and rendering objec-tive. The representation network is frozen, so the prune and add operations are the only differences among the branches. These branches are used only to construct the training targets. 
+
+Local gradient response. Let B1, B2, and B3 denote the original, prune, and addition branches, respectively. For a Gaussian primitive i selected for intervention, j indexes its neighboring primitives and l indexes all Gaussian primitives in branch B. Their Gaussian states are denoted by gi, gj , and Figure 3: Intervention supervision for the Gaussian Den-sify Policy. For each sampled candidate, shown in red, the Add and Prune branches modify the primitive set relative to the Origin branch. The resulting changes in the gradients of nearby primitives are aggregated to construct the Addition target GT A and Prune target GT P .
+
+gl, respectively. We denote the rendering loss Lrender eval-uated for branch B and compute its gradients with respect to the Gaussian attributes. Since the gradients associated with different attributes may vary considerably in scale, we normalize the gradient of every attribute by its maximum absolute value across all Gaussian primitives. We then av-erage the normalized gradient magnitudes to obtain a scalar response: 
+
+rB 
+
+> j
+
+= 1
+
+D
+
+> D
+
+X
+
+> c=1
+
+(∇gj LB )c
+
+max l |(∇gl LB )c| + ϵ , (3) where D denotes the number of Gaussian attribute dimen-sions and ϵ ensures numerical stability. For the prune opera-tion on Gaussian primitive i, we find its K spatial neighbors that remain in the prune branch and compute: 
+
+∆prune  
+
+> i
+
+= X
+
+> j∈K(i)
+
+
+
+rB2 
+
+> j
+
+− rB1
+
+> j
+
+
+
+. (4) For the add operation, we measure the response change of the original neighboring primitives after a perturbed copy of primitive i is introduced in the addition branch: 
+
+∆add  
+
+> i
+
+= X
+
+> j∈K(i)
+
+
+
+rB3 
+
+> j
+
+− rB1
+
+> j
+
+
+
+. (5) The neighboring Gaussian primitives provide a consistent reference between the original and intervention branches. A negative ∆i indicates that operation reduces the gradi-ent response within the local neighborhood, while a positive value indicates the opposite effect. We apply a signed log-arithmic transform followed by z-score normalization and sigmoid mapping to obtain a supervision target yai ∈ [0 , 1] ,where a ∈ { prune , add }. A larger yai indicates that the cor-responding intervention is more beneficial. 
+
+Policy prediction and optimization. To predict the inter-vention targets in unseen scenes, we implement the densify policy with Point Transformer V3 (Wu et al. 2023a). Its input concatenates decoder feature f ′ 
+
+> i
+
+with normalized po-sition, Gaussian attributes, and voxel-density feature di. A shared encoder propagates spatial context among Gaussian primitives, and two prediction heads estimate the Prune and Addition Scores that form the Densify Map: 
+
+(pprune  
+
+> i
+
+, p add  
+
+> i
+
+) = σ (D(f ′ 
+
+> i
+
+, g i, d i)) , (6) where D denotes the shared spatial encoder and two pre-diction heads. We optimize the two scores over Gaussian primitives with valid targets using a confidence-weighted re-gression loss: 
+
+Ldensity = X
+
+> a∈{ prune ,add }
+
+P 
+
+> i
+
+wi(pi − yi)2
+
+P 
+
+> i
+
+wi + ϵ ,wi = (2 |yi − 0.5|)γ .
+
+(7) Given that yi ∈ [0 , 1] , the weight wi suppresses ambigu-ous targets near 0.5 and emphasizes confident intervention responses, while γ controls the weighting strength. 
+
+Feed-forward density adjustment. During inference, the intervention branches are discarded, and the Gaussian Den-sify Policy predicts the Prune and Addition Scores in a single forward pass. Given the thresholds θp and θa, we update the Gaussian set as: 
+
+G′ = {gi | pprune  
+
+> i
+
+≤ θp}∪ { Add( gi) | padd  
+
+> i
+
+> θ a, p prune  
+
+> i
+
+≤ θp}, (8) where Add( gi) denotes a perturbed copy of Gaussian prim-itive i. The first term contains the primitives retained after the prune operation, while the second adds new primitives selected by the add operation. When both scores exceed their thresholds, prune takes precedence over add. Based on the ablation study in Table 4, we set both θp and θa to 0.7 to balance reconstruction quality and the number of Gaussian primitives. This procedure adjusts the composition of the Gaussian representation in a feed-forward manner without intervention rendering at inference. 
+
+3.3 Cross-Time Point Query 
+
+The shared sparse backbone allows spatially adjacent Gaus-sian primitives to exchange information, but this implicit interaction does not ensure that each primitive exploits evi-dence from another timestamp. To address this limitation, we introduce Cross-Time Point Query, which explicitly retrieves local features from other timestamps. 
+
+Cross-time feature aggregation. Let fi, xi, and ti denote the decoder feature, position, and timestamp of Gaussian primitive i, respectively. For each primitive, we retrieve a lo-cal neighborhood from other timestamps. Specifically, N (i)t
+
+contains the K nearest Gaussian primitives to primitive i
+
+whose timestamps satisfy tj̸ = ti.We apply mean pooling to the retrieved features and fuse the resulting cross-time feature with the original decoder feature through a residual projection: 
+
+¯fi = 1
+
+|N (i)t|
+
+X 
+
+> j∈N (i)t
+
+fj , f ′ 
+
+> i
+
+= fi + Wproj [fi, ¯fi], (9) where ¯fi denotes the pooled cross-time feature, [·, ·] denotes feature concatenation, and Wproj is the fusion projection. Figure 4: Qualitative comparison of novel-view synthesis on Waymo. Compared with STORM (Yang et al. 2025) and UniS-plat (Shi et al. 2025), LGS reconstructs moving vehicles in the orange boxes with sharper boundaries and preserves finer static structures in the red boxes, reducing blur and structural artifacts. Full Image Dynamic Static Method PSNR ↑ SSIM ↑ LPIPS ↓ PSNR ↑ SSIM ↑ PSNR ↑ SSIM ↑                                                                
+
+> LGM (Tang et al. 2024) 17.49 0.47 0.33 17.79 0.49 15.37 0.39 PixelSplat (Charatan et al. 2023) 18.24 0.56 0.30 18.63 0.58 16.96 0.44 MVSplat (Chen et al. 2024) 19.00 0.57 0.28 19.29 0.58 17.35 0.47 L4GM (Ren et al. 2024) 17.63 0.54 0.31 18.58 0.56 16.78 0.43 DrivingRecon (Lu et al. 2024) 20.63 0.61 0.21 20.97 0.62 19.70 0.51 GaussianSTORM (Yang et al. 2025) 25.40 0.779 0.189 22.82 0.635 25.67 0.785 UniSplat (Shi et al. 2025) 26.28 0.818 0.150 24.37 0.711 26.83 0.825 LGS base (Ours) 23.40 0.712 0.207 21.07 0.614 23.64 0.743 LGS (Ours) 28.04 0.885 0.113 26.54 0.848 28.22 0.910
+
+Table 1: Quantitative comparison on the Waymo Dataset. LGS achieves the best rendering quality over the full image and both dynamic and static regions. Bests are in highlight. Mean pooling summarizes the retrieved neighborhood re-gardless of primitive order. We concatenate the resulting cross-time context with the decoder feature and apply a resid-ual projection, retaining the original representation while in-corporating information from other timestamps. The fused feature f ′ 
+
+> i
+
+is then used to predict the Gaussian residual, allow-ing cross-time evidence to guide Gaussian state prediction, and is also provided as input to the Gaussian Densify Policy. 
+
+3.4 Joint Training and Feed-Forward Inference 
+
+Jointly optimizing the backbone network, Cross-Time Point Query, and Gaussian Densify Policy from scratch can desta-bilize policy supervision as the intervention targets change with the predicted Gaussian states. We therefore adopt a three-stage training strategy. First, we train the backbone and Cross-Time Point Query using rendering supervision, with optional density perturbations to improve robustness to dif-ferent Gaussian layouts. Second, we freeze these modules and optimize the Gaussian Densify Policy module with the intervention targets. Finally, we freeze the policy module and fine-tune the backbone with the predicted prune and add operations. This strategy separates target construction from representation learning. The intervention branches are used only to construct policy targets and are discarded after train-ing. During inference, the backbone and Cross-Time Point Query predict the Gaussian states, after which the Gaus-sian Densify Policy produces the Densify Map containing the Prune and Addition Scores. Based on these scores, we apply the predicted prune and add operations before final refinement and rendering, without intervention rendering. 
+
+## 4 Experiments 
+
+4.1 Experimental Protocol 
+
+Waymo protocol. We conduct experiments on the Waymo Open Dataset (Sun et al. 2020) following the scene split and novel-view synthesis protocol of DrivingRecon (Lu et al. 2024). We use three front-facing cameras at a resolution of 
+
+256 × 512 , and three-frame input clips. Every tenth frame is held out from the input and rendered from its neighboring context frames. We report PSNR, SSIM, and LPIPS over the full image, together with PSNR and SSIM over dynamic and static regions. 
+
+PandaSet protocol. We additionally train and evaluate LGS on PandaSet (Xiao et al. 2021) following the scene split and evaluation protocol of Flux4D (Wang et al. 2026a). We use full-resolution images from the front camera. Each clip takes six frames as input, whose LiDAR observations are ag-gregated to initialize the Gaussian representation, while the held-out target frames provide rendering supervision dur-ing training and are used for evaluation. We report PSNR, SSIM, and depth mean absolute error (DMAE) over dynamic regions and full images. 
+
+Implementation details. The sparse convolution backbone uses a voxel size of 0.1 m, and Gaussian refinement is performed for three iterations. We set (λ1, λ ssim , λ d, λ v )
+
+to (0 .8, 0.2, 0.01 , 0.01) . At each of the three intervention rounds, we sample 20% of the Gaussian primitives initial-ized from LiDAR points. For each sampled primitive, we use 8 spatial neighbors to construct the intervention targets, while Cross-Time Point Query retrieves 8 neighboring prim-itives from other timestamps for feature aggregation. The add operation perturbs each copied position with zero-mean Dynamic Only Full Image Recon. Speed Method PSNR ↑ SSIM ↑ DMAE ↓ PSNR ↑ SSIM ↑ DMAE ↓ Time ↓                                                 
+
+> EmerNeRF (Yang et al. 2024) 17.79 0.411 6.09 22.80 0.624 4.24 100min DeSiRe-GS (Peng et al. 2024) 19.08 0.477 3.36 22.25 0.608 24.89 120min DepthSplat (Xu et al. 2025) 16.87 0.425 6.18 21.40 0.595 2.73 0.87s L4GM (Ren et al. 2024) 17.36 0.343 –19.38 0.465 –0.32s STORM (Yang et al. 2025) 17.65 0.367 5.24 20.79 0.508 4.80 0.08s
+> LGS base (Ours) 19.56 0.500 3.95 21.23 0.644 2.35 0.37s LGS (Ours) 22.43 0.678 2.06 25.03 0.762 1.52 1.92s
+
+Table 2: Quantitative comparison on PandaSet (Xiao et al. 2021) dataset. LGS achieves the best reconstruction quality over dynamic regions and full images. Bests are in highlight. 
+
+Figure 5: Qualitative comparison on PandaSet. Compared with STORM (Yang et al. 2025), LGS better preserves vehi-cle shapes and fine scene details while reducing blur in the highlighted regions. Red boxes mark challenging areas and their enlarged views. Gaussian noise of standard deviation 0.01 m. We set γ = 2 
+
+for confidence weighting. The Gaussian Densify Policy uses a Point Transformer V3 patch size of 128 , followed by four hidden blocks of width 32 in each prediction head. Follow-ing the three-stage strategy in Section 3.4, the three stages are trained for 20 ,000 , 15 ,000 , and 20 ,000 iterations, respec-tively, using 8 GPUs. All variants share the same outdoor background initialization based on LiDAR-aligned monocu-lar depth (Lin et al. 2025) and sampled sky points. 
+
+4.2 Main Results 
+
+Waymo Dataset. As reported in Table 1, LGS achieves the best results across all evaluation metrics on Waymo. Com-pared with UniSplat, LGS improves full-image PSNR from 26.28 dB to 28.04 dB and reduces LPIPS from 0.150 to 0.113. The improvements over both dynamic and static regions show that LGS benefits moving objects as well as the surrounding scene. As shown in Figure 4, LGS reconstructs moving vehi-cles with sharper boundaries and preserves finer structures. 
+
+PandaSet Dataset. On PandaSet, LGS also achieves the best results across all six quality metrics, as shown in Table 2. In particular, it improves dynamic-region PSNR from 17.65 dB to 22.43 dB and full-image PSNR from 21.40 dB to 25.03 dB, while substantially reducing the corresponding depth errors. Figure 5 shows that these improvements translate into better preserved vehicle shapes and finer scene details. LGS base 
+
+denotes the representation before iterative refinement. The final refinement further improves reconstruction quality, with GDP CTPQ PSNR ↑ SSIM ↑ LPIPS ↓ Gaussians (K) Params (M) Time (s/frame) 26.55 0.857 0.138 519.8 86.96 1.77                    
+
+> ✓27.68 0.878 0.119 584.2 95.65 1.82
+> ✓27.31 0.862 0.130 519.8 86.98 1.87
+> ✓✓28.04 0.885 0.113 584.2 95.67 1.90
+
+Table 3: Ablation and efficiency analysis of the Gaussian Densify Policy (GDP) and Cross-Time Point Query (CTPQ). 
+
+Figure 6: Effect of the Addition Scores predicted by the Gaussian Densify Policy. The scores locate regions with rich texture variations, including vehicle surfaces and lane mark-ings highlighted by the green boxes. The resulting density adjustment improves the reconstruction of fine details in the rendered results. an increase in reconstruction time from 0.37 s to 1.92 s. 
+
+4.3 Component Analysis 
+
+To evaluate the contribution of the Gaussian Densify Policy and Cross-Time Point Query, we conduct the 2 × 2 factorial ablation shown in Table 3. Adding the Gaussian Densify Policy improves PSNR from 26.55 dB to 27.68 dB and reduces LPIPS from 0.138 to 0.119. Meanwhile, the learned prune and add decisions adjust the Gaussian count from 519.8K to 584.2K, showing the bene-fit of restructuring the Gaussian representation. Cross-Time Point Query improves PSNR to 27.31 dB without changing the number of Gaussian primitives, indicating that explicitly retrieved cross-time evidence improves Gaussian state pre-diction rather than representation capacity. Combining both components achieves the best performance, with 28.04 dB PSNR, 0.885 SSIM, and 0.113 LPIPS, which verifies their complementary effects. GDP introduces 8.69M parameters and 0.05 s additional inference time per frame, while CTPQ adds only 0.02M parameters and 0.10 s per frame. The full model contains 95.67M parameters and runs at 1.90 s. 
+
+4.4 Gaussian Densify Policy Analysis 
+
+Densify Map visualization. We first visualize the scores pre-dicted by the Gaussian Densify Policy. As shown in Figure 6, the Addition Scores respond strongly to vehicle surfaces and lane markings. The corresponding rendered results recover clearer vehicle boundaries and lane details, indicating that the addition branch identifies regions that benefit from additional representation capacity. Figure 7 further compares the Addi-tion and Prune Scores. Although their supervision targets are Figure 7: Relation between the Addition and Prune Scores. Although their supervision targets are constructed separately, the two outputs exhibit spatially complementary responses. As highlighted by the green arrows, regions assigned high Addition Scores generally receive low Prune Scores, and vice versa, distinguishing Gaussian primitives that benefit from additional representation capacity from those more suitable for removal. Better visualized with zoom in.                                                                                   
+
+> θpθaPruned (%) Added (%) Gaussians (K) PSNR ↑SSIM ↑LPIPS ↓
+> Baseline OFF OFF 519.8 27.31 0.862 0.130 OFF 0.50 0.00 99.78 1038.5 27.83 0.871 0.120 OFF 0.60 0.00 83.61 954.4 28.03 0.885 0.114 OFF 0.70 0.00 14.91 597.3 28.09 0.888 0.110 OFF 0.80 0.00 6.21 552.1 27.72 0.873 0.123 0.50 OFF 7.71 0.00 479.7 26.94 0.846 0.144 0.60 OFF 4.34 0.00 497.2 27.20 0.857 0.135 0.70 OFF 2.25 0.00 508.1 27.29 0.861 0.131 0.80 OFF 0.31 0.00 518.2 27.31 0.862 0.131 Random 2.25 14.91 584.2 27.52 0.869 0.125 0.70 0.70 2.25 14.91 584.2 28.04 0.885 0.113
+
+Table 4: Analysis of pruning and addition thresholds. Ran-dom decisions use matched action rates and a comparable Gaussian count. We set both thresholds to 0.7 to balance re-construction quality and representation size. constructed independently, the two outputs exhibit spatially complementary responses without an explicit constraint be-tween them. Regions with high Addition Scores generally receive low Prune Scores, and vice versa. This behavior en-ables the policy to distinguish regions requiring additional capacity from primitives that are suitable for removal. 
+
+Density thresholds and Gaussian budget. We analyze the pruning and addition thresholds in Table 4. Addition achieves the best reconstruction quality at θa = 0 .7, while lower thresholds substantially increase the Gaussian count without further improvement. The prune branch behaves more con-servatively. Setting θp = 0 .7 removes 2.25% of the prim-itives with only a minor change in reconstruction quality. Notably, random actions improve PSNR from 27.31 dB to 27.52 dB over the baseline by increasing the Gaussian count from 519.8K to 584.8K. This result suggests that the fixed initialized Gaussian set provides insufficient representation capacity in some regions. With the same action rates and a comparable Gaussian count, the learned policy further im-proves PSNR to 28.04 dB , showing that the selected lo-cations are more important than representation size alone. Compared with addition alone at θa = 0 .7, the joint setting uses 13.1K fewer Gaussians with only a 0.05 dB decrease in PSNR. We therefore set both thresholds to 0.7 to balance reconstruction quality and representation size. 
+
+Figure 8: Effect of Cross-Time Point Query. Compared with the baseline on the left, CTPQ retrieves neighboring evidence from other timestamps and improves the reconstruction of moving vehicles and riders on the right. Red boxes highlight the preserved object shapes and reduced blur. 
+
+4.5 Cross-Time Point Query Analysis 
+
+As shown in Table 3, introducing Cross-Time Point Query improves PSNR from 26.55 dB to 27.31 dB and reduces LPIPS from 0.138 to 0.130 without changing the number of Gaussian primitives. When combined with the Gaussian Densify Policy, CTPQ further improves PSNR from 27.68 dB to 28.04 dB and LPIPS from 0.119 to 0.113. These consistent gains show that explicit cross-time retrieval complements both the shared spatial backbone and Gaussian density ad-justment. As shown in Figure 8, CTPQ better preserves the shapes of moving vehicles and riders while reducing blur in the highlighted regions. 
+
+## 5 Discussion and Limitations 
+
+Although LGS improves Gaussian set construction and state prediction, several limitations remain. The fixed density thresholds may not provide the optimal balance for every scene, while background construction still relies on LiDAR-aligned monocular depth and sampled sky points. Moreover, Euclidean cross-time retrieval may mix different physical structures for fast-moving objects and introduces additional search cost. Future work will explore scene-dependent den-sity adjustment, unified learnable background modeling, and more efficient motion-aware retrieval. 
+
+## 6 Conclusion 
+
+In this paper, we presented LGS, a feed-forward framework that learns both the composition of Gaussian representations and primitive attributes for driving scene reconstruction. Its Gaussian Densify Policy learns structural adjustment from local rendering gradient responses induced by prune and add interventions, while Cross-Time Point Query explicitly ag-gregates neighboring features from Gaussian primitives at other timestamps for reliable attribute prediction. Experi-ments on Waymo and PandaSet demonstrate consistent im-provements in reconstruction quality over existing methods for novel view synthesis, and component analyses verify the effectiveness and complementary roles of both designs. References 
+
+Charatan, D.; Li, S.; Tagliasacchi, A.; and Sitzmann, V. 2023. pixelsplat: 3d gaussian splats from image pairs for scalable generalizable 3d reconstruction. arXiv preprint arXiv:2312.12337 .Chen, Y.; Xu, H.; Zheng, C.; Zhuang, B.; Pollefeys, M.; Geiger, A.; Cham, T.-J.; and Cai, J. 2024. Mvsplat: Efficient 3d gaussian splatting from sparse multi-view images. In 
+
+European conference on computer vision , 370–386. Springer. Chi, C.; Wang, X.; Luo, H.; Tu, M.; Xu, G.; Zhang, Z.; Wang, B.; Chen, G.; Ye, H.; Peng, S.; et al. 2026. PointForward: Feedforward Driving Reconstruction through Point-Aligned Representations. arXiv preprint arXiv:2605.11594 .Guo, J.; Deng, N.; Li, X.; Bai, Y.; Shi, B.; Wang, C.; Ding, C.; Wang, D.; and Li, Y. 2023. Streetsurf: Extending multi-view implicit surface reconstruction to street views. arXiv preprint arXiv:2306.04988 .Kerbl, B.; Kopanas, G.; Leimkühler, T.; Drettakis, G.; et al. 2023. 3d gaussian splatting for real-time radiance field ren-dering. ACM Trans. Graph. , 42(4): 139–1. Kim, I.; Kim, C.; Bae, M.; Joo, M.; and Kim, H. J. 2026. F4Splat: Feed-Forward Predictive Densification for Feed-Forward 3D Gaussian Splatting. arXiv preprint arXiv:2603.21304 .Lin, H.; Chen, S.; Liew, J.; Chen, D. Y.; Li, Z.; Shi, G.; Feng, J.; and Kang, B. 2025. Depth anything 3: Recovering the vi-sual space from any views. arXiv preprint arXiv:2511.10647 .Lu, H.; Xu, T.; Zheng, W.; Zhang, Y.; Zhan, W.; Du, D.; Tomizuka, M.; Keutzer, K.; and Chen, Y. 2024. Drivin-gRecon: Large 4D Gaussian reconstruction model for au-tonomous driving. arXiv preprint arXiv:2412.09043 .Miao, S.; Huang, J.; Bai, D.; Yan, X.; Zhou, H.; Wang, Y.; Liu, B.; Geiger, A.; and Liao, Y. 2025. Evolsplat: Efficient volume-based gaussian splatting for urban view synthesis. In 
+
+Proceedings of the Computer Vision and Pattern Recognition Conference , 11286–11296. Mildenhall, B.; Srinivasan, P. P.; Tancik, M.; Barron, J. T.; Ramamoorthi, R.; and Ng, R. 2020. NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis. In 
+
+European Conference on Computer Vision , 405–421. Nam, S.; Sun, X.; Kang, G.; Lee, Y.; Oh, S.; and Park, E. 2025. Generative densification: Learning to densify gaus-sians for high-fidelity generalizable 3d reconstruction. In 
+
+Proceedings of the Computer Vision and Pattern Recogni-tion Conference , 26683–26693. Peng, C.; Zhang, C.; Wang, Y.; Xu, C.; Xie, Y.; Zheng, W.; Keutzer, K.; Tomizuka, M.; and Zhan, W. 2024. Desire-gs: 4d street gaussians for static-dynamic decomposition and sur-face reconstruction for urban driving scenes. arXiv preprint arXiv:2411.11921 .Ren, J.; Xie, K.; Mirzaei, A.; Liang, H.; Zeng, X.; Kreis, K.; Liu, Z.; Torralba, A.; Fidler, S.; Kim, S. W.; et al. 2024. L4gm: Large 4d gaussian reconstruction model. Advances in Neural Information Processing Systems , 37: 56828–56858. Shi, C.; Shi, S.; Lyu, X.; Liu, C.; Sheng, K.; Zhang, B.; and Jiang, L. 2025. UniSplat: Unified Spatio-Temporal Fusion via 3D Latent Scaffolds for Dynamic Driving Scene Recon-struction. arXiv preprint arXiv:2511.04595 .Sun, P.; Kretzschmar, H.; Dotiwalla, X.; Chouard, A.; Pat-naik, V.; Tsui, P.; Guo, J.; Zhou, Y.; Chai, Y.; Caine, B.; et al. 2020. Scalability in perception for autonomous driving: Waymo open dataset. In Proceedings of the IEEE/CVF con-ference on computer vision and pattern recognition , 2446– 2454. Szymanowicz, S.; Rupprecht, C.; and Vedaldi, A. 2024. Splatter image: Ultra-fast single-view 3d reconstruction. In 
+
+Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , 10208–10217. Tang, H.; Liu, Z.; Li, X.; Lin, Y.; and Han, S. 2022. Torchsparse: Efficient point cloud inference engine. Pro-ceedings of Machine Learning and Systems , 4: 302–315. Tang, J.; Chen, Z.; Chen, X.; Wang, T.; Zeng, G.; and Liu, Z. 2024. Lgm: Large multi-view gaussian model for high-resolution 3d content creation. In European Conference on Computer Vision , 1–18. Springer. Tonderski, A.; Lindström, C.; Hess, G.; Ljungbergh, W.; Svensson, L.; and Petersson, C. 2024. Neurad: Neural render-ing for autonomous driving. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition ,14895–14904. Turki, H.; Zhang, J. Y.; Ferroni, F.; and Ramanan, D. 2023. Suds: Scalable urban dynamic scenes. In Proceedings of the ieee/cvf conference on computer vision and pattern recogni-tion , 12375–12385. Wang, J.; Che, H.; Chen, Y.; Yang, Z.; Goli, L.; Mani-vasagam, S.; and Urtasun, R. 2026a. Flux4d: Flow-based unsupervised 4d reconstruction. Advances in Neural Infor-mation Processing Systems , 38: 105673–105693. Wang, S.; Mei, J.; Liu, F.; Guan, W.; Kong, F.; Zhao, Z.; Wang, S.; Min, C.; and Hu, Y. 2026b. Ground4D: Spatially-Grounded Feedforward 4D Reconstruction for Unstructured Off-Road Scenes. arXiv preprint arXiv:2605.04435 .Wu, X.; Jiang, L.; Wang, P.-S.; Liu, Z.; Liu, X.; Qiao, Y.; Ouyang, W.; He, T.; and Zhao, H. 2023a. Point transformer v3: Simpler, faster, stronger. arXiv preprint arXiv:2312.10035 .Wu, Z.; Liu, T.; Luo, L.; Zhong, Z.; Chen, J.; Xiao, H.; Hou, C.; Lou, H.; Chen, Y.; Yang, R.; et al. 2023b. Mars: An instance-aware, modular and realistic simulator for au-tonomous driving. In CAAI International Conference on Artificial Intelligence , 3–15. Springer. Xiao, P.; Shao, Z.; Hao, S.; Zhang, Z.; Chai, X.; Jiao, J.; Li, Z.; Wu, J.; Sun, K.; Jiang, K.; et al. 2021. Pandaset: Advanced sensor suite dataset for autonomous driving. In 
+
+2021 IEEE international intelligent transportation systems conference (ITSC) , 3095–3101. IEEE. Xu, H.; Peng, S.; Wang, F.; Blum, H.; Barath, D.; Geiger, A.; and Pollefeys, M. 2025. Depthsplat: Connecting gaussian splatting and depth. In Proceedings of the Computer Vision and Pattern Recognition Conference , 16453–16463. Yang, J.; Huang, J.; Ivanovic, B.; Chen, Y.; Wang, Y.; Li, B.; You, Y.; Sharma, A.; Igl, M.; Karkus, P.; et al. 2025. Storm: Spatio-temporal reconstruction model for large-scale outdoor scenes. In International Conference on Learning Representations , volume 2025, 50446–50465. Yang, J.; Ivanovic, B.; Litany, O.; Weng, X.; Kim, S. W.; Li, B.; Che, T.; Xu, D.; Fidler, S.; Pavone, M.; et al. 2024. Emernerf: Emergent spatial-temporal scene decomposition via self-supervision. In International Conference on Learn-ing Representations , volume 2024, 16739–16766. Yang, K.; Yang, Q.; Xu, Y.; and Li, Z. 2026. RAP: Fast Feed-forward Rendering-Free Attribute-Guided Primitive Impor-tance Score Prediction for Efficient 3D Gaussian Splatting Processing. arXiv preprint arXiv:2602.19753 .Yang, Z.; Chen, Y.; Wang, J.; Manivasagam, S.; Ma, W.-C.; Yang, A. J.; and Urtasun, R. 2023. Unisim: A neural closed-loop sensor simulator. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition ,1389–1399. Zhang, Z.; Meng, X.; Wu, K.; and Ding, W. 2026. Spars-eSplat: Towards Applicable Feed-Forward 3D Gaussian Splatting with Pixel-Unaligned Prediction. arXiv preprint arXiv:2604.03069 .

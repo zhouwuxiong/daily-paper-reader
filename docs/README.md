@@ -44,14 +44,14 @@
       <span class="dpr-home-dashboard-kicker">2026-08-07 ~ 2026-08-16</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 18 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 24 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
-    <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>2 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>7</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>11</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>3 次</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>8</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>16</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-08-16 07:53:47 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-08-16 08:08:31 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,9 +62,9 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日共处理18篇论文，精读7篇，重点覆盖隐式神经SLAM与3D高斯泼溅前沿。</p>
-<p>最值得精读的是满分论文《Multi-Submap Implicit Neural SLAM》（10.0分）及9.0分的《FlexSplat》，分别聚焦大规模场景闭环重建与无点云对应的前馈3D重建。</p>
-<p>建议优先啃这两篇，再配合《Scenix》《InstanceSplat》等速读拓展稀疏视图与实例感知方向。</p>
+<p>今日共更新24篇论文，精读8篇，核心聚焦3D场景重建与感知。</p>
+<p>最值得看的是满分10分的多子图隐式神经SLAM，以及9分的实例感知3D高斯泼溅（InstanceSplat）。</p>
+<p>普通读者可优先关注神经SLAM与高斯泼溅在真实场景中的结合潜力，并适度浏览8分速读论文扩展视野。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -73,12 +73,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">7 篇</strong>
+    <strong class="dpr-home-dashboard-count">8 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Multi-Submap Implicit Neural SLAM with Local-to-Global Loop Closure for Large-Scale Scene Reconstruction">Multi-Submap Implicit Neural SLAM with Local-to-Global Loop Closure for Large-Scale Scene Reconstruction</span></li><li><span class="dpr-home-dashboard-paper-title" title="FlexSplat: Flexible Feed-Forward 3D Gaussian Splatting without Point Cloud Correspondence">FlexSplat: Flexible Feed-Forward 3D Gaussian Splatting without Point Cloud Correspondence</span></li><li><span class="dpr-home-dashboard-paper-title" title="EvTrajGS: Accurate and Efficient 3D Gaussian Splatting from Unposed Event Streams">EvTrajGS: Accurate and Efficient 3D Gaussian Splatting from Unposed Event Streams</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Multi-Submap Implicit Neural SLAM with Local-to-Global Loop Closure for Large-Scale Scene Reconstruction">Multi-Submap Implicit Neural SLAM with Local-to-Global Loop Closure for Large-Scale Scene Reconstruction</span></li><li><span class="dpr-home-dashboard-paper-title" title="InstanceSplat: Instance-Aware Feed-Forward 3D Gaussian Splatting for Scene Understanding">InstanceSplat: Instance-Aware Feed-Forward 3D Gaussian Splatting for Scene Understanding</span></li><li><span class="dpr-home-dashboard-paper-title" title="FlexSplat: Flexible Feed-Forward 3D Gaussian Splatting without Point Cloud Correspondence">FlexSplat: Flexible Feed-Forward 3D Gaussian Splatting without Point Cloud Correspondence</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>7</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>8</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -86,12 +86,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">速读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">11 篇</strong>
+    <strong class="dpr-home-dashboard-count">16 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Scenix: Sparse-View 3D Scene Reconstruction via Executable Scene Programs">Scenix: Sparse-View 3D Scene Reconstruction via Executable Scene Programs</span></li><li><span class="dpr-home-dashboard-paper-title" title="InstanceSplat: Instance-Aware Feed-Forward 3D Gaussian Splatting for Scene Understanding">InstanceSplat: Instance-Aware Feed-Forward 3D Gaussian Splatting for Scene Understanding</span></li><li><span class="dpr-home-dashboard-paper-title" title="OccAnyScene: Towards Unified Indoor-Outdoor 3D Occupancy Predictio">OccAnyScene: Towards Unified Indoor-Outdoor 3D Occupancy Predictio</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Scenix: Sparse-View 3D Scene Reconstruction via Executable Scene Programs">Scenix: Sparse-View 3D Scene Reconstruction via Executable Scene Programs</span></li><li><span class="dpr-home-dashboard-paper-title" title="OccAnyScene: Towards Unified Indoor-Outdoor 3D Occupancy Prediction">OccAnyScene: Towards Unified Indoor-Outdoor 3D Occupancy Prediction</span></li><li><span class="dpr-home-dashboard-paper-title" title="Self-Geometry: GT-Free and Plug-and-Play Test-Time Adaptation for Geometrically Consistent 3D Vision Foundation Models">Self-Geometry: GT-Free and Plug-and-Play Test-Time Adaptation for Geometrically Consistent 3D Vision Foundation Models</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>11</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>16</strong></span></div>
 </section>
 </div>
 

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T07:43:10.726537+00:00",
+  "generated_at": "2026-08-16T08:03:47.742036+00:00",
   "updated_date": "20260807-20260816",
   "carryover_days": 9,
   "tag_states": {
@@ -7,82 +7,6 @@
       "updated_date": "20260807-20260816",
       "carryover_days": 9,
       "items": [
-        {
-          "id": "2608.10712v1",
-          "source": "arxiv",
-          "title": "Compact Feed-Forward 3D Gaussians via Saliency-Guided Primitive Merging",
-          "abstract": "3D scene reconstruction, modeling, and rendering are highly relevant for numerous tasks, and 3D Gaussian splatting has become a standard choice in this context. Its feed-forward variants provide fast reconstruction from sparse input views but often produce per-pixel primitives, leading to highly redundant and thus inefficient representations. We present a structure-aware merging pipeline that takes per-pixel primitives from any feed-forward method and consolidates them into a compact, content-adaptive Gaussian set while largely retaining visual quality at just $\\frac{1}{20}^\\text{th}$ of the Gaussians of a per-pixel method. We group spatially coherent Gaussians of similar appearance into variable-size clusters via adaptive superpixel segmentation guided by a saliency map, which allocates fine segments to textured regions and coarse segments to homogeneous areas. We compress each cluster into a compact latent representation through a learned encoder, then match and consolidate representations across views based on geometric overlap and feature similarity via a learned merger. A level-of-detail decoder then produces the final Gaussians at a controllable resolution, enabling a flexible quality-efficiency trade-off at inference. As a post-processing module, the pipeline is backbone-agnostic, leveraging the strengths of existing feed-forward methods. This leads to better and more robust quality than achieved by previous approaches that target a reduction in primitive count, while providing a highly compact representation, that can be rendered efficiently.",
-          "authors": [
-            "Tim-Felix Fassch",
-            "Jochen Kall",
-            "Cyrill Stachniss"
-          ],
-          "primary_category": "cs.CV",
-          "categories": [
-            "cs.CV"
-          ],
-          "published": "2026-08-11T09:32:08+00:00",
-          "link": "https://arxiv.org/pdf/2608.10712v1",
-          "tags": [
-            "keyword:d-slam",
-            "query:d-slam"
-          ],
-          "llm_score": 8.0,
-          "llm_evidence_en": "fast 3D reconstruction from sparse input views using feed-forward 3D Gaussians, directly relevant to 3D reconstruction from images",
-          "llm_evidence_cn": "利用前馈3D高斯从稀疏输入视图快速重建3D场景，直接相关于图像3D重建",
-          "llm_evidence": "利用前馈3D高斯从稀疏输入视图快速重建3D场景，直接相关于图像3D重建",
-          "canonical_evidence": "利用前馈3D高斯从稀疏输入视图快速重建3D场景，直接相关于图像3D重建",
-          "llm_tldr_en": "Presents a saliency-guided merging pipeline that consolidates per-pixel primitives into a compact set of 3D Gaussians, retaining visual quality at 1/20th of the Gaussians.",
-          "llm_tldr_cn": "针对前馈3D高斯变体从稀疏视图重建时产生大量冗余逐像素基元的问题，提出一种结构感知的基元合并流程。该方法通过自适应超像素分割将空间连续且外观相似的高斯分组为可变大小簇，并基于显著性引导进行合并，从而在仅保留约二十分之一高斯数量的情况下仍保持视觉质量，实现了高效紧凑的3D场景重建，为大尺度场景建模提供支持。",
-          "llm_tldr": "针对前馈3D高斯变体从稀疏视图重建时产生大量冗余逐像素基元的问题，提出一种结构感知的基元合并流程。该方法通过自适应超像素分割将空间连续且外观相似的高斯分组为可变大小簇，并基于显著性引导进行合并，从而在仅保留约二十分之一高斯数量的情况下仍保持视觉质量，实现了高效紧凑的3D场景重建，为大尺度场景建模提供支持。",
-          "llm_tags": [
-            "query:d-slam"
-          ],
-          "matched_query_tag": "query:d-slam",
-          "matched_query_text": "3D reconstruction from images",
-          "matched_requirement_id": "req-2",
-          "selection_source": "carryover_cache",
-          "paper_id": "2608.10712v1",
-          "carry_days": 1
-        },
-        {
-          "id": "2608.10938v1",
-          "source": "arxiv",
-          "title": "GS-CPE: Unified 6-Degree-of-Freedom Camera Pose Estimation via 3D Gaussian Splatting",
-          "abstract": "Despite substantial progress in visual localization, from scene coordinate regression to direct camera pose regression, achieving both robust generalization and high accuracy remain challenging. This study introduces GS-CPE (Gaussian Splatting based Camera Pose Estimation), a coarse-to-fine framework for 6-DoF camera pose estimation that unifies geometry-based coarse pose estimation with robust 3D Gaussian Splatting (3DGS) warping based pose refinement. GS-CPE first estimates a coarse pose via retrieval-guided geometric pose estimation on a 3DGS scene representation, then refines it by minimizing a visibility aware masked RGB warping objective in a multi-scale optimization framework, with adaptive re-rendering. Extensive experiments on indoor and outdoor benchmarks including 7Scenes, Cambridge Landmarks, FAST-LIVO2 datasets, and a custom dataset demonstrate state-of-the-art performance, consistently outperforming in both accuracy and generalization.",
-          "authors": [
-            "Huaiyuan Weng",
-            "Chul Min Yeum",
-            "Su-Min Kang"
-          ],
-          "primary_category": "cs.CV",
-          "categories": [
-            "cs.CV"
-          ],
-          "published": "2026-08-11T14:06:51+00:00",
-          "link": "https://arxiv.org/pdf/2608.10938v1",
-          "tags": [
-            "keyword:d-slam",
-            "query:d-slam"
-          ],
-          "llm_score": 8.0,
-          "llm_evidence_en": "6-DoF camera pose estimation from an image using 3D Gaussian Splatting scene representation, core to visual SLAM",
-          "llm_evidence_cn": "基于3D高斯溅射场景表示的6自由度相机位姿估计，是视觉SLAM的核心",
-          "llm_evidence": "基于3D高斯溅射场景表示的6自由度相机位姿估计，是视觉SLAM的核心",
-          "canonical_evidence": "基于3D高斯溅射场景表示的6自由度相机位姿估计，是视觉SLAM的核心",
-          "llm_tldr_en": "GS-CPE combines retrieval-guided geometric pose estimation with 3D Gaussian Splatting warping-based refinement for robust and accurate 6-DoF camera pose estimation.",
-          "llm_tldr_cn": "尽管视觉定位取得了显著进展，但泛化性与精度仍难兼得。本文提出GS-CPE，一种基于3D高斯溅射的粗到细6自由度相机位姿估计框架，先用检索引导的几何方法估计粗略位姿，再通过可见性感知的RGB变形目标进行多尺度优化和自适应重渲染细化。实验证明该方法在保持鲁棒泛化的同时达到高精度。",
-          "llm_tldr": "尽管视觉定位取得了显著进展，但泛化性与精度仍难兼得。本文提出GS-CPE，一种基于3D高斯溅射的粗到细6自由度相机位姿估计框架，先用检索引导的几何方法估计粗略位姿，再通过可见性感知的RGB变形目标进行多尺度优化和自适应重渲染细化。实验证明该方法在保持鲁棒泛化的同时达到高精度。",
-          "llm_tags": [
-            "query:d-slam"
-          ],
-          "matched_query_tag": "query:d-slam",
-          "matched_query_text": "visual simultaneous localization and mapping",
-          "matched_requirement_id": "req-1",
-          "selection_source": "carryover_cache",
-          "paper_id": "2608.10938v1",
-          "carry_days": 1
-        },
         {
           "id": "2608.12825v1",
           "source": "arxiv",
@@ -106,21 +30,61 @@
             "query:d-slam"
           ],
           "llm_score": 8.0,
-          "llm_evidence_en": "feed-forward 3D Gaussian reconstruction from multi-view images with spatially grounded tokens",
-          "llm_evidence_cn": "通过空间锚定标记从多视图图像前馈重建三维高斯场景",
-          "llm_evidence": "通过空间锚定标记从多视图图像前馈重建三维高斯场景",
-          "canonical_evidence": "通过空间锚定标记从多视图图像前馈重建三维高斯场景",
-          "llm_tldr_en": "LocusGS augments query-based feed-forward 3D Gaussian splatting with spatially grounded anchor states, ensuring different queries specialize in coherent local regions and improving scene alignment.",
-          "llm_tldr_cn": "现有基于查询的前馈三维高斯方法中，同一查询解码的高斯常常散落在场景各处，缺乏局部空间一致性。LocusGS为每个高斯查询引入由中心和支撑半径组成的3D锚点状态，并在解码层中逐步细化。这使得不同查询能够聚焦于一致局部区域，显著改善了场景结构与三维高斯的对齐，提升了前馈三维重建的精度与可解释性。",
-          "llm_tldr": "现有基于查询的前馈三维高斯方法中，同一查询解码的高斯常常散落在场景各处，缺乏局部空间一致性。LocusGS为每个高斯查询引入由中心和支撑半径组成的3D锚点状态，并在解码层中逐步细化。这使得不同查询能够聚焦于一致局部区域，显著改善了场景结构与三维高斯的对齐，提升了前馈三维重建的精度与可解释性。",
+          "llm_evidence_en": "feed-forward 3D Gaussian splatting for dense 3D scene reconstruction from multi-view images",
+          "llm_evidence_cn": "基于前馈三维高斯泼溅从多视图图像进行稠密三维场景重建",
+          "llm_evidence": "基于前馈三维高斯泼溅从多视图图像进行稠密三维场景重建",
+          "canonical_evidence": "基于前馈三维高斯泼溅从多视图图像进行稠密三维场景重建",
+          "llm_tldr_en": "LocusGS augments each Gaussian query with a 3D anchor state of center and support radius, progressively refined across decoder layers, to enforce spatial coherence in feed-forward 3D Gaussian splatting.",
+          "llm_tldr_cn": "前馈三维高斯泼溅中同一查询生成的高斯常散落于远处区域，空间一致性弱。LocusGS为每个高斯查询引入三维锚点状态，包含中心和支撑半径，并在解码器各层逐步细化，使查询聚焦于场景局部区域。该方法显著提升查询级空间一致性，改善三维重建与场景结构的对齐。",
+          "llm_tldr": "前馈三维高斯泼溅中同一查询生成的高斯常散落于远处区域，空间一致性弱。LocusGS为每个高斯查询引入三维锚点状态，包含中心和支撑半径，并在解码器各层逐步细化，使查询聚焦于场景局部区域。该方法显著提升查询级空间一致性，改善三维重建与场景结构的对齐。",
           "llm_tags": [
             "query:d-slam"
           ],
           "matched_query_tag": "query:d-slam",
-          "matched_query_text": "3D reconstruction from images",
-          "matched_requirement_id": "req-2",
+          "matched_query_text": "dense 3D reconstruction",
+          "matched_requirement_id": "req-4",
           "selection_source": "carryover_cache",
           "paper_id": "2608.12825v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2608.13104v1",
+          "source": "arxiv",
+          "title": "Online Learning of Correspondences between Images",
+          "abstract": "We propose a novel method for iterative learning of point correspondences between image sequences. Points moving on surfaces in 3D space are projected into two images. Given a point in either view, the considered problem is to determine the corresponding location in the other view. The geometry and distortions of the projections are unknown as is the shape of the surface. Given several pairs of point-sets but no access to the 3D scene, correspondence mappings can be found by excessive global optimization or by the fundamental matrix if a perspective projective model is assumed. However, an iterative solution on sequences of point-set pairs with general imaging geometry is preferable. We derive such a method that optimizes the mapping based on Neyman's chi-square divergence between the densities representing the uncertainties of the estimated and the actual locations. The densities are represented as channel vectors computed with a basis function approach. The mapping between these vectors is updated with each new pair of images such that fast convergence and high accuracy are achieved. The resulting algorithm runs in real-time and is superior to state-of-the-art methods in terms of convergence and accuracy in a number of experiments.",
+          "authors": [
+            "Michael Felsberg",
+            "Fredrik Larsson",
+            "Johan Wiklund",
+            "Niclas Wadströmer",
+            "Jörgen Ahlberg"
+          ],
+          "primary_category": "cs.CV",
+          "categories": [
+            "cs.CV"
+          ],
+          "published": "2026-08-13T11:30:29+00:00",
+          "link": "https://arxiv.org/pdf/2608.13104v1",
+          "tags": [
+            "keyword:d-slam",
+            "query:d-slam"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "iteratively learns point correspondences across image sequences, a core component of structure from motion",
+          "llm_evidence_cn": "迭代学习图像序列间的点对应关系，是结构从运动的核心组成部分",
+          "llm_evidence": "迭代学习图像序列间的点对应关系，是结构从运动的核心组成部分",
+          "canonical_evidence": "迭代学习图像序列间的点对应关系，是结构从运动的核心组成部分",
+          "llm_tldr_en": "Presents an iterative method to learn point correspondences between image sequences without known 3D geometry or projection models, enabling online correspondence estimation for SfM and related 3D tasks.",
+          "llm_tldr_cn": "针对图像序列中无已知三维几何和成像模型时的点对应估计难题，该文提出一种基于Neyman卡方散度迭代优化的在线学习方法。方法无需全局优化或假设透视投影模型，即可在一般成像几何下逐步逼近对应映射，并支持序列化输入。实验表明该方法能有效估计图像间对应关系，为结构从运动和多视角三维重建提供了基础支撑。",
+          "llm_tldr": "针对图像序列中无已知三维几何和成像模型时的点对应估计难题，该文提出一种基于Neyman卡方散度迭代优化的在线学习方法。方法无需全局优化或假设透视投影模型，即可在一般成像几何下逐步逼近对应映射，并支持序列化输入。实验表明该方法能有效估计图像间对应关系，为结构从运动和多视角三维重建提供了基础支撑。",
+          "llm_tags": [
+            "query:d-slam"
+          ],
+          "matched_query_tag": "query:d-slam",
+          "matched_query_text": "structure from motion for 3D modeling",
+          "matched_requirement_id": "req-3",
+          "selection_source": "carryover_cache",
+          "paper_id": "2608.13104v1",
           "carry_days": 1
         }
       ]
