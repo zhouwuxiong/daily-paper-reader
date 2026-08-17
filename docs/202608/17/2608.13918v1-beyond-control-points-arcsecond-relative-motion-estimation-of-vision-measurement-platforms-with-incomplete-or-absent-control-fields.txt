@@ -1,0 +1,792 @@
+Title: Beyond Control Points: Arcsecond Relative-Motion Estimation of Vision Measurement Platforms With Incomplete or Absent Control Fields
+
+URL Source: https://arxiv.org/pdf/2608.13918v1
+
+Published Time: Mon, 17 Aug 2026 00:22:43 GMT
+
+Number of Pages: 13
+
+Markdown Content:
+> PREPRINT 1
+
+# Beyond Control Points: Arcsecond Relative-Motion Estimation of Vision Measurement Platforms With Incomplete or Absent Control Fields 
+
+Meng Lian, Jian Wang, Shuixin Pan, Haibo Liu, Yueqiang Zhang, and Yulan Guo 
+
+Abstract —Long-range vision-based deformation monitoring is highly sensitive to motion of the camera platform. Absolute-pose differencing typically relies on dedicated control data and propagates two independent pose errors into the relative-motion estimate. We develop a control-adaptive differential framework that estimates inter-frame platform motion directly from im-age displacements and known 3D points. With no dedicated control point, the framework recovers platform rotation from measurement-point observations. One surveyed control point enables prior-constrained translation recovery, while two non-parallel control rays recover full 3D translation. The framework requires neither nonlinear optimization nor an initial pose estimate. Excluding control data from the rotation stage makes the rotation estimate exactly immune to contamination confined to the control field. The inherited differential formulation also cancels translational extrinsic errors exactly. We derive the rotation observability condition, a leakage bound for unmodeled translation and nonrigid point motion, and the single-point axial-prior bias law. Under 0.5-pixel image noise, attitude changes of up to 30 arcmin, and 3D point perturbations of up to 2 mm, the multi-camera estimator achieves a rotation RMSE of 2.97 arcsec and an average runtime of 0.46 ms. With one surveyed control point, its prior-constrained translation RMSE is 1.19 mm. In a bridge experiment without a stable control field, the median coordinate-wise displacement RMSE relative to total-station measurements is 0.85 mm. The estimator also maintains zero divergence under the tested 3D coordinate perturbations on public RGB-D and stereo sequences. These results establish state-of-the-art accuracy, calibration robustness, and computational efficiency among the evaluated methods. 
+
+Index Terms —Differential motion estimation, camera motion compensation, image-based measurement, structural health mon-itoring, micro-motion platform. 
+
+This manuscript has been submitted to IEEE Transactions on Image Processing for possible publication. This work was supported in part by the National Natural Science Foundation of China under Grants 12372184 and 12002215, and in part by the Research Team Cultivation Program of Shenzhen University under Grant 2023JCT003. (Corresponding author: Yueqiang Zhang .) Meng Lian is with the Ministry of Natural Resources (MNR) Key Labo-ratory for Geo-Environmental Monitoring of Great Bay Area & Guangdong Key Laboratory of Urban Informatics, Shenzhen University, Shenzhen, China, and also with Shenzhen Expressway Co., Ltd., Shenzhen, China. Jian Wang is with Shenzhen Expressway Co., Ltd., Shenzhen, China. Yueqiang Zhang and Shuixin Pan are with the Key Laboratory of Op-toelectronic Devices and Systems of Ministry of Education and Guang-dong Province, the Shenzhen Key Laboratory of Intelligent Optical Mea-surement and Detection, and the College of Physics and Optoelectronic Engineering, Shenzhen University, Shenzhen 518060, China (e-mail: yue-qiang.zhang@szu.edu.cn). Haibo Liu is with the School of Artificial Intelligence and Robotics, Hunan University, Changsha 410082, China (e-mail: haiboliu@hnu.edu.cn). Yulan Guo is with the School of Electronics and Communication Engi-neering, Sun Yat-sen University, Shenzhen 510275, China (e-mail: guoyu-lan@sysu.edu.cn). 
+
+I. I NTRODUCTION 
+
+# A telephoto camera monitoring a bridge from a distance of 300 m can resolve structural displacements below one millimeter. However, even a small motion of the camera platform can produce an apparent displacement comparable to or larger than the structural displacement of interest. Deformation monitoring of large civil infrastructure [1], [2] therefore depends not only on image localization accuracy but also on reliable compensation for platform motion. This study addresses this motion-compensation problem. Vision-based measurement techniques have attracted in-creasing attention because of their noncontact operation, high spatial resolution, and ability to support multipoint dynamic measurements. The image processing stage typically includes optical flow and template registration [3], [4], feature de-tection and tracking [5]–[7], digital image correlation for full-field displacement and strain measurement [8], subpixel phase correlation [9], [10], and phase-based processing for structural vibration measurement [11], [12]. These techniques are reviewed in [13]. These methods provide image-plane displacement observations. The remaining challenge in field deployment is to convert pixel displacement into structural displacement when the camera platform moves. Most ex-isting approaches assume a static platform. Environmental disturbances violate this assumption, and even small platform motions produce substantial displacement errors under long-range telephoto imaging. This study addresses this estimation layer. Its inputs are the pixel-displacement observations of control and measurement points, and its outputs are the plat-form motion and the compensated structural displacement. The proposed formulation permits translation recovery with one or two surveyed control points while retaining the calibration-error behavior of the underlying differential model. Camera-platform 6-DOF pose estimation is a specialized instance of camera pose estimation. When the camera in-trinsics are known, the pose can be estimated from corre-spondences between known 3D points and their 2D image projections. This formulation is commonly known as the Perspective-n-Point (PnP) problem. Its solution provides an absolute pose estimate for each image. Early research relied on optimization-based iterative algorithms. For instance, the LHM method [14] minimizes reprojection error through orthogonal iteration, while the gOp method [15] casts the problem as a semidefinite program (SDP) solved with off-the-shelf solvers. The PPnP method [16] treats it as an anisotropic orthogonal arXiv:2608.13918v1 [cs.CV] 14 Aug 2026 PREPRINT 2
+
+Procrustes problem. However, iterative approaches are often computationally inefficient and prone to converging on local rather than global optima. To address the nonlinear complexity of iterative methods, researchers have developed algorithms with linear complexity. The pioneering linear method, EPnP [17], utilizes four virtual control points to represent 3D points and solves for their camera-space coordinates via null-space analysis. The RPnP method [18] adopts a ternary point set approach, establishing an intermediate coordinate system based on the two most distant points to simplify the rotation matrix. While these linear methods improve efficiency, they do not guarantee global optimality. Consequently, subsequent research has focused on achiev-ing global optimality alongside linear complexity, resulting in methods such as DLS [19], ASPnP [20], OPnP [21], and optDLS [22]. DLS employs the Cayley–Gibbs–Rodrigues (CGR) parameterization to simplify constraints but suffers from singularities at 180-degree rotations. To circumvent this, ASPnP utilizes quaternions and the Gr¨ obner basis polynomial method [23]. Similarly, OPnP incorporates a point-set center-ing strategy to enhance noise robustness. Recent developments include EOPnP [24], SQPnP [25], and SRPnP [26]. Despite these advances, monocular PnP methods generally estimate optical-axis translation and roll less accurately than pitch and yaw, particularly under a narrow field of view. In vision-based deformation measurement, roll errors directly distort the in-plane displacement compensation. To improve the accuracy of 6-DOF pose estimation for platforms undergoing small motions, Chen et al. [27] intro-duced a method based on vertically aligned dual cameras. Although it improves accuracy relative to monocular PnP, its fixed vertical configuration limits installation flexibility. Yu 
+
+et al. [28] and subsequent studies by the same group [29]– [31] developed generalized multi-camera BPnP methods that permit flexible camera orientations. These methods, however, require accurate initial values for nonlinear optimization and are therefore relatively slow. In addition, they cannot recover the platform pose when fewer than three control points are available. When multiple cameras are rigidly mounted on the platform, pose estimation can be formulated as a generalized noncentral PnP problem. In this formulation, the observations are rep-resented by spatial rays that do not share a common optical center [32]. Kneip et al. [33] developed efficient solutions to the NPnP problem for multi-camera robotic systems. The gOp method [15] obtains globally optimal estimates for general camera models through semidefinite programming. The gDLS method [34] provides a scalable least-squares solution to the generalized pose-and-scale problem, whereas UPnP [35] pro-vides an optimal O(n) solution applicable to both central and noncentral cameras. Wientapper et al. [36] further unified these absolute-pose formulations within a closed-form framework. These generalized solvers independently estimate the ab-solute camera-rig pose at each epoch. The relative platform motion is then obtained by differencing the two estimates, which amplifies measurement noise. As shown in Section IV, their accuracy and efficiency are insufficient for the arcsecond-level, high-frame-rate monitoring considered in this study. Our previous work established the differential 6-DOF for-mulation, its observability and calibration-error properties, and the validity boundaries of the depth and first-order motion approximations [37]. The present study addresses a different identifiability problem. In deformation monitoring, dedicated control points may be incomplete or even absent, and the observations available for platform rotation estimation may contain point-dependent structural displacement. We therefore separate platform rotation from translation recovery. The rotation stage fits the common platform-induced component of the measurement-point observations, subject to an explicit rank condition and a bound on the leakage caused by nonrigid point motion. When surveyed control points are available, the translation stage uses one point together with an optical-axis depth prior or uses two points with nonparallel viewing rays. The resulting framework inherits the calibration-error properties of the underlying differential model. It also remains operational below the minimum dedicated-control-point requirement of absolute PnP methods. The main contributions of this study are summarized as follows. 1) Unlike our previous differential 6-DOF formulation, which establishes the general model and its calibration-error properties, this study determines what remains ob-servable when the dedicated control field is incomplete or even absent. The resulting control-adaptive frame-work provides control-free rotation estimation, one-point prior-constrained translation, and two-point full 3D translation recovery. 2) We establish the rank condition for rotation estimation from measurement-point observations and derive a leak-age bound that quantifies the influence of unmodeled translation and nonrigid structural motion. For one-point translation recovery, we derive the exact T / √3 RMS axial-prior bias law and its applicability condition. 3) We validate the framework through synthetic experi-ments, a bridge deformation experiment without a stable control field, and public RGB-D and stereo sequences. The multi-camera estimator achieves a rotation RMSE of 2.97 ′′ , a one-point translation RMSE of 1.19 mm, and an average runtime of 0.46 ms, providing the best overall accuracy, robustness, and runtime among the evaluated methods. II. D IFFERENTIAL MEASUREMENT MODEL 
+
+A. Camera Imaging Model 
+
+The formulation applies to a monocular camera and to a rigid multi-camera vision station. Let W , B, and C denote the world, station, and camera coordinate frames, respectively. A Euclidean 3D point expressed in frame A is denoted by 
+
+¯P A ∈ R3, and its homogeneous form is P A = [( ¯P A)T 1] T .The homogeneous image point is pt = [ ut, v t, 1] T . We define 
+
+GA,B ∈ SE (3) as the coordinate transformation from frame PREPRINT 3
+
+A to frame B, such that P B = GA,B P A. The two-epoch projections are 
+
+λt0 pt0 = [ K 03×1] GB,C GW,B t0 P W ,λt1 pt1 = [ K 03×1] GB,C GBt0 ,B t1 GW,B t0 P W . (1) where λt is the camera-frame depth at epoch t, GB,C 
+
+is the fixed camera extrinsic transformation, and GBt0 ,B t1
+
+maps point coordinates from Bt0 to Bt1 . It is therefore the coordinate-change transformation induced by the physi-cal station motion. This convention determines the signs of the estimated rotation and translation parameters. The same projection model is applied independently to every camera in a rigid multi-camera station. 
+
+B. Differential Model 
+
+Following the differential 3D-2D formulation established in our previous work [37], we estimate the inter-epoch pose change directly rather than differencing two independently estimated absolute poses. In long-range monitoring, the depth change induced by small platform motion may be small relative to the working distance. Introducing the approximation 
+
+λt1 ≈ λt0 and subtracting the two projection equations in (1) gives 
+
+∆pt0,t 1 = 1
+
+λt0 [K 03×1] GB,C 
+
+ GBt0 ,B t1 − E P Bt0 , (2) where ∆pt0,t 1 = pt1 −pt0 , P Bt0 is the 3D point expressed in the station frame at t0, and E is the 4 × 4 identity matrix. The quantitative validity condition for the depth approximation is given in Section III. The inter-epoch motion is represented on SE (3) . For η =[ηTT ηTR]T ∈ R6, define the wedge matrix 
+
+η∧ =
+
+[ηR]× ηT
+
+01×3 0
+
+
+
+=
+
+> 5
+
+X
+
+> j=0
+
+ηj Gj ,
+
+GBt0 ,B t1 = Exp( η∧) ≈ E + η∧.
+
+(3) where Gj are the generators of se (3) , [·]× denotes the skew-symmetric matrix, and the final approximation retains the first-order term of the matrix exponential. Substituting (3) into (2), the relative measurement model can be rewritten as 
+
+∆pt0,t 1 = 1
+
+λt0 [K 03×1] GB,C 
+
+> 5
+
+X
+
+> j=0
+
+ηj Gj P Bt0 . (4) Expanding the generator action in (4) yields 
+
+∆pt0,t 1 = 1
+
+λt0 KR B,C 
+
+
+
+−  ¯P Bt0
+
+ 
+
+> ×
+
+ηR + ηT
+
+
+
+, (5) where RB,C is the rotational component of the camera extrin-sics, and [·]× acts on a Euclidean 3D point. For statistical estimation, we use the 2D pixel coordinates 
+
+qi = [ ui, v i]T and the observation ∆qi = qt1 
+
+> i
+
+− qt0 
+
+> i
+
+. Let ˜ui =
+
+ut0 
+
+> i
+
+− cx and ˜vi = vt0 
+
+> i
+
+− cy . The image Jacobian is 
+
+Πi = 1
+
+λt0
+
+> i
+
+fx 0 −˜ui
+
+0 fy −˜vi
+
+
+
+. (6) If measurement point i undergoes a structural displacement 
+
+∆ ¯Pi, its first-order pixel-difference model is 
+
+∆qi = AiηR + BiηT + Di∆ ¯Pi + ϵi,
+
+Ai = −ΠiRB,C 
+
+h ¯P Bt0
+
+> i
+
+i
+
+> ×
+
+, Bi = Di = ΠiRB,C .
+
+(7) The control-independent rotation stage fits the common rotational component of the measurement-point observations. It does not assume that the point-dependent structural motion vanishes. Instead, the unmodeled platform translation and structural displacement are retained as explicit leakage terms. Stacking the measurement points gives 
+
+b = Aη R + r,
+
+bηR =  AT W A −1 AT W b , (8) where b = col i(∆ qi), W is a positive-definite weight matrix, and r = col i(BiηT + Di∆ ¯Pi + ϵi). The rotation is locally observable if and only if rank( A) = 3. Its deterministic leakage error satisfies 
+
+bηR − ηR =  AT W A −1 AT W r ,
+
+∥ bηR − ηR∥2 ≤ ∥W 1/2r∥2
+
+σmin (W 1/2A) . (9) Thus, nonrigid point motion is not automatically separable from platform rotation. Accurate recovery requires a well-conditioned A and a small projection of the omitted terms onto its rotation subspace. Independent zero-mean point motions tend to average statistically as the number and geometric diversity of the points increase, whereas coherent motion is governed directly by (9). 
+
+C. Translation and Structural-Displacement Recovery 
+
+After rotation estimation, the rotation-compensated residual of a surveyed control point c is 
+
+rc = ∆ qc − Ac bηR = BcηT + ϵc. (10) The matrix Bc ∈ R2×3 has rank two. Let 
+
+dc = RTB,C K−1pt0
+
+> c
+
+∥RTB,C K−1pt0 
+
+> c
+
+∥2
+
+, nc = RTB,C e3, (11) where dc is the control-point viewing ray and nc is the camera optical axis, both expressed in the station frame. The null space of Bc is spanned by dc. In the one-point mode, the depth-invariance prior nTc ηT = 0 supplies the missing constraint. Provided that nTc dc̸ = 0 , the estimate is obtained from 
+
+BTc WcBc nc
+
+nTc 0
+
+  bηT
+
+ν
+
+
+
+=
+
+BTc Wcrc
+
+0
+
+
+
+. (12) Thus, the image provides two independent translation con-straints and the third is supplied by the depth prior. For two control points, possibly observed by different rigidly mounted cameras, define B12 = col( Bc1 , Bc2 ) and 
+
+r12 = col( rc1 , rc2 ). If the two viewing rays are nonparallel, so that rank( B12 ) = 3 , the complete 3D translation is recovered without the depth prior: 
+
+bηT =  BT
+
+> 12
+
+W12 B12 
+
+−1 BT
+
+> 12
+
+W12 r12 . (13) PREPRINT 4
+
+Once the observable platform motion has been determined, measurement point i satisfies 
+
+∆qi = ΠiRB,C 
+
+
+
+−
+
+h ¯P Bt0
+
+> i
+
+i
+
+> ×
+
+ηR + ηT + ∆ ¯Pi
+
+
+
++ O ∥ηR∥ ∥ ∆ ¯Pi∥ .
+
+(14) After subtracting the platform-induced terms, the in-plane structural displacement is recovered by weighted least squares under the adopted constant-depth assumption. The depth com-ponent of a measurement point is not observable from a single viewing ray. The pixel-difference observation and the corresponding depth-scaled normalized coordinates are algebraically equiv-alent only when the observation covariance is transformed consistently. Uniform weighting in the metric-scaled system changes the statistical model and assigns excessive weight to distant targets. In the protocol of Section IV, this choice increases the translation RMSE by 34% at a tenfold depth spread. Lifting the differences to 3D before estimation intro-duces an artificial zero-valued axial component and approxi-mately doubles both rotation and translation errors. We there-fore formulate the estimator in pixel space, which preserves the native image-noise metric and excludes the unobservable axial component. Reproduction scripts are provided in the supplementary code. 
+
+D. Re-Linearization Pass 
+
+To reduce the first-order truncation error at rotations of approximately ±30 arcmin, we append one re-linearization pass to the initial linear solution. Let s ∈ { 0, 1, 2} denote the number of surveyed control points used for translation recovery. We write Ls({P Bi }, {∆qi}) for one application of the corresponding deterministic linear estimator. It consists of (8) and, when s = 1 or s = 2 , the translation solve in (12) or (13), respectively. For s = 0 , it returns a rotation-only increment with its translation fixed at zero. Let bη(1) = Ls({P Bi }, {∆qi}) and bG(1) = Exp  ( bη(1) )∧.The image displacement predicted by this estimate is evaluated using the exact perspective projection. The residual is 
+
+δq = ∆ q − ∆q  bG(1) , (15) where ∆q( bG(1) ) denotes the exact-projection prediction. For a left-increment update, the reference points are transformed by the first-pass estimate and the selected linear estimator is applied once more to the residual: 
+
+P ′ 
+
+> i B
+
+= bG(1) P Bi ,
+
+bη(2) = Ls
+
+ {P ′ 
+
+> i B
+
+}, {δqi},
+
+bG = Exp  ( bη(2) )∧ bG(1) ,
+
+bη = Log( bG)∨.
+
+(16) The same control mode is used in both passes. Thus, trans-lation remains unobserved in the zero-control mode, is prior-constrained in the one-control mode, and is fully recovered when two nonparallel control rays are available. The second pass reduces the leading truncation residual over the tested motion range without introducing an iteration stopping rule. 
+
+Algorithm 1: Differential motion correction and dis-placement compensation 
+
+Input: two-epoch images I(t0) and I(t1);measurement points { ¯P Bi }; zero, one, or two surveyed control points; intrinsics Kk, full rigid extrinsics GkB,C , and reference depths λi.
+
+Output: platform rotation bηR; platform translation bηT
+
+when observable or prior-constrained; in-plane structural displacements {∆ ¯Pj }. 
+
+> 1
+
+Extract and match the targets and form 
+
+∆qi = qt1 
+
+> i
+
+− qt0 
+
+> i
+
+; 
+
+> 2
+
+Construct A from the measurement points and verify 
+
+rank( A) = 3 ; 
+
+> 3
+
+Solve bη(1)  
+
+> R
+
+using (8);  
+
+> 4
+
+if one surveyed control point is available then  
+
+> 5
+
+solve the prior-constrained translation using (12);  
+
+> 6
+
+else  
+
+> 7
+
+if two surveyed control points are available and 
+
+rank( B12 ) = 3 then  
+
+> 8
+
+solve the complete 3D translation using (13);  
+
+> 9
+
+else  
+
+> 10
+
+report the rotation-only solution and leave translation unobserved;  
+
+> 11
+
+end  
+
+> 12
+
+end  
+
+> 13
+
+Evaluate the exact-projection residual using (15), apply one left-increment update in the same control mode, and compose the estimates using (16);  
+
+> 14
+
+Recover each observable in-plane structural displacement using (14); A right-increment implementation would reverse the order of the two group factors in (16). 
+
+Remark 1: The rotation and two-point translation normal matrices are 3 × 3, and the one-point constrained system is 
+
+4 × 4. Matrix assembly has complexity O(n). Omitting the residual update gives the single-pass variant. No absolute pose is estimated at any stage. III. E RROR -B OUND ANALYSIS 
+
+The differential formulation relies on several modeling ap-proximations. This section quantifies the image-space residuals introduced by the depth approximation and the first-order motion model. It also analyzes the influence of control-field contamination and the bias introduced by depth-prior transla-tion recovery. The depth and truncation analyses specialize the validity boundaries established in our previous work [37] to the present model with point-dependent structural displacement. The leakage and low-control-point translation analyses address the additional identifiability problem considered here. The resulting conditions and error laws are expressed in terms of the image-noise standard deviation σ in pixels, the focal length f in pixels, the point depth λ, and the pixel eccentricity 
+
+ρ = ∥p − c∥ measured from the principal point c. The maximum eccentricity within the field of view is denoted by 
+
+ρmax . The theoretical predictions are evaluated quantitatively PREPRINT 5
+
+in Section IV, with the translation-related results examined in Section IV-I. 
+
+A. Validity Domain of the Depth-Invariance Assumption 
+
+The depth-invariance hypothesis ( λt1 ≈ λt0 ) underlying (2) yields an exact expression for the discarded image term. For point i,
+
+εd,i = ∆λi
+
+λt0
+
+> i
+
+ pt1 
+
+> i
+
+− c, ∥εd,i ∥2 = |∆λi|
+
+λt0
+
+> i
+
+ρi. (17) The residual is a radial image scaling about the principal point. A point at the principal point is unaffected, whereas points near the field boundary are the most sensitive. The complete first-order depth change contains the platform translation, the rotation-induced term, and the structural displacement: 
+
+∆λi = eT 
+
+> 3
+
+RB,C 
+
+
+
+ηT −  ¯P Bi
+
+ 
+
+> ×
+
+ηR + ∆ ¯Pi
+
+
+
+. (18) 
+
+Proposition 1 (Depth-approximation applicability): The im-age residual introduced by the depth approximation does not exceed the adopted noise scale σ if and only if 
+
+max 
+
+> i
+
+ |∆λi|
+
+λt0
+
+> i
+
+ρi
+
+
+
+≤ σ. (19) For points within radius ρmax and a rotation magnitude θ,a conservative sufficient condition is 
+
+max 
+
+> i
+
+
+
+eT 
+
+> 3
+
+RB,C ηT + λi
+
+ρi
+
+f θ
+
++ eT 
+
+> 3
+
+RB,C ∆ ¯Pi
+
+ ≤ min 
+
+> i
+
+
+
+λi
+
+σρi
+
+
+
+.
+
+(20) At λ = 100 m, f = 100 ,000 pixels, ρmax = 2200 pixels, and θ = 30 ′, the first-order rotation-induced depth term is 19.2 mm and contributes approximately 0.42 pixel at the field boundary. Therefore, the simpler condition |TZ | ≤ λσ/ρ max ,which gives 9 mm at the field boundary and approximately 20 mm at mid-field, applies only when the rotation-induced and structural contributions to ∆λi are negligible. 
+
+B. First-Order Truncation and Re-Linearization 
+
+The approximation in (3) retains only the first-order term of the exponential map. Under the paraxial pure-rotation approximation, a rotation with magnitude θ produces a leading second-order image residual of approximately 12 f θ 2 pixels. 
+
+Proposition 2 (Conditional paraxial truncation scales): 
+
+ε1,parax ≃ 12 f θ 2, θ ≲
+
+r 2σf , (21) when the nominal single-pass residual is required to remain below σ. If the update in (16) cancels the leading quadratic term, the nominal residual after the second pass is 
+
+ε2,parax ≃ 16 f θ 3. (22) These expressions are leading Taylor terms rather than global image-space bounds. Their accuracy also depends on the pixel eccentricity, rotation axis, translation, and depth residual in (17). For f = 10 5 pixels and σ = 0 .2 pixel, the nominal single-pass threshold is approximately 6.9′. At 
+
+θ = 30 ′, the nominal cubic term is 0.011 pixel. Section IV evaluates the two-pass estimator over the tested motion and field-of-view range. 
+
+C. Exact Exclusion of Control-Field Contamination Proposition 3 (Control-field exclusion): Let zc contain all observations and surveyed coordinates belonging only to the dedicated control field. If (8) is constructed exclusively from measurement-point observations, then 
+
+∂ bηR
+
+∂zc
+
+= 0. (23) Therefore, the control-independent rotation estimate is exactly immune to arbitrary contamination confined to the excluded control data. This architectural property does not imply immunity to platform translation or structural motion of the measurement points. These quantities enter r in (8), and their influence is bounded by (9). The property also does not apply to an all-point variant that includes control points in the rotation stage. The camera-extrinsic behavior follows the differential model established in our previous work [37]. Translational camera-to-platform extrinsic errors cancel exactly, whereas rotational extrinsic errors produce a bilinear perturbation of order 
+
+O(∥μR∥ ∥ η∥). Its amplification depends on the conditioning of the stacked observation matrix. Section IV-E evaluates this sensitivity over the tested calibration-error range. 
+
+D. Depth-Prior Bias Law of the Translation Recovery 
+
+For one control point, (12) sets the optical-axis translation component to zero. Let cos αc = nTc dc, where αc is the angle between the camera optical axis and the control-point viewing ray. 
+
+Proposition 4 ( T / √3 axial-prior bias law): In the noise-free case, the error introduced by the one-point prior is 
+
+eprior = −dc
+
+nTc ηT
+
+nTc dc
+
+. (24) Thus, the omitted optical-axis component has magnitude 
+
+|nTc ηT |. If ∥ηT ∥2 = T and its direction is uniformly dis-tributed over the unit sphere, then 
+
+RMS axial = T
+
+√3 , RMS prior = T
+
+√3| cos αc| . (25) If the noise-only translation error is zero-mean, independent of the translation direction, and has RMS σ0, the total translation RMS is 
+
+RMS t(T ) = 
+
+s
+
+σ20 + T 2
+
+3 cos 2 αc
+
+. (26) For the paraxial control-point geometry used in the experi-ments, | cos αc| ≈ 1, and (26) reduces to the T / √3 law. 
+
+Proposition 5 (Prior-bias negligibility): For a general trans-lation distribution, the one-point prior bias remains below the noise-only floor when 
+
+pE[( nTc ηT )2]
+
+|nTc dc| ≤ σ0. (27) PREPRINT 6
+
+Under an isotropic fixed-magnitude model, this condition becomes T ≤ √3| cos αc|σ0. It is a bias-negligibility condition for the one-point estimator, not evidence that one point is more accurate than a full-rank two-point recovery. IV. E XPERIMENTS WITH SYNTHETIC DATA 
+
+This section evaluates the recovery of small vision-station rotations using Monte Carlo simulations. We compare the pro-posed estimator with representative monocular PnP methods and generalized multi-camera NPnP solvers. The simulated configuration represents a long-range bridge monitoring sce-nario. The image resolution is 3840 × 2160 pixels, and the equivalent focal length is 100,000 pixels. Measurement points are randomly generated at distances of 50–100 m from the cameras. Because the 3D coordinates of the measurement points are surveyed using a total station in practice, uniformly distributed perturbations bounded by ±2 mm are added to emulate survey errors. The proposed estimator uses these observations as measurement points without requiring a dedicated control field. The comparison methods treat the same observations as control points, ensuring that all methods receive identical inputs. A translational extrinsic calibration error bounded by 
+
+±5 mm is also introduced. The multi-camera configuration consists of two cameras with a 60 ◦ angle between their optical axes, a lateral separation of 0.6 m, and identical intrinsic parameters. The three attitude angles vary within ±30 arcmin, and the translation components vary within ±1 mm. The proposed rotation estimator does not recover translation. Translation is therefore treated as an unmodeled disturbance when evaluating the robustness of the rigid-body-constrained formulation. The points are projected using the pinhole model, after which Gaussian localization noise is added at several noise levels. We conduct monocular and multi-camera comparisons. In the monocular group, the proposed linear rotation estima-tor, denoted Proposed-PnP, is compared with LHM [14], EPnP+GN [17], RPnP [18], DLS [19], ASPnP [20], and OPnP [21]. These methods use all measurement points ob-served by Camera 1 to estimate the absolute pose at each epoch and then difference the two estimates. In the multi-camera group, the proposed two-pass linear es-timator, denoted Proposed-BPnP, is compared with gOp [15], gDLS [34], UPnP [35], GAPS [36], EA-GPnP [38], and the optimization-based binocular differential method BPnP. The generalized solvers represent the observations from both cameras as spatial rays, estimate the absolute rig pose at each epoch, and difference the resulting poses. Each camera observes half of the measurement points. Each configuration is evaluated in 100 trials, except for the typical-condition experiment, which uses 200 trials. Accuracy is measured using the RMSE of the three attitude angles and the mean and median total rotation errors. A trial is classified as divergent when the rotation error exceeds 1◦.Divergent trials are excluded from the RMSE and mean, and their percentage is reported separately. 
+
+> Fig. 1. RMSE of the three attitude angles versus the number of measurement points: (a)–(c) monocular group; (d)–(f) multi-camera group.
+
+A. Influence of the Number of Measurement Points 
+
+The image noise is fixed at 0.5 pixel, representing the typical field condition, while the number of measurement points varies from 4 to 50. Figure 1 reports the RMSE of the three attitude angles on a logarithmic vertical scale. The methods differ substantially when only a few points are available. With four points, the pitch RMSE of LHM reaches 410 ′′ , and 19% of its trials diverge. OPnP fails for fewer than eight points and diverges sporadically at larger point counts. EA-GPnP fails in the four-point case, whereas UPnP diverges in 33% of the four-point trials. With only two points per camera, Proposed-BPnP achieves RMSEs of approximately 2.1′′ , 1.5′′ , and 1.7′′ for pitch, yaw, and roll, respectively. Its RMSE remains close to 1.5′′ across the tested point counts, with zero divergence. The two-pass solution reduces the linearization error at rotations of up to 
+
+±30 arcmin. The remaining bias of approximately 1–1.5′′ is caused by the unmodeled ±1 mm translation and is largely independent of the number of points. 
+
+B. Influence of Image Localization Error 
+
+With five measurement points, the image localization noise is varied from 0 to 1 pixel. Figure 2 reports the per-axis RMSE, and Fig. 3 reports the mean and median total rotation errors. At zero noise, the exact-model methods approach zero error. The proposed estimators retain a bias of approximately 1.5′′ 
+
+because translation of up to ±1 mm is not modeled by the rotation estimator. The proposed methods achieve the lowest errors from a noise level of 0.2 pixel, and their advantage increases with the noise level. At 1-pixel noise, the pitch, yaw, and roll RMSEs of Proposed-BPnP are 2.9′′ , 1.8′′ , and 2.4′′ , respectively. The corresponding BPnP errors are 17 .9′′ , 15 .3′′ , and 15 .3′′ ,while the gDLS and GAPS errors range from 17 ′′ to 32 ′′ .UPnP and EA-GPnP are affected by divergent trials. Overall, the noise sensitivity of the proposed differential estimator is approximately one sixth that of the absolute-pose differencing methods. In the monocular comparison, LHM diverges in 6–17% of the trials at every noise level, and OPnP fails in the five-point configuration. Proposed-PnP achieves the lowest pitch and yaw RMSEs without divergence. Above a noise level of 0.4 pixel, PREPRINT 7
+
+> Fig. 2. RMSE of the three attitude angles versus the image localization noise: (a)–(c) monocular group; (d)–(f) multi-camera group.
+
+its pitch and yaw RMSEs are approximately half those of the strongest conventional method. The separation between the mean and median curves in Fig. 3 indicates heavy-tailed error distributions for LHM, UPnP, and EA-GPnP. Their means exceed their medians by more than one order of magnitude. In contrast, the mean and median errors of Proposed-BPnP remain close, ranging from 
+
+1.5′′ to 2.9′′ , which indicates a substantially less heavy-tailed distribution under the tested conditions.  
+
+> Fig. 3. Mean and median of the total rotation-angle error versus the image localization noise: (a)(b) monocular group; (c)(d) multi-camera group.
+
+C. Influence of Nonrigid Measurement-Point Motion 
+
+We next add true inter-epoch structural displacements ∆ ¯Pi
+
+independently of the survey-coordinate perturbations. The monocular five-point configuration is evaluated using 0.5-pixel image noise, rotations of up to ±30 ′, platform translations of up to ±1 mm, survey perturbations of up to ±2 mm, and 200 trials. Two motion families are considered. The first contains independent zero-mean in-plane point motions, whereas the second contains coherent motions aligned with the least-observable rotation direction of A.As the pointwise displacement amplitude increases from 0.5 to 5 mm, the rotation RMSE increases from 106 ′′ to  
+
+> Fig. 4. RMSE of the three attitude angles versus the measurement-point perturbation: (a)–(c) monocular group; (d)–(f) multi-camera group.
+
+478 ′′ for the independent family and from 178 ′′ to 1352 ′′ for the coherent family. The root-sum-square combination of the deterministic prediction in (9) and the 98 ′′ noise-only floor agrees with the measured RMSE to within 1–7% throughout the sweep. The deterministic bound plus three noise floors covers 100% of the independent trials and 99.9% of the coherent trials. These results confirm that nonrigid motion is not automatically removed by point stacking and that the con-ditioning and residual alignment in (9) govern the rotation er-ror. The supplementary script exp_nonrigid_leakage.m 
+
+reproduces this experiment. 
+
+D. Influence of Measurement-Point Perturbation 
+
+Fig. 4 shows the results when the measurement-point per-turbation grows from 0 to 2 mm with the image noise fixed at 0.2 pixel and five measurement points. All the stable solutions are insensitive to the perturbation: the three-axis RMSE of Proposed-BPnP stays within 1.9′′ /1.7′′ /1.4′′ , and gDLS/GAPS and BPnP remain flat as well, because the influence of the measurement-point errors on the two instants is highly correlated and largely cancels out in the differenc-ing. Measurement points surveyed with millimeter-level total-station accuracy are therefore sufficient for arcsecond-level rotation measurement. 
+
+E. Influence of Extrinsic Calibration Errors 
+
+In practice the extrinsic parameters that relate the cameras to the platform are obtained by total-station-assisted calibration and inevitably contain errors. Fig. 5 examines the influence of the extrinsic rotation error (0 to 20 arcmin, with the translation error fixed at 5 mm) and of the extrinsic translation error (0 to 50 mm, with no rotation error) on the rotation estimate. Because the same erroneous extrinsics act at both instants, their systematic effect largely cancels in the differencing (Proposition 3 and the remark thereafter): the rotation RMSE of Proposed-BPnP is essentially insensitive to the extrinsic translation error ( 2.9–3.1′′ over the whole range) and grows only from about 2.9′′ to 5.3′′ at the 20-arcmin extreme of the rotation error, while Proposed-PnP stays at its noise-dominated level of 90 –105 ′′ . Ordinary total-station-assisted calibration is therefore sufficient for the proposed estimators. PREPRINT 8 
+
+> Fig. 5. Influence of the extrinsic calibration errors on the rotation estimate: (a)(b) extrinsic rotation error; (c)(d) extrinsic translation error.
+
+F. Influence of the Camera Mounting Angle 
+
+Fig. 6 shows the influence of the mounting angle between the two optical axes, which varies from 0◦ to 180 ◦, on the multi-camera group. The best accuracy is obtained for angles between 30 ◦ and 90 ◦, where the rotation RMSE of Proposed-BPnP stays at 3.0–3.7′′ ; when the two axes are nearly parallel (0◦) or opposite ( 180 ◦), the observation geometry degenerates and the errors of all methods grow by more than an order of magnitude. The 60 ◦ angle adopted in the default configuration lies in the optimal range.  
+
+> Fig. 6. Influence of the angle between the two optical axes on the rotation estimate of the multi-camera group.
+
+G. Statistical Distribution Under a Typical Condition 
+
+We perform 200 Monte Carlo trials under a typical condition with five measurement points, 0.5-pixel image noise, point perturbations of up to ±2 mm, rotations of up to ±30 arcmin, and translations of up to ±1 mm. The 0.5-pixel noise level is consistent with the reprojection errors of 0.50–0.57 pixel measured in the field experiment of Section V. Figure 7 presents the cumulative distribution of the total rotation error, Fig. 8 presents the corresponding box plots, and Table I reports the numerical statistics. Since the roll component is barely observable in the monoc-ular geometry and its large errors would mask the differences in the two well-observed angles, the monocular entries of Table I report the statistics of the combined pitch–yaw error — the components that govern the virtual-displacement compen-sation at long working distances — whereas the multi-camera entries report the total rotation angle, since all three axes are observable in that configuration; trials whose total rotation error exceeds 1◦ are counted as divergent in both groups. In the monocular group, Proposed-PnP attains the best pitch–yaw RMSE ( 5.3′′ ) and median ( 3.5′′ ) without any divergence, less than half of RPnP ( 11 .9′′ ) and ASPnP ( 12 .0′′ ), while DLS diverges in 30% of the trials, LHM in 11.5%, and OPnP fails completely with five points. In the multi-camera group, Proposed-BPnP achieves a total-rotation RMSE of 2.97 ′′ with a maximum error of only 5.6′′ and zero divergence, about 
+
+3× better than BPnP ( 9.42 ′′ ) and 4× better than gDLS/GAPS (12 .0′′ ); UPnP attains a lower median ( 6.1′′ ) but diverges in 2% of the trials with a heavy sub-degree tail (filtered RMSE 
+
+230 ′′ ); EA-GPnP shows a moderate median ( 13 .8′′ ) but a 6.5% divergence rate, and the SDP-based gOp yields errors of several hundred arcseconds with a 34% divergence rate. The two proposed estimators never diverged in any trial.   
+
+> Fig. 7. Cumulative distribution of the total rotation-angle error under the typical condition (0.5-pixel noise): (a) monocular group; (b) multi-camera group.
+> Fig. 8. Box plot of the rotation error under the typical condition: (a) monocular group; (b) multi-camera group.
+
+H. Translation Recovery With One or Two Control Points 
+
+The rotation-only mode requires no control points. When one or two surveyed control points are available, the platform translation can also be recovered. With the rotation fixed, the rotation-induced displacement of each control point is removed using the exact projection. One control point supplies two independent image constraints, while the optical-axis depth PREPRINT 9
+
+TABLE I ROTATION -E RROR STATISTICS (A RCSEC ) AND AVERAGE RUNTIME 
+
+UNDER THE TYPICAL CONDITION (P ITCH –Y AW ERROR FOR THE 
+
+MONOCULAR GROUP ; T OTAL ROTATION ANGLE FOR THE 
+
+MULTI -C AMERA GROUP )Method Mean 
+
+(′′ )
+
+Median 
+
+(′′ )
+
+RMSE 
+
+(′′ )
+
+Max 
+
+(′′ )
+
+Div. 
+
+(%) 
+
+Time (ms) 
+
+Monocular methods (pitch–yaw error) 
+
+LHM 47.97 8.14 248.12 2524.57 11.5 5.01 EPnP+GN 40.02 8.47 138.93 1423.42 4.5 4.06 RPnP 9.06 7.05 11.94 55.65 0 2.42 DLS 10.38 7.49 17.16 141.29 30 5.62 ASPnP 9.07 7.00 12.03 55.15 1.0 5.39 OPnP — — — — 100 —Proposed-PnP 4.38 3.46 5.33 20.07 0 0.54 
+
+Multi-camera methods (total rotation angle) 
+
+UPnP 31.27 6.07 229.85 3037.90 2.0 1.80 gDLS 9.41 7.79 12.00 59.69 0 9.67 GAPS 9.43 7.83 12.08 62.77 0 7.30 EA-GPnP 159.95 13.85 467.64 2909.00 6.5 7.09 BPnP 7.45 5.98 9.42 37.46 0 9.55 gOp 795.47 489.56 1109.96 3190.74 34.0 285.7 Proposed-BPnP 2.77 2.74 2.97 5.63 0 0.46 
+
+prior in (12) supplies the third constraint. Two nonparallel control rays satisfy rank( B12 ) = 3 and recover the complete 3D translation without this prior. Section IV-I evaluates the one-point prior-bias law. For a fair comparison, the PnP and NPnP solvers use the five perturbed measurement points together with the available control points to estimate both rotation and translation. The all-point variant of the proposed estimator uses the same point set for rotation and reserves the surveyed control points for translation. Consequently, the exact control-field exclusion property in Proposition 3 does not apply to this comparison variant. Table II reports the single-control-point results. The hybrid scheme achieves a pitch–yaw RMSE of 4.50 ′′ and a translation RMSE of 1.21 mm in the monocular configuration. In the multi-camera configuration, the corresponding errors are 2.86 ′′ 
+
+and 1.19 mm. These errors are approximately 2–2.5× lower in rotation and 2× lower in translation than those of the strongest competitor, the iterative BPnP method. The translation error is more than one order of magnitude lower than those of the PnP solvers and gDLS/GAPS. Including the control point in the rotation stage also im-proves the all-point variant. Under the same perturbed-point protocol, the monocular pitch–yaw RMSE decreases from 
+
+10 .1′′ with measurement points alone to 4.5′′ when the control point is included. The joint 6-DOF solution using all points remains 2–3× less accurate in translation than the decoupled scheme. Table III reports the two-control-point case. The multi-camera hybrid estimator achieves a rotation RMSE of 
+
+2.81 ′′ and a translation RMSE of 1.21 mm without diver-gence. Figs. 9 and 10 show that the hybrid estimator has the most compact error distributions in both settings. A single stable control point therefore supports millimeter-level, prior-constrained translation together with arcsecond-level rotation, while two suitable control rays remove the optical-axis prior. 
+
+TABLE II ERROR STATISTICS UNDER THE ALL -P OINT PROTOCOL WITH ONE 
+
+SURVEYED CONTROL POINT (T YPICAL CONDITION , 200 T RIALS )                                                                                            
+
+> Method Rot. RMSE/ ′′
+> Rot. med./ ′′
+> Trans. RMSE/mm Trans. med./mm
+> ∆Z
+> RMSE/mm Div. %
+> Monocular methods (pitch–yaw error)
+> LHM 89.67 6.40 34.64 27.07 34.48 5.0 EPnP+GN 52.30 6.93 44.99 42.02 44.82 3.0 RPnP 9.27 6.01 36.46 23.49 36.31 0DLS 91.46 5.90 33.82 22.13 33.66 13.0 ASPnP 9.71 5.83 33.97 23.21 33.81 0OPnP —————100 Prop.-mono (joint) 8.64 5.78 3.34 2.39 2.16 0Prop.-mono (hybrid) 4.50 3.63 1.21 1.07 0.56 0
+> Multi-camera methods (total rotation angle)
+> UPnP 15.76 5.67 5.13 1.99 1.14 1.0 gDLS 9.20 6.18 35.92 21.76 27.49 0GAPS 9.20 6.18 35.94 21.99 27.50 0EA-GPnP 23.18 5.60 4.59 1.89 4.62 0BPnP 7.28 5.66 2.60 1.86 1.11 0Prop.-bino (joint) 7.13 5.57 2.54 1.82 1.09 0Prop.-bino (hybrid) 2.86 2.60 1.19 1.07 0.57 0
+
+TABLE III ERROR STATISTICS UNDER THE ALL -P OINT PROTOCOL WITH TWO 
+
+SURVEYED CONTROL POINTS (O NE PER CAMERA IN THE 
+
+MULTI -C AMERA CONFIGURATION ; B OTH VIEWED BY THE SINGLE 
+
+CAMERA IN THE MONOCULAR CONFIGURATION )                                                                                            
+
+> Method Rot. RMSE/ ′′
+> Rot. med./ ′′
+> Trans. RMSE/mm Trans. med./mm
+> ∆Z
+> RMSE/mm Div. %
+> Monocular methods (pitch–yaw error)
+> LHM 41.86 5.58 30.47 20.73 30.36 3.0 EPnP+GN 60.92 5.83 42.12 33.97 42.00 0RPnP 7.78 5.57 33.09 21.26 32.96 0DLS 27.08 5.33 28.75 18.47 28.61 6.5 ASPnP 7.54 5.31 29.95 18.43 29.82 1.0 OPnP 139.83 5.63 32.35 21.64 32.22 2.5 Prop.-mono (joint) 7.23 4.91 3.03 2.29 2.08 0Prop.-mono (hybrid) 4.26 3.23 1.08 0.99 0.56 0
+> Multi-camera methods (total rotation angle)
+> UPnP 134.76 5.01 4.24 1.70 2.38 1.5 gDLS 7.09 5.39 29.44 16.59 22.95 0GAPS 7.10 5.40 28.65 16.59 22.98 0EA-GPnP 6.33 4.97 2.23 1.68 0.97 0BPnP 6.34 4.55 2.23 1.51 0.96 0Prop.-bino (joint) 6.21 4.55 2.18 1.47 0.94 0Prop.-bino (hybrid) 2.81 2.51 1.21 1.09 0.69 0
+
+I. Verification of the Error Bounds 
+
+To verify the one-point prior-bias law, the platform transla-tion magnitude is swept over T = 1 –20 mm with uniformly distributed directions under the typical multi-camera condition. Figure 11 compares the prior-constrained hybrid estimator with joint 6-DOF recovery. Because the control point is close to the optical axis, | cos αc| ≈ 1. The measured translation RMSE of the hybrid estimator follows (26) with σ0 =0.95 mm to within 9% over the tested range and approaches the T / √3 asymptote. The value T = √3σ0 ≈ 1.6 mm marks the point at which the axial-prior bias reaches the one-point noise floor. Joint recovery remains at its 0.81–0.87 mm noise floor. The rotation RMSE remains within 2.9–3.0′′ for both schemes over the translation sweep, consistent with the low leakage observed under the tested geometry. The one-point 
+
+∆Z RMSE of 0.56–0.57 mm in Table II reflects the imposed PREPRINT 10 
+
+Fig. 9. Distributions of the rotation and translation errors under the all-point protocol with one control point: (a) monocular rotation (pitch–yaw); (b) monocular translation; (c) multi-camera rotation (total angle); (d) multi-camera translation. 
+
+Fig. 10. Distributions of the rotation and translation errors under the all-point protocol with two control points; panels as in Fig. 9. 
+
+optical-axis prior, whereas the 0.69-mm two-point result in Table III is obtained from full-rank two-ray recovery. These results are consistent with the prior-bias and rotation-leakage analyses in Section III. 
+
+J. Efficiency of the Methods 
+
+Fig. 12 reports the average runtime versus the number of measurement points, and Table I lists the values under the typical condition. Comprising two deterministic linear passes, Proposed-BPnP and Proposed-PnP take only about 0.5 ms per solution. In the monocular group, Proposed-PnP (0.54 ms) is about 4× faster than the fastest conventional 10 0 10 1          
+
+> Platform motion magnitude T(mm)
+> 10 0
+> 10 1
+> Translation RMS (mm)
+> (a) Translation
+> T/3law
+> 20+T2/3
+> Hybrid (measured) Joint (measured)
+> 10 010 1
+> Platform motion magnitude T(mm)
+> 0123456
+> Rotation RMS (arcsec)
+> (b) Rotation
+> Hybrid Joint
+
+Fig. 11. Verification of the depth-prior working boundary (multi-camera configuration): (a) translation RMS versus platform motion magnitude T ; the hybrid scheme follows (26) and approaches the T / √3 paraxial asymptote, while joint recovery remains at its noise floor; (b) rotation RMS, which remains nearly constant for both tested schemes over the translation sweep. 
+
+method RPnP (2.4 ms) and more than an order of magnitude faster than OPnP; in the multi-camera group, Proposed-BPnP (0.46 ms) is about 4× faster than the fastest generalized solver UPnP (1.8 ms), roughly an order of magnitude faster than gDLS/GAPS (7.3–9.7 ms) and the optimization-based BPnP (9.6 ms), and over 600 × faster than gOp (286 ms), meeting the demand of high-frame-rate real-time monitoring. Overall, under the practical constraints of ±30 ′ attitude change, ±1 mm translation, and ±2 mm measurement-point perturbation, the re-linearization pass removes the large-rotation truncation er-ror, and the rigid-body-constrained linear rotation estimation trades a residual bias of about 1.5′′ from the unmodeled trans-lation for the best accuracy (typical RMSE 2.97 ′′ for the multi-camera configuration), complete freedom from divergence, one sixth of the noise sensitivity of absolute-pose differencing, and a runtime advantage ranging from 4× to over 600 ×.
+
+Fig. 12. Average runtime of all the methods versus the number of measure-ment points: (a) monocular group; (b) multi-camera group. 
+
+V. E XPERIMENTS WITH REAL DATA 
+
+We evaluated the control-free rotation mode through de-formation measurements at the Tianyuan Interchange of the Shenzhen Outer-Ring Expressway. Measurement points were installed on a pier affected by nearby construction, while no stable control point was available within any camera field of view. The proposed framework estimated platform rotation directly from the measurement-point observations and com-pensated the resulting virtual displacement. The total-station measurements provide an independent reference for evaluating the compensated structural displacement. Because translation is unobservable in this mode, its residual contribution is included in the reported measurement error. Figure 13 shows the experimental setup. PREPRINT 11 
+
+> Fig. 13. Experimental layout: (a) layout diagram (top); (b) on-site installation (bottom left) and an image captured by one of the station cameras (bottom right).
+
+Four monitoring stations were installed on a pier adjacent to the monitored pier. Each station contained three cameras and observed 6–10 measurement points. The initial 3D coordinates of all target points were measured using a Leica TS60 total station located near the vision measurement platform. After leveling, the Z axis of the total-station frame was aligned with the bridge axis, the Y axis pointed vertically downward, and the X axis was defined according to the right-hand rule. 
+
+A. Camera Calibration 
+
+Because no dedicated stable control points were available, the initial-epoch 3D coordinates of the target points served as calibration references. These coordinates were measured using the total station, and the corresponding camera images were acquired synchronously. The cameras used for deformation measurement were calibrated from the 3D point coordinates in the total-station frame and their corresponding image co-ordinates. The reprojection errors of Cameras 0 and 1 were 0.50 and 0.57 pixels, respectively. These values are consistent with the approximately 2-pixel/mm object-space sampling rate. Table IV lists the intrinsic parameters of all three cameras at Station 1 using their manufacturer serial numbers. 
+
+B. Deformation Measurement 
+
+Figure 14 presents the recovered horizontal and verti-cal displacements of the pier measurement points. Despite the absence of a stable control field, the proposed method                                
+
+> TABLE IV INTRINSIC PARAMETERS OF THE THREE CAMERAS OF STATION 1 ( BY
+> MANUFACTURER SERIAL NUMBER )Camera fx(pixel) fy(pixel) cx(pixel) cy(pixel) Camera 122 71034.47 71034.47 1920.5 1080.5 Camera 123 34719.93 34719.93 1920.5 1080.5 Camera 125 69386.41 69386.41 1920.5 1080.5
+> Fig. 14. Key point deformation measurement results: (a) horizontal displace-ment along the X-axis; (b) vertical displacement along the Y-axis.
+
+agrees closely with the independent total-station measure-ments. Across the 14 coordinate-wise comparisons in Table V, the median RMS error is 0.85 mm, and 10 of the 14 RMS errors do not exceed 1.1 mm. The complete RMS range is 0.51–2.09 mm. 
+
+C. Robustness to 3D Coordinate Perturbations on Public Sequences 
+
+The preceding experiments use coded targets and surveyed coordinates. We further evaluate the method on public se-quences containing noncooperative features. Two TUM RGB-D sequences are used [39]. The fr1_xyz sequence contains 798 handheld frames and has a scene depth of approximately 1.2 m. The fr2_desk sequence contains 2965 frames of a texture-rich desk scene. For each sequence, 100 frame pairs are selected at frame skips of 1, 5, 10, and 30 to cover small to moderate inter-frame motions. Correspondences are obtained using KLT tracking with forward and backward verification [3], [5]. The 3D coordinates are back-projected from the first-frame depth map. All meth-ods receive the same tracks and 3D coordinates. The baselines independently estimate the absolute pose of each frame and then compose the relative pose. They include EPnP [17], SQPnP [25], an iterative LM solver, and RANSAC using EPnP hypotheses, a 2-pixel inlier threshold, and 200 iterations. A trial is classified as divergent when the rotation error exceeds 5◦ or when the solver fails. The reported RMSE values are computed over the nondivergent trials. Runtime is measured using single-threaded Python and OpenCV on a consumer desktop CPU. The motion-capture ground truth pro-vides millimeter-level translation accuracy and approximately 100-arcsec rotation accuracy. It therefore supports method ranking and divergence analysis but is not used to validate PREPRINT 12                                                           
+
+> TABLE V COMPARISON OF THE MEASURED DISPLACEMENTS WITH THE TOTAL
+> STATION
+> Point Mean error
+> X(mm) RMSE
+> X(mm) Mean error
+> Y(mm) RMSE
+> Y(mm) 15-1-1 0.58 0.70 0.06 0.71 15-1-2 −0.23 0.51 0.72 1.07 15-2-1 −0.31 0.88 −1.08 1.88 15-2-2 −0.41 0.72 −0.54 0.89 15-3-1 0.53 0.81 −0.51 0.74 15-3-2 0.88 1.28 1.87 2.09 15-4-1 0.31 0.66 −1.42 1.58 TABLE VI ROTATION RMSE AND DIVERGENCE RATES ON THE CLEAN TUM
+> SEQUENCES . T HE RMSE IS REPORTED IN ARCSECONDS ,AND THE DIVERGENCE RATE IS REPORTED IN PARENTHESES AS A PERCENTAGE .
+> fr1_xyz fr2_desk
+> Method skip 1 skip 30 skip 1 skip 30 Differential (GN) 1240 (0) 5747 (2) 850 (0) 5730 (9) Differential (linear) 1240 (0) 5665 (2) 850 (0) 5736 (9) EPnP 1397 (0) 5494 (5) 875 (0) 6167 (8) SQPnP 1194 (0) 5632 (2) 848 (0) 5810 (9) Iterative 1240 (0) 4997 (9) 850 (0) 5754 (10) RANSAC (2 px) 1486 (0) 5036 (0) 872 (0) 4431 (9)
+
+arcsecond-level accuracy, which is evaluated by the controlled experiments above. Tables VI and VII support three findings. On clean data, the differential solver matches the strongest PnP baselines within the ground-truth noise and has an equal or lower divergence rate. The one-pass result remains within 1.4% on fr1_xyz 
+
+and 0.1% on fr2_desk of the fully iterated result up to 1.6◦
+
+inter-frame motion. Under shared 3D coordinate perturbations of up to 50 mm, the differential rotation RMSE remains within 1219 ′′ –1240 ′′ 
+
+on fr1_xyz and 845 ′′ –848 ′′ on fr2_desk , with zero diver-gence. In contrast, the iterative and RANSAC-based pipelines reach divergence rates of 67% and 96%, respectively. The EuRoC V1_01_easy stereo sequence [40] shows the same trend. The differential estimators remain at 258 ′′ –259 ′′ with zero divergence, whereas the 2-pixel RANSAC result reaches 
+
+7820 ′′ with 13% divergence. Correspondence outliers form a separate error channel. With SIFT matching [6], RANSAC outperforms the nonro-bust differential estimator on clean 3D data, whereas shared coordinate perturbations favor the differential residual. A ro-bust wrapper around the differential residual could therefore combine both advantages. VI. D ISCUSSION OF LEARNING -B ASED ALTERNATIVES 
+
+Learned detectors, matchers, and optical-flow estimators [41]–[44] could provide upstream pixel-displacement obser-vations in noncooperative scenes. However, the present appli-cation requires nearly unbiased localization at the 10 −2-pixel level and predictable epoch-to-epoch errors. Learned operators may exhibit texture- and viewpoint-dependent biases of 10 −1–1 pixel, while equivalent closed-form uncertainty guarantees               
+
+> TABLE VII ROBUSTNESS TO PER -P OINT 3D C OORDINATE PERTURBATIONS AT A
+> FRAME SKIP OF 1. R OTATION RMSE I SREPORTED IN ARCSECONDS ,AND THE DIVERGENCE RATE ISREPORTED IN PERCENT .
+
+Method clean +20 mm +50 mm 8 pts 
+
++20 mm Differential (GN) 1240 (0) 1237 (0) 1219 (0) 1590 (0) 
+
+SQPnP 1194 (0) 1193 (0) 1192 (0) 1596 (0) EPnP 1397 (0) 1400 (0) 1426 (0) 2216 (1) Iterative 1240 (0) 1858 (13) 8195 (67) 2776 (28) RANSAC (2 px) 1486 (0) 7457 (16) 5626 (86) 3435 (96) 
+
+are generally unavailable. End-to-end pose regression also operates at much coarser scales in the cited formulation [45]. We therefore view learning-based components as complemen-tary front ends rather than replacements for the differential geometric estimator. VII. C ONCLUSION 
+
+This study presented a differential linear framework that estimates platform motion and structural displacement directly from inter-frame image differences. Platform rotation is re-covered under an explicit rank condition, and the effects of unmodeled translation and nonrigid point motion are quan-tified by a leakage bound. Translation is prior-constrained with one surveyed control point and fully observable from two nonparallel control rays. The analysis also characterizes the total-depth approximation and conditional re-linearization scales, proves exact exclusion of contamination confined to control data outside the rotation stage, and derives the exact 
+
+T / √3 RMS law for the omitted optical-axis component. The framework inherits exact cancellation of translational extrinsic errors and bounded sensitivity to rotational extrinsic errors from the underlying differential model. Under rotations of up to ±30 arcmin, unmodeled transla-tions of up to ±1 mm, and 3D point perturbations of up to 
+
+±2 mm, the multi-camera estimator achieved a rotation RMSE of 2.97 ′′ , a translation RMSE of 1.19 mm with one surveyed control point, zero divergence, and an average runtime of 0.5 ms. It was four times faster than the fastest evaluated gen-eralized solver and 20 times faster than the optimization-based binocular method, while remaining robust to the tested extrin-sic errors of up to 20 arcmin and 50 mm. On the evaluated public RGB-D and stereo sequences, it matched the strongest PnP baselines on clean data and maintained zero divergence under 3D coordinate perturbations that produced divergence rates of 67% and 96% for the iterative and RANSAC-based pipelines. These results demonstrate state-of-the-art accuracy, robustness, and efficiency among the evaluated methods while reducing the requirement for dedicated control points. Future work will address larger inter-frame motions and learned front ends compatible with differential estimation. REFERENCES [1] X. ZHANG, J. LIU, T. LIU, B. DU, and Z. FENG, “Measuring and correcting method for shaking platform of vehicle-mounted theodolite,”  
+
+> SCIENTIA SINICA Technologica , vol. 45, no. 5, pp. 471–475, 2015. PREPRINT 13
+
+[2] Q. Yu, Y. Shang, B. Guan, Z. Lei, and X. Liu, “Camera series and par-allel networks for deformation measurements of large scale structures,” in Automated Visual Inspection and Machine Vision , vol. 9530. SPIE, 2015, p. 953002. [3] B. D. Lucas and T. Kanade, “An iterative image registration technique with an application to stereo vision,” in 7th International Joint Confer-ence on Artificial Intelligence , vol. 2, 1981, pp. 674–679. [4] S. Baker and I. Matthews, “Lucas–Kanade 20 years on: A unifying framework,” International Journal of Computer Vision , vol. 56, no. 3, pp. 221–255, 2004. [5] J. Shi et al. , “Good features to track,” in Proceedings of IEEE Confer-ence on Computer Vision and Pattern Recognition . IEEE, 1994, pp. 593–600. [6] D. G. Lowe, “Distinctive image features from scale-invariant keypoints,” 
+
+International Journal of Computer Vision , vol. 60, no. 2, pp. 91–110, 2004. [7] J. F. Henriques, R. Caseiro, P. Martins, and J. Batista, “High-speed tracking with kernelized correlation filters,” IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 37, no. 3, pp. 583–596, 2014. [8] B. Pan, K. Qian, H. Xie, and A. Asundi, “Two-dimensional digital image correlation for in-plane displacement and strain measurement: a review,” 
+
+Measurement Science and Technology , vol. 20, no. 6, p. 062001, 2009. [9] H. Foroosh, J. B. Zerubia, and M. Berthod, “Extension of phase correla-tion to subpixel registration,” IEEE Transactions on Image Processing ,vol. 11, no. 3, pp. 188–200, 2002. [10] M. Guizar-Sicairos, S. T. Thurman, and J. R. Fienup, “Efficient subpixel image registration algorithms,” Optics Letters , vol. 33, no. 2, pp. 156– 158, 2008. [11] N. Wadhwa, M. Rubinstein, F. Durand, and W. T. Freeman, “Phase-based video motion processing,” ACM Transactions on Graphics , vol. 32, no. 4, pp. 1–10, 2013. [12] J. G. Chen, N. Wadhwa, Y.-J. Cha, F. Durand, W. T. Freeman, and O. Buyukozturk, “Modal identification of simple structures with high-speed video using motion magnification,” Journal of Sound and Vibra-tion , vol. 345, pp. 58–71, 2015. [13] D. Feng and M. Q. Feng, “Computer vision for SHM of civil infras-tructure: From dynamic response measurement to damage detection–a review,” Engineering Structures , vol. 156, pp. 105–117, 2018. [14] C.-P. Lu, G. D. Hager, and E. Mjolsness, “Fast and globally convergent pose estimation from video images,” IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 22, no. 6, pp. 610–622, 2000. [15] G. Schweighofer and A. Pinz, “Globally optimal O(n) solution to the PnP problem for general camera models,” in BMVC , 2008, pp. 1–10. [16] V. Garro, F. Crosilla, and A. Fusiello, “Solving the PnP problem with anisotropic orthogonal Procrustes analysis,” in 2012 Second Interna-tional Conference on 3D Imaging, Modeling, Processing, Visualization & Transmission . IEEE, 2012, pp. 262–269. [17] V. Lepetit, F. Moreno-Noguer, and P. Fua, “EPnP: An accurate O(n)
+
+solution to the PnP problem,” International journal of computer vision ,vol. 81, no. 2, pp. 155–166, 2009. [18] S. Li, C. Xu, and M. Xie, “A robust O(n) solution to the perspective-n-point problem,” IEEE transactions on pattern analysis and machine intelligence , vol. 34, no. 7, pp. 1444–1450, 2012. [19] J. A. Hesch and S. I. Roumeliotis, “A direct least-squares (DLS) method for PnP,” in 2011 international conference on computer vision . IEEE, 2011, pp. 383–390. [20] Y. Zheng, S. Sugimoto, and M. Okutomi, “ASPnP: An accurate and scalable solution to the perspective-n-point problem,” IEICE TRANS-ACTIONS on Information and Systems , vol. 96, no. 7, pp. 1525–1535, 2013. [21] Y. Zheng, Y. Kuang, S. Sugimoto, K. Astrom, and M. Okutomi, “Revisiting the PnP problem: A fast, general and optimal solution,” in 
+
+Proceedings of the IEEE International Conference on Computer Vision ,2013, pp. 2344–2351. [22] G. Nakano, “Globally optimal DLS method for PnP problem with Cayley parameterization,” in BMVC , vol. 78, 2015, pp. 1–78. [23] D. A. Cox, J. Little, and D. O’shea, Using Algebraic Geometry . Berlin, Germany: Springer-Verlag, 2005. [24] L. Zhou and M. Kaess, “An efficient and accurate algorithm for the perspecitve-n-point problem,” in 2019 IEEE/RSJ International Confer-ence on Intelligent Robots and Systems (IROS) . IEEE, 2019, pp. 6245– 6252. [25] G. Terzakis and M. Lourakis, “A consistently fast and globally optimal solution to the perspective-n-point problem,” in European Conference on Computer Vision . Springer, 2020, pp. 478–494. [26] P. Wang, G. Xu, Y. Cheng, and Q. Yu, “A simple, robust and fast method for the perspective-n-point problem,” Pattern Recognition Letters , vol. 108, pp. 31–37, 2018. [27] W. Chen, Y. Yin, Y. Zhang, X. Liu, and Q. Yu, “Pose correction method for micro-motion stages based on dual-orthogonal-camera,” Acta Optica Sinica , vol. 41, no. 23, p. 2315001, 2021. [28] Q. Yu, Y. Yin, Y. Zhang, W. Chen, B. Hu, and X. Liu, “Displace-ment measurement of large structures using nonoverlapping field of view multi-camera systems under six degrees of freedom ego-motion,” 
+
+Computer-Aided Civil and Infrastructure Engineering , vol. 38, no. 11, pp. 1483–1503, 2023. [29] X. Liu, B. Hu, Y. Yin, Y. Zhang, W. Chen, Q. Yu, X. Ding, and L. Han, “Parallel camera network: Motion-compensation vision mea-surement method and system for structural displacement,” Automation in Construction , vol. 165, p. 105559, 2024. [30] Y. Yin, X. Liu, B. Hu, W. Chen, X. Guo, D. Ma, X. Ding, L. Han, and Q. Yu, “A displacement measurement methodology for deformation monitoring of long-span arch bridges during construction based on scalable multi-camera system,” Computer-Aided Civil and Infrastructure Engineering , vol. 40, no. 13, pp. 1871–1885, 2025. [31] Z. Ge, W. Chen, B. Wang, Y. Zhang, X. Liu, and Q. Yu, “Displacement monitoring method of large structure based on dual-camera correction,” 
+
+Optics Express , vol. 33, no. 7, pp. 15 501–15 515, 2025. [32] R. Pless, “Using many cameras as one,” in 2003 IEEE Computer Society Conference on Computer Vision and Pattern Recognition , vol. 2. IEEE, 2003, pp. 2–587. [33] L. Kneip, P. Furgale, and R. Siegwart, “Using multi-camera systems in robotics: Efficient solutions to the NPnP problem,” in 2013 IEEE International Conference on Robotics and Automation . IEEE, 2013, pp. 3770–3776. [34] C. Sweeney, V. Fragoso, T. H¨ ollerer, and M. Turk, “gDLS: A scalable solution to the generalized pose and scale problem,” in European Conference on Computer Vision . Springer, 2014, pp. 16–31. [35] L. Kneip, H. Li, and Y. Seo, “UPnP: An optimal O(n) solution to the absolute pose problem with universal applicability,” in European Conference on Computer Vision . Springer, 2014, pp. 127–142. [36] F. Wientapper, M. Schmitt, M. Fraissinet-Tachet, and A. Kuijper, “A universal, closed-form approach for absolute pose problems,” Computer Vision and Image Understanding , vol. 173, pp. 57–75, 2018. [37] Y. Zhang, L. Deng, Y. Zhang, B. Wang, W. Chen, S. Pan, Y. Guo, and Q. Yu, “Differential 6-DOF pose estimation with provable first-order im-munity to camera calibration errors,” arXiv preprint arXiv:2608.04673 ,2026. [38] Y. Zhang, B. Wang, K. Li, W. Chen, X. Wang, Y. Zhang, Y. Zhang, Y. Guo, and Q. Yu, “Ea-gpnp: Efficient and accurate generalized-perspective-n-point solution via optimized null space analysis,” IEEE Transactions on Robotics , 2026. [39] J. Sturm, N. Engelhard, F. Endres, W. Burgard, and D. Cremers, “A benchmark for the evaluation of RGB-D SLAM systems,” in IEEE/RSJ International Conference on Intelligent Robots and Systems . IEEE, 2012, pp. 573–580. [40] M. Burri, J. Nikolic, P. Gohl, T. Schneider, J. Rehder, S. Omari, M. W. Achtelik, and R. Siegwart, “The euroc micro aerial vehicle datasets,” The EuRoC micro aerial vehicle datasets , vol. 35, no. 10, pp. 1157–1163, 2016. [41] D. DeTone, T. Malisiewicz, and A. Rabinovich, “SuperPoint: Self-supervised interest point detection and description,” in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition Workshops , 2018, pp. 224–236. [42] P.-E. Sarlin, D. DeTone, T. Malisiewicz, and A. Rabinovich, “SuperGlue: Learning feature matching with graph neural networks,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recogni-tion , 2020, pp. 4938–4947. [43] J. Sun, Z. Shen, Y. Wang, H. Bao, and X. Zhou, “LoFTR: Detector-free local feature matching with transformers,” arXiv preprint arXiv:2104.00680 , 2021. [44] Z. Teed and J. Deng, “Raft: Recurrent all-pairs field transforms for optical flow,” in European Conference on Computer Vision . Springer, 2020, pp. 402–419. [45] A. Kendall, M. Grimes, and R. Cipolla, “PoseNet: A convolutional network for real-time 6-dof camera relocalization,” in Proceedings of the IEEE International Conference on Computer Vision , 2015, pp. 2938– 2946.

@@ -1,0 +1,654 @@
+Title: Accelerating Large-scale Bundle Adjustment for LiDAR Mapping via Parallel Computing
+
+URL Source: https://arxiv.org/pdf/2608.14266v1
+
+Published Time: Mon, 17 Aug 2026 00:47:23 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Accelerating Large-scale Bundle Adjustment for LiDAR Mapping via Parallel Computing 
+
+Yixi Cai 1, Rundong Li 2, Yuhan Xie 3, Qingwen Zhang 1, Patric Jensfelt 1, and Fu Zhang 2
+
+Abstract — LiDAR bundle adjustment is widely utilized in mapping to construct globally consistent point cloud maps. In this paper, we propose the first fully parallel computing framework to accelerate LiDAR bundle adjustment for large-scale mapping, incorporating three key techniques. First, we design an adaptive, asynchronous data loading strategy to efficiently process large-scale point cloud datasets on memory-constrained GPUs. Secondly, we present a novel bottom-up voxelization method for extracting planar features, enabling fully parallelized pre-processing. Thirdly, we build upon amajorization-minimization formulation to accelerate compute-intensive tasks in the optimization via parallel computation, including the computation of residuals, Jacobian and Hessian matrices, and a parallel increment solver. To support our design, we provide both theoretical and experimental analysis of the time complexity of our approach. Extensive benchmarking on large-scale public datasets across various computational platforms validates the robustness and adaptability of our approach, achieving up to a tenfold improvement in computa-tional efficiency while preserving mapping accuracy comparable to state-of-the-art methods. To benefit future research, the implementation code is available on GitHub 1.
+
+I. I NTRODUCTION 
+
+LiDAR (Light Detection and Ranging) sensors are a crit-ical sensing technology, providing high-resolution, accurate geometric data of environments with an extended detection range. They are widely used in creating detailed 3D digital twins for applications such as augmented reality (AR) and virtual reality (VR) [1], as well as in autonomous driving [2], robotics [3], and large-scale urban mapping [4], where pre-cise 3D representations are vital for navigation and planning. LiDAR bundle adjustment (BA) is essential for building globally consistent 3D representations [5] by jointly opti-mizing sensor poses and point clouds, minimizing drift, and enhancing alignment across multiple scans. Unlike pairwise registration, BA processes all scans simultaneously, which directly influences the accuracy of environmental reconstruc-tions. As the scale of LiDAR datasets has expanded from small campus-scale datasets [6] to large city-scale datasets [7], per-forming bundle adjustment on such large-scale data presents significant computational challenges. Traditional approaches predominantly rely on sequential computation schemes [5], where the pre-processing of LiDAR point clouds is com-putationally expensive, with its processing time increasing                                     
+
+> 1Y. Cai, Q. Zhang, and P. Jensfelt are with the Division of Robotics and Perception and Learning, KTH Royal Institute of Technol-ogy, Stockholm, Sweden. {yixica, qingwen, patric }@kth.se .
+> 2R. Li and F. Zhang are with the Department of Mechanical En-gineering, the University of Hong Kong. 3Yuhan Xie is with the School of Computing and Data Science, the University of Hong Kong
+> {rdli10010,yuhanxie }@connect.hku.hk ,fuzhang@hku.hk
+> Corresponding author: Fu Zhang
+> 1https://github.com/Ecstasy-EC/GPU-BALM
+
+linearly with the number of scans and the density of LiDAR sensors, which often reaches a total of billions of points for a sequence. Furthermore, the optimization process it-self is highly demanding, as it typically involves iterative nonlinear solvers whose computational cost scales poorly with the growing number of scans and points [8]. Although some methods employ multi-threading [9] or decentralized CPU processing to achieve moderate parallelism [10], these methods remain insufficient for handling large-scale datasets efficiently, limiting their applicability in large-scale mapping scenarios. Given the rapid advancements in high-performance com-puting [11], GPU-based parallel processing offers a promis-ing approach for accelerating LiDAR bundle adjustment. However, acceleration cannot be readily achieved through a straightforward migration of algorithms from CPU to GPU. Instead, a carefully crafted design is required, taking into account memory allocation, data flow, and problem formu-lation to fully harness the computational power of GPUs. This work presents the first fully parallel LiDAR bundle adjustment framework, designed to improve computational efficiency and scalability compared to conventional methods. Our approach addresses key challenges in parallel computa-tion through three primary innovations. First, we introduce an adaptive asynchronous loading strategy to mitigate the constraints of limited graphical memory in modern GPUs when handling large-scale point clouds, often on the order of tens of gigabytes. Second, in contrast to existing methods that predominantly employ a top-down voxelization architecture for point cloud processing [5], [8], [10], we propose a novel bottom-up voxelization approach to extract planar features. This method enables fully parallelized pre-processing, en-hancing computational efficiency. Third, we develop a fully parallelized optimization process based on the majorization-minimization formulation introduced in BALM3 [10]. By integrating these techniques, our framework operates en-tirely on a single GPU, eliminating the need for CPU-GPU communication once data is transferred, and offers potential scalability to multi-GPU configurations. The contributions of this work are summarized as follows:  
+
+> •
+
+We propose an adaptive, asynchronous data loading strategy that enables efficient processing of large-scale point cloud datasets on GPUs with constrained memory capacities, addressing the challenges posed by datasets exceeding typical GPU memory limits.  
+
+> •
+
+We develop a novel bottom-up voxelization method for extracting planar features from point clouds, a com-putationally intensive component of LiDAR processing pipelines, enabling fully parallelized pre-processing to arXiv:2608.14266v1 [cs.RO] 14 Aug 2026 enhance efficiency.  
+
+> •
+
+We design fully parallelized computational algorithms for the optimization process, leveraging a majorization-minimization formulation, thereby significantly reduc-ing computational complexity.  
+
+> •
+
+We present a theoretical and experimental analysis of the time complexity of our proposed parallel computing framework, providing formal justification for its design.  
+
+> •
+
+We conduct extensive benchmarking on large-scale public datasets across various computational platforms, achieving up to a tenfold improvement in computational efficiency while maintaining accuracy comparable to state-of-the-art methods. Our implementation code will be released on GitHub upon acceptance. II. R ELATED WORKS 
+
+A. LiDAR Bundle Adjustment 
+
+Recent advances in multi-view LiDAR registration have seen growing interest in point cloud bundle adjustment. Early works like Kaess et al . [12], [13] and Ferrer et al. [14] pioneered plane-feature-based BA by minimizing point-to-plane distances. Kaess et al. jointly optimized scan poses and plane parameters via Levenberg–Marquardt (LM) opti-mization, while Ferrer et al. eliminated plane parameters by reformulating the problem into an eigenvalue minimization task solved with a first-order optimizer. As a result, the method is termed “Eigen-factor”. Later, Liu et al. introduced the BALM series [5], [8]. In its initial version [5], BALM minimizes the point-to-plane distance and analytically solves the plane parameters us-ing closed-form solutions before the numerical optimization similar to Eigen-factor. Moreover, they utilized a second-order solver with analytical Jacobian and Hessian matrices which achieved faster convergence. Further refinement led to BALM2 [8], which introduced point clusters to avoid enumerating raw points during cost function and deriva-tive computations. By deriving cost, Jacobian, and Hessian terms directly from point clusters rather than individual points, BALM2 significantly improved computational effi-ciency without loss of accuracy. Following BALM2, Li et al. recently introduced BALM3 [10]. BALM3 leverages the majorization-minimization method to decouple LiDAR poses during the LM opti-mization process. By doing so, the time complexity of the optimization is reduced from cubic to linear, significantly enhancing efficiency, particularly for large-scale datasets. Moreover, the decoupling of LiDAR poses enables parallel computation across key stages of the pipeline, including feature extraction, cost and derivatives evaluation, and Hes-sian matrix solving. This inherent parallelizability makes BALM3 highly suitable for further acceleration through parallel computing, providing the foundation for our paper. 
+
+B. Parallel Computing for LiDAR Mapping 
+
+The potential of parallel computing has been harnessed in recent years, yielding substantial acceleration in LiDAR mapping. Early applications of parallel computing tech-niques in LiDAR mapping often accelerated only specific components within their frameworks, while the majority of computations relied on sequential processing. For instance, SuMA [15] enhances correspondence matching by rendering surfels [16] in parallel on the GPU. Elastic-LiDAR Fu-sion [17] and Droeschel et al. [18] primarily leverage the GPU for scene reconstruction rather than core mapping tasks. Chen et al. [19] utilize the GPU to accelerate wavefront updates in truncated signed distance fields (TSDF), while retaining ray casting and occupancy updates on the CPU. In PGO-LIOM [20], Shen et al. employ a sampling-based, gradient-free optimization method to address the nonlinear cost function, accelerated via parallel computing. Although these approaches exploit parallel architectures to enhance specific aspects of their frameworks, their overall efficiency remains constrained by sequential computation on CPUs. Subsequently, researchers have focused on shifting greater computational workloads to GPUs to achieve enhanced ac-celeration. Chen et al. extend their earlier work [19] into an incremental Euclidean distance transform framework, where data is entirely stored in GPU memory and processed fully through parallel computation [21]. Alexander et al. introduce nvblox [22], building upon voxblox [23], by implementing all computations on the GPU in parallel to enable real-time motion planning. Modern GPU-based computation tech-niques are leveraged in [24], which parallelly minimizes the matching cost factors of General-ICP (G-ICP) [25] in a pose graph optimization framework. This work draws inspiration from MegBA [26], which accelerates visual bundle adjustment through parallel com-puting on GPUs. Our framework targets LiDAR bundle ad-justment for point clouds, a process that imposes a significant computational burden due to the large volume of points, up to billions, required to ensure global consistency. By lever-aging a decoupled formulation based on the majorization-minimization method [10], all computations within this framework are executed on the GPU, with the computational pipeline carefully designed using modern GPU techniques to fully exploit the processing capabilities of GPUs. III. L IDAR B UNDLE ADJUSTMENT VIA 
+
+MAJORIZATION -M INIMIZATION 
+
+Building on the BALM framework [5], [8], we formulate the point-to-plane residual as the cost function using point clusters [8]. Assuming there are Nf plane features being observed by NT LiDAR scans with poses Tj = ( Rj , tj ) ∈
+
+SE (3) , (j = 1 , ..., N T), the cost function is 
+
+min   
+
+> Tj∈SE (3) ,∀j
+
+c(T) = 
+
+> Nf
+
+X
+
+> i=1
+
+λmin 
+
+ 1
+
+Ni
+
+Pi − 1
+
+N 2
+
+> i
+
+vivTi
+
+| {z }
+
+> ci(T)
+
+,
+
+Pi =
+
+> NT
+
+X
+
+> j=1
+
+Pij , vi =
+
+> NT
+
+X
+
+> j=1
+
+vij , (1) where λmin (·) denotes the minimal eigenvalue of the input matrix, Ni is the total number of raw points on the i-th plane feature observed by NT LiDAR scans, and for each scan j
+
+Pij = Rj Pfij RTj + Rj vfij tTj + tj vTfij RTj + Nij tj tTj ,
+
+vij = Rj vfij + Nij tj
+
+Pfij =
+
+> Nij
+
+X
+
+> k=1
+
+pfijk pTfijk , vfij =
+
+> Nij
+
+X
+
+> k=1
+
+pfijk (2) with Nij being the total number of raw points on the i-the planar feature observed by the j-th scan, and pfijk being the 
+
+k-th raw point of them. The i-th planar feature is represented by the tuple (Pfij , v fij , N ij ), which we denote as i-th “point cluster”. To enable parallel computation, we employ BALM3’s surrogate function [10] for indirect optimization:          
+
+> cMi(T|T(l))≜
+> NTX
+> j=1
+> 1
+> Ni
+> u(l)min
+> T
+> Pij u(l)min −4z(l)
+> N2
+> i
+> u(l)min
+> T
+> vij
+> !
+> +4
+> N2
+> i
+> z(l)2(3)
+
+where u(l)min is the eigenvector associated to the minimum eigenvalue of the matrix 1 
+
+> Ni
+
+P(l) 
+
+> i
+
+− 1 
+
+> N2
+> i
+
+v(l) 
+
+> i
+
+v(l)
+
+> iT
+
+and z(l) =
+
+> 12
+
+PMp 
+
+> j=1
+
+u(l)min 
+
+> T
+
+v(l) 
+
+> ij
+
+with P(l) 
+
+> i
+
+, v(l) 
+
+> i
+
+, v(l) 
+
+> ij
+
+evaluated at T(l),respectively. l denotes l-th iteration of the optimization. For the corresponding first-order and second-order derivatives, we refer the reader to [10]. IV. P ARALLEL COMPUTATION 
+
+This section presents our parallel computing framework, as illustrated in Figure 1. We begin by briefly introducing the fundamental parallel computing primitives frequently utilized within our framework. We then detail our parallel design for preprocessing and optimization, both of which are executed fully in parallel on the GPU. 
+
+A. Standard Primitives 
+
+To achieve a fully parallel processing framework, our method extensively utilizes four standard parallel computing primitives: sort by key , reduce by key ,
+
+exclusive scan , and scatter . These primitives are fundamental for efficiently processing large-scale data in parallel. 1) sort by key : This primitive takes an array of keys and corresponding values as input and sorts the key-value pairs in parallel based on the keys. A common implementation employs parallel radix sort [27]. 2) reduce & reduce by key : The term “reduce” refers to parallel summation in the field of parallel computing. The primitive reduce by key performs associative binary operations, such as summation, min-imum, or maximum, on consecutive values sharing the same key. The results are then stored in a compact output array, whose length corresponds to the number of unique keys. 3) exclusive scan : This primitive computes the prefix sum of an input array, where each element in the output represents the total sum of all preceding elements, excluding the current term. 4) scatter : This primitive is used to re-arrange an array 
+
+RA based on a given mapping array RB.All these primitives are efficiently implemented in the Thrust library [28], removing the need for custom re-implementation and enabling high-performance execution on modern GPU architectures. For parallel computations that cannot be supported by standard primitives, we design customized parallel kernels, denoted as “Parallel For” in our algorithm. 
+
+B. Preprocessing 
+
+As illustrated in Figure 1, the preprocessing (denoted by red boxes) commences with the adaptive asynchronous data loader to transfer point cloud data from CPU to GPU. Following that, we index the point clouds via a bottom-up voxelization module to enable parallel planar feature extrac-tion. We define a multi-resolution hierarchy with L levels. For the voxel at the k-th level ( k=1 , ..., L), the resolution is obtained by dk = 2 k−1d, where d is the minimal resolution. Subsequently, points within voxels exhibiting robust good features are selected. Finally, two index mappers are prepared to facilitate parallel computation in the optimization process. 
+
+1) Adaptive Asynchronous Data Loader: In the process-ing of large-scale point cloud datasets, the substantial size of point clouds often exceeds GPU memory capacity. Even if the point clouds can be stuffed into the GPU memory, they consume the memory needed for other subsequent processing. To mitigate the limited memory constraints, we take advantage of the compact cluster representation in Equation (2). Specifically, we partition the GPU memory into two segments using a ratio α, as illustrated in the right panel of Figure 1: one segment is allocated for loading point clouds, while the other serves as a buffer for cluster storage and processing. Point clouds stored in CPU memory are segmented into batches and transferred to the first GPU memory segment. Subsequently, we merge points observed at the same pose within the same voxel at the minimum resolution into clusters, as introduced below. Each point pi = {xi, y i, z i} from the raw point cloud P is transformed into the world coordinate as pwi = {xwi , y wi , z wi }
+
+and indexed by the minimum resolution d using the following equation: 
+
+I1
+
+> x
+
+[i] = ⌊xwi /d⌋, I1 
+
+> y
+
+[i] = ⌊ywi /d⌋, I1 
+
+> z
+
+[i] = ⌊zwi /d⌋ (4) which is stored in a Structure of Array (SoA) layout I1
+
+alongside their corresponding pose indices to ensure coa-lesced memory access. The points in P are then transformed into a point cluster representation and stored in C1, as defined by Equation (2). Subsequently, we apply the standard primitive sort by key to sort the point clusters C1 by 
+
+I1, grouping those associated with the same pose within the same voxel. This is followed by a reduce by key 
+
+operation to aggregate the point clusters in C1 based on 
+
+I1, significantly reducing memory requirements for storage. To enhance efficiency, data transfer and point clustering are performed asynchronously between the CPU and GPU using CUDA Streams. We designate this process as L1
+
+voxelization, which serves as the foundation for a bottom-up voxelization approach that progresses to the Lk level. Fig. 1. Left: Parallel Computation Flow. Boxes with dotted lines indicate sequential computations performed on the CPU, whereas those with solid lines denote parallel computations executed on the GPU. The red boxes represent the preprocessing process, as described in Section IV-B, while the blue boxes indicate the optimization process, as detailed in Section IV-C. The green box with dotted lines denotes the Levenberg–Marquardt (LM) algorithm serving as the optimizer. Right: Illustration of Adaptive Asynchronous Data Loader 
+
+Algorithm 1: Preprocessing 
+
+Params: Planar threshold τ
+
+Input : Index I1, Cluster C1, Max Level L 
+
+> 1
+
+Function BottomUpVoxelization (I1,C1,L) 
+
+> 2
+
+for k ← 2 to L do  
+
+> 3
+
+Parallel For Ik−1i ,Ck−1i in I k,Ck 
+
+> 4
+
+Iki ←IndexUp (Ik−1i ) via Eq. (5)  
+
+> 5
+
+Cki ← Ck−1i 
+
+> 6
+
+sort by key (Ik,Ck) 
+
+> 7
+
+reduce by key (Ik,Ck) 
+
+> 8
+
+end  
+
+> 9
+
+cluster , idx ←Concat (C, I) 
+
+> 10
+
+return (cluster , idx ) 
+
+> 11
+
+End Function  
+
+> 12
+
+Function Selection (cluster ,T) 
+
+> 13
+
+C ←TransformToWorld (cluster ,T) 
+
+> 14
+
+reduce by key (VoxelId (idx ,C))  
+
+> 15
+
+ParallelSelect (C,τ ,cluster ) 
+
+> 16
+
+return (cluster ) 
+
+> 17
+
+End Function  
+
+> 18
+
+Function Mapper (idx ) 
+
+> 19
+
+CNT ←ConstArray (1) 
+
+> 20
+
+reduce by key (VoxelId (idx ),CNT ) 
+
+> 21
+
+Id ←exclusive scan (CNT ) 
+
+> 22
+
+Parallel For i in idx  
+
+> 23
+
+k ←BinarySearch (i, Id ) 
+
+> 24
+
+Mv[i] ← k, IA, IB ← i 
+
+> 25
+
+IP ← PoseId (idx ) 
+
+> 26
+
+sort by key (IP,IA) 
+
+> 27
+
+Ms ←scatter (IA[i],IB[i]) 
+
+> 28
+
+return (IP,Mv,Ms) 
+
+> 29
+
+End Function 
+
+2) Bottom-up Voxelization: In contrast to conventional methods that employ an Octree structure [8] to extract planar features through recursive top-down subdivision of point clouds, our approach begins at the minimal resolution d
+
+and directly merges clusters into higher-level voxels using their voxel indices. As the voxel resolution at the k-th level doubles that of the preceding level, the voxel indices for Lk
+
+voxelization are computed as follows: 
+
+Ikx/y/z [i] = ⌊Ik−1 
+
+> x/y/z
+
+[i]/2⌋ (5) Subsequently, we use sort by key and reduce by key 
+
+operations to aggregate clusters at each level. The resulting clusters from different voxelization levels are concatenated into the SoA layouts idx and clusters . A pseudo code is given in Algorithm 1, Lines 1-11. 
+
+3) Voxel Selection: The voxel selection process, outlined in Lines 12–17, evaluates the planar features of each voxel by λ0/λ 1 < τ where λ0 and λ1 represent the smallest and second-smallest eigenvalues of the plane within a voxel, respectively, and τ denotes the planar threshold. In the selection process, the point clusters stored in 
+
+cluster are first transformed into the world coor-dinate system using Equation (2) (Line 13) and sub-sequently aggregated within the same voxel using the 
+
+reduce by key primitive (Line 14). A lightweight parallel kernel, ParallelSelect , is then employed to identify and retain point clusters whose corresponding voxels exhibit planar features that satisfy the predefined threshold τ .Notably, our bottom-up voxelization and selection strategy differs from traditional octree-based methods by capturing a greater number of planar features. Unlike top-down ap-proaches, which may overlook planar features at higher-resolution voxels (lower levels) when lower-resolution voxels (higher levels) meet the threshold condition, our method incorporates features starting from the minimum resolution, achieving comprehensive feature extraction. 
+
+4) Index Mapper: Two index mappers Mv and Ms are prepared to facilitate the calculation of Jacobian and Hessian matrices as introduced in Section IV-C.3. Mv returns the voxel index in which a given point cluster resides, while 
+
+Ms maps a cluster from a layout sorted by voxel index to a layout sorted by pose index. The algorithm is outlined in Lines 18-29. The mapper Mv is constructed through the following procedure. First, we utilize reduce by key , using voxel indices as keys and a constant array of 1 as values for counts. This operation outputs the number of clusters cor-responding to each voxel (Lines 19-20). Next, we apply 
+
+exclusive scan to determine the index of the first cluster within each voxel, denoted as Id (Line 21). Subsequently, we perform a parallel bisection search for each cluster to identify the corresponding voxel, yielding the results for MV
+
+(Lines 23-24). For the mapper Ms, we initially construct two increasing arrays, denoted as IA and IB (Line 24). Subsequently, IA is Algorithm 2: Optimization Process 
+
+Input : Poses T, Cluster cluster , Indices idx ,Mapper MV , Msort , Damping Ratio μ 
+
+> 1
+
+Function CalRes (T,cluster ,idx ) 
+
+> 2
+
+CW ←TransformToWorld (cluster ,T) 
+
+> 3
+
+reduce by key (VoxelId (idx ),CW) 
+
+> 4
+
+Parallel For Ci in C w 
+
+> 5
+
+u[i] ←EigenVector (Ci) 
+
+> 6
+
+res [i] ←Residual (Ci, u[i]) 
+
+> 7
+
+residual ←reduce (res ) 
+
+> 8
+
+return (residual ,u) 
+
+> 9
+
+End Function  
+
+> 10
+
+Function CalJH (T,cluster ,IP,Mv,Ms,μ) 
+
+> 11
+
+Parallel For Ti, Ci in T ,cluster  
+
+> 12
+
+iv ← M v[i], ip ← M s[i] 
+
+> 13
+
+J[ip] ←Jacobian (Ti, Ci, u[iv ]) 
+
+> 14
+
+H[ip] ←Hessian (Ti, Ci, u[iv ]) 
+
+> 15
+
+reduce by key (IP,J) 
+
+> 16
+
+reduce by key (IP,H) 
+
+> 17
+
+return (J,H) 
+
+> 18
+
+End Function  
+
+> 19
+
+Function Solver (T,μ,J,H) 
+
+> 20
+
+Parallel For i ← 1 to N T 
+
+> 21
+
+A ← H[i] + μDiagonal (H[i]) 
+
+> 22
+
+b ← − J[i], ∆T ←LDLT (A,b) 
+
+> 23
+
+Ti ← Ti + ∆ T 
+
+> 24
+
+return (T) 
+
+> 25
+
+End Function 
+
+sorted according to the pose indices (Lines 25–26). We then employ the scatter operation to reorder IB, utilizing the previously sorted IA as a mapping function (Line 27). The resulting output constitutes the mapper Ms.
+
+C. Optimization 
+
+We describe the parallel computation to solve the op-timization cost function in Eq. (3), with the pseudo-code presented in Algorithm 2. 
+
+1) LM optimizer: In our framework, the Leven-berg–Marquardt (LM) algorithm serves as the optimizer, requiring the computation of residuals, Jacobian matrices, and Hessian matrices to solve for the increment and adjust the damping factor for optimization. In contrast to previous works that rely on sequential computation, we compute these components in parallel as detailed in the following sections. Furthermore, as the poses are decoupled through the majorization-minimization method, the increment solver can also be executed in parallel, further enhancing the efficiency of the optimization process. 
+
+2) Residual Evaluation: The residual is computed through a parallel procedure similar to voxel selection, as detailed in Lines 1–9. Firstly, the clusters are transformed into the world coordinate using the pose from the current optimization step (Line 2). These are then aggregated via reduce by key to derive the plane features for each voxel (Line 3), which are subsequently utilized to calculate the plane normal vector u
+
+(Line 5). The residual for each voxel is determined according to Eq. (3) and summed in parallel through reduce (Line 7). Notably, the normal vector u is stored in global memory to facilitate the subsequent computation of the Jacobian and Hessian matrices. 
+
+3) Jacobian and Hessian: Owing to the efficient decou-pling of majorization-minimization formulation, the compu-tation of Jacobian and Hessian matrices can be isolated to each cluster and its associated pose, which is described in Lines 10–18. For each point cluster, the normal vector of its corresponding voxel is retrieved using the mapper Mv, and the Jacobian and Hessian matrices are calculated according to [10]. Utilizing the mapper Ms, the resulting matrices are organized into a layout sorted by pose index, which facilitates the subsequent reduce by key . This primitive efficiently sums the Jacobian and Hessian contributions from different clusters for each pose. 
+
+4) Solver: The decoupled formulation allows for the parallel solution of the increment for each pose, as outlined in Lines 19–25. V. T IME COMPLEXITY ANALYSIS 
+
+While our framework is built upon BALM3 in the theo-retical aspect, the time complexity in parallel computation is completely different from that using sequential computation. According to Brent’s theorem [29], the time complexity for parallel computing is determined by three factors: the total work in sequential W (n), the depth in parallel computation 
+
+D(n), and the number of processing threads NTh . Here, n
+
+is the number of data to be processed. The parallel time complexity Tp is obtained as: 
+
+Tp = W (n)
+
+NTh 
+
++ D(n) (6) We provide the parallel time complexity for preprocessing, evaluation of residual, Jacobian, and Hessian matrices, and solver, respectively. 
+
+Theorem 1. The total sequential work for preprocessing is 
+
+O(NP log( NP)) and the depth is O(log 2(NP)) . Therefore, the parallel time complexity for preprocessing is 
+
+T pre  
+
+> p
+
+= O(NP log( NP)) 
+
+NTh 
+
++ O(log 2(NP)) (7) 
+
+where NP is the number of raw points. 
+
+With NC clusters to be processed, the parallel time complexity for computing residuals, Jacobian, and Hessian matrices is as follows: 
+
+Theorem 2. The total sequential work for residual, Jacobian and Hessian matrices computation is O(NC) and the depth is O(log( NC)) . Therefore, the parallel time complexity is 
+
+T compute  
+
+> p
+
+= O(NC)
+
+NTh 
+
++ O(log( NC)) (8) 
+
+where NC is the number of point clusters. 
+
+Finally, we provide the time complexity for the parallel solver of the increment in LM optimization as below: 
+
+Theorem 3. The total sequential work for parallel solver is 
+
+O(NT) and the depth is O(1) . Therefore, the parallel time complexity for preprocessing is 
+
+T solve  
+
+> p
+
+= O(NT)
+
+NTh 
+
+(9) 
+
+where NT is the number of poses. 
+
+Due to space constraints, the proof of the parallel time complexity is provided in the supplementary materials 1.Based on the analysis above, the parallel time complexity is primarily governed by the first term, which depends on NTh ,due to the limited number of threads available on modern GPUs. This finding is consistent with the runtime observa-tions presented in Figure 3. Furthermore, the analysis also reveals that, even with unlimited computational resources, the time complexity remains lower-bounded by the second term corresponding to the depth of parallel computation. VI. B ENCHMARK COMPARISON 
+
+In this section, we perform comprehensive benchmark comparisons in terms of efficiency and accuracy with state-of-the-art LiDAR bundle adjustment methods using public datasets, emphasizing large-scale data sequences. 
+
+A. Experiment Setup 1) Dataset: The public datasets used in our experiments include HeLiPR [7], MaRS-LVIG [30], and MulRan [31]. These datasets encompass data collected from diverse envi-ronments and platforms, utilizing various types of LiDAR sensors. The specific data sequences for each dataset are detailed in the supplementary 1.
+
+2) Baselines: We compare our method with HBA [9], a hierarchical LiDAR bundle adjustment framework designed for large-scale datasets, and BALM3 [10], which provides the theoretical foundation of our method. 
+
+3) Computation Platform: The experiments of HBA and BALM3 are conducted on a high-performance computing desktop equipped with Intel-13900KF CPU and 64 GB 
+
+RAM. Since our method requires substantial GPU memory, we utilized an A100 Tensor Core GPU with 40 GB of on-board HBM2 VRAM. 
+
+4) Parameters: For HBA, we configure the minimal res-olution to 2.0 m with a total of 3 layers. Other parameters are adopted as defaults from its open-source code reposi-tory 2. For our method, the minimal voxel resolution is set to d=4 .0 m for the MulRan and HeLiPR datasets and to 
+
+d=3 .0 m for the MaRS-LVIG dataset. The voxelization level in our method is fixed at L = 3 . For BALM3, we adopt the same minimum resolution as our method while it utilizes an adaptive voxelization strategy with a maximum of 3 layers. 
+
+B. Efficiency Evaluation 
+
+The evaluation results for efficiency and accuracy are pre-sented in Table I. The total computation time includes both preprocessing and optimization phases for each method. Our method achieves the highest efficiency across all datasets, followed by BALM3, whereas HBA exhibits the lowest effi-ciency. Specifically, on the HeLiPR dataset sequences, which contain over 20,000 poses and more than 300 million LiDAR          
+
+> 2https://github.com/hku-mars/HBA
+> Fig. 2. Time Breakdown Comparison of Our Method and BALM3 for the HeLiPR Dataset. The bars represent preprocessing, evaluation, and solver times for six sequences (R01 to R03 and B01 to B03, correspond-ing to Roundabout Avia01 to Roundabout Avia03 and Bridge Avia01 to
+> Bridge Avia03 , respectively). Blue bars for our method are shifted to align with the red bars for BALM3 for a clearer visual comparison of their values.
+
+points, BALM3 requires up to 185 .43 s while our method takes only 22 .15 s , i.e. about ten times faster. The other baseline, HBA demonstrates significantly longer computation times than BALM3, up to 236 .73 s for the Bridge Avia01 
+
+sequence. Meanwhile, on the MulRan dataset with over 200 million LiDAR points and 10,000 poses, our approach processes sequences in up to 2.69 s , compared to BALM3’s up to 12 .48 s (around 4.6 time slower) and HBA’s up to 
+
+447 .44 s (around 166 times slower). For the MaRS-LVIG 
+
+dataset, characterized by a significantly smaller number of LiDAR points and poses, our method achieves the greatest performance, slightly outperforming BALM3 and surpassing HBA by a substantial margin. We also report the acceleration ratio (i.e., speed in Table I), computed as: Speed = min( tBALM3 , tHBA )/tours . The results indicate that our method achieves a maximum acceleration of 9.97 times that of BALM3 for Roundabout Avia03 sequence. 
+
+C. Accuracy Evaluation 
+
+In terms of accuracy, we evaluate the root mean square error (RMSE) of the absolute position error (APE) using 
+
+evo 3 for assessment. Our method achieves the lowest RMSE for 17 out of 33 sequences tested, followed by HBA, which performs best in 13 sequences, and BALM3, which leads in 3 sequences. The modest accuracy improvements of our method primarily result from the bottom-up voxelization design. Owing to the efficient parallel processing frame-work, a larger number of plane features across varying voxel resolutions are incorporated into the optimization cost function, thereby applying additional constraints. In contrast, BALM3 and HBA utilize an adaptive voxelization approach, potentially considering fewer plane features. However, it should be noted that incorporating more planar features into the optimization cost function does not always enhance the final results, as demonstrated by our ablation study in Section VI-E. 
+
+D. Time Analysis 
+
+We first present a detailed time breakdown of our method and BALM3, encompassing preprocessing time, evaluation    
+
+> 3https://github.com/MichaelGrupp/evo TABLE I BENCHMARK COMPARISON IN EFFICIENCY AND ACCURACY
+
+Dataset Sequence Total Time (s) RMSE (m) HBA BALM3 Ours Speed 2↑ HBA BALM3 Ours ∆err 3↓
+
+L = 3 L = 1 ∗ L = 3 L = 1 ∗
+
+HeLiPR Roundabout Avia01 214.63 152.04 22.15 17.53 ×6.86 2.085 1.722 1.583 1.968 -0.1383 Roundabout Avia02 197.99 61.42 10.74 1.56 ×5.72 1.384 1.471 1.444 2.473 0.0594 Roundabout Avia03 175.75 185.43 18.59 12.92 ×9.97 2.099 1.870 2.010 2.306 0.1399 Bridge Avia01 236.73 52.29 6.73 4.79 ×7.77 11.129 11.186 11.160 11.228 0.0311 Bridge Avia02 210.72 19.78 2.52 3.11 ×7.84 6.576 6.440 6.445 6.432 0.0048 Bridge Avia03 202.11 22.15 4.28 2.44 ×5.17 10.459 10.461 10.463 10.465 0.0040 MaRS-LVIG AMtown01 521.31 23.04 7.70 7.68 ×2.99 1.584 1.497 1.350 1.373 -0.1463 AMtown02 270.66 13.79 4.43 4.44 ×3.11 8.551 8.544 8.530 8.612 -0.0142 AMtown03 226.04 15.55 5.73 6.40 ×2.71 5.484 4.661 4.133 4.400 -0.5285 AMvalley01 469.57 19.52 11.86 14.26 ×1.65 6.530 6.099 6.062 6.067 -0.0371 AMvalley02 254.63 7.33 7.11 5.29 ×1.03 14.740 14.619 14.645 14.639 0.0257 AMvalley03 178.19 15.30 2.20 2.38 ×6.97 17.725 17.684 17.689 17.698 0.0050 HKairport01 313.63 7.72 4.80 4.19 ×1.61 0.640 0.649 0.555 0.555 -0.0846 HKairport02 159.41 5.19 1.51 1.83 ×3.44 0.544 0.610 0.575 0.575 0.0311 HKairport03 136.17 1.72 1.18 0.85 ×1.46 0.698 0.815 0.710 0.727 0.0124 HKairport GNSS01 299.25 5.55 2.25 1.81 ×2.47 0.444 0.462 0.442 0.441 -0.0024 HKairport GNSS02 159.69 4.50 1.24 1.46 ×3.63 0.637 0.682 0.629 0.629 -0.0076 HKairport GNSS03 136.51 5.00 2.13 2.32 ×2.35 0.539 0.548 0.534 0.529 -0.0050 HKisland01 145.40 2.95 1.51 1.36 ×1.95 0.556 0.593 0.560 0.560 0.0040 HKisland02 83.60 2.16 1.30 1.16 ×1.66 0.707 0.734 0.709 0.708 0.0016 HKisland03 80.28 2.68 1.27 1.22 ×2.11 0.843 0.952 0.897 0.897 0.0542 HKisland GNSS01 166.57 2.71 1.57 1.35 ×1.72 0.619 0.682 0.599 0.599 -0.0202 HKisland GNSS02 94.67 2.52 1.43 1.31 ×1.76 0.741 0.814 0.728 0.728 -0.0130 HKisland GNSS03 92.97 3.01 0.65 0.74 ×4.60 1.085 1.107 1.074 1.060 -0.0105 MulRan DCC01 301.73 10.07 1.66 0.94 ×6.08 5.391 5.354 5.260 5.470 -0.0943 DCC02 323.68 9.82 2.11 1.40 ×4.65 2.882 2.938 2.844 2.990 -0.0382 DCC03 417.16 12.48 2.55 1.89 ×4.90 2.114 2.113 2.011 2.201 -0.1021 KAIST01 313.43 10.03 2.18 1.58 ×4.61 3.292 3.351 3.323 3.352 0.0316 KAIST02 333.03 9.91 2.38 1.90 ×4.17 3.353 3.401 3.389 3.409 0.0354 KAIST03 447.44 10.95 2.38 1.82 ×4.60 2.905 2.930 2.924 2.939 0.0196 Riverside01 238.47 4.88 1.28 0.79 ×3.80 8.461 8.425 8.410 8.420 -0.0156 Riverside02 252.76 7.60 1.20 0.72 ×6.32 11.410 11.428 11.443 11.447 0.0327 Riverside03 345.43 11.32 2.69 1.89 ×4.22 12.984 13.082 13.089 13.082 0.1051    
+
+> ∗These two columns are only used for ablation study.
+> 1Speed: Acceleration ratio of our method (denoted as “Ours”) compared to the best-performing method between HBA and BALM3.
+> 2∆err : The RMSE difference of our method relative to the best-performing method between HBA and BALM3.
+
+time, and solver time for six sequences from the HeLiPR 
+
+dataset, as illustrated in Figure 2. The solver time for computing the increment in our method is notably small, averaging 0.008 s , compared to BALM3, which averages 
+
+0.554 s , resulting in an acceleration of approximately 70 x.For preprocessing, our method requires an average of 1.2 s ,while BALM3 requires 5.18 s , achieving an acceleration of 
+
+4.32 times. Evaluation constitutes the most time-intensive phase of the process which includes the computation of residuals, Jacobian matrices, and Hessian matrices. Our method averages 9.61 s , outperforming BALM3, which av-erages 76 .45 s , with an acceleration of roughly 8 times. To validate the time complexity analysis presented in Section V, we evaluated the preprocessing time, per-step evaluation time, and per-step solver time as functions of the number of points, clusters, and poses, respectively. As shown in Figure 3, the runtime exhibits a linear increase, indicating that the time complexity is primarily governed by sequential work, aligning well with our analysis. This is due to the limited number of parallel threads relative Fig. 3. Experimental Time Analysis to the large volume of data. These results suggest that further improvements in time efficiency could be achieved by leveraging additional GPUs to enhance parallel computation. 
+
+E. Ablation Study on Voxelization Levels 
+
+Since our method employs a bottom-up voxelization with multilevel, we conduct a straightforward ablation study to compare the performance of multiple levels against a single level (i.e., L = 1) within our framework. As shown in Table I, incorporating additional voxels at varying resolutions enhances accuracy, albeit at the expense of increased process-ing time. However, we observed slight performance declines (e.g., HKairpot GNSS01 ) and instances where performance did not improve (e.g., HKairpot01 and HKairpot GNSS03 ). We emphasize that utilizing more voxels at lower resolutions requires careful consideration of the planar feature threshold to prevent including suboptimal planar features that could undermine the optimization results. VII. C ONCLUSION AND FUTURE WORK 
+
+This paper introduces the first parallel computing frame-work for LiDAR bundle adjustment. Within our frame-work, an adaptive asynchronous loading strategy mitigates GPU memory constraints in processing large-scale datasets, followed by a fully parallelized preprocessing method for planar features extraction. Subsequently, it leverages the majorization-minimization formulation to enable parallel op-timization, alongside a parallel solver for the increment. The experiment results demonstrate substantial improvements in efficiency while maintaining accuracy. Future work will extend the framework to multi-GPU architectures to further scale global optimization and maximize efficiency. REFERENCES [1] P. Cipresso, I. A. C. Giglioli, M. A. Raya, and G. Riva, “The past, present, and future of virtual and augmented reality research: a network and cluster analysis of the literature,” Frontiers in psychology , vol. 9, p. 2086, 2018. [2] J. Levinson, J. Askeland, J. Becker, J. Dolson, D. Held, S. Kammel, J. Z. Kolter, D. Langer, O. Pink, V. Pratt et al. , “Towards fully au-tonomous driving: Systems and algorithms,” in 2011 IEEE intelligent vehicles symposium (IV) . IEEE, 2011, pp. 163–168. [3] Y. Ren, F. Zhu, G. Lu, Y. Cai, L. Yin, F. Kong, J. Lin, N. Chen, and F. Zhang, “Safety-assured high-speed navigation for mavs,” Science Robotics , vol. 10, no. 98, p. eado6187, 2025. [4] H. Lim, D. Kim, G. Shin, J. Shi, I. Vizzo, H. Myung, J. Park, and L. Carlone, “Kiss-matcher: Fast and robust point cloud registration revisited,” arXiv preprint arXiv:2409.15615 , 2024. [5] Z. Liu and F. Zhang, “Balm: Bundle adjustment for lidar mapping,” 
+
+IEEE Robotics and Automation Letters , vol. 6, no. 2, pp. 3184–3191, 2021. [6] M. Ramezani, Y. Wang, M. Camurri, D. Wisth, M. Mattamala, and M. Fallon, “The newer college dataset: Handheld lidar, inertial and vision with ground truth,” in 2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2020, pp. 4353–4360. [7] M. Jung, W. Yang, D. Lee, H. Gil, G. Kim, and A. Kim, “Helipr: Heterogeneous lidar dataset for inter-lidar place recognition under spatiotemporal variations,” The International Journal of Robotics Research , vol. 43, no. 12, pp. 1867–1883, 2024. [8] Z. Liu, X. Liu, and F. Zhang, “Efficient and consistent bundle adjustment on lidar point clouds,” IEEE Transactions on Robotics ,2023. [9] X. Liu, Z. Liu, F. Kong, and F. Zhang, “Large-scale lidar consistent mapping using hierarchical lidar bundle adjustment,” IEEE Robotics and Automation Letters , vol. 8, no. 3, pp. 1523–1530, 2023. [10] R. Li, Z. Liu, H. Wei, Y. Cai, H. Li, and F. Zhang, “Efficient and distributed large-scale point cloud bundle adjustment via majorization-minimization,” The International Journal of Robotics Research , 2026. [11] M. Hobbhahn and T. Besiroglu, “Trends in gpu price-performance,” 2022, accessed: 2025-02-25. [Online]. Available: https://epoch.ai/ blog/trends-in-gpu-price-performance [12] M. Kaess, “Simultaneous localization and mapping with infinite planes,” in 2015 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2015, pp. 4605–4611. [13] M. Hsiao, E. Westman, G. Zhang, and M. Kaess, “Keyframe-based dense planar slam,” in 2017 IEEE International Conference on Robotics and Automation (ICRA) . Ieee, 2017, pp. 5110–5117. [14] G. Ferrer, “Eigen-factors: Plane estimation for multi-frame and time-continuous point cloud alignment,” in 2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2019, pp. 1278–1284. [15] J. Behley and C. Stachniss, “Efficient surfel-based slam using 3d laser range data in urban environments.” in Robotics: science and systems ,vol. 2018, 2018, p. 59. [16] H. Pfister, M. Zwicker, J. Van Baar, and M. Gross, “Surfels: Surface elements as rendering primitives,” in Proceedings of the 27th annual conference on Computer graphics and interactive techniques , 2000, pp. 335–342. [17] C. Park, P. Moghadam, S. Kim, A. Elfes, C. Fookes, and S. Sridharan, “Elastic lidar fusion: Dense map-centric continuous-time slam,” in 
+
+2018 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2018, pp. 1206–1213. [18] D. Droeschel and S. Behnke, “Efficient continuous-time slam for 3d lidar-based online mapping,” in 2018 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2018, pp. 5000–5007. [19] Y. Chen, S. Lai, B. Wang, F. Lin, and B. M. Chen, “A gpu mapping system for real-time robot motion planning,” in 2021 IEEE Inter-national Conference on Real-time Computing and Robotics (RCAR) .IEEE, 2021, pp. 762–768. [20] H. Shen, Q. Zong, B. Tian, X. Zhang, and H. Lu, “Pgo-liom: Tightly coupled lidar-inertial odometry and mapping via parallel and gradient-free optimization,” IEEE Transactions on Industrial Electron-ics , vol. 70, no. 11, pp. 11 453–11 463, 2022. [21] Y. Chen, S. Lai, J. Cui, B. Wang, and B. M. Chen, “Gpu-accelerated incremental euclidean distance transform for online motion planning of mobile robots,” IEEE Robotics and Automation Letters , vol. 7, no. 3, pp. 6894–6901, 2022. [22] A. Millane, H. Oleynikova, E. Wirbel, R. Steiner, V. Ramasamy, D. Tingdahl, and R. Siegwart, “nvblox: Gpu-accelerated incremental signed distance field mapping,” in 2024 IEEE International Confer-ence on Robotics and Automation (ICRA) . IEEE, 2024, pp. 2698– 2705. [23] H. Oleynikova, Z. Taylor, M. Fehr, R. Siegwart, and J. Nieto, “Voxblox: Incremental 3d euclidean signed distance fields for on-board mav planning,” in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2017. [24] K. Koide, M. Yokozuka, S. Oishi, and A. Banno, “Globally consistent 3d lidar mapping with gpu-accelerated gicp matching cost factors,” 
+
+IEEE Robotics and Automation Letters , vol. 6, no. 4, pp. 8591–8598, 2021. [25] A. Segal, D. Haehnel, and S. Thrun, “Generalized-icp.” in Robotics: science and systems , vol. 2, no. 4. Seattle, WA, 2009, p. 435. [26] J. Ren, W. Liang, R. Yan, L. Mai, S. Liu, and X. Liu, “Megba: A gpu-based distributed library for large-scale bundle adjustment,” in 
+
+European Conference on Computer Vision . Springer, 2022, pp. 715– 731. [27] S.-J. Lee, M. Jeon, D. Kim, and A. Sohn, “Partitioned parallel radix sort,” Journal of Parallel and Distributed Computing , vol. 62, no. 4, pp. 656–668, 2002. [28] N. Bell and J. Hoberock, “Thrust: A productivity-oriented library for cuda,” in GPU computing gems Jade edition . Elsevier, 2012, pp. 359–371. [29] R. P. Brent, “The parallel evaluation of general arithmetic expressions,” 
+
+Journal of the ACM (JACM) , vol. 21, no. 2, pp. 201–206, 1974. [30] H. Li, Y. Zou, N. Chen, J. Lin, X. Liu, W. Xu, C. Zheng, R. Li, D. He, F. Kong et al. , “Mars-lvig dataset: A multi-sensor aerial robots slam dataset for lidar-visual-inertial-gnss fusion,” The International Journal of Robotics Research , vol. 43, no. 8, pp. 1114–1127, 2024. [31] G. Kim, Y. S. Park, Y. Cho, J. Jeong, and A. Kim, “Mulran: Multimodal range dataset for urban place recognition,” in 2020 IEEE international conference on robotics and automation (ICRA) . IEEE, 2020, pp. 6246–6253.

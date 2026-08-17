@@ -1,0 +1,249 @@
+{
+  "date": "20260817",
+  "date_label": "",
+  "generated_at": "2026-08-17 20:50:41 UTC",
+  "recommend_exists": true,
+  "run_count": 1,
+  "papers": [
+    {
+      "paper_id": "2608.14266v1",
+      "route": "202608/17/2608.14266v1-accelerating-large-scale-bundle-adjustment-for-lidar-mapping-via-parallel-computing",
+      "title": "Accelerating Large-scale Bundle Adjustment for LiDAR Mapping via Parallel Computing",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "并行LiDAR光束法平差用于全局一致建图，与位姿图优化和大规模建图相关",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.11077v1",
+      "route": "202608/17/2608.11077v1-learning-gaussian-structure-intervention-guided-density-control-for-feed-forward-driving-reconstruction",
+      "title": "Learning Gaussian Structure: Intervention-Guided Density Control for Feed-Forward Driving Reconstruction",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "面向驾驶场景的前馈高斯重建与密度控制学习，直接关联自动驾驶3D建图",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.12794v1",
+      "route": "202608/17/2608.12794v1-point-feature-descriptor-via-directional-partition-of-unity-on-maps",
+      "title": "Point Feature Descriptor via Directional Partition of Unity on Maps",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "用于GPS-free地图定位的平滑方向点描述子，是视觉SLAM的核心组件",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.13918v1",
+      "route": "202608/17/2608.13918v1-beyond-control-points-arcsecond-relative-motion-estimation-of-vision-measurement-platforms-with-incomplete-or-absent-control-fields",
+      "title": "Beyond Control Points: Arcsecond Relative-Motion Estimation of Vision Measurement Platforms With Incomplete or Absent Control Fields",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "从图像位移和已知三维点估计帧间平台运动，属于视觉里程计",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.14082v1",
+      "route": "202608/17/2608.14082v1-pilot-privileged-imitation-learning-for-end-to-end-motion-planning-of-autonomous-uavs-under-partial-observability",
+      "title": "PILOT: Privileged Imitation Learning for End-to-End Motion Planning of Autonomous UAVs under Partial Observability",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl-motion"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "基于特权模仿学习的视觉UAV运动规划，利用深度与里程计信息",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.09110v1",
+      "route": "202608/17/2608.09110v1-view-adaptive-renderer-for-view-consistent-2d-to-3d-generation",
+      "title": "View-Adaptive Renderer for View-Consistent 2D-to-3D Generation",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "视角自适应神经渲染用于三维重建，与稠密重建相关",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.10712v1",
+      "route": "202608/17/2608.10712v1-compact-feed-forward-3d-gaussians-via-saliency-guided-primitive-merging",
+      "title": "Compact Feed-Forward 3D Gaussians via Saliency-Guided Primitive Merging",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "通过显著性引导的基元合并得到紧凑的三维高斯表示，提升前馈三维重建效率，适用于稠密建图。",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.11938v1",
+      "route": "202608/17/2608.11938v1-surfsvr-2d-surface-priors-as-3d-geometric-regularizers-for-sparse-voxel-reconstruction",
+      "title": "Surfsvr: 2D Surface Priors as 3D Geometric Regularizers for Sparse Voxel Reconstruction",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "利用2D表面先验进行稀疏体素3D重建，与稠密建图和重建密切相关",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.14138v1",
+      "route": "202608/17/2608.14138v1-spargen-unifying-spatial-perception-and-reasoning-through-native-multimodal-generation",
+      "title": "SPARGen: Unifying Spatial Perception and Reasoning through Native Multimodal Generation",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "统一多模态生成实现三维重建与稠密对应，与稠密建图相关",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.08814v1",
+      "route": "202608/17/2608.08814v1-360cityarena-a-realistic-virtual-urban-navigation-benchmark-for-embodied-agents",
+      "title": "360CityArena: A Realistic Virtual Urban Navigation Benchmark for Embodied Agents",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "面向具身智能体的真实感虚拟城市导航基准，涵盖定位与路径规划",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.10023v1",
+      "route": "202608/17/2608.10023v1-protection-levels-for-vision-based-pose-estimation",
+      "title": "Protection Levels for Vision-Based Pose Estimation",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "具有完整性界限的视觉位姿估计，与视觉里程计和SLAM相关",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.11564v1",
+      "route": "202608/17/2608.11564v1-repurposing-rgb-based-foundation-model-for-depth-estimation-on-thermal-images-using-hierarchical-supervision",
+      "title": "Repurposing RGB-based Foundation Model for Depth Estimation on Thermal Images Using Hierarchical Supervision",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "面向恶劣条件下的机器人感知，进行热成像深度估计",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.12179v1",
+      "route": "202608/17/2608.12179v1-map-det3d-metric-feed-forward-3d-reconstruction-prior-for-multi-view-3d-object-detection-from-streaming-inputs",
+      "title": "Map-Det3D: Metric Feed-Forward 3D Reconstruction Prior for Multi-view 3D Object Detection from Streaming Inputs",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "面向流式输入的多视图度量三维重建先验，支持三维建图任务",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.12442v1",
+      "route": "202608/17/2608.12442v1-mv2-multi-view-multi-vehicle-driving-dataset-for-novel-view-synthesis",
+      "title": "MV2: Multi-View Multi-Vehicle Driving Dataset for Novel View Synthesis",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "用于三维场景重建的多视角驾驶数据集，带已配准相机位姿",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    },
+    {
+      "paper_id": "2608.13095v1",
+      "route": "202608/17/2608.13095v1-semantic-radiance-fields-as-simulators-for-spatial-reasoning-in-real-world-scenes",
+      "title": "Semantic Radiance Fields as Simulators for Spatial Reasoning in Real-World Scenes",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "语义辐射场用于从带位姿RGB图像重建3D场景，支持具身智能体的语义查询",
+      "first_seen_at": "2026-08-17 20:50:41 UTC",
+      "updated_at": "2026-08-17 20:50:41 UTC"
+    }
+  ]
+}

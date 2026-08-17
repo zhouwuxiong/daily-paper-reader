@@ -1,0 +1,1688 @@
+Title: Point Feature Descriptor via Directional Partition of Unity on Maps
+
+URL Source: https://arxiv.org/pdf/2608.12794v1
+
+Published Time: Fri, 14 Aug 2026 00:29:59 GMT
+
+Number of Pages: 24
+
+Markdown Content:
+# Point Feature Descriptor via Directional Partition of Unity on Maps 
+
+Phan Thanh An 1,3 and Dau The Phiet 2,3,# 
+
+> 1Institute of Mathematical and Computational Sciences and Faculty of Applied Science, Ho Chi Minh City University of Technology, 268 Ly Thuong Kiet, Dien Hong Ward, Ho Chi Minh City, Vietnam
+> 2Department of Applied Mathematics, Faculty of Applied Science, Ho Chi Minh City University of Technology, 268 Ly Thuong Kiet, Dien Hong Ward, Ho Chi Minh City, Vietnam
+> 3Vietnam National University Ho Chi Minh City, Linh Xuan Ward, Ho Chi Minh City, Vietnam
+> #Corresponding author
+
+Abstract 
+
+We develop a functional-analytic framework for smooth directional point descriptors in GPS-free map-based localization. Given a query point p in a map M ⊂ Rd, the descriptor integrates an environment signal against a partition-of-unity weight family built from a softmax kernel, yielding a C∞ alternative to hard angular binning. Our main contributions are: (i) a totality theorem showing that the associated linear functionals form a total family in L2(Sd−1), establishing asymptotic injectivity of the descriptor map; and (ii) a descriptor-induced seminorm |f |D,n = ∥Pnf ∥L2 , identified via the Gram matrix of the weights, which satisfies a Parseval-type identity |f |D,n → ∥ f ∥L2(Sd−1) as n → ∞ . Complementary results include Fréchet differentiability, lower semicontinuity under occlusion, and explicit Lipschitz stability bounds with constants depending on the kernel and temperature. These properties underpin a localization theory in which the descriptor grid enables nearest-neighbor position recovery with a certifiable static error bound, while robot motion generates an observability Gramian whose smallest eigenvalue controls a dynamic error bound and generically resolves symmetry-induced ambiguities that persist under single-observation matching. 
+
+Keywords: Descriptor integral, Fréchet differentiability, GPS-free map-based localization, Gram matrix, Lipschitz stability, lower semicontinuity. 
+
+MSC2020: 28A25; 68T45; 52A30; 49J53; 26B35 
+
+1. Introduction 
+
+1.1. Motivation 
+
+Autonomous navigation without reliance on global positioning systems requires a robot to determine its location solely from onboard sensor measurements and a prebuilt map of the environment (see [1, 2] ). Central to this capability is the ability to match a local observation – a laser scan, a depth image, or a point cloud – against a stored representation of the map. This matching problem is fundamentally one of point description : given a point p in the 1arXiv:2608.12794v1 [math.FA] 13 Aug 2026 map, one seeks a vector F(p) ∈ Rn that is both discriminative (distinct points yield distinct descriptors) and stable (small displacements of p produce small changes in F(p)). Classical descriptors such as FPFH [3] and SHOT [4] encode local geometry by accumu-lating statistics into fixed angular bins. While effective in practice, hard-binning strategies suffer from the bin-boundary effect : a small perturbation in viewpoint or sensor noise can shift a measurement from one bin to the adjacent one, producing a discontinuous jump in the descriptor. This discontinuity breaks gradient-based pipelines and makes rigorous analysis of stability and completeness difficult. A line of work addresses smoothness by replacing hard bins with soft assignment ker-nels [5–7], including constructions based on the von Mises-Fisher (vMF) distribution [8, 9]. However, these works focus primarily on empirical performance; a rigorous functional-analytic treatment of the information content, stability, and localization properties of smooth directional descriptors has, to our knowledge, not been carried out. 
+
+1.2. Key Idea and Distinction from Prior Work 
+
+This paper develops such a treatment. We observe that any smooth directional descriptor of the form 
+
+ϕi(p) = 
+
+Z
+
+> Sd−1
+
+fp(θ)wi(θ)d σ(θ)
+
+is entirely determined by the choice of weight functions {wi}ni=1 . We impose one structural condition on the weights – the partition of unity (PoU): 
+
+> n
+
+X
+
+> i=1
+
+wi(θ) = 1 , wi ≥ 0,
+
+and show that this single constraint unlocks a complete functional-analytic theory. For the weights we adopt the softmax kernel with temperature ε > 0, whose kernel coincides with the vMF distribution [8, 9]: 
+
+wi(θ) = exp( di · θ/ε )
+
+P 
+
+> j
+
+exp( dj · θ/ε ).
+
+The use of a vMF-type kernel for soft assignment is not new. What is new is the analytical framework built on top of it: (a) The PoU constraint implies that P 
+
+> i
+
+ϕi(p) = R fpdσ, the zeroth moment of the signal, independently of the choice of basis or temperature. The descriptor thus decomposes the signal into a basis-free amplitude component and a directional shape component. (b) The descriptor map f 7 → F(f ) is a bounded linear operator whose Gram matrix 
+
+(Gn)ij = ⟨wi, w j ⟩L2 gives rise to the descriptor-induced seminorm 
+
+|f |D,n = ∥F(f )∥G−1 
+
+> n
+
+= ∥Pnf ∥L2 ,
+
+where Pn is the L2-orthogonal projection onto span {wi}. As n → ∞ , this seminorm satisfies a Parseval-type identity : |f |D,n → ∥ f ∥L2 .2(c) The family {L(n) 
+
+> i
+
+: f 7 → ϕ(n) 
+
+> i
+
+} is total in L2(Sd−1): the descriptor asymptotically sepa-rates all distinct signals, providing a functional-analytic foundation for discriminability. (d) The Fréchet differentiability of F(p) in the map point p enables the construction of an observability Gramian W(0 , T ) = R T 
+
+> 0
+
+J⊤ 
+
+> F
+
+JFdt along robot trajectories, linking descriptor geometry to classical observability theory and yielding explicit, certifiable localization error bounds. To our knowledge, points (2)–(4) have not previously appeared in the directional descriptor literature. 
+
+1.3. Main Contributions 
+
+(i) Analytical framework. We provide a unified functional-analytic treatment of partition-of-unity directional descriptors. Central results include the zeroth-moment identity (energy preservation), Fréchet differentiability with explicit Jacobian formula, lower semicontinuity under occlusion, and Lipschitz stability with constants expressed in terms of the kernel and temperature. (ii) Gram norm and Parseval identity. We introduce the descriptor-induced seminorm 
+
+|f |D,n := ( F(f )⊤G−1 
+
+> n
+
+F(f )) 1/2, identify it as the L2-norm of the orthogonal projection of f onto span {wi}, and prove that it converges to ∥f ∥L2 – a Parseval-type identity that does not hold for hard-bin descriptors. This norm also induces a pseudo-metric on the map that is locally bi-Lipschitz equivalent to the Euclidean metric. (iii) Asymptotic completeness. We prove that the associated family of linear function-als is total in L2(Sd−1): as the directional basis becomes dense and the temperature decreases, the descriptor asymptotically preserves all information in the signal. The proof proceeds via a PoU interpolation argument and is substantially different from standard frame-theoretic completeness proofs. (iv) Localization theory. We formalize GPS-free localization as a nearest-neighbor prob-lem on a descriptor grid and derive a static error bound in terms of the local injectivity radius σmin (JF(p)) . For a robot moving with known velocity (odometry), we prove a dynamic error bound controlled by the observability Gramian, with explicit conditions under which trajectory information resolves static ambiguities that arise in symmetric environments. 
+
+1.4. Structure of the Paper 
+
+The rest of the paper is structured as follows. Section 2 fixes notation and standing assumptions used throughout. Section 3 introduces the four-step descriptor construction. Section 4 defines the softmax PoU weights and establishes their regularity and continuity with respect to the directional basis. Section 5 develops the analytical properties of the descriptor, organized into three groups: signal-space properties (energy, completeness, Gram norm), stability under basis perturbation (continuity, Lipschitz bounds), and map-space properties (continuity, lower semicontinuity, Fréchet differentiability). Section 6 develops the localization theory: static error bounds, dynamic Gramian bound, and generic resolution of symmetry. 32. Notation and Preliminaries 
+
+Throughout the paper we work in Rd with d ∈ { 2, 3}. Table 1 summarizes the notation used. 
+
+> Table 1: Summary of notation.
+
+Symbol Meaning 
+
+d Ambient dimension ( 2 or 3)
+
+M ⊂ Rd Map (point cloud or occupancy representation) 
+
+p ∈ M Query point 
+
+Sd−1 Unit sphere in Rd
+
+θ ∈ Sd−1 Unit direction vector 
+
+dσ(θ) Standard surface measure on Sd−1
+
+f : Sd−1 → R Environment signal observed from p
+
+n Number of directional bases 
+
+{di}ni=1 Set of n unit vectors on Sd−1
+
+wi : Sd−1 → R≥0 i-th partition-of-unity weight function 
+
+ϕi(p) i-th feature component of point pF(p) ∈ Rn Feature vector of point p
+
+3. Descriptor Construction 
+
+This section introduces the proposed descriptor construction. The construction starts from a local observation of the environment around a map point p ∈ M and proceeds through three ingredients: an environment signal defined on the unit sphere, a directional basis, and a family of smooth partition-of-unity weights. These elements are then combined to produce a finite-dimensional feature vector that encodes the local geometry surrounding 
+
+p.
+
+Definition 3.1 (Environment signal) . Let p ∈ M . The environment signal fp : Sd−1 → R
+
+is a scalar function that encodes a measurable property of the map along direction θ from 
+
+p. Typical instantiations include: • Range : fp(θ) = distance to the nearest surface point in direction θ;• Reflectance intensity : fp(θ) = LiDAR return intensity; • Surface gradient : fp(θ) = ∥∇ s(p + rθ)∥ evaluated at the first surface intersection. When the context is clear we write f instead of fp.
+
+Definition 3.2 (Directional basis) . A directional basis of order n is a set of n unit vectors 
+
+D = {d1, d2, . . . , dn} ⊂ Sd−1.
+
+The vectors may be arranged uniformly (angular spacing 2π/n in 2D, or a Fibonacci lattice in 3D) or adapted to the local geometry of M.4Given an environment signal and a directional basis, the next step is to distribute direc-tional information smoothly among the basis vectors. To this end, we introduce a family of partition-of-unity weights on the sphere (see Definition 4.1), which will replace the hard angular bins used in classical histogram descriptors. 
+
+Definition 3.3 (Feature component) . Given a directional basis D and the associated PoU weights {wi}. The i-th feature component of point p ∈ M is given by 
+
+ϕi(p) = 
+
+Z
+
+> Sd−1
+
+fp(θ)wi(θ)d σ(θ), i = 1 , . . . , n. (3.1) In two dimensions ( d = 2 ), S1 ∼= [0 , 2π) and (3.1) reduces to ϕi(p) = R 2π 
+
+> 0
+
+fp(θ)wi(θ)d θ.
+
+Definition 3.4 (Point feature vector) . The feature vector of point p is the concatenation of all feature components: 
+
+F(p) = ϕ1(p), ϕ 2(p), . . . , ϕ n(p)⊤ ∈ Rn. (3.2) 
+
+4. Partition-of-Unity Weights 
+
+We define the weight functions {wi} that appear in definition 3.3 and establish their regularity and continuity with respect to the directional basis. 
+
+Definition 4.1 (Partition-of-unity weight) . Let D = {d1, . . . , dn} ⊂ Sd−1 be a directional basis and let ψ ∈ C k([ −1, 1]) , k ≥ 1 be a non-negative function such that 
+
+Z(θ) := 
+
+> n
+
+X
+
+> j=1
+
+ψ θ⊤dj
+
+ > 0, ∀θ ∈ Sd−1. (4.1) The PoU weight associated with di is 
+
+wi(θ) := ψ θ⊤di
+
+
+
+Z(θ) , θ ∈ Sd−1. (4.2) Throughout this paper we adopt the softmax kernel with temperature ε > 0, whose kernel coincides with that of the von Mises–Fisher distribution on Sd−1 [8, 9]: 
+
+ψε(t) := exp 
+
+ tε
+
+
+
+, t ∈ [−1, 1] , (4.3) so that (4.2) becomes explicitly 
+
+wi(θ) = exp 
+
+θ⊤di
+
+ε
+
+
+
+> n
+
+X
+
+> j=1
+
+exp 
+
+θ⊤dj
+
+ε
+
+. (4.4) 5The parameter ε controls how strongly each basis direction influences nearby observations. The following remark clarifies the relationship between the proposed soft assignment and the hard directional partition underlying traditional descriptors. 
+
+Remark 4.2 (Role of the temperature ε). The parameter ε > 0 controls the concentration of each weight around its preferred direction di. To make this precise, define the strict dominance region of di:
+
+Ai := θ ∈ Sd−1 θ⊤di > θ⊤dj , ∀j̸ = i , (4.5) 
+
+so that {Ai}ni=1 is a Borel partition of Sd−1 up to a set of σ-measure zero (the boundaries 
+
+θ⊤di = θ⊤dj lie on great-circle hyperplanes and are therefore σ-negligible). Then, as ε → 0,
+
+wi(θ) −→ 1Ai (θ) σ-a.e. , (4.6) 
+
+and by the Dominated Convergence Theorem [10] the convergence also holds in Lp(Sd−1) for every 1 ≤ p < ∞. The limiting collection {1Ai } is itself a measurable partition of unity 
+
+on Sd−1 — the measure-theoretic counterpart of the smooth PoU — recovering the hard directional assignment used in classical histogram descriptors. Conversely, as ε → +∞,all weights flatten to 1/n , producing uniform averaging over all directions. At intermediate values of ε, the softmax PoU interpolates smoothly between these two extremes, which is the regime of interest for the present descriptor. 
+
+Proposition 4.3 (PoU and regularity) . Let ψ ∈ Ck([ −1, 1]) satisfy (4.1) . Then the weights 
+
+{wi}ni=1 defined in (4.2) satisfy: 
+
+(i) wi(θ) ≥ 0 for all θ ∈ Sd−1,
+
+(ii) 
+
+> n
+
+X
+
+> i=1
+
+wi(θ) = 1 for all θ ∈ Sd−1,
+
+(iii) wi ∈ C k(Sd−1).Proof. (i) is obvious. (ii) is immediate by summing (4.2) over i and canceling Z(θ) > 0.For (iii): the map θ 7 → θ⊤di is C∞ on Sd−1; by the regularity of ψ, the composition 
+
+ρi(θ) := ψ(θ⊤di) is Ck, and so is Z = P 
+
+> j
+
+ρj .The compactness of Sd−1 and the continuity of Z implies Z ≥ Zmin := inf Sd−1 Z(θ) > 0,the quotient wi = ρi/Z is Ck.Beyond smoothness with respect to the observation direction θ, it is important to un-derstand how the weights vary when the directional basis itself is modified. This question is particularly relevant when the basis is optimized from data or adapted to the local geometry of the map. We first establish a key lemma on the smoothness of the denominator. 
+
+Lemma 4.4 (Smoothness and positivity of the denominator) . Suppose ψ ∈ C k and each 
+
+di(τ ) is C1 in τ , with D(τ ) being ψ-covering for all τ in a neighborhood U of τ0. Then: 
+
+6(i) Z(θ; τ ) ∈ C 1(U ) for each fixed θ ∈ Sd−1,
+
+(ii) Z(θ; τ ) ≥ Zmin (U ) > 0 uniformly in (θ, τ ) ∈ Sd−1 × U .Proof. (i) Each term ψ(θ⊤dj (τ )) is a C1 composition of ψ ∈ C k and τ 7 → θ⊤dj (τ ) ∈ C 1; the finite sum inherits this regularity. (ii) The function (θ, τ ) 7 → Z(θ; τ ) is continuous on the compact set Sd−1 × U and strictly positive by the ψ-covering assumption; the infimum is therefore attained and positive. 
+
+Proposition 4.5 (Continuity of PoU weights w.r.t. the directional basis) . Under the hy-potheses of lemma 4.4, for every fixed θ ∈ Sd−1 and every i = 1 , . . . , n , the map 
+
+τ 7 −→ wi(θ; τ ) (4.7) 
+
+is continuous on U . Moreover, wi(·; τ ) converges uniformly on Sd−1 as τ → τ0:
+
+lim  
+
+> τ→τ0
+
+sup 
+
+> θ∈Sd−1
+
+wi(θ; τ ) − wi(θ; τ0) = 0 . (4.8) 
+
+Proof. Fix i and let τ → τ0 in U . Write ρi(θ; τ ) := ψ(θ⊤di(τ )) .
+
+Step 1 — Pointwise continuity of ρi.
+
+Since di(τ ) → di(τ0) and the inner product is continuous, θ⊤di(τ ) → θ⊤di(τ0) for every 
+
+θ. By continuity of ψ, ρi(θ; τ ) → ρi(θ; τ0) pointwise. 
+
+Step 2 — Uniform continuity via compactness. 
+
+The convergence in Step 1 is actually uniform in θ. Indeed, for any θ ∈ Sd−1,
+
+|ρi(θ; τ ) − ρi(θ; τ0)| = ψ θ⊤di(τ ) − ψ θ⊤di(τ0) . (4.9) Let ωψ denote the modulus of continuity of ψ on [−1, 1] (which is uniform since [−1, 1] is compact). By Cauchy–Schwarz inequality, |θ⊤(di(τ ) − di(τ0)) | ≤ ∥ di(τ ) − di(τ0)∥, so 
+
+sup 
+
+> θ∈Sd−1
+
+|ρi(θ; τ ) − ρi(θ; τ0)| ≤ ωψ(∥di(τ ) − di(τ0)∥) τ →τ0
+
+−−−→ 0. (4.10) 
+
+Step 3 — Continuity of wi = ρi/Z . Write 
+
+wi(θ; τ ) − wi(θ; τ0) = ρi(θ; τ )Z(θ; τ0) − ρi(θ; τ0)Z(θ; τ )
+
+Z(θ; τ )Z(θ; τ0) . (4.11) Adding and subtracting ρi(θ; τ0)Z(θ; τ0) in the numerator of (4.11) gives 
+
+wi(θ; τ ) − wi(θ; τ0) ≤ |ρi(θ; τ ) − ρi(θ; τ0)|
+
+Z(θ; τ ) + ρi(θ; τ0)
+
+Z(θ; τ0)
+
+| {z }
+
+> ≤1
+
+·|Z(θ; τ ) − Z(θ; τ0)|
+
+Z(θ; τ ) . (4.12) By lemma 4.4(ii), Z(θ; τ ) ≥ Zmin > 0 uniformly. Summing (4.10) over j yields the uniform bound sup θ∈Sd−1 |Z(θ; τ ) − Z(θ; τ0)| ≤ nω ψ(∥dj (τ ) − dj (τ0)∥max ). Inserting into (4.12) and taking the supremum over θ,
+
+sup 
+
+> θ∈Sd−1
+
+wi(θ; τ ) − wi(θ; τ0) ≤ (n + 1) 
+
+Zmin 
+
+ωψ
+
+
+
+max  
+
+> j
+
+∥dj (τ ) − dj (τ0)∥
+
+ τ →τ0
+
+−−−→ 0, (4.13) which establishes (4.8). Pointwise continuity (4.7) follows as a special case. 7Remark 4.6 (Lipschitz case and softmax) . If ψ is Lipschitz with constant Lψ on [−1, 1] ,then ωψ(δ) ≤ Lψδ and (4.13) gives the explicit uniform Lipschitz bound 
+
+sup 
+
+> θ
+
+wi(θ; τ ) − wi(θ; τ0) ≤ (n + 1) Lψ
+
+Zmin 
+
+max  
+
+> j
+
+∥dj (τ ) − dj (τ0)∥.
+
+For the softmax kernel ψε(t) = exp( t/ε ), we have Lψ = ε−1 exp(1 /ε ) and Zmin ≥ n exp( −1/ε ),yielding 
+
+sup 
+
+> θ
+
+wi(θ; τ ) − wi(θ; τ0) ≤ (n + 1) e2/ε 
+
+nε max  
+
+> j
+
+∥dj (τ ) − dj (τ0)∥.
+
+This constant grows as ε → 0, reflecting the fact that sharper weights (near the hard-assignment limit) are more sensitive to perturbations of the basis. 
+
+Remark 4.7 (Differentiability) . If ψ ∈ C 1 and each τ 7 → di(τ ) is C1, one can differentiate 
+
+wi(θ; τ ) with respect to τ by the quotient rule: 
+
+∂w i
+
+∂τ ℓ
+
+= 1
+
+Z
+
+∂ρ i
+
+∂τ ℓ
+
+− winX
+
+> j=1
+
+∂ρ j
+
+∂τ ℓ
+
+!
+
+,
+
+where ∂ρ i
+
+∂τ ℓ
+
+= ψ′ θ⊤di
+
+ θ⊤ ∂di
+
+∂τ ℓ
+
+. This makes gradient-based optimization of the directional basis (with respect to any differentiable objective) well-defined. 
+
+5. Properties of the Descriptor 
+
+The properties of F(p) naturally fall into three groups, presented in the order below. 
+
+Signal-space properties (Group A) characterize what the descriptor captures about the en-vironment signal f : energy preservation, asymptotic completeness of the functional family, and the Parseval-type Gram norm. Stability properties (Group B) quantify how much F
+
+changes when the directional basis is perturbed. Map-space properties (Group C) describe how F varies with the query point p ∈ M .
+
+A. Signal-Space Properties 5.1. Energy Preservation 
+
+Proposition 5.1 (Energy preservation) . For any p ∈ M and any f ∈ L1(Sd−1),
+
+> n
+
+X
+
+> i=1
+
+ϕi(p) = 
+
+Z
+
+> Sd−1
+
+f (θ)d σ(θ). (5.1) 
+
+Proof. By linearity of the integral and proposition 4.3(ii), 
+
+> n
+
+X
+
+> i=1
+
+ϕi(p) = 
+
+Z
+
+> Sd−1
+
+f (θ)
+
+> n
+
+X
+
+> i=1
+
+wi(θ)
+
+| {z }
+
+> =1
+
+dσ(θ) = 
+
+Z
+
+> Sd−1
+
+f (θ)d σ(θ).
+
+Remark 5.2. proposition 5.1 shows that the sum of all feature components equals the total ”energy” of the signal f regardless of the choice of basis D or temperature ε. In particular, the PoU construction distributes — but never creates or destroys — signal energy across the 
+
+n directional channels. 
+
+85.2. Asymptotic Completeness and Discriminability 
+
+Having established pointwise and stability properties of the descriptor, we now address a more fundamental question: does the family {ϕ(n) 
+
+> i
+
+} carry enough information to distinguish any two points with distinct environment signals? For a fixed basis D(n) of finite order n, the answer can be negative — two signals differing only within the orthogonal complement of 
+
+span {w(n) 
+
+> i
+
+} in L2(Sd−1) produce identical descriptors. However, as the basis becomes dense on Sd−1 and the temperature ε(n) → 0, the weights {w(n) 
+
+> i
+
+} approximate the indicators of arbitrarily fine Borel partitions of Sd−1 (remark 4.2), so their linear span becomes dense in 
+
+L2(Sd−1). The following theorem makes this precise by showing that the associated family of linear functionals is total : the only signal annihilated by all of them is zero. 
+
+Theorem 5.3 (Asymptotic Completeness and Totality) . Let {D (n)}n≥1 be a sequence of directional bases with mesh norm 
+
+hn := max 
+
+> θ∈Sd−1
+
+min  
+
+> i
+
+∠(θ, d(n) 
+
+> i
+
+) −→ 0,
+
+and let the temperature satisfy ε(n) → 0 as n → ∞ . Then the family of linear functionals 
+
+n
+
+L(n) 
+
+> i
+
+: f 7 → ϕ(n) 
+
+> i
+
+= R 
+
+> Sd−1
+
+f w (n) 
+
+> i
+
+dσ
+
+o
+
+> i,n
+
+is total in L2(Sd−1), that is if ϕ(n) 
+
+> i
+
+= 0 for all i = 1 , . . . , n and all n ≥ 1, then f = 0 in 
+
+L2(Sd−1).Proof. Let f ∈ L2(Sd−1) satisfy R 
+
+> Sd−1
+
+f w (n) 
+
+> i
+
+dσ = 0 for all i and all n. We will show that R 
+
+> Sd−1
+
+f g dσ = 0 for every g ∈ C (Sd−1), which implies f = 0 in L2 since C(Sd−1) is dense in 
+
+L2(Sd−1).
+
+Step 1 — PoU interpolant of g. Given g ∈ C (Sd−1), define its partition-of-unity inter-polant at the basis D(n):
+
+g(n)(θ) := 
+
+> n
+
+X
+
+> i=1
+
+g
+
+
+
+d(n)
+
+> i
+
+
+
+w(n) 
+
+> i
+
+(θ), θ ∈ Sd−1. (5.2) By the partition-of-unity property P 
+
+> i
+
+w(n) 
+
+> i
+
+= 1 ,
+
+g(n)(θ) − g(θ) =
+
+> n
+
+X
+
+> i=1
+
+ g(d(n) 
+
+> i
+
+) − g(θ)w(n) 
+
+> i
+
+(θ) ≤
+
+> n
+
+X
+
+> i=1
+
+g(d(n) 
+
+> i
+
+) − g(θ) w(n) 
+
+> i
+
+(θ). (5.3) 
+
+Step 2 — Uniform convergence g(n) → g. Fix η > 0. Since g is uniformly continuous on the compact set Sd−1, there exists δ = δ(η) > 0 such that |g(θ′) − g(θ)| ≤ η whenever 
+
+∠(θ′, θ) ≤ δ. Split the sum in (5.3) into near and far indices: 
+
+g(n)(θ) − g(θ) ≤ η X 
+
+> ∠(d(n)
+> i,θ)≤δ
+
+w(n) 
+
+> i
+
+(θ)
+
+| {z }
+
+> ≤1
+
++2 ∥g∥∞
+
+X 
+
+> ∠(d(n)
+> i,θ)>δ
+
+w(n) 
+
+> i
+
+(θ)
+
+| {z }
+
+> =: R(n)(θ,δ )
+
+. (5.4) 9For the far sum, using θ⊤d(n) 
+
+> i
+
+≤ cos δ < 1 on the far indices and the softmax formula, 
+
+R(n)(θ, δ ) ≤ ne cos δ/ε (n)
+
+e1/ε (n) = n exp 
+
+cos δ − 1
+
+ε(n)
+
+
+
+−→ 0 (5.5) as ε(n) → 0, since cos δ − 1 < 0 for δ > 0. Furthermore, once hn ≤ δ/ 2 (which holds for all large n since hn → 0), every θ has at least one near index, so the near sum accounts for the dominant weight. Inserting (5.5) into (5.4) and taking n large enough, 
+
+sup 
+
+> θ∈Sd−1
+
+g(n)(θ) − g(θ) ≤ η + 2 ∥g∥∞ · n exp 
+
+cos δ − 1
+
+ε(n)
+
+
+
+−→ η. 
+
+Since η > 0 was arbitrary, g(n) → g uniformly, hence in L2(Sd−1).
+
+Step 3 — Conclusion. By the L2 convergence g(n) → g and g ∈ L2,
+
+Z
+
+> Sd−1
+
+f g dσ = lim 
+
+> n→∞
+
+Z
+
+> Sd−1
+
+f g (n)dσ
+
+= lim 
+
+> n→∞
+> n
+
+X
+
+> i=1
+
+g
+
+
+
+d(n)
+
+> i
+
+ Z
+
+> Sd−1
+
+f w (n) 
+
+> i
+
+dσ
+
+| {z }
+
+> =0
+
+= 0 .
+
+Since this holds for every g ∈ C (Sd−1), and C(Sd−1) is dense in L2(Sd−1), we conclude f = 0 
+
+in L2(Sd−1).
+
+Theorem 5.4 (Asymptotic Injectivity of the Descriptor Map) . Under the conditions of theorem 5.3, for any two points p, q ∈ M with fp̸ = fq in L2(Sd−1), there exist n0 ∈ N and 
+
+i0 ∈ { 1, . . . , n 0} such that 
+
+ϕ(n0) 
+
+> i0
+
+(p)̸ = ϕ(n0) 
+
+> i0
+
+(q).
+
+In particular, F(n0)(p)̸ = F(n0)(q).Proof. Suppose for contradiction that ϕ(n) 
+
+> i
+
+(p) = ϕ(n) 
+
+> i
+
+(q) for all i and all n. Then R 
+
+> Sd−1
+
+(fp −
+
+fq)w(n) 
+
+> i
+
+dσ = 0 for all i, n . By theorem 5.3 applied to f = fp − fq, this forces fp = fq in L2,contradicting the hypothesis. 
+
+Remark 5.5. theorem 5.3 implies that the proposed descriptor family is information-complete in the limit of dense directional sampling. Unlike conventional histogram descriptors, which generally discard information through finite binning, the PoU descriptor admits an asymp-totically injective representation of the directional signal. 5.3. Descriptor-Induced Norm on the Signal Space 
+
+The descriptor map f 7 → F(f ) = [ ϕ1(f ), . . . , ϕ n(f )] ⊤ is a bounded linear operator from 
+
+L2(Sd−1) into Rn. We show that this operator induces a natural seminorm on L2(Sd−1) via its Gram matrix [11], which becomes a genuine norm in the limit n → ∞ .10 Definition 5.6 (Gram matrix of the PoU weights) . The Gram matrix of the partition-of-unity weights {wi}ni=1 is Gn ∈ Rn×n with entries 
+
+(Gn)ij := ⟨wi, w j ⟩L2(Sd−1) =
+
+Z
+
+> Sd−1
+
+wi(θ)wj (θ)d σ(θ). (5.6) 
+
+Proposition 5.7 (Descriptor-induced seminorm) . The matrix Gn is positive definite. Define the descriptor-induced seminorm of f ∈ L2(Sd−1):
+
+|f |D,n :=  F(f )⊤G−1 
+
+> n
+
+F(f )1/2 . (5.7) 
+
+Then: 
+
+(i) |f |D,n = ∥Pnf ∥L2(Sd−1), where Pn is the orthogonal projection onto Vn := span {w1, . . . , w n} ⊂ 
+
+L2(Sd−1);
+
+(ii) | · | D,n is a seminorm on L2(Sd−1) with |f |D,n ≤ ∥ f ∥L2 ;
+
+(iii) |f |D,n → ∥ f ∥L2 as n → ∞ , under the completeness conditions of theorem 5.3. Proof. Positive definiteness of Gn. For any α ∈ Rn \ { 0},
+
+α⊤Gnα =
+
+Z
+
+> Sd−1
+
+ nX
+
+> i=1
+
+αiwi(θ)
+
+2
+
+dσ(θ) = 
+
+> n
+
+X
+
+> i=1
+
+αiwi
+
+> 2
+> L2
+
+.
+
+This is zero only if P 
+
+> i
+
+αiwi = 0 in L2, i.e. if {wi} are linearly dependent in L2(Sd−1).For the softmax weights with distinct basis directions {di}, the functions {wi} are linearly independent (they have distinct peaks on Sd−1), so Gn ≻ 0.
+
+Proof of (i). The orthogonal projection Pnf ∈ Vn satisfies the normal equations: for each 
+
+j = 1 , . . . , n ,
+
+⟨Pnf, w j ⟩L2 = ⟨f, w j ⟩L2 = ϕj (f ).
+
+Writing Pnf = P 
+
+> i
+
+αiwi, the normal equations become Gnα = F(f ), so α = G−1 
+
+> n
+
+F(f ).Therefore, 
+
+∥Pnf ∥2 
+
+> L2
+
+= α⊤Gnα = F(f )⊤G−1 
+
+> n
+
+GnG−1 
+
+> n
+
+F(f ) = F(f )⊤G−1 
+
+> n
+
+F(f ) = |f |2
+
+> D,n
+
+.
+
+Proof of (ii). Linearity of f 7 → F(f ) and bilinearity of G−1 
+
+> n
+
+give homogeneity and the triangle inequality for |·| D,n . The upper bound |f |D,n ≤ ∥ f ∥L2 follows from (i): the orthogonal projection contracts, ∥Pnf ∥L2 ≤ ∥ f ∥L2 . The kernel ker | · | D,n = V ⊥ 
+
+> n
+
+is non-trivial for finite 
+
+n, so | · | D,n is a seminorm, not a norm. 
+
+Proof of (iii). Under the hypotheses of theorem 5.3, the family {w(n) 
+
+> i
+
+}i,n is total in L2(Sd−1),so V (n) 
+
+> n
+
+= span {w(n) 
+
+> i
+
+} is dense: P (n) 
+
+> n
+
+f → f in L2 for every f . Hence |f |D,n = ∥P (n) 
+
+> n
+
+f ∥L2 →∥f ∥L2 .11 Corollary 5.8 (Parseval interpretation) . Property (i) identifies |f |D,n as the L2-norm of the component of f captured by the subspace Vn. As n → ∞ , property (iii) asserts that the descriptor recovers the full L2-norm of f — a Parseval-type identity: 
+
+lim  
+
+> n→∞
+
+F(n)(f )⊤ G(n)
+
+> n
+
+−1F(n)(f ) = ∥f ∥2
+
+> L2(Sd−1)
+
+.
+
+For finite n, the gap ∥f ∥2 
+
+> L2
+
+− | f |2 
+
+> D,n
+
+= ∥f − Pnf ∥2 
+
+> L2
+
+measures the signal energy not captured 
+
+by the descriptor — the approximation error of Vn for the function f .
+
+Remark 5.9 (Relation to the raw descriptor norm) . The raw Euclidean norm ∥F(f )∥2 and the descriptor-induced norm |f |D,n are related by 
+
+λmin (Gn)1/2|f |D,n ≤ ∥ F(f )∥2 ≤ λmax (Gn)1/2|f |D,n .
+
+When the weights {wi} are nearly orthogonal in L2 (e.g. for small ε and well-separated basis directions), Gn ≈ ∥ w1∥2 
+
+> L2
+
+In and the two norms are proportional, so ∥F(f )∥2 itself approximates the seminorm up to the scalar factor ∥w1∥L2 .
+
+Remark 5.10 (Induced pseudo-metric on the map) . The descriptor-induced seminorm in-duces a pseudo-metric on M:
+
+dn(p, q) := |fp − fq|D,n =  (F(p) − F(q)) ⊤G−1 
+
+> n
+
+(F(p) − F(q)) 1/2 . (5.8) 
+
+By proposition 5.7 (iii) , dn(p, q) → ∥ fp − fq∥L2 as n → ∞ . Combined with the local Fréchet differentiability of proposition 5.18, the pseudo-metric satisfies the local bi-Lipschitz bound 
+
+σmin (JF(p)) ∥p − q∥2 ≲ dn(p, q) ≲ ∥JF(p)∥op ∥p − q∥2,
+
+showing that dn metrizes the topology of M locally whenever σmin (JF(p)) > 0.B. Stability Under Basis Perturbation 5.4. Continuity with Respect to the Directional Basis 
+
+Proposition 5.11 (Continuity of feature components) . Let D(τ ) = {di(τ )}ni=1 depend continuously on τ ∈ Rm, and let wi(·; τ ) be the corresponding softmax weights (4.4) . If 
+
+f ∈ L1(Sd−1), then for every i = 1 , . . . , n the map 
+
+τ 7 −→ ϕi(p; τ ) = 
+
+Z
+
+> Sd−1
+
+f (θ)wi(θ; τ )d σ(θ)
+
+is continuous on Rm.Proof. Let τν → τ0. Since exp( ·/ε ) is continuous and τ 7 → θ⊤di(τ ) is continuous for every fixed θ, we have wi(θ; τν ) → wi(θ; τ0) pointwise on Sd−1. Because 0 ≤ wi ≤ 1, the product 
+
+f (θ)wi(θ; τν ) is dominated by |f (θ)| ∈ L1. The Lebesgue Dominated Convergence Theorem then gives 
+
+lim  
+
+> ν→∞
+
+ϕi(p; τν ) = 
+
+Z
+
+> Sd−1
+
+f (θ) lim  
+
+> ν→∞
+
+wi(θ; τν )d σ(θ) = ϕi(p; τ0).
+
+12 5.5. Lipschitz Stability 
+
+The following result quantifies how much the feature components change when the direc-tional basis is perturbed, for a general admissible kernel ψ.
+
+Proposition 5.12 (Lipschitz stability of feature components) . Let ψ : [ −1, 1] → R≥0 be Lipschitz with constant Lψ, and let D = {di}ni=1 , D′ = {d′
+
+> i
+
+}ni=1 be two directional bases. Set 
+
+δ := max  
+
+> i
+
+∥di − d′
+
+> i
+
+∥2, Zmin := inf  
+
+> θ
+
+min 
+
+P 
+
+> j
+
+ψ(θ⊤dj ), P 
+
+> j
+
+ψ(θ⊤d′ 
+
+> j
+
+)
+
+
+
+> 0.
+
+Then, for every i = 1 , . . . , n and every f ∈ L1(Sd−1),
+
+ϕi(p) − ϕ′
+
+> i
+
+(p) ≤ (n + 1) Lψ
+
+Zmin 
+
+∥f ∥L1 δ, (5.9) 
+
+and consequently ∥F(p) − F′(p)∥2 ≤ (n+1) √nL ψ 
+
+> Zmin
+
+∥f ∥L1 δ.Proof. Write ρi = ψ(θ⊤di), ρ′ 
+
+> i
+
+= ψ(θ⊤d′
+
+> i
+
+), Z = P 
+
+> j
+
+ρj , Z′ = P 
+
+> j
+
+ρ′ 
+
+> j
+
+. By Cauchy–Schwarz, 
+
+|θ⊤(di − d′
+
+> i
+
+)| ≤ δ, so the Lipschitz condition gives |ρi − ρ′
+
+> i
+
+| ≤ Lψδ and |Z − Z′| ≤ nL ψδ.Using Z, Z ′ ≥ Zmin and wi = ρi/Z ≤ 1:
+
+|wi − w′
+
+> i
+
+| ≤ |ρi − ρ′
+
+> i
+
+|
+
+Z′ + wi
+
+|Z − Z′|
+
+Z′ ≤ (n + 1) Lψ
+
+Zmin 
+
+δ =: Cψδ. 
+
+Integrating against |f | gives (5.9); the vector bound follows from ∥ · ∥ 2 ≤ √n∥ · ∥ ∞.
+
+Remark 5.13 (Softmax specialization and sharpness–stability trade-off) . For the softmax kernel, Lψ = ε−1 
+
+> T
+
+e1/ε T and Zmin ≥ ne −1/ε T , giving Cψε = ( n + 1) e2/ε T /(nε T ). This constant grows as εT → 0: sharper weights are more discriminative but more sensitive to perturbations of the basis. C. Map-Space Properties 5.6. Stability with Respect to the Map Point 
+
+Proposition 5.14 (Continuity of feature components in p). Suppose the environment signal 
+
+fp : Sd−1 → R satisfies: 
+
+(C1) for σ-almost every θ ∈ Sd−1, the map p 7 → fp(θ) is continuous on M;
+
+(C2) there exists g ∈ L1(Sd−1) such that |fp(θ)| ≤ g(θ) for all p ∈ M and σ-almost every θ.Then for every i = 1 , . . . , n , the feature component p 7 → ϕi(p) is continuous on M. Conse-quently, the feature vector p 7 → F(p) is continuous on M.Proof. Let pν → p0 in M. The weights wi(θ) are fixed (they depend only on D and ε, not on p), so 
+
+ϕi(pν ) − ϕi(p0) = 
+
+Z
+
+> Sd−1
+
+fpν (θ) − fp0 (θ)wi(θ)d σ(θ).
+
+By (C1), the integrand converges to zero pointwise σ-a.e. By (C2) and 0 ≤ wi ≤ 1, it is dominated by 2g(θ) ∈ L1. The Dominated Convergence Theorem gives ϕi(pν ) → ϕi(p0),and continuity of F(p) follows since n is finite. 13 Remark 5.15. Condition (C1) holds for the range signal when M is a smooth surface and 
+
+p moves away from surface tangencies. Condition (C2) is satisfied whenever the map is bounded. 
+
+In practice the environment signal fp(θ) — typically a range or occupancy measurement — is lower semicontinuous (lsc) in p: a new obstacle entering the line of sight causes an instantaneous decrease in range, while the signal can only increase continuously as the obstacle recedes. We therefore replace condition (C1) by the weaker lsc assumption and show that the feature components inherit this property. 
+
+Proposition 5.16 (Lower semicontinuity of feature components in p). Suppose the envi-ronment signal satisfies: 
+
+(L1) fp(θ) ≥ 0 for all p ∈ M and σ-almost every θ;
+
+(L2) for σ-almost every θ, the map p 7 → fp(θ) is lower semicontinuous on M, i.e., 
+
+lim inf  
+
+> p′→p
+
+fp′ (θ) ≥ fp(θ);
+
+(L3) there exists g ∈ L1(Sd−1) such that fp(θ) ≤ g(θ) for all p ∈ M and σ-almost every θ.Then for every i = 1 , . . . , n , the feature component p 7 → ϕi(p) is lower semicontinuous on 
+
+M.Proof. Let pν → p0 in M. Since 0 ≤ wi(θ) ≤ 1, conditions (L1)–(L2) give 
+
+lim inf  
+
+> ν→∞
+
+fpν (θ)wi(θ) ≥ fp0 (θ)wi(θ) σ-a.e. The product fpν (θ)wi(θ) is non-negative and bounded above by g(θ) ∈ L1 via (L3). Fatou’s lemma therefore gives 
+
+lim inf  
+
+> ν→∞
+
+ϕi(pν ) = lim inf 
+
+> ν→∞
+
+Z
+
+> Sd−1
+
+fpν (θ)wi(θ)d σ(θ)
+
+≥
+
+Z
+
+> Sd−1
+
+lim inf 
+
+> ν→∞
+
+fpν (θ)wi(θ)dσ(θ)
+
+≥
+
+Z
+
+> Sd−1
+
+fp0 (θ)wi(θ)d σ(θ) = ϕi(p0),
+
+which is precisely the lower semicontinuity of ϕi at p0.
+
+Remark 5.17. Condition (L2) captures the geometry of occlusion: as p approaches a sur-face boundary, new obstacles may suddenly occlude a direction θ, causing fp(θ) to jump downward. The lsc assumption allows exactly such downward jumps while forbidding up-ward ones, which would correspond to obstacles spontaneously disappearing — a non-physical event. Condition (L3) is a mild upper bound, satisfied whenever M is contained in a bounded region of Rd.
+
+14 5.7. Differentiability with Respect to the Map Point 
+
+When the directional basis D is fixed, the weights {wi} do not depend on p, so differ-entiating ϕi(p) in p reduces entirely to differentiating under the integral sign. The result gives an explicit formula for the Jacobian of F(p) as a PoU-weighted average of the signal gradients. 
+
+Proposition 5.18 (Fréchet differentiability of feature components) . Fix the directional basis 
+
+D and suppose: 
+
+(D1) for σ-almost every θ ∈ Sd−1, the map p 7 → fp(θ) is differentiable on M with gradient ∇pfp(θ) ∈ Rd;
+
+(D2) there exists h ∈ L1(Sd−1) such that ∥∇ pfp(θ)∥2 ≤ h(θ) for all p ∈ M and σ-a.e. 
+
+θ.Then for every i = 1 , . . . , n , the map p 7 → ϕi(p) is Fréchet differentiable on M with 
+
+∇pϕi(p) = 
+
+Z
+
+> Sd−1
+
+∇pfp(θ)wi(θ)d σ(θ) ∈ Rd. (5.10) 
+
+Consequently, F(p) ∈ Rn is Fréchet differentiable and its Jacobian JF(p) ∈ Rn×d is 
+
+JF(p) = 
+
+Z
+
+> Sd−1
+
+∇pfp(θ)w(θ)⊤dσ(θ), (5.11) 
+
+where w(θ) = [ w1(θ), . . . , w n(θ)] ⊤.Proof. Fix i. Define the candidate gradient gi(p) := R ∇pfp(θ)wi(θ)d σ(θ), which is well defined in Rd by (D2) and 0 ≤ wi ≤ 1.We show that ϕi is Fréchet differentiable at every p ∈ M with derivative gi(p), i.e., 
+
+ϕi(p + v) − ϕi(p) − gi(p)⊤v
+
+∥v∥2
+
+−→ 0 as v → 0. (5.12) For σ-a.e. θ, condition (D1) gives 
+
+fp+v(θ) − fp(θ) = ∇pfp(θ)⊤v + r(θ, v),
+
+where the pointwise remainder satisfies r(θ, v) = o(∥v∥2) as v → 0, i.e., |r(θ, v)|/∥v∥2 → 0.Hence 
+
+ϕi(p + v) − ϕi(p) − gi(p)⊤v =
+
+Z
+
+> Sd−1
+
+r(θ, v)wi(θ)d σ(θ). (5.13) Assume v is small enough that the segment {p + tv : t ∈ [0 , 1] } ⊂ M . By the multivari-able mean-value inequality 
+
+|fp+v(θ) − fp(θ)| ≤ ∥ v∥2 sup 
+
+> t∈[0 ,1]
+
+∥∇ pfp+tv(θ)∥2 ≤ h(θ)∥v∥2,
+
+15 where the last inequality uses (D2) applied at each p + tv ∈ M . By the Cauchy–Schwarz inequality, |∇ pfp(θ)⊤v| ≤ h(θ)∥v∥2. Combining via the triangle inequality, |r(θ, v)| ≤ 
+
+2h(θ)∥v∥2, so |r(θ, v)|/∥v∥2 ≤ 2h(θ) ∈ L1 uniformly in v̸ = 0.Dividing (5.13) by ∥v∥2 and applying the Dominated Convergence Theorem: 
+
+1
+
+∥v∥2
+
+Z
+
+> Sd−1
+
+r(θ, v)wi(θ)d σ(θ) −→ 
+
+Z
+
+> Sd−1
+
+lim 
+
+> v→0
+
+r(θ, v)
+
+∥v∥2
+
+wi(θ)d σ(θ) = 0 ,
+
+which establishes (5.12) and hence (5.10). Stacking the n row vectors ∇pϕi(p)⊤ gives (5.11). 
+
+Remark 5.19 (Jacobian as a PoU-weighted average of signal gradients) . Equation (5.11) 
+
+shows that JF(p) is a weighted average of the signal gradient field θ 7 → ∇ pfp(θ) over Sd−1,with blending mask w(θ). The i-th row ∇pϕi(p)⊤ captures the sensitivity of the i-th channel to a displacement of p: it is large when the signal changes rapidly in directions that wi
+
+weights heavily. In particular, summing all rows and using the partition-of-unity property P 
+
+> i
+
+wi = 1 recovers the gradient of the zeroth moment: 
+
+1⊤ 
+
+> n
+
+JF(p) = 
+
+> n
+
+X
+
+> i=1
+
+∇pϕi(p)⊤ =
+
+Z
+
+> Sd−1
+
+∇pfp(θ)d σ(θ) = ∇pE(p)⊤, (5.14) 
+
+where E(p) = R fpdσ is the zeroth moment of the signal. Thus the row sum of the Jacobian is basis-free: it does not depend on D or ε.
+
+Remark 5.20 (Range signal) . For the range signal fp(θ) = r(p, θ) — the distance from p
+
+to the first surface intersection in direction θ — a ray-transfer argument yields a closed-form expression for ∇pr. Let x(p, θ) = p + r(p, θ)θ be the hit point, lying on a smooth surface 
+
+S with inward unit normal n(θ) at x. Differentiating the surface constraint n(θ)⊤(x(p +
+
+v, θ) − x(p, θ)) = 0 with respect to v and using x(p + v, θ) = ( p + v) + r(p + v, θ)θ, one obtains 
+
+n(θ)⊤ v + d r · θ = 0 , =⇒ dr = −n(θ)⊤vn(θ)⊤θ ,
+
+valid when n(θ)⊤θ̸ = 0 (non-grazing incidence). Hence 
+
+∇pr(p, θ) = − n(θ)
+
+n(θ)⊤θ , (5.15) 
+
+and substituting into (5.10) gives the closed-form expression 
+
+∇pϕi(p) = −
+
+Z
+
+> Sd−1
+
+n(θ)
+
+n(θ)⊤θ wi(θ)d σ(θ), (5.16) 
+
+provided the set of grazing directions {θ : n(θ)⊤θ = 0 } has σ-measure zero, which holds generically when S is a smooth compact surface. 
+
+16 6. Map-Based Localization via Descriptor Matching 
+
+We now develop the localization application. The central object is the observability Gramian , which quantifies how much positional information the descriptor accumulates along a robot trajectory. In the static regime (single observation), the Gramian degenerates to a pointwise quantity and localization may fail in symmetric environments. In the dynamic regime (robot in motion), the Gramian grows monotonically with time and generically re-solves all ambiguities. 
+
+6.1. Descriptor Grid and Static Localization 
+
+Definition 6.1 (Descriptor grid) . Let h > 0. A descriptor grid of M at resolution h is a finite set 
+
+Gh := (pk, F(pk)) Kk=1 ⊂ M × Rn,
+
+where {pk}Kk=1 is an h-covering of M, i.e. sup p∈M min k ∥p − pk∥2 ≤ h. The grid is built offline by evaluating F at each grid point. 
+
+Definition 6.2 (Static localization) . Given Gh and a query descriptor Fobs ∈ Rn observed at an unknown location p∗ ∈ M , the static localization problem is 
+
+ˆp = argmin  
+
+> pk∈G h
+
+F(pk) − Fobs 2. (6.1) The quality of (6.1) depends on how well F separates nearby points. Define the local injectivity radius at p∗ as 
+
+μ(p∗) := σmin 
+
+ JF(p∗) ≥ 0, (6.2) where σmin denotes the smallest singular value of the Jacobian. When μ(p∗) > 0, the map 
+
+F is locally injective at p∗ and the following error bound holds. 
+
+Proposition 6.3 (Static localization error) . Suppose F ∈ C 1(M) with sup p∈M ∥JF(p)∥op ≤
+
+L, and let μ = μ(p∗) > 0. If the observation satisfies ∥Fobs − F(p∗)∥2 ≤ η, then for h and η
+
+small enough, 
+
+∥ˆp − p∗∥2 ≤ L h + ημ + o(h + η). (6.3) 
+
+Proof. By the h-covering property, ∥ˆp−p∗∥2 ≤ h and, using the Lipschitz bound ∥JF∥op ≤ L,
+
+∥F(ˆ p) − F(p∗)∥2 ≤ Lh . By the triangle inequality, 
+
+∥F(ˆ p) − F(p∗)∥2 ≤ Lh + η. (6.4) It remains to invert this descriptor-space bound back to position space. Since F : M → 
+
+Rn maps into a higher-dimensional space ( n > d ), the classical Inverse Function Theorem does not apply directly to F; we instead apply it to a square auxiliary map built from the Moore–Penrose pseudoinverse of JF(p∗).Because μ = σmin (JF(p∗)) > 0, the Jacobian JF(p∗) has full column rank d, so its Moore–Penrose pseudoinverse [12] 
+
+π := JF(p∗)+ =  JF(p∗)⊤JF(p∗)−1JF(p∗)⊤ ∈ Rd×n (6.5) 17 is well defined and satisfies π J F(p∗) = Id and ∥π∥op = μ−1.Define the auxiliary map Φ : M → Rd, Φ( p) := π F(p). By the chain rule, DΦ( p∗) = 
+
+π J F(p∗) = Id, which is invertible. The classical Inverse Function Theorem therefore applies to Φ at p∗: there is a neighborhood of Φ( p∗) on which Φ has a C1 local inverse Φ−1, with 
+
+DΦ−1 Φ( p∗) = DΦ( p∗)−1 = Id. (6.6) A first-order expansion of Φ−1 at Φ(ˆ p) around Φ( p∗), using (6.6), gives 
+
+ˆp − p∗ = Φ −1 Φ(ˆ p) − Φ−1 Φ( p∗) = π F(ˆ p) − F(p∗) + o ∥F(ˆ p) − F(p∗)∥2
+
+. (6.7) Taking norms in (6.7) and using ∥π∥op = μ−1,
+
+∥ˆp − p∗∥2 ≤ 1
+
+μ ∥F(ˆ p) − F(p∗)∥2 + o ∥F(ˆ p) − F(p∗)∥2
+
+. (6.8) Substituting the descriptor-space bound (6.4) into (6.8), and noting that ∥F(ˆ p)−F(p∗)∥2 →
+
+0 as h, η → 0 so that the o(·) term is o(h + η), yields 
+
+∥ˆp − p∗∥2 ≤ Lh + ημ + o(h + η),
+
+which is (6.3). 
+
+Remark 6.4 (Failure at μ(p∗) = 0 ). The bound (6.3) degenerates when μ(p∗) = 0 , i.e. when JF(p∗) has a non-trivial null space. This means F is locally flat along some direction from p∗: displacement along that direction leaves the descriptor unchanged. This occurs systematically in environments with translational symmetry (corridors, circular rooms). The dynamic regime, developed below, resolves this failure by accumulating derivative information over time. 6.2. Dynamic Localization and the Observability Gramian 
+
+Suppose the robot follows a C1 trajectory p : [0 , T ] → M with velocity ˙p(t) = v(t)
+
+measured by onboard odometry. By proposition 5.18, the descriptor evolves according to the descriptor dynamics :
+
+˙F(t) := ddtF(p(t)) = JF(p(t)) v(t), t ∈ [0 , T ]. (6.9) The robot thus generates a continuous stream of observations {(F(p(t)) , ˙F(t)) }t∈[0 ,T ], each constraining the unknown initial position p(0) .
+
+Definition 6.5 (Observability Gramian) . The observability Gramian along the trajectory 
+
+{p(t)}t∈[0 ,T ] is 
+
+W(0 , T ) := 
+
+Z T
+
+> 0
+
+JF(p(t)) ⊤JF(p(t))d t ∈ Rd×d. (6.10) Three immediate properties of W(0 , T ):18 (i) W(0 , T ) ⪰ 0 for all T ≥ 0;(ii) T 7 → W (0 , T ) is monotone non-decreasing in the Löwner order [13]: each infinitesimal arc adds a rank-one update JF(p(t)) ⊤JF(p(t))d t ⪰ 0;(iii) the null space of W(0 , T ) consists of directions u along which JF(p(t)) u = 0 for λ-a.e. 
+
+t — directions permanently invisible to the descriptor along the entire trajectory. 
+
+Proposition 6.6 (Dynamic localization error bound) . Let p(t) be the true robot trajectory and q(t) a candidate. Assume: 
+
+(T1) Same velocity. ˙p(t) = ˙ q(t) = v(t) for all t ∈ [0 , T ], so that δ0 := p(0) −q(0) = 
+
+p(t) − q(t) is constant. 
+
+(T2) Bounded Jacobian. sup t ∥JF(p(t)) ∥op ≤ L.
+
+(T3) Lipschitz Jacobian. ∥JF(p) − JF(q)∥op ≤ Λ∥p − q∥2 for all p, q on the trajectory. 
+
+(T4) Observability. λmin (W(0 , T )) ≥ μT > 0.
+
+(T5) Smallness. ∥δ0∥2 ≤ μT /(Λ LT ).Then 
+
+∥p(0) − q(0) ∥2 ≤ 2LμT
+
+Z T
+
+> 0
+
+F(p(t)) − F(q(t)) 2dt. (6.11) 
+
+In particular, F(p(t)) = F(q(t)) for all t implies p(0) = q(0) .Proof. Since ˙p(t) = ˙ q(t), condition (T1) gives q(t) = p(t) − δ0 for all t.
+
+Step 1 — Taylor expansion with integral remainder. By the fundamental theorem of calculus, 
+
+F(p(t)) − F(q(t)) = 
+
+Z 10
+
+JF
+
+ p(t) − sδ0
+
+δ0ds =: JF(p(t)) δ0 + r(t), (6.12) where ∥r(t)∥2 ≤ Λ2 ∥δ0∥22 by (T3). 
+
+Step 2 — Projection onto the Gramian. Multiplying (6.12) by JF(p(t)) ⊤ and integrat-ing over [0 , T ]:
+
+W(0 , T )δ0 =
+
+Z T
+
+> 0
+
+JF(p(t)) ⊤F(p(t)) − F(q(t)) dt −
+
+Z T
+
+> 0
+
+JF(p(t)) ⊤r(t)d t. (6.13) Taking norms and using (T2) and (T4): 
+
+μT ∥δ0∥2 ≤ L
+
+Z T
+
+> 0
+
+F(p(t)) − F(q(t)) 2dt + ΛLT 
+
+2 ∥δ0∥22. (6.14) 
+
+Step 3 — Absorbing the quadratic term. By (T5), ΛLT  
+
+> 2
+
+∥δ0∥2 ≤ μT 
+
+> 2
+
+. Rearranging (6.14) gives (6.11). 
+
+Remark 6.7 (Information accumulation) . The bound (6.11) improves with time in two ways: μT is non-decreasing in T (more movement tightens the Gramian), and the right-hand side averages descriptor discrepancy over [0 , T ], suppressing sensor noise. A longer, more informative trajectory thus yields a tighter and more noise-robust localization estimate. 
+
+19 6.3. Generic Resolution of Static Ambiguity 
+
+Proposition 6.8 (Generic observability) . For a generic map M and a generic C1 trajectory, 
+
+λmin (W(0 , T )) > 0 for every T > 0.Proof. λmin (W(0 , T )) = 0 iff there exists a unit vector u ∈ Rd with JF(p(t)) u = 0 for λ-a.e. 
+
+t. By (5.10), this requires R ∇pfp(t)(θ) · uwi(θ)d σ = 0 for all i and a.e. t: the directional derivative of fp in direction u must be annihilated by every weight wi simultaneously. This is a non-generic condition that fails whenever M has no exact translational symmetry in direction u.
+
+Remark 6.9 (Meaning of “generic”) . Fix a direction u ∈ Sd−1. Call the pair (M, {p(t)})
+
+u-degenerate if 
+
+JF(p(t)) u = 0 for λ-a.e. t ∈ [0 , T ],
+
+which, by (5.10) , is equivalent to the directional derivative of fp(t) along u being annihilated by every weight wi simultaneously, i.e. to M possessing an exact translational symmetry in direction u along the trajectory. For fixed u, the set of maps M that are u-degenerate has empty interior in the C1 topology on maps: an arbitrarily small perturbation destroys an exact symmetry, so this set is nowhere dense, and it has Lebesgue measure zero within any finite-dimensional parametric family of maps. We say the pair (M, {p(t)}) is generic if it is not u-degenerate for any u ∈ Sd−1, i.e. if it avoids this nowhere-dense (measure-zero) exceptional set for every direction. Proposition 6.8 asserts that λmin (W(0 , T )) > 0 precisely for such generic pairs. 
+
+Remark 6.10 (Counting constraints) . Dynamic ambiguity requires JF(p(t)) u = 0 for a.e. 
+
+t: nd scalar equations holding continuously in t. For d = 2 , n ≥ 2 this is 2n ≥ 4 independent constraints on the 2-dimensional ambiguity direction u, generically yielding no solution. 6.4. Comparison and Practical Implications 
+
+> Table 2: Static vs. dynamic localization.
+
+Static Dynamic 
+
+Observation Fobs {Fobs (t), ˙Fobs (t)}t∈[0 ,T ]
+
+Discriminability μ(p∗) > 0 λmin (W(0 , T )) > 0
+
+Error bound (Lh + η)/μ (p∗) 2L∥noise ∥L1[0 ,T ]/μ T
+
+Failure condition μ(p∗) = 0 (symmetric env.) JFu = 0 a.e. (generically never) Improves with n (more directions) T (longer trajectory) Noise rejection Pointwise L1[0 , T ] averaging In practice we recommend the following three-stage pipeline. (i) Coarse initialization via static matching (6.1) on a coarse grid. 20 (ii) Online refinement : as the robot moves, monitor λmin (W(0 , t )) ; once it exceeds a threshold μmin , apply (6.11) to refine the position estimate. (iii) Active exploration : if λmin (W(0 , t )) stagnates, steer toward the direction that max-imizes its growth rate, 
+
+ddtλmin (W(0 , t )) = u⊤
+
+> min
+
+JF(p(t)) ⊤JF(p(t)) umin ,
+
+where umin is the eigenvector of W corresponding to λmin .
+
+7. Illustrative Example: Descriptor Computation and Localization on a 2D Map 
+
+We illustrate the descriptor construction of sections 3 and 4 and the static localization pipeline of section 6.1 on a concrete 2-dimensional map, using an exact ray-casting sensor model, n = 8 directions, and the softmax kernel with ε = 0 .5. All angles are in radians. 
+
+7.1. Setup 
+
+Consider a room M = [0 , 6] × [0 , 4] with an internal wall segment at x = 3 , y ∈ [1 , 3] ,and a pillar [4 .5, 5] × [1 .5, 2.5] (Figure 1). The environment signal is the range function 
+
+fp(θ) = r(p, θ ): the distance from p to the nearest obstacle in direction θ, computed by exact ray-obstacle intersection. The directional basis is θi = ( i − 1) π/ 4, i = 1 , . . . , 8, with softmax weights (4.4). 
+
+p⋆ = (1 .3, 1.7)      
+
+> Figure 1: Map with internal wall (thick segment) and pillar (shaded square). Small dots: descriptor grid Gh
+> (h= 0 .5,35 nodes). Black dot: true query position p⋆, deliberately off-grid.
+
+7.2. Convergence of the Quadrature 
+
+The descriptor components are approximated by the discrete sum 
+
+ˆϕi(p) = 2πS
+
+> S−1
+
+X
+
+> s=0
+
+r(p, θ s)wi(θs), θs = 2πs S , (7.1) converging to (3.1) as S → ∞ ; the factor 2π/S is the width of each quadrature cell on 
+
+[0 , 2π), consistent with the definition of ϕi in (3.1) as an unnormalized integral over S1.Table 3 reports this convergence at p = (1 .5, 2.0) .Convergence is O(1 /S ) on average rather than spectral, because r(p, ·) has jump discon-tinuities: at θ = 0 .588 rad the ray from p grazes the top edge of the internal wall ( y = 3 ), 21 Table 3: Convergence of ˆϕi(p) as S → ∞ (three representative components; error measured against S =16384 ). 
+
+S ˆϕ1 ˆϕ2 ˆϕ5 error vs. S = 16384 64 1.6367 1.7002 1.4426 5.4 × 10 −2
+
+256 1.5948 1.6669 1.4419 1.2 × 10 −2
+
+1024 1.5850 1.6589 1.4415 2.2 × 10 −3
+
+4096 1.5826 1.6570 1.4414 2.0 × 10 −4
+
+16384 1.5828 1.6571 1.4414 — (reference) and r jumps from 1.80 to 3.61 (a symmetric jump occurs at θ = 2 π − 0.588 , the bottom edge 
+
+y = 1 ). These shadow-boundary singularities are averaged, but not removed, by the smooth PoU weights, which caps the quadrature order at O(1 /S ). The observed error ratio between successive doublings of S fluctuates around the value 2 predicted by O(1 /S ) (empirically be-tween 1.0 and 3.7 across the range S = 64 , . . . , 16384 ) rather than decreasing monotonically, because the fixed discontinuity locations θ = 0 .588 , 2π − 0.588 land at varying distances from the nearest quadrature node as S changes. For the remainder of this example we use 
+
+S = 1024 , accurate to ≈ 2 × 10 −3 per component. 
+
+7.3. Localization at an Off-Grid Query Point 
+
+A sensor at unknown position p⋆ = (1 .3, 1.7) (not a grid node; see Figure 1) returns the observed descriptor Fobs = F(p⋆). The localizer has access only to Fobs and the precomputed grid {(pk, F(pk)) }35 
+
+> k=1
+
+; it does not know p⋆.
+
+Stage 1: nearest-neighbor search (6.1) .. Table 4 lists the four nearest grid nodes.  
+
+> Table 4: Top-4 nearest grid nodes to Fobs .
+
+Rank pk ∥F(pk) − Fobs ∥2 true error ∥pk − p⋆∥2
+
+1 (1 .5, 1.5) 0.2869 0.283 
+
+2 (1 .5, 2.0) 0.3839 0.361 
+
+3 (1 .0, 2.0) 0.4709 0.424 
+
+4 (1 .0, 1.5) 0.4757 0.361 
+
+The nearest node ˆp(0) = (1 .5, 1.5) localizes p⋆ to within one grid cell, consistent with the static error bound (6.3); grid resolution limits stage 1 to O(h) accuracy. 
+
+Stage 2: Gauss–Newton refinement [14].. Using the Jacobian JF(p) ∈ R8×2 (central differ-ences, h = 0 .05 ), iterate 
+
+p(k+1) = p(k) +  J⊤ 
+
+> F
+
+JF
+
+−1J⊤
+
+> F
+
+ Fobs − F(p(k)), (7.2) evaluated at p(k). Table 5 shows rapid convergence. Three Gauss–Newton steps reduce the localization error from 0.283 (grid resolution) to 10 −4, recovering p⋆ = (1 .3, 1.7) to numerical precision; the residual ∥F(p(k)) − Fobs ∥2
+
+decreases monotonically at each step, as expected from a well-posed Gauss–Newton iteration. 22 Table 5: Gauss–Newton refinement from ˆp(0) = (1 .5, 1.5) .
+
+Iter. Position estimate ∥F(p(k)) − Fobs ∥2 error to p⋆
+
+0 (1 .500 , 1.500) 0.2869 0.2828 1 (1 .289 , 1.694) 0.0165 0.0124 2 (1 .301 , 1.700) 0.0008 0.0007 3 (1 .300 , 1.700) 0.0002 0.0001 
+
+Certificate of well-posedness.. At ˆp(0) , the Jacobian singular values are σ = (1 .452 , 0.845) ,so the local injectivity radius (6.2) is 
+
+μ(ˆ p(0) ) = σmin (JF) = 0 .845 > 0,
+
+certifying, via Proposition 6.3, that F is locally injective and the Gauss–Newton iteration is well-conditioned. A vanishing μ (e.g. in a long symmetric corridor, cf. section 6.3) would leave stage 2 unable to resolve position along the flat direction, and only the coarser grid bound of stage 1 would apply. 
+
+7.4. Summary 
+
+Quadrature accuracy S = 1024 (≈ 2 × 10 −3 per component) Grid 35 nodes, h = 0 .5
+
+True position p⋆ = (1 .3, 1.7) (off-grid) Stage-1 (nearest-neighbor) error 0.283 
+
+Stage-2 (Gauss–Newton) error 1.4 × 10 −4
+
+Injectivity certificate μ(ˆ p(0) ) = 0 .845 > 0
+
+In summary, localization proceeds in two stages: a coarse nearest-neighbor search on the precomputed grid, accurate to O(h), followed by Gauss–Newton refinement using the de-scriptor Jacobian, accurate to numerical precision once inside the basin of convergence, and certified throughout by the local injectivity radius μ > 0.
+
+8. Acknowledgments* 
+
+This research was funded by Vingroup Innovation Foundation (VINIF) under project code VINIF.2026.DA109. 
+
+References 
+
+[1] Chenguang Ouyang, Suxing Hu, Fengqi Long, Shuai Shi, Zhichao Yu, Kaichun Zhao, Zheng You, Junyin Pi, and Bowen Xing. A semantic vector map-based approach for aircraft positioning in gnss/gps denied large-scale environment. Defence Technology ,34:1–10, 2024. 23 [2] Phan Thanh An, Pham Hoang Anh, Tran Thanh Binh, and Tran Van Hoai. The sequences of bundles of line segments for autonomous robots with limited vision range to escape from blind alley regions. Robotics and Autonomous Systems , 195:105185, 2026. [3] Radu Bogdan Rusu, Nico Blodow, and Michael Beetz. Fast point feature histograms (fpfh) for 3d registration. In Proceedings of the IEEE International Conference on Robotics and Automation (ICRA) , pages 3212–3217. IEEE, 2009. [4] Federico Tombari, Samuele Salti, and Luigi Di Stefano. Unique signatures of histograms for local surface description. In European Conference on Computer Vision (ECCV) ,volume 6313 of Lecture Notes in Computer Science , pages 356–369. Springer, 2010. [5] Florent Perronnin and Christopher Dance. Fisher kernels on visual vocabularies for image categorization. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , pages 1–8. IEEE, 2007. [6] Hervé Jégou, Matthijs Douze, Cordelia Schmid, and Patrick Pérez. Aggregating local descriptors into a compact image representation. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , pages 3304–3311. IEEE, 2010. [7] Jan C. van Gemert, Cees J. Veenman, Arnold W. M. Smeulders, and Jan-Mark Geuse-broek. Visual word ambiguity. IEEE Transactions on Pattern Analysis and Machine Intelligence , 32(7):1271–1283, 2010. [8] Ronald A. Fisher. Dispersion on a sphere. Proceedings of the Royal Society of London. Series A , 217(1130):295–305, 1953. [9] Kanti V. Mardia and Peter E. Jupp. Directional Statistics . John Wiley & Sons, Chich-ester, 2000. [10] Walter Rudin. Real and Complex Analysis . McGraw–Hill, New York, 3 edition, 1987. [11] Ruth F. Curtain and Hans Zwart. An Introduction to Infinite-Dimensional Linear Systems Theory , volume 21 of Texts in Applied Mathematics . Springer, New York, 1995. [12] Adi Ben-Israel and Thomas N. E. Greville. Generalized Inverses: Theory and Appli-cations , volume 15 of CMS Books in Mathematics . Springer, New York, 2nd edition, 2003. [13] Rajendra Bhatia. Matrix Analysis , volume 169 of Graduate Texts in Mathematics .Springer, New York, 1997. [14] Jorge Nocedal and Stephen J. Wright. Numerical Optimization . Springer Series in Operations Research and Financial Engineering. Springer, New York, 2nd edition, 2006. 24

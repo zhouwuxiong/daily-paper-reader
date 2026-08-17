@@ -1,0 +1,794 @@
+Title: Protection Levels for Vision-Based Pose Estimation
+
+URL Source: https://arxiv.org/pdf/2608.10023v1
+
+Published Time: Wed, 12 Aug 2026 00:03:57 GMT
+
+Number of Pages: 11
+
+Markdown Content:
+# Protection Levels for Vision-Based Pose Estimation 
+
+Olivia Beyer Bruvik †∗ , Romeo Valentin †∗ , Marc R. Schlichting †, Don Walker ‡, and Mykel J. Kochenderfer ††Department of Aeronautics and Astronautics, Stanford University, Stanford, CA 94305 USA 
+
+‡A3 by Airbus LLC, Sunnyvale, CA 94086 USA 
+
+Abstract —Vision-based navigation complements Global Nav-igation Satellite Systems, but certification demands integrity guarantees that account for faulty measurements. Previous work presented a probabilistic computer vision pipeline for runway-based pose estimation with fault detection inspired by Receiver Autonomous Integrity Monitoring. This work extends that framework by deriving protection levels, which provide probabilistic bounds on pose error that remain valid under undetected faults. We present an algorithm for computing protection levels for the nonlinear Perspective-n-Point problem applied to an aviation setting. The algorithm covers all six degrees of freedom of the aircraft pose (position and orientation) directly. We analyze the effect of measurement redundancy, pixel-level prediction uncertainty, and runway distance on the resulting protection levels. To make the results tangible, we demonstrate tradeoffs in the protection levels on an illustrative runway example. 
+
+Index Terms —vision-based navigation, integrity monitoring, protection levels, Receiver Autonomous Integrity Monitoring 
+
+I. I NTRODUCTION 
+
+Vision-based navigation systems are a promising complement to Global Navigation Satellite Systems (GNSS) for aircraft approach and landing, particularly in GPS-denied or degraded environments. Such systems perform vision-based pose estima-tion (VBPE), using learned computer vision models to recover aircraft pose from visual features; however, these models can fail in subtle ways due to, for example, mislabeled corners, misidentified runway edges, or illumination artifacts, producing faulty pose estimates. Integration into safety-critical avionics therefore requires not only accurate pose estimates but also integrity monitoring for runtime assurance. Standard integrity monitoring for GNSS-based aviation includes two components: fault detection and the evaluation of a protection level (PL). A PL is a probabilistic upper bound on pose error that holds with a specified probability, even under undetected faults. PLs are essential for runtime assurance because they provide a real-time, data-driven approach to evaluating when navigation systems can be trusted. Integrity is assessed by comparing the computed PL to a pre-defined alert limit that sets the maximum pose error tolerable for safe operation. Whenever the PL is less than the alert limit, the probability of the true pose error 
+
+∗ Indicates equal contribution. Corresponding author: Olivia Beyer Bruvik (e-mail: oliviabb@stanford.edu). © 2026 IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted component of this work in other works. Accepted for publication at the 2026 AIAA DATC/IEEE 45th Digital Avionics Systems Conference (DASC). undetected 
+
+> fault
+
+𝒩︀ 
+
+> 𝑦
+
+𝒩︀ 
+
+> 𝑥
+
+Fig. 1: Vision-based pose estimation from runway keypoints; one keypoint prediction contains an undetected fault. We compute probabilistic bounds for the camera pose in this setting. exceeding the alert limit is bounded by the specified integrity risk. Conversely, whenever the PL is greater than the alert limit, the system is marked as unavailable, allowing for secondary instruments to be depended on for navigation. Tight PLs are essential, since overly conservative bounds preserve integrity at the cost of availability, the fraction of time the system can safely be used [1], [2]. In GNSS, integrity guarantees are provided by Receiver Autonomous Integrity Monitoring (RAIM) [1], which uses measurement redundancy both to detect faults at runtime and to bound the integrity risk through PLs. Recent work applied RAIM-based fault detection to VBPE, providing the first component of runtime assurance for pipelines built around a neural-network keypoint predictor [3]. Figure 1 illustrates the setup: the neural network predicts keypoint pixel locations with per-keypoint uncertainty from an input image, and a Perspective-n-Point (PnP) solver recovers the aircraft pose via an optimization problem. However, that work does not compute PLs, which are the quantitative error bounds that close the integrity argument. Under Gaussian noise, a nominal pose-error bound follows directly from the propagated pose uncertainty, but aviation requirements demand a bound that also covers undetected faults. This fault-case bound is currently absent in the VBPE setting. This paper adapts RAIM’s PL construction to supply VBPE PLs for the full six-degree-of-freedom (6-DOF) pose. We present three contributions. 1) We bridge the gap between the VBPE formulation and RAIM theory, allowing us to compute PLs for the full arXiv:2608.10023v1 [cs.RO] 9 Aug 2026 6-DOF VBPE pose estimation problem. 2) We analyze the PL equations to characterize key proper-ties in the VBPE setting; specifically, we characterize the effect of distance to runway, keypoint count, and noise magnitude on the size of the PL. 3) We validate the findings on a representative runway case study and make the results tangible. The remainder of this paper is organized as follows. Sec-tion II positions this work against prior literature. Section III introduces the VBPE problem and reviews the relevant RAIM results in the GNSS setting. Section IV derives PLs for VBPE. Section V characterizes PL behavior analytically, and Section VI validates it on a runway case study. Section VII concludes and outlines further work. II. R ELATED WORK 
+
+In civil aviation, integrity is the probability that a system is operating correctly or, once faulty, is marked as unavailable. The International Civil Aviation Organization (ICAO) and Fed-eral Aviation Administration (FAA) standards make integrity an operational requirement, enforced at runtime using protection levels (PLs). These PLs upper-bound horizontal and vertical position error at a specified integrity risk, and operations are declared unavailable when a PL exceeds its corresponding alert limit [2]. This paper focuses on computing such bounds for vision-based aircraft pose estimation. Classical Perspective-n-Point (PnP) methods provide the geometric foundation for this problem. Solvers such as EPnP [4] emphasize computational efficiency and geometric accuracy, while robust methods such as RANSAC [5] improve resilience to mismatched correspondences. These methods are essential for pose estimation, but they do not provide an aviation-integrity interpretation of the resulting estimate. In particular, they do not allocate integrity risk across fault hypotheses, bound the effect of undetected faults, or produce a runtime PL that can be compared with an alert limit. Uncertainty-aware PnP methods move closer to this objec-tive. CEPPnP [6] incorporates anisotropic image-observation covariances into a maximum-likelihood PnP solver, and related methods propagate per-keypoint uncertainty to pose-level uncertainty [7]. Set-valued methods provide still stronger guarantees: Yang and Pavone [8] use conformal prediction sets for keypoints and propagate them to pose uncertainty sets, while Luo et al. [9] and Santa Cruz and Shoukry [10] certify vision-based pose-estimation pipelines using verification or reachability analysis. These approaches provide calibrated or certified uncertainty bounds, but their guarantees are not formulated as aviation-style PLs. They do not explicitly model monitored fault hypotheses, allocate integrity risk, or tie the resulting bound to an operational alert-limit decision. The GNSS literature provides the missing integrity frame-work. Receiver Autonomous Integrity Monitoring (RAIM) uses redundant measurements to detect faults and bound the risk of hazardous misleading information [11]–[13]. Residual-based, parity-based, and solution-separation methods provide different mechanisms for detection and protection-level computation [1], [14]–[17]. Advanced RAIM extends these ideas to multi-constellation and multi-fault settings by assigning prior fault probabilities, monitoring relevant fault modes, and computing horizontal and vertical PLs for aviation operations [18], [19]. In this literature, PLs are not generic confidence intervals. Instead, they are bounds derived from a fault model, a detection threshold, and an integrity-risk allocation. Recent work shows that these ideas can be transferred beyond standalone GNSS. Integrity monitoring has been studied for lidar feature association [20], multisensor Kalman filtering [21], sequential monitoring [22], camera localization [23], and graph-SLAM with GPS and fisheye cameras [24]. In aviation, Fu et al. [25] used visual landmarks as pseudo-satellites to improve GPS integrity monitoring, and Valentin et al. [3] adapted residual-based RAIM for runtime assurance of a vision-based landing system. Zhu et al. [26] review the broader challenges in visual navigation integrity, including environment dependence, association errors, and perception uncertainty. Together, these results leave a gap. Vision methods increas-ingly provide robust estimates, covariances, distributions, or calibrated sets, but they generally do not implement the explicit integrity-risk accounting used in aviation. Integrity methods have been extended to perception and multisensor navigation, but existing camera-based examples are largely fusion-based or map-based rather than native learned-keypoint plus nonlinear PnP pipelines. This paper addresses that gap by adapting RAIM-style PL computation to a vision-based pose-estimation pipeline that begins with 2-D keypoint measurements, models keypoint faults, and produces a runtime pose-level bound suitable for comparison with an alert limit. III. P RELIMINARIES 
+
+We briefly review two foundational components that enable computing PLs in the VBPE setting: (i) a formulation of the probabilistic model for keypoint and pose estimation, and (ii) RAIM in the context of GNSS, which bounds estimation error, even when some measurements are faulty. In Section IV, we combine these two approaches. 
+
+A. Vision-Based Pose Estimation 
+
+We begin by setting up the vision-based pose estimation problem as a perspective-n-point (PnP) problem. In this context, the PnP problem aims to estimate the aircraft’s pose relative to the runway using an image captured during approach. This is achieved by estimating the 2-D pixel coordinates of projected keypoints in the image and relating them to known 3-D reference points. By additionally accounting for the measurement uncertainty of these keypoints, we can construct an optimization problem to robustly compute the camera pose and its associated uncertainty. The remainder of this section formalizes this procedure. 
+
+1) PnP Problem: Let ξk ∈ R3 for k = 1 , . . . , n kp denote a set of known 3-D reference points 
+
+{ξk}nkp  
+
+> k=1
+
+= {(lat k, lon k, elev k)}nkp  
+
+> k=1
+
+(1) expressed in the world frame. For example, we can choose the four corners of the runway as reference points, in which case nkp = 4 . However, other features or a larger number of keypoints may be used. Let β∗ ∈ R3 × SO(3) denote the true aircraft pose, comprising position and orientation. The estimator operates on an m-dimensional state derived from this pose: m = 6 
+
+for full 6-DOF pose estimation, and m = 3 when attitude is provided externally and only position is estimated. Throughout, a superscript ∗ marks the ground-truth quantities, which are unknown to the estimator. Given camera intrinsics C (focal length, principal point, distortion), the projection function then maps each world point to its true pixel location 
+
+y∗ 
+
+> k
+
+= proj C (ξk | β∗) ∈ R2, k = 1 , . . . , n kp , (2) where proj C is the rigid-body transformation from world to camera coordinates followed by perspective projection. Mini-mizing the difference between projected and measured keypoint locations provides the foundation of the pose estimation. 
+
+2) Keypoint Predictions and Noise Model: In practice, rather than observing pixel projections directly, we receive noisy predictions from a computer vision model such as a neural network. Crucially, we do not make assumptions about the details of the network architecture. Instead, given an input image, we assume only that the network outputs a mean pixel location ˆμk = (ˆ uk, ˆvk) and an associated predictive uncertainty 
+
+ˆΣk for each keypoint k. See Figure 1 for an overview and [27] for the calibration of these predictive uncertainties. We interpret these outputs as a nominal, Gaussian mea-surement model, and departures from it are treated as faults described in Section IV-A. To keep the notation simple, we display ˆΣk in diagonal form, 
+
+yk ∼ N (ˆ μk, ˆΣk), ˆΣk =
+
+ˆσ2 
+
+> uk
+
+00 ˆσ2
+
+> vk
+
+
+
+, (3) where ˆσuk and ˆσvk are the per-coordinate standard deviations for keypoint k. The method accommodates a general ˆΣk with known correlation. 
+
+3) Least-Squares Pose Estimation: Given noisy keypoint predictions, the pose estimate is obtained by minimizing a reprojection residual weighted by the measurement uncertainty. In the pose estimator, we use the predictive means as the observed keypoint measurements, i.e., ˆyk = ˆ μk. Stacking all 
+
+2nkp pixel coordinates into a single measurement vector 
+
+ˆy =
+
+
+
+ˆy1
+
+...
+
+ˆynkp 
+
+ ∈ R2nkp , (4) the pose estimate ˆβ is obtained by minimizing 
+
+ˆβ = arg min 
+
+> β
+> nkp
+
+X
+
+> k=1
+
+∥ˆyk − proj C (ξk | β)∥2
+
+> Σ−1
+> k
+
+. (5) For additional details, see [3]. The least-squares problem gives a point estimate ˆβ. For integrity monitoring, we also need the uncertainty of this estimate. 
+
+4) Computing Pose Uncertainty: To characterize the uncer-tainty ˆΣβ of the pose estimate, we linearize the projection function around ˆβ and propagate the per-keypoint uncertainty into the pose space to compute 
+
+ˆΣβ = ( H⊤
+
+> raw
+
+Σ−1meas Hraw )−1, (6) where Σmeas is the block-diagonal covariance Σmeas =diag( Σ1, . . . , Σnkp ). We can now write N (ˆβ, ˆΣβ) as the predicted probability distribution of the pose. Here, Hraw ∈
+
+R2nkp ×m is the raw (unwhitened) observation matrix, obtained by stacking the per-keypoint Jacobians 
+
+Hk, raw = ∂proj C (ξk | β)
+
+∂β β= ˆβ
+
+(7) of the projection function at ˆβ. We note that while we assume a Gaussian measurement model and state distribution, other uncertainty propagation techniques are possible that do not assume a Gaussian model, see [3]. 
+
+B. Receiver Autonomous Integrity Monitoring 
+
+The previous section sets up the relationship of the VBPE problem with RAIM. Next, we review how faulty measurements can be detected. Given a pose estimate ˆβ, we can quantify how likely the observed measurements are under the noise model. When they are inconsistent with ˆβ, at least one keypoint is likely faulty and must be excluded, or the entire measurement set discarded. RAIM is the standard method for fault detection in GNSS-based aircraft navigation. In this setting, satellite pseudorange measurements are used to compute position estimates for an aircraft. The satellite pseudorange measurements are assumed to have zero-mean Gaussian measurement noise, for example due to thermal or multipath effects. They can also have faults, for example due to satellite clock jumps, spoofing, or other errors not captured by the Gaussian assumption. Such faults can cause position estimation errors that are unacceptably large for safe navigation. RAIM provides a framework for fault detection and exclusion by exploiting redundant measurements. Once a subset of measurements has been selected for which no fault is detected, RAIM can also be used to compute PLs. In this section, we briefly review the construction of the residual-based (RB) RAIM variant that lays the foundation we adapt to the vision setting presented in Section IV. 
+
+1) Measurement Model: In the GNSS setting, RAIM as-sumes a linear measurement model derived by linearizing the pseudorange measurement function around a nominal state estimate ˆx:
+
+z = Hx + v + f , (8) where z = Σ−1/2zraw ∈ R2nkp is the whitened measurement vector, H ∈ R2nkp ×m is the linearized observation matrix, x ∈
+
+Rm is the state vector (position and clock bias), v ∼ N (0, I)
+
+is whitened measurement noise, and f ∈ R2nkp is a fault vector with f = 0 under fault-free measurements. 2) Fault Detection: Assuming H is full rank and 2nkp ≥ m,the least-squares estimate of the state x is ˆx = H†z with 
+
+H† = ( H⊤H)−1H⊤. Since the true state is not available, RAIM detects faults by comparing the measurement vector z
+
+to the expected measurement Hˆx at the least-squares estimate 
+
+ˆx. This comparison is performed through the residual vector 
+
+r = z − Hˆx = ( I − HH †)( v + f ). (9) A key insight in RAIM is that the components of v + f
+
+in the column space of H are absorbed into the estimate ˆx
+
+and become unobservable to the residual. Consequently, only components in the orthogonal complement of the column space of H, known as the left nullspace of H, remain detectable. RAIM detects faults from this residual and later bounds the estimation error contributed by the absorbed component. Recalling Eq. (9), the residual vector r comprises both a noise and a fault component, where v ∼ N (0, I). Assuming a fault-free hypothesis H0 where f = 0, the reprojection residual 
+
+r is distributed under a zero-mean Gaussian on the (2 nkp −m)-dimensional left nullspace of H.Since the squared norm of a standard Gaussian is Chi-squared distributed with degrees of freedom equal to its dimension, and the projection (I−HH †) reduces the ambient 2nkp dimensions to 2nkp − m, we have 
+
+∥r∥22 ∼ χ22nkp −m. (10) Considering now a fault hypothesis with f̸ = 0, r now has an additional component induced by the fault vector. In particular, each element of r becomes distributed under a Gaussian with non-zero mean. Since again we can only observe the component of f that lies orthogonal to the column space of H, we define the non-centrality scale λ2 = ∥(I − HH †)f ∥22 and write 
+
+∥r∥22 ∼ χ22nkp −m,λ 2 . (11) The problem of fault detection then reduces to the question of whether a particular residual ∥r∥2 is likely to have been sam-pled from the central χ22nkp −m or the non-central χ22nkp −m,λ 2
+
+distribution. Figure 2 illustrates this for two non-centrality scales. The detector compares the residual norm to a threshold τ ,rejecting the measurement if ∥r∥2 > τ . In Section IV-C, we will describe how choice of τ trades false alarms against missed detections and compute it from the integrity-budget allocation. 
+
+3) Integrity Risk and Protection Levels: The previous section reviewed fault detection, which has already been adapted to the visual landing application [3]. Unfortunately, even when the detection test passes, a fault may still be present, potentially causing an undetected error in the pose estimate that is greater than the specified alert limit ℓ.In this case, the system is marked as available and the pose estimate safe to trust despite a pose error that exceeds the alert limit. This scenario is known as hazardous misleading information (HMI) and entails an integrity risk in the system. We define the integrity risk, or equivalently the probability of HMI, for a state component j as the joint probability 
+
+PHMI = P |ˆxj − x∗ 
+
+> j
+
+| > ℓ ∧ ∥ r∥2 < τ . (12) central  𝜒 2       
+
+> 𝑛 −𝑚
+> non-central 𝜒 2
+> 𝑛 −𝑚 ,𝜆 2
+> 1=52
+> non-central 𝜒 2
+> 𝑛 −𝑚 ,𝜆 2=152
+> 0510152025
+> ‖𝐫 ‖2
+> 2
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> density
+
+## 𝜆 2 
+
+> 1
+
+## 𝜆 2
+
+> 2
+
+Fig. 2: Central χ22nkp −m density (blue) and two non-central 
+
+χ22nkp −m,λ 2 densities (orange, red) at the same degrees of freedom, with non-centrality scales λ1 = 5 and λ2 = 15 .Dashed lines mark λ21 and λ22. As λ grows, the fault distribution pulls away from the central one, making it easier to decide whether an observed residual ∥r∥22 was drawn from the nominal or the faulty regime. To bound the probability of HMI, RAIM introduces an integrity risk budget IREQ that caps the probability of an undetected estimation error exceeding an alert limit ℓ.Notably, faults have different impacts on the estimation error and detectability. Faults that lie mostly orthogonal to the column space of H have higher detectability and less impact on pose error, while faults that lie in the column space of H
+
+are harder to detect and degrade pose estimates to a greater degree. Without structural assumptions on f , the computed PL is infinite: any f in the column space of H is absorbed into ˆx,shifting the estimate arbitrarily while leaving r untouched. RAIM therefore restricts faults to a discrete set of fault hypotheses HS , each modeling a specific failure-mode [1]. Since the hypotheses are mutually exclusive and exhaustive, the law of total probability gives the integrity criterion 
+
+X
+
+> S
+
+P(HS ) P |ˆxj − x∗ 
+
+> j
+
+| > ℓ ∧ ∥ r∥2 < τ | HS
+
+
+
+≤ IREQ − PNM (13) for a state component j, where PNM is the unmonitored risk from rare fault combinations that the system does not explicitly check. A PL is the smallest ℓ satisfying Eq. (13). RAIM derives the PL by allocating IREQ across the hypotheses and separately bounding each term under the worst case. IV. P ROTECTION LEVELS FOR VBPE Having reviewed the PnP problem and RAIM in the GNSS setting, we next turn to the main contribution of this paper: computing PLs for the VBPE setting. The construction proceeds in three subsections: (i) specifying the fault hypotheses (Section IV-A), (ii) putting the VBPE measurement model into canonical RAIM form (Section IV-B), and (iii) deriving the per-axis PLs (Section IV-C). A. Fault Hypotheses 
+
+In GNSS RAIM, the fault hypotheses enumerate combi-nations of pseudorange faults. In VBPE, these hypotheses enumerate structural errors in the prediction of one or more keypoints. A structural error is an error that departs from the Gaussian noise model of Eq. (3). For example, a fault can occur as a result of a misidentified corner or a misidentified runway edge. See Figure 3 for a visualization. We index fault hypotheses by the subset S ⊆ { 1, . . . , n kp } of keypoints whose measurements are faulted, with HS denoting the corresponding hypothesis. For example, H{3} denotes a fault in the third keypoint prediction, H{3,4} a simultaneous fault in the third and fourth predictions, and H∅ ≡ H0 the no-fault hypothesis. A fault hypothesis HS is detectable only when the unfaulted measurements alone are enough to estimate the pose. Since each keypoint prediction comes with two measurements (horizontal and vertical), we require 2( nkp − | S|) ≥ m, or equivalently 
+
+|S| ≤ nkp − m/ 2. (14) In other words, for too many simultaneous and unconstrained faults, RAIM cannot help us detect the presence of a fault. We therefore monitor only up to smax simultaneous keypoint faults, i.e., all keypoint sets with at least one and up to smax 
+
+keypoint faults. We define the set of monitored faults Smon =
+
+{S : 1 ≤ | S| ≤ smax }.As a consequence of Eq. (14), for the four-corner runway setup with nkp = 4 and m = 6, we can only consider single-keypoint faults ( smax = 1 ). Monitoring multi-keypoint faults requires additional keypoint predictions such as threshold markers and line angles. For ease of notation, in the general setting, we assume that 
+
+smax is large enough such that hypotheses with |S| > s max 
+
+have negligible total prior probability. This assumption implies an unmonitored risk PNM small compared to other terms. We therefore drop it from Eq. (13) in the rest of this work. 
+
+B. Canonical Form 
+
+To apply the RAIM framework for vision-based pose estima-tion (VBPE), we manipulate the computer vision measurement function to fit the canonical RAIM form in Eq. (8). We construct the canonical form in three steps: linearizing the measurement function, injecting noise and faults, and whitening the result. 
+
+1) Step 1: Linearize the projection function: We recall that keypoint projections are computed via the projection function in Eq. (2) and assume that our pose estimate ˆβ is reasonably close to the true pose β∗. Since the projection function is non-linear, we compute the first-order Taylor expansion for a pose β near the current pose estimate ˆβ. For each keypoint k,
+
+proj C (ξk | β) ≈ proj C (ξk | ˆβ) + Hk, raw (β − ˆβ), (15) where Hk, raw = ∂proj C (ξk |β) 
+
+> ∂ββ= ˆβ
+
+is the 2 × 3 (position) or 
+
+2 × 6 (pose) Jacobian for keypoint k and the higher-order terms are dropped. Stacking Eq. (15) over all nkp keypoints into the projection 
+
+proj C (β) = 
+
+
+
+proj C (ξ1 | β)
+
+...
+
+proj C (ξnkp | β)
+
+ ∈ R2nkp , (16) evaluating at the unknown true pose β = β∗, and writing the pose offset ∆β := β∗ − ˆβ gives 
+
+proj C (β∗) − proj C (ˆβ) ≈ Hraw ∆β. (17) Recall from Section III-A that the keypoint measurement ˆy
+
+contains measurement noise vraw ∼ N (0, Σmeas ), giving the nominal measurement model ˆy = proj C (β∗) + vraw .Defining the measurement deviation vector ∆y := ˆ y −
+
+proj C (ˆβ) and substituting the nominal model into Eq. (17) yields 
+
+∆y ≈ Hraw ∆β + vraw . (18) 
+
+2) Step 2: Inject faults: Under the fault hypothesis HS
+
+(Section IV-A), the fault vector takes the form 
+
+f = AS, raw δS , (19) where the raw fault selector AS, raw ∈ R2nkp ×2|S| ={e2k−1, e2k}k∈S
+
+ has two columns per faulted keypoint 
+
+k ∈ S, reflecting that each faulted keypoint corrupts two pixel coordinates simultaneously. Adding AS, raw δS to Eq. (18) yields 
+
+∆y ≈ Hraw ∆β + vraw + AS, raw δS . (20) 
+
+3) Step 3: Whiten the noise: Finally, we bring the formu-lation into its canonical form by whitening the noise in v.We factorize Σmeas = LL ⊤, so that L−1 vraw ∼ N (0, I).Multiplying Eq. (20) by L−1 on the left gives 
+
+∆z = H ∆β + v + AS δS , (21) where ∆z = L−1∆y, H = L−1Hraw , and AS = L−1AS, raw .Dropping ∆ for ease of notation yields the canonical form 
+
+z = H β + v + AS δS (22) equivalent to Eq. (8), where  
+
+> •
+
+z ∈ R2nkp is the whitened reprojection error, distinct from the residual r = ( I − HH †)z used by the detector;  
+
+> •
+
+H ∈ R2nkp ×m is the whitened linearized observation matrix of the projection function proj C around ˆβ with 
+
+m = 3 or 6; 
+
+> •
+
+β ∈ Rm is the pose perturbation;  
+
+> •
+
+v = L−1vraw ∼ N (0, I) is the whitened noise; and  
+
+> •
+
+f = AS δS is the whitened fault under HS , with δS ∈
+
+R2|S| and δS = 0 under H0.The PL derived below bounds the local axial estimation error in this linearized model. In the original pose coordinates, this corresponds to a bound on |ˆβj − β∗ 
+
+> j
+
+| up to the linearization approximation. {1} 
+
+> {2}
+> {3}
+> {4}(a) Fault at keypoint 3. {1}
+> {2}
+> {3}
+> {4}(b) Fault plus noise.
+
+Fig. 3: Runway keypoint geometry under correlated noise and a single-keypoint fault. Black: ground truth (GT), green: predicted keypoints, with Pred = GT + noise + fault; purple dashed: keypoints reprojected from the LSQ pose estimate. The gap between green and purple is the residual used in detection. Orange arrows: noise (parallel arrows at every keypoint indicate correlated noise); red arrow: fault. 
+
+C. Protection Level Computation 
+
+With the fault model and canonical form established, we compute PLs for the VBPE setting. We assume the computer vision model has produced an initial set of measurements 
+
+{ˆyk}nkp  
+
+> k=1
+
+that pass the residual-based detection test described in Section III-B. See [3] for further details. 1
+
+For each axis j of the pose estimate ˆβ, we seek a conservative 
+
+PL j that bounds the probability of hazardous misleading information. Here, j can represent position or rotation axes. Following Eq. (13), we require 
+
+X
+
+> S∈Smon
+
+P(HS ) P |ˆβj − β∗ 
+
+> j
+
+| > PL j ∧ ∥ r∥2 < τ | HS
+
+
+
++ P(H0) P |ˆβj − β∗ 
+
+> j
+
+| > PL j | H0
+
+ ≤ IREQ , (23) where now the unmonitored risk is dropped. The process to compute PLs is then as follows. Each PL has two components: (i) a bound on the pose error simply arising from the presence of nominal noise ( H0), and (ii) a bound arising from the possibility of an undetected fault ( HS ). The nominal-noise component follows directly from the propagated pose covariance. The fault component is less readily available because we do not know either the direction or the magnitude of a potentially undetected fault. We therefore account for the worst-case undetected fault as follows. For each fault hypothesis, we first find the worst-case fault direction that is simultaneously the hardest to detect and the most damaging to the pose estimate. Then, we find the worst-case fault magnitude along that direction: the largest value for which the residual test could still miss the fault with non-negligible probability. 
+
+> 1If the measurements do not pass the residual test, fault detection and exclusion (FDE) may be applied before computing the PL. We leave FDE and its effect on PLs in this setting for future work.
+
+We then satisfy all hypotheses at once by considering the largest PL among all hypotheses; this yields the fault-induced PL. Finally, we conservatively add the nominal component to the fault-induced PL to yield the final PL. The next sections elaborate on each step. 
+
+1) Risk Allocation: We start by detailing how the integrity risk is split up across all fault hypotheses (including the no-fault hypothesis). Since Eq. (23) bounds the total probability of HMI under both the fault hypotheses and the no-fault hypothesis, we can simplify the computation by splitting the integrity risk into two parts: IREQ = IH0 + IHS . In the absence of calibrated keypoint-fault statistics, we adopt the baseline split 
+
+IH0 = IHS = IREQ /2.Equation (23) is then satisfied if the total probability of HMI in the nominal case is less than IH0 , and similarly the total probability of HMI due to faults is less than IHS .Using a similar argument, we further split IHS into hypothesis-level risk allocations as 
+
+IHS = P(HS )
+
+P 
+
+> S′∈S
+
+P(HS′ ) IHS (24) with S = Smon . Then IHS = P 
+
+> S∈S
+
+IHS and IHS ∝ P(HS ).Next, we describe how to define P(HS ) in the VBPE setting. Unlike in GNSS, where satellite fault probabilities are supported by historical monitoring data, there is no analogous calibrated fault model for neural-network keypoint predictions. We assume that keypoint faults occur independently with a common per-keypoint failure probability of Pkp . For an exact fault subset S ⊆ { 1, . . . , n kp }, this gives 
+
+P(HS ) = ( Pkp )|S|(1 − Pkp )nkp −| S| (25) with a null-hypothesis probability P(H0) = (1 − Pkp )nkp . We leave empirical calibration of prediction fault probabilities as future work. Now that we have discussed how to distribute the integrity risk across hypotheses, we proceed with analyzing individual hypotheses. 
+
+2) Worst-Case Fault Direction: For hypothesis HS , we now compute the worst-case fault direction. As introduced in Section IV-B, we write the whitened fault as f = AS δS .The fault component in the column space of H, calculated as 
+
+HH †f , is absorbed into the pose estimate, and the remaining component (I − HH †)f is detectable in the residual. For a fixed monitored hypothesis HS , the fault direction 
+
+f is unknown. To avoid making assumptions about fault distributions, we use the direction that maximally shifts the pose along the axis of interest while remaining hardest to detect. We capture this trade-off by the failure-mode slope [1, Eq. 30] 
+
+gS,j = |e⊤ 
+
+> j
+
+H†f |∥(I − HH †)f ∥2
+
+. (26) The numerator is the fault-induced estimate error along axis 
+
+j, extracted by the standard basis vector ej . The denominator is the detectable residual component, equivalently the non-centrality parameter λ = ∥(I − HH †)f ∥2 of the residual chi-square under HS . A large slope means that a fault can substantially move the pose estimate while leaving only a small residual. Under hypothesis HS , faults are restricted to the range of 
+
+AS . When 2|S| ≤ 2nkp − m and the corresponding fault directions are observable in the residual space, the matrix 
+
+A⊤ 
+
+> S
+
+(I − HH †)AS is invertible and the worst-case residual-based RAIM direction has the closed form [1, Eq. 33] 
+
+¯f S = AS
+
+ A⊤ 
+
+> S
+
+(I − HH †)AS
+
+−1A⊤ 
+
+> S
+
+H†⊤ ej . (27) The corresponding worst-case failure-mode slope is 
+
+¯g2 
+
+> S,j
+
+= e⊤ 
+
+> j
+
+H†AS
+
+ A⊤ 
+
+> S
+
+(I − HH †)AS
+
+−1A⊤ 
+
+> S
+
+H†⊤ ej . (28) 
+
+3) Maximum Undetected Fault Magnitude: Having com-puted the worst-case fault direction and the corresponding failure-mode slope, we now turn to the magnitude of the fault. Concretely, we seek the largest magnitude fault in the worst-case fault direction that goes undetected by the residual test. Since the measurements passed the fault detection test, we know that the residual r = ( I−HH †)( v+f ) satisfies ∥r∥2 ≤ τ
+
+for the threshold τ defined in Section III-B. The test compares ∥r∥2 to τ , with ∥r∥22 ∼ χ22nkp −m under 
+
+H0 and χ22nkp −m,λ 2 under HS , where λ = ∥(I − HH †)f ∥2
+
+depends on the fault realization. The threshold τ trades off the false-alarm and missed-detection rates: too small a τ rejects too many nominal samples; too large a τ admits too many faulty samples. The detection threshold is set from the continuity allocation CREQ , which we assume is equal to the probability of false alarm PFA :find τ s.t. P(∥r∥2 > τ | H0) P(H0) ≤ CREQ . (29) Recalling Figure 2, under H0, the probability that an observed residual lands to the right of the threshold equals PFA .Symmetrically, under a fault hypothesis HS , the probability that a residual falls to the left of the threshold equals the probability of missed detection under HS , denoted PMD ,S .For a given hypothesis HS , we compute the missed detection probability PMD ,S directly from the allocated integrity risk IHS .Dividing by the probability of HS and substituting Eq. (24) into IHS yields the hypothesis-independent missed detection probability 
+
+PMD ,S = IHS
+
+P(HS ) = IHS
+
+P 
+
+> S′∈Smon
+
+P(HS′ ) . (30) Under the choice Eq. (24), the right hand side is independent of the concrete hypothesis S. Thus all PMD ,S are equal, and we write PMD = PMD ,S .The non-centrality scale ¯λ is then defined by 
+
+P ∥r∥2 ≤ τ | ¯λ2 = PMD (31) with ∥r∥22 ∼ χ22nkp −m, ¯λ2 , computed by numerical inversion of the non-central χ2 CDF. Thus ¯λ is the detection-boundary non-centrality. A fault with residual scale ¯λ is missed with probability PMD . It depends on the detector threshold, the degrees of freedom, and the fault-budget allocation, but not on the particular monitored hypothesis. 
+
+Algorithm 1: PL computation for VBPE. 
+
+Input: Whitened observation matrix H ∈ R2nkp ×m,whitening factor L−1 from Σmeas = LL ⊤,continuity allocation CREQ , integrity budget 
+
+IREQ , monitored set Smon , maximum monitored fault size smax , priors {P(HS )}S∈{∅}∪ Smon .
+
+Output: PL j with j = 1 , . . . , m . 
+
+> 1
+
+Detection threshold: 
+
+τ ←
+
+r
+
+F −1
+
+> χ22nkp −m
+
+(1 − CREQ /P(H0))  
+
+> 2
+
+Unmonitored prior mass: PNM ← P 
+
+> |S|>s max
+
+P(HS ) 
+
+> 3
+
+Equal split: IH0 ← IHS ← (IREQ − PNM )/2 
+
+> 4
+
+No-fault multiplier: kH0 ← Φ−1 1 − IH0 /(2 P(H0))  
+
+> 5
+
+Agg. missed-detection: PMD ← IHS / P 
+
+> S∈Smon
+
+P(HS ) 
+
+> 6
+
+Non-centrality: find ¯λ s.t. P(χ22nkp −m, ¯λ2 < τ 2) = PMD  
+
+> 7
+
+State covariance: ˆΣβ ← (H⊤H)−1 
+
+> 8
+
+for j = 1 , . . . , m (each state of interest) do  
+
+> 9
+
+σβj ←
+
+q
+
+e⊤ 
+
+> j
+
+ˆΣβej 
+
+> 10
+
+for S ∈ Smon (each fault hypothesis) do  
+
+> 11
+
+AS, raw ← [{e2k−1, e2k}k∈S ] 
+
+> 12
+
+AS ← L−1AS, raw  
+
+> 13
+
+¯g2 
+
+> S,j
+
+← e⊤ 
+
+> j
+
+H†AS (A⊤ 
+
+> S
+
+PA S )−1A⊤ 
+
+> S
+
+H†⊤ ej
+
+where P = I − HH † 
+
+> 14
+
+end  
+
+> 15
+
+PL j ← (max S∈Smon ¯gS,j ) · ¯λ + kH0 · σβj 
+
+> 16
+
+end  
+
+> 17
+
+return (PL 1, . . . , PL m)
+
+4) Final Protection Level: We now combine the fault and nominal components in Eq. (23) into a PL. The nominal contribution follows from the propagated pose covariance. The fault contribution combines the missed-detection non-centrality 
+
+¯λ with the worst-case slope ¯gS,j that maps residual bias into axial pose error. Following residual-based RAIM, we take the worst case over the monitored fault hypotheses. Under H0, no fault is present, and the axial pose error is mod-eled as a zero-mean Gaussian with variance σ2 
+
+> βj
+
+= e⊤ 
+
+> j
+
+ˆΣβej ,where the pose covariance ˆΣβ is computed in Eq. (6). The probability that this Gaussian noise alone pushes the estimate past a half-width ℓ is bounded by the standard tail 
+
+P(|ˆβj − β∗ 
+
+> j
+
+| > ℓ | H0) P(H0) ≤ IH0 . (32) Inverting at the H0 budget share gives the no-fault contribution 
+
+PL 0,j = kH0 σβj , kH0 = Φ −1
+
+
+
+1 − IH0
+
+2 P(H0)
+
+
+
+, (33) i.e., the standard Gaussian quantile of N (0 , σ 2 
+
+> βj
+
+) at the integrity-tail level allocated to H0.For a monitored fault hypothesis HS ∈ Smon , the worst undetected fault contributes at most ¯gS,j ¯λ of error along axis j,the hypothesis-specific slope times the hypothesis-independent non-centrality. We conservatively add the nominal Gaussian margin, giving 
+
+PL S,j = ¯ gS,j · ¯λ + kH0 · σβj . (34) We recover the H0 contribution (33) as PL ∅,j = kH0 σβj with 
+
+¯g∅,j = 0 . The final PL is the maximum over all monitored hypotheses: 
+
+PL j = max 
+
+> S∈Smon
+
+PL S,j =
+
+
+
+max 
+
+> S∈Smon
+
+¯gS,j 
+
+
+
+· ¯λ + kH0 σβj . (35) The resulting PL j is a conservative per-axis bound satisfying Eq. (23). Algorithm 1 summarizes the full procedure. All quantities are computed from the whitened 2nkp × m observation matrix 
+
+H, the noise covariance, and the risk allocations. V. P ROTECTION LEVEL CHARACTERISTICS 
+
+Having established the PL equations, we aim to understand fundamental characteristics of the computed PLs. In particular, we analyze the impact of increased observation noise, additional keypoint predictions, and providing known orientation ( m = 3 
+
+instead of m = 6 ). To make the analysis tractable, we assume single-keypoint faults ( smax = 1 ), homoscedastic noise Σmeas = σ2scale I,and the geometric regularity that as nkp grows, keypoints continue to span the runway rather than clustering throughout this section. 
+
+A. Noise magnitude 
+
+To start, we recall that the PL formula in Eq. (35) separates into a nominal-noise term kH0 σβj and a fault term ¯gS,j ¯λ.In the following, we denote these components PL NF and 
+
+PL S . It is then straightforward to see that PL NF is propor-tional to the measurement noise factor σscale . Consider that 
+
+kH0 is only computed from whitened inputs (and therefore independent of σscale ), and recall from Eq. (6) that Σβ =(H⊤
+
+> raw
+
+Σ−1meas Hraw )−1. From the latter, we can easily see that 
+
+σβj is directly proportional to σscale .For PL S , the argument is more involved but yields the same result. We proceed by making the PL formulation fully independent of the noise by right-normalizing H with the pose uncertainty, in addition to the left-normalization by the measurement noise in Section III-B. Specifically, let D =diag( ˆΣβ). Then, inserting D1/2D−1/2 (an algebraic identity) between H and β in the canonical form Eq. (22) rewrites the model as z = ( HD 1/2)( D−1/2β) + v + AS δS . Here, D
+
+rescales each column of H by the per-axis nominal standard deviation σβj of the pose estimate. Under homoscedastic noise, 
+
+H ∝ σ−1scale and D1/2 ∝ σscale , so the doubly-normalized 
+
+HD 1/2 is σscale -free. Thus, using HD 1/2 instead of H to compute PLs yields unit-free and σscale -invariant PLs, which relate to D−1/2β instead of β. Multiplying these unit-free PLs by the j-th component of D1/2, which is exactly σβj ,recovers the fault-induced PL. Since σβj ∝ σscale , we find that the fault-induced PLs are also proportional to σscale .In summary, both terms of Eq. (35) scale linearly with the observation noise σscale , and we write 
+
+PL ∝ σscale . (36) 
+
+B. Number of keypoints 
+
+Next, we consider the effect of including additional keypoint measurements. The two PL terms decay at different rates as nkp 
+
+grows. For PL NF , each keypoint contributes two independent rows to H, so under the regularity assumption, every entry of 
+
+H⊤H grows linearly with nkp . Its inverse, the pose covariance 
+
+ˆΣβ = ( H⊤H)−1, therefore has every entry approximately scaling with 1/n kp . Thus, σ2 
+
+> βj
+
+∝ n−1kp or, equivalently, σβj ∝
+
+n−1/2kp .The second component in PL NF is the multiplier kH0 . As established in Eq. (33), kH0 = Φ −1(1 − IH0 /(2 P(H0))) . Here, 
+
+kH0 depends on nkp only through the no-fault prior P(H0) = (1 − Pkp )nkp introduced in Eq. (25). If we assume Pkp small, 
+
+P(H0) is approximately 1 for small to moderate nkp . Hence, 
+
+PL NF = kH0 σβj ∝ n−1/2kp . (37) Next, we consider the fault-induced PL S . The fault term is the product ¯gS,j ¯λ of the slope and the non-centrality, which scale separately. For the slope, consider Eq. (28) but for the double-normalized setting. Since ¯g2 
+
+> S,j
+
+scales with the inverse of HH †, we find that the double-normalized ¯g2 
+
+> S,j
+
+is proportional to n−1kp , and thus ¯gS,j ∝ n−1/2kp . However, correcting for the effect of 
+
+σβj ∝ n−1/2kp reveals that ¯gS,j (without double-normalization) is proportional to n−1kp .This strong scaling is mitigated by detectability, which becomes worse as nkp increases. For the non-centrality, the test statistic ∥r∥22 has mean 2nkp − m under H0 (10) and 
+
+2nkp − m + λ2 under HS (11), so the two distributions are separated in mean by exactly λ2. Both components that determine ¯λ, including the detection threshold τ from Eq. (29) and the missed-detection target from Eq. (31), scale with the H0
+
+standard deviation p2(2 nkp − m) ∝ n1/2kp . Hence, ¯λ2 ∝ n1/2kp 
+
+and ¯λ ∝ n1/4kp . Multiplying yields 
+
+PL S = ¯ gS,j ¯λ ∝ n−3/4kp . (38) The fault term decays faster than the nominal term, so the nominal contribution governs the asymptotic PL j ∝ n−1/2kp ,with the fault share contributing a small offset at modest nkp 
+
+and vanishing thereafter. 
+
+C. Position-only vs. full-pose estimation 
+
+Finally, we consider the effect of estimating position rather than the full pose. When the attitude of the aircraft is supplied externally, for example, from an inertial prior, the optimizer only estimates the position p ∈ R3 from the same residuals. If the attitude is treated as known, this position-only problem is the constrained version of the full-pose problem with the orientation parameters fixed. Removing free parameters from a least-squares problem cannot increase the covariance of the remaining parameters, so σpos  
+
+> βj
+
+≤ σfull  
+
+> βj
+
+for each position axis j.The inequality is strict whenever the position and orientation columns of H are correlated. This effect is most pronounced near head-on viewing geometries, where along-track translation and pitch induce nearly identical pixel motion. The residual degrees of freedom also increase from 2nkp − 6 to 2nkp − 3,which slightly increases τ and ¯λ; however, this logarithmic effect is small compared to the reduction in pose covariance. VI. E XPERIMENTS 
+
+We demonstrate the algorithm presented on a representative runway scenario, characterizing how PLs vary with viewing geometry and keypoint count. 
+
+A. Simulation Setup 
+
+We consider a 50 m wide, 3 km long runway with keypoints at the four corners. The simulated camera ( 4000 × 3000 px ,
+
+f = 25 mm , pixel size 3.4 μm) is placed 1 km from the threshold at 150 m elevation, centered on the runway. We add i.i.d. Gaussian noise with σ = 1 px to each pixel coordinate, producing 2nkp = 8 measurements and m = 6 states, yielding 
+
+2nkp −m = 2 residual degrees of freedom. The PnP problem is solved via Levenberg–Marquardt, with a log-transform on the along-track distance and elevation to enforce sign constraints. Unless stated otherwise, we use a continuity-risk budget 
+
+CREQ = 10 −5, an integrity-risk budget IREQ = 10 −5, and a per-keypoint failure prior Pkp = 10 −4, with smax = 1 (single-keypoint hypotheses) for the four-corner geometry where multi-fault cases are not geometrically detectable. These inputs are fed into Algorithm 1: CREQ sets the residual threshold τ , the equal-split allocation IH0 = IREQ /2 sets the no-fault multiplier kH0 ,and the prior-weighted allocation of the remaining IREQ − IH0
+
+across Smon sets the single non-centrality scale ¯λ.
+
+B. Geometric Sensitivity 
+
+The PL expressions derived above depend on the whitened observation matrix H, which itself is determined by the camera– runway geometry. In this section, we analyze how PLs vary with distance to runway and measurement redundancy. 
+
+1) Distance to runway: As the aircraft approaches along a nominal 3◦ glide slope, the keypoints spread across the image, increasing the sensitivity of the pixel measurements to pose changes. Figures 4a and 4b show the resulting position and orientation PLs as a function of distance for nkp = 4 
+
+runway corners and σ = 1 px noise. The along-track PL dominates at all ranges. For the full pose-estimation problem, the along-track PLs exceed 700 m at 2 km , a consequence of the near-degenerate geometry for depth estimation from a head-on viewpoint. Cross-track and elevation PLs are an order of magnitude tighter ( 24 –52 m ), reflecting the better lateral and vertical observability. Orientation PLs (Figure 4b) follow a similar trend: pitch is best constrained ( < 0.5◦), while roll and yaw PLs remain above 4◦ due to the limited baseline from only four coplanar points. For the position-only PLs, the results change dramatically. Although along-track still dominates, all PLs are reduced by Along-track  (m)                       
+
+> Cross-track (m)
+> Elevation (m)
+> 020004000
+> Distance to runway (m)
+> 100
+> 101
+> 102
+> 103
+> Protection level  733m→139m
+> 24m→2.5m
+> 52m→6.2m
+> 6dof
+> 3dof
+> (a) Position (PL in m). Roll (deg)
+> Pitch (deg)
+> Yaw (deg)
+> 020004000
+> Distance to runway (m)
+> 0
+> 5
+> 10
+> 15(b) Orientation (PL in deg).
+
+Fig. 4: Position and orientation PLs vs. distance to runway (nkp = 4 , σ = 1 px ). In the position panel, solid curves show full-pose PLs, while dashed curves show position-only PLs. approximately one order of magnitude, with the along-track PL at 2 km of below 140 m , and cross-track and elevation PLs of approximately 2.5 m and 6 m , respectively. We attribute this gap to weak roll and yaw observability, and additional features constraining those axes could close it. 
+
+2) Effect of measurement redundancy: With nkp = 4
+
+keypoints and m = 6 states, the residual has only 2nkp −m = 2 
+
+degrees of freedom, severely limiting the fault detection power. Adding keypoints along the runway edges increases both the geometric information content and the residual degrees of freedom. Figure 5 plots the position PLs against nkp on log-log axes, with the asymptotic slope n−1/2kp of Section V overlaid as a gray reference. Past the degenerate nkp = 4 point, where the residual has only 2 degrees of freedom, the empirical PLs show the predicted asymptotic behavior. Both PL terms contribute jointly here. The fault term ¯gS,j ¯λ ∝ n−3/4kp is initially the larger of the two and decays faster, while the nominal term 
+
+kH0 σβj ∝ n−1/2kp governs the asymptote. The along-track PL drops from over 400 m (nkp = 4 ) to below 26 m (nkp = 30 ) for 
+
+smax = 1 . Cross-track and elevation follow the same exponent with smaller PLs due to better lateral and vertical observability. The dashed curves in Figure 5 overlay the smax = 2
+
+PLs, where double-keypoint fault hypotheses ( |S| = 2 ) are monitored. Two-fault monitoring is geometrically admissible only for nkp ≥ 5, because the residual must span the fault subspace, so |S| ≤ nkp − 3 at m = 6 . Monitoring the larger fault subspace inflates the worst-case slope max S ¯gS,j ; however, the relative penalty shrinks as nkp grows, because additional measurements both tighten individual slopes and dilute the prior mass remaining in the unmonitored |S| > 2 tail. VII. C ONCLUSION 
+
+We presented a complete integrity monitoring framework for vision-based aircraft pose estimation. By adapting residual-based RAIM to the nonlinear PnP problem, we derived analytic protection levels that bound the worst-case undetected pose Along-track  (𝑠 max  = 1) (𝑠 max  = 2)
+
+Cross-track  (𝑠 max  = 1) (𝑠 max  = 2)
+
+Elevation  (𝑠 max  = 1) (𝑠 max  = 2)
+
+5 10 15 20 25 30
+
+Number of keypoints ( 𝑛 kp )
+
+101
+
+102
+
+> PL (m)
+
+Fig. 5: Position PLs vs. number of keypoints, log-log axes. Solid curves show smax = 1 monitored hypotheses (single-keypoint faults), and colored dashed curves show smax = 2 (single + double-keypoint faults). The gray dashed reference ∝ n−1/2kp 
+
+is anchored at the along-track smax = 1 PL at nkp = 8 .error across all considered fault hypotheses, covering either the 3-DOF aircraft position or the full 6-DOF aircraft pose. The characterization established two asymptotic facts. First, PL scales linearly with the keypoint noise standard deviation, a relation that highlights the importance of improving keypoint prediction uncertainty. Second, the nominal-noise term decays as n−1/2kp and the fault term as n−3/4kp , so the nominal contri-bution governs the asymptotic behavior with increased number of keypoints. In the small- to moderate-nkp regime relevant to runway corner detection, both terms remain comparable and the empirical PL tracks the n−1/2kp reference, with along-track PLs empirically dropping from over 400 m (nkp = 4 ) to roughly 
+
+32 m (nkp = 20 ) at a baseline 1 km distance to the runway. Finally, we showed empirically that full pose-estimation yields PLs about an order of magnitude larger than position-only estimation, which we attribute to the poor detectability of orientation faults. Use of these bounds as operational PLs requires bounding the deployed detector’s per-keypoint fault rate and validating its uncertainty calibration. Future work will validate the framework on real runway imagery from the LARD dataset [28], calibrate Pkp from prediction failure-mode statistics, and integrate the integrity monitor into a full approach and landing navigation architecture, including fault exclusion. ACKNOWLEDGMENT 
+
+This research was generously supported by A 3 by Airbus. The authors thank Stephen Dresselhaus-Marais and Sydney Katz for helpful discussions, and Todd Walter and Juan Blanch for their valuable feedback. REFERENCES [1] M. Joerger, F.-C. Chan, and B. Pervan, “Solution separation versus residual-based RAIM,” NAVIGATION: Journal of the Institute of Navi-gation , vol. 61, no. 4, pp. 273–291, 2014. [2] RTCA Special Committee 159, “Minimum aviation system performance standards for local area augmentation system (LAAS),” RTCA, Inc., Washington, DC, Tech. Rep. DO-245A, 2004. [3] R. Valentin, S. M. Katz, A. B. Carneiro, D. Walker, and M. J. Kochenderfer, “Predictive uncertainty for runtime assurance of a real-time computer vision-based landing system,” in Digital Avionics Systems Conference (DASC) , 2025, pp. 1–8. [4] V. Lepetit, F. Moreno-Noguer, and P. Fua, “EPnP: An accurate O(n) solution to the PnP problem,” International Journal of Computer Vision ,vol. 81, no. 2, pp. 155–166, 2009. [5] M. A. Fischler and R. C. Bolles, “Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography,” Communications of the ACM , vol. 24, no. 6, pp. 381–395, 1981. [6] L. Ferraz Colomina, X. Binefa, and F. Moreno-Noguer, “Leveraging feature uncertainty in the PnP problem,” in British Machine Vision Conference (BMVC) , 2014, pp. 1–13. [7] A. Vakhitov, L. Ferraz, A. Agudo, and F. Moreno-Noguer, “Uncertainty-aware camera pose estimation from points and lines,” in IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR) ,2021, pp. 4659–4668. [8] H. Yang and M. Pavone, “Object pose estimation with statistical guarantees: Conformal keypoint detection and geometric uncertainty propagation,” in IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR) , 2023, pp. 8947–8958. [9] X. Luo, T. Wei, S. Liu, Z. Wang, L. Mattei-Mendez, T. Loper, J. Neighbor, C. Hutchison, and C. Liu, “Certifying robustness of learning-based keypoint detection and pose estimation methods,” ACM Transactions on Cyber-Physical Systems , vol. 9, no. 2, pp. 1–26, 2025. [10] U. Santa Cruz and Y. Shoukry, “Certified vision-based state estimation for autonomous landing systems using reachability analysis,” in IEEE Conference on Decision and Control (CDC) , 2023, pp. 6052–6057. [11] B. W. Parkinson and P. Axelrad, “Autonomous GPS integrity monitoring using the pseudorange residual,” NAVIGATION: Journal of the Institute of Navigation , vol. 35, no. 2, pp. 255–274, 1988. [12] R. G. Brown and P. W. McBurney, “Self-contained GPS integrity check using maximum solution separation,” NAVIGATION: Journal of the Institute of Navigation , vol. 35, no. 1, pp. 41–53, 1988. [13] M. A. Sturza, “Navigation system integrity monitoring using redundant measurements,” NAVIGATION: Journal of the Institute of Navigation ,vol. 35, no. 4, pp. 483–501, 1988. [14] R. G. Brown, “A baseline GPS RAIM scheme and a note on the equivalence of three RAIM methods,” NAVIGATION: Journal of the Institute of Navigation , vol. 39, no. 3, pp. 301–316, 1992. [15] M. Brenner, “Integrated GPS/inertial fault detection availability,” NAV-IGATION: Journal of the Institute of Navigation , vol. 43, no. 2, pp. 111–130, 1996. [16] B. S. Pervan, S. P. Pullen, and J. R. Christie, “A multiple hypothesis approach to satellite navigation integrity,” NAVIGATION: Journal of the Institute of Navigation , vol. 45, no. 1, pp. 61–71, 1998. [17] M. Joerger and B. Pervan, “Fault detection and exclusion using solution separation and chi-squared ARAIM,” IEEE Transactions on Aerospace and Electronic Systems , vol. 52, no. 2, pp. 726–742, 2016. [18] J. Blanch, T. Walter, P. Enge, Y. Lee, B. Pervan, M. Rippl, A. Spletter, and V. Kropp, “Baseline advanced RAIM user algorithm and possible improvements,” IEEE Transactions on Aerospace and Electronic Systems ,vol. 51, no. 1, pp. 713–732, 2015. [19] J. Blanch, T. Walter, and P. Enge, “Protection levels after fault exclu-sion for advanced RAIM,” NAVIGATION: Journal of the Institute of Navigation , vol. 64, no. 4, pp. 505–513, 2017. [20] M. Joerger, M. Jamoom, M. Spenko, and B. Pervan, “Integrity of laser-based feature extraction and data association,” in IEEE/ION Position, Location and Navigation Symposium (PLANS) , 2016, pp. 557–571. [21] Q. Meng and L.-T. Hsu, “Integrity monitoring for all-source navigation enhanced by Kalman filter-based solution separation,” IEEE Sensors Journal , vol. 21, no. 14, pp. 15 469–15 484, 2020. [22] C. Tanil, S. Khanafseh, M. Joerger, and B. Pervan, “Sequential integrity monitoring for Kalman filter innovations-based detectors,” in Interna-tional Technical Meeting of the Satellite Division of the Institute of Navigation (ION GNSS+) , 2018, pp. 2440–2455. [23] S. Gupta and G. Gao, “Data-driven protection levels for camera and 3D map-based safe urban localization,” NAVIGATION: Journal of the Institute of Navigation , vol. 68, no. 3, pp. 643–660, 2021. [24] S. Bhamidipati and G. X. Gao, “Integrity monitoring of Graph-SLAM using GPS and fish-eye camera,” NAVIGATION: Journal of the Institute of Navigation , vol. 67, no. 3, pp. 583–600, 2020. [25] L. Fu, J. Zhang, R. Li, X. Cao, and J. Wang, “Vision-aided RAIM: A new method for GPS integrity monitoring in approach and landing phase,” 
+
+Sensors , vol. 15, no. 9, pp. 22 854–22 873, 2015. [26] C. Zhu, M. Meurer, and C. Günther, “Integrity of visual naviga-tion—developments, challenges, and prospects,” NAVIGATION: Journal of the Institute of Navigation , vol. 69, no. 2, 2022. [27] R. Valentin, S. M. Katz, J. Lee, D. Walker, M. Sorgenfrei, and M. J. Kochenderfer, “Probabilistic parameter estimators and calibration metrics for pose estimation from image features,” in Digital Avionics Systems Conference (DASC) . IEEE, 2024, pp. 01–09. [28] M. Ducoffe, M. Carrere, L. Féliers, A. Gauffriau, V. Mussot, C. Pagetti, and T. Sammour, “LARD–Landing Approach Runway Detection–Dataset for vision-based landing,” arXiv preprint arXiv:2304.09938 , 2023.
