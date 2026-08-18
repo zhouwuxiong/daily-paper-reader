@@ -41,17 +41,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-08-17</span>
+      <span class="dpr-home-dashboard-kicker">2026-08-18</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 15 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 12 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
     <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>5</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>10</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>6</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-08-17 20:50:41 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-08-18 19:25:58 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,7 +62,9 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日共读15篇论文，精读5篇、速读10篇，聚焦三维视觉与重建。最值得关注的是LiDAR建图的高效BA并行加速（9.0分）及前馈驾驶重建的高斯结构学习方法（8.0分）。建议优先精读高分两篇，再顺带浏览速读中的可微渲染与稀疏体素正则化工作。</p>
+<p>今日共读12篇论文，精读6篇、速读6篇，聚焦三维视觉与LiDAR感知前沿。</p>
+<p>最值得关注的是几何感知的3D高斯溅射SLAM（满分10）与自适应混合ICP的HP2-SLAM（9分），两者分别推动稠密建图与LiDAR配准的鲁棒性提升。</p>
+<p>建议普通读者优先浏览精读两篇的摘要与图表，快速把握当前SLAM领域对几何感知和高效配准的核心诉求。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -71,12 +73,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">5 篇</strong>
+    <strong class="dpr-home-dashboard-count">6 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Accelerating Large-scale Bundle Adjustment for LiDAR Mapping via Parallel Computing">Accelerating Large-scale Bundle Adjustment for LiDAR Mapping via Parallel Computing</span></li><li><span class="dpr-home-dashboard-paper-title" title="Learning Gaussian Structure: Intervention-Guided Density Control for Feed-Forward Driving Reconstruction">Learning Gaussian Structure: Intervention-Guided Density Control for Feed-Forward Driving Reconstruction</span></li><li><span class="dpr-home-dashboard-paper-title" title="Point Feature Descriptor via Directional Partition of Unity on Maps">Point Feature Descriptor via Directional Partition of Unity on Maps</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Geometry-Aware Online Mapping for 3D Gaussian Splatting SLAM">Geometry-Aware Online Mapping for 3D Gaussian Splatting SLAM</span></li><li><span class="dpr-home-dashboard-paper-title" title="HP2-SLAM: Adaptive Hybrid ICP for Robust and Efficient LiDAR SLAM">HP2-SLAM: Adaptive Hybrid ICP for Robust and Efficient LiDAR SLAM</span></li><li><span class="dpr-home-dashboard-paper-title" title="MotionGS-SLAM: Event-Modulated Gaussian Splatting for Motion-Blur Robust SLAM">MotionGS-SLAM: Event-Modulated Gaussian Splatting for Motion-Blur Robust SLAM</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>4</strong></span><span class="dpr-home-dashboard-tag">rl-motion <strong>1</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>6</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -84,12 +86,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">速读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">10 篇</strong>
+    <strong class="dpr-home-dashboard-count">6 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="View-Adaptive Renderer for View-Consistent 2D-to-3D Generation">View-Adaptive Renderer for View-Consistent 2D-to-3D Generation</span></li><li><span class="dpr-home-dashboard-paper-title" title="Compact Feed-Forward 3D Gaussians via Saliency-Guided Primitive Merging">Compact Feed-Forward 3D Gaussians via Saliency-Guided Primitive Merging</span></li><li><span class="dpr-home-dashboard-paper-title" title="Surfsvr: 2D Surface Priors as 3D Geometric Regularizers for Sparse Voxel Reconstruction">Surfsvr: 2D Surface Priors as 3D Geometric Regularizers for Sparse Voxel Reconstruction</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Embodied Multimodal Grounding for Open-Vocabulary Mobile Manipulation via Semantic 3D Gaussian Splatting">Embodied Multimodal Grounding for Open-Vocabulary Mobile Manipulation via Semantic 3D Gaussian Splatting</span></li><li><span class="dpr-home-dashboard-paper-title" title="Target Localization and Self-Calibration in a Multistatic Radar System">Target Localization and Self-Calibration in a Multistatic Radar System</span></li><li><span class="dpr-home-dashboard-paper-title" title="Towards Real-Time and Adaptable LiDAR Scene Completion">Towards Real-Time and Adaptable LiDAR Scene Completion</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>10</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>6</strong></span></div>
 </section>
 </div>
 

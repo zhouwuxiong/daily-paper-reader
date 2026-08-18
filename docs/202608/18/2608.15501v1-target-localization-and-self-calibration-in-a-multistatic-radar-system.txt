@@ -1,0 +1,1043 @@
+Title: Target Localization and Self-Calibration in a Multistatic Radar System
+
+URL Source: https://arxiv.org/pdf/2608.15501v1
+
+Published Time: Tue, 18 Aug 2026 00:55:23 GMT
+
+Number of Pages: 6
+
+Markdown Content:
+# Target Localization and Self-Calibration in a Multistatic Radar System 
+
+Ahmad Musallam, Husheng Li, Senior Member, IEEE 
+
+Abstract —Target localization in a multistatic radar system, where multiple receivers cooperate to improve target positioning accuracy, has many applications, including cooperative simulta-neous localization and mapping (SLAM) and autonomous robot networks. A key challenge in these applications is the uncertainty in the position and orientation (pose) of the radar receivers due to platform mobility. This work investigates the achievable improvements in both target localization and receiver pose estimation by deriving the Cramer-Rao lower bound (CRLB) for a multistatic radar system performing bistatic range and bearing measurements. We propose an alternating weighted least-squares algorithm that jointly optimizes target and receiver parameters. Monte Carlo simulations demonstrate that the algorithm perfor-mance approaches the CRLB for low to moderate noise levels. 
+
+Index Terms —multistatic radar, self-calibration, target local-ization, Cramer-Rao lower bound, weighted least squares. 
+
+I. I NTRODUCTION 
+
+Multistatic radar systems have recently attracted attention [1] because of their distributed and cooperative nature, which can provide spatial diversity and allow for better target local-ization. In many practical deployments of such systems, the radar receivers themselves are mobile platforms (e.g., vehicles, drones, or shipboard units) whose exact positions and orien-tations (poses) are not known. Cooperation in such systems is difficult because the uncertainty in the radar receiver poses leads to additional errors when trying to communicate the observed target position in a global reference frame with other receivers in order to perform data fusion. This is particularly an issue in multistatic radar systems, where it is desirable to change the receiver poses to illuminate different areas and improve the radar sensing geometry [2]. Joint target localization and receiver self-calibration repre-sents a critical yet challenging task in multistatic radar sys-tems. The difficulty stems from the fact that bistatic range and bearing measurements are highly nonlinear and very sensitive to errors in the pose of the receiver, which creates a highly nonconvex estimation problem. In addition, the measurement accuracy in multistatic radar systems is highly geometry-dependent, making it difficult to create a robust algorithm that efficiently solves the joint problem while dealing with noise from both measurements and the receiver position. Many methods have been proposed to improve the radar pose accuracy for different radar measurement setups. Some works 
+
+The authors are with the School of Aeronautics and Astronautics, Pur-due University, West Lafayette, IN, USA (e-mail: amusalla@purdue.edu; husheng@purdue.edu) This work was supported by the National Science Foundation under grant 2418106. TX Position 
+
+RX true 
+
+pose  RX Est 
+
+pose 
+
+Target True 
+
+Position 
+
+Target Estimated 
+
+Position 
+
+𝜃 𝑖𝑗  
+
+> 𝑜
+
+𝜃 𝑖𝑗 
+
+𝐭 o 𝐬 𝑖 
+
+> o
+
+ො𝐬 𝑖 
+
+𝐮 𝑗  
+
+> o
+
+ෝ𝐮 𝑗 
+
+෠𝜙 𝑖 𝜙 𝑖 
+
+Fig. 1. Effect of inaccurate receiver position and orientation on estimated target position, showing ground truth (solid line) and estimate (dashed line). 
+
+consider the availability of calibrating targets [3], while others rely on cooperation between radar receivers to track a single moving target and improve their own localization [4], [5]. Different methods are used to optimize both the target position and radar pose, including the maximum likelihood (ML) estimator [3], [6], which optimizes based on the statistical characteristics of the geometry and measurement model. Other works consider semidefinite programming (SDP) [7], which converts the non-convex optimization problem into a convex one using semidefinite relaxation (SDR). SDP solutions have good performance even under high noise levels, but this comes at the cost of computational complexity. In this work, we propose a novel approach for joint target localization and receiver pose self-calibration in a multistatic radar system. The proposed approach avoids high complex-ity by iteratively solving a linear least-squares minimization problem in a closed form. The scheme is designed in a way that allows for a decentralized implementation by exchanging compact local information between receivers. The main contributions of this work are:  
+
+> •
+
+We derive the Cramer-Rao lower bound (CRLB) for a multistatic radar network performing bistatic range and bearing measurements with uncertain receiver poses and known priors.  
+
+> •
+
+We formulate an optimization problem to jointly solve for target positions and receiver poses. We then proposed an alternating weighted least-squares algorithm to solve the proposed optimization problem.  
+
+> •
+
+We evaluate the performance of the proposed algorithm through Monte Carlo simulations and demonstrate that it approaches the CRLB under moderate noise levels. The remainder of this paper is organized as follows. Section II arXiv:2608.15501v1 [eess.SP] 16 Aug 2026 introduces the system and measurement models, and formal-izes the joint estimation problem. Section III derives the joint CRLB. Section IV presents an alternating estimation algorithm and discusses its implementation details. Section V reports the simulation results. Section VI concludes the paper and outlines directions for future research. II. P ROBLEM FORMULATION AND MEASUREMENT MODEL 
+
+We consider a multistatic radar in two-dimensional space consisting of a single transmitter at a known location, M
+
+bistatic receivers with uncertain positions, and K targets at unknown positions. The goal is to estimate the position of the K targets while simultaneously improving the positioning accuracy of the M receivers. Denote the true position of the transmitter by t◦ = [ t◦
+
+> x
+
+, t ◦ 
+
+> y
+
+]⊤.The true position and orientation of the ith receiver are denoted by s◦ 
+
+> i
+
+= [ s◦
+
+> ix
+
+, s ◦ 
+
+> iy
+
+]⊤ and ϕ◦ 
+
+> i
+
+, respectively. The position of the 
+
+jth target is given by u◦ 
+
+> j
+
+= [ u◦
+
+> jx
+
+, u ◦ 
+
+> jy
+
+]⊤.In the considered setup, the receivers’ true pose is not known exactly; only an inaccurate estimate obtained through the Global Navigation Satellite System (GNSS) and onboard Inertial Measurement Units (IMU) is available. The inaccurate position and orientation of the ith receiver can be modeled as [5] 
+
+si = s◦ 
+
+> i
+
++ ∆ si, i = 1 , 2, . . . , M, (1) 
+
+ϕi = ϕ◦ 
+
+> i
+
++ ∆ ϕi, i = 1 , 2, . . . , M, (2) where ∆si is the position error of the ith receiver, which is modeled as zero-mean Gaussian with a known covariance matrix Qs, and ∆ϕi is the orientation error, which follows the Von Mises distribution with a known concentration parameter 
+
+κ corresponding to an angular variance σ2 
+
+> ϕ
+
+= 1 /κ . For small variance, the Von Mises distribution can be approximated by a zero-mean Gaussian with variance σ2
+
+> ϕ
+
+. Figure 1 shows the effect of the inaccuracy in the receiver pose and measurement on the predicted target position. The receivers are assumed to be synchronized with the transmitter using one of the various methods discussed in the literature [8]. Receivers process the received signal that is reflected from the K targets to extract the bistatic range and azimuth angle, the details of which are outside the scope of this paper. The reader can refer to [9] for further details. The true bistatic range and azimuth angle of the jth target as measured by the ith receiver are given by 
+
+r◦ 
+
+> ij
+
+= ∥u◦ 
+
+> j
+
+− t◦∥ + ∥u◦ 
+
+> j
+
+− s◦ 
+
+> i
+
+∥, (3) 
+
+θ◦ 
+
+> ij
+
+= atan2( u◦ 
+
+> jy
+
+− s◦ 
+
+> iy
+
+, u ◦ 
+
+> jx
+
+− s◦
+
+> ix
+
+) − ϕ◦ 
+
+> i
+
+, (4) where the receiver orientation ϕ◦ 
+
+> i
+
+is subtracted to account for measurements being made in the receiver’s local reference frame. The measurements are imperfect and corrupted by noise from various sources. The observed measurements by the receiver in a global frame of reference are thus given by 
+
+rij = r◦ 
+
+> ij
+
++ ∆ rij , (5) 
+
+θij = θ◦ 
+
+> ij
+
++ ϕi + ∆ θij , (6) where ∆rij and ∆θij are additive white Gaussian noise with zero mean and variance, σ2 
+
+> r
+
+and σ2 
+
+> θ
+
+, respectively. III. C RAMER -R AO LOWER BOUND (CRLB) In order to evaluate the effect of the receivers’ pose error on target localization accuracy and to evaluate the performance of the proposed optimization algorithm, we will derive the CRLB. For ease of presentation, we assume identical position and orientation error variance ( σ2 
+
+> s
+
+and σ2
+
+> ϕ
+
+) across all receivers and identical bistatic range and bearing measurement variance (σ2 
+
+> r
+
+and σ2 
+
+> θ
+
+) across all the measurement pairs. We will also assume that the measurement and prior noise are independent across receiver and target pairs. The analysis can be easily extended for the case when the variances are different per receiver pose and measurement target-receiver pair. We begin by defining some vectors that are useful in deriving the CRLB. First, we define the true bistatic range and azimuth angle vectors as 
+
+r◦ = [ r◦
+
+> 11
+
+, · · · , r ◦ 
+
+> 1K
+
+, r ◦
+
+> 21
+
+, · · · , r ◦ 
+
+> M K
+
+]⊤, (7) 
+
+θ◦ = [ θ◦
+
+> 11
+
+, · · · , θ ◦ 
+
+> 1K
+
+, θ ◦
+
+> 21
+
+, · · · , θ ◦ 
+
+> M K
+
+]⊤. (8) Hence, the measured range is given by r = r◦ + ∆ r where 
+
+∆r is a Gaussian vector with covariance matrix Qr = IM K σ2 
+
+> r
+
+.Additionally, the measured azimuth angle vector is given by 
+
+θ = θ◦ + ϕi + ∆ θ, where ∆θ is a zero-mean Gaussian vector with covariance matrix Qθ = IM K σ2 
+
+> θ
+
+. Next, we define the receivers’ true positions and orientation vectors and the targets’ true position vector as 
+
+s◦ = [ s◦⊤  
+
+> 1
+
+, s◦⊤  
+
+> 2
+
+, . . . , s◦⊤  
+
+> M
+
+]⊤, (9) 
+
+ϕ◦ = [ ϕ◦
+
+> 1
+
+, ϕ ◦
+
+> 2
+
+, . . . , ϕ ◦ 
+
+> M
+
+]⊤, (10) 
+
+u◦ = [ u◦⊤  
+
+> 1
+
+, u◦⊤  
+
+> 2
+
+, . . . , u◦⊤  
+
+> K
+
+]⊤, (11) where we can define the receivers’ position and orientation vectors as s = s◦ + ∆ s and ϕ = ϕ◦ + ∆ ϕ where ∆s and 
+
+∆ϕ are zero-mean Gaussian vectors with covariance matrices 
+
+Qs = I2M σ2 
+
+> s
+
+and Qϕ = IM σ2
+
+> ϕ
+
+, respectively. Finally, we define the stacked measurements and unknown vectors as follows: 
+
+m = [ r⊤, θ⊤]⊤, (12) 
+
+α◦ = [ u◦⊤ , ω◦⊤ ]⊤, (13) where m is a Gaussian vector with covariance matrix Qm =
+
+blkdiag (Qr , Qθ ), and ω◦ = [ s◦⊤ , ϕ◦⊤ ]⊤ is the receiver’s position and orientation vector, which has a covariance matrix 
+
+Qω = blkdiag (Qs, Qϕ).We will derive the CRLB for α◦ under the assumption that the measurement vector m and receiver position and orientation vector ω are Gaussian distributed and uncorrelated. The log-likelihood of the probability density function is thus given by, 
+
+ln f (m, ω; α◦) = K − 12 (m − m◦)T Q−1 
+
+> m
+
+(m − m◦)
+
+− 12 (ω − ω◦)T Q−1 
+
+> ω
+
+(ω − ω◦),
+
+(14) where K = −1/2ln ((2 π)(2 M K +3 M )|Qm|| Qω |) is a constant independent of α◦. The Fisher Information Matrix (FIM) captures the information content of the measurements and priors about the unknown parameters, and it is given by 
+
+FIM( α◦) = E
+
+ ∂ ln f (m, ω; α◦)
+
+∂α ◦
+
+∂ ln f (m, ω; α◦)
+
+∂α ◦⊤ 
+
+
+
+, (15) where 
+
+∂ ln f (m, ω; α◦)
+
+∂α ◦⊤ =
+
+ ∂ ln f∂u◦⊤ , ∂ ln f∂ω◦⊤ 
+
+
+
+, (16) and the partial derivatives are given by 
+
+∂ ln f∂u◦⊤ = ( m − m◦)⊤Q−1
+
+> m
+
+∂mu◦⊤ , (17) 
+
+∂ ln f∂ω◦⊤ = ( m − m◦)⊤Q−1
+
+> m
+
+∂m
+
+ω◦⊤ + ( ω − ω◦)⊤Q−1 
+
+> ω
+
+. (18) We define the Jacobian-based information blocks as 
+
+Ju = ∂m
+
+∂u◦⊤ ∈ R2M K ×2K , Jω = ∂m
+
+∂ω◦⊤ ∈ R2M K ×3M
+
+(19) where the Jacobians are derived in Appendix A. Then the measurement information blocks are 
+
+X = J⊤ 
+
+> u
+
+Q−1 
+
+> m
+
+Ju,
+
+Y = J⊤ 
+
+> u
+
+Q−1 
+
+> m
+
+Jω ,
+
+Z = J⊤ 
+
+> ω
+
+Q−1 
+
+> m
+
+Jω .
+
+(20) Including priors, the full FIM has the following block structure: 
+
+FIM( α◦) = 
+
+" X YY⊤ Z + Q−1
+
+> ω
+
+#
+
+. (21) Finally, by applying the partitioned matrix inversion formula [10], we obtain the CRLB of the target position and node pose, as follows: 
+
+CRLB( u◦) = ( X − Y(Z + Q−1 
+
+> ω
+
+)−1Y⊤)−1, (22) 
+
+CRLB( ω◦) = ( Z + Q−1 
+
+> ω
+
+− YX −1Y⊤)−1. (23) IV. P ROPOSED ALGORITHM 
+
+In this section, we derive an alternating weighted least squares algorithm that optimizes receiver poses and target positions given the bistatic range and bearing measurements and receiver priors. We first begin by describing the nonlinear minimization problem that jointly optimizes all the unknown parameters. This minimization problem is then broken down into two subproblems, which are solved in an alternating fashion to improve the computational efficiency and allow for decentralized implementation in the future. 
+
+A. Joint Optimization 
+
+In order to jointly optimize the target and receiver parame-ters, we begin by defining the expected measurements based on the current estimate of the unknown parameters as follows, 
+
+ˆrij = ∥ˆuj − t◦∥ + ∥ˆuj − ˆsi∥, (24) 
+
+ˆθij = atan2(ˆ uyj − ˆsyi , ˆuxj − ˆsxi ) − ˆϕi, (25) where ˆwi = [ˆ si, ˆϕi]⊤ is the estimated receiver pose, and ˆuj
+
+is the estimated target position. Here, we assume perfect data association throughout, which is achieved by using one of the many methods in the literature [11]. We define ∆m = ( ˆ m − m) where ˆm = [ˆ r⊤, ˆθ⊤
+
+]⊤ is the expected measurement vector based on the current estimate of the receiver poses and target positions, and m = [ r⊤, θ⊤]⊤
+
+is the actual measurement vector. Similarly, we define ∆ω =( ˆ ω − ω) as the difference between the current receiver pose estimate vector ˆω = [ˆ s⊤, ˆϕ⊤
+
+]⊤ and the receiver pose estimate prior vector ω = [ s⊤, ϕ⊤]⊤.Then, the objective function that minimizes the difference between the expected and actual measurements between all receiver and target pairs is defined as, 
+
+V(ˆ u, ˆω) = 12 ∆m⊤Wm∆m + 12 ∆ω⊤Wω ∆ω, (26) where Wm = blkdiag (IM K γr , IM K γθ ) and Wω =
+
+blkdiag (I2M γs, IM γϕ) are the weight matrices for the mea-surements and receiver priors, respectively. The weights γr =1/σ 2 
+
+> r
+
+, γθ = 1 /σ 2 
+
+> θ
+
+, γs = 1 /σ 2 
+
+> s
+
+, and γϕ = 1 /σ 2 
+
+> ϕ
+
+are based on the known error variance of the measurements and receiver pose priors. It can be seen that the objective function is highly non-linear and non-convex due to the non-linearity of the bistatic range and bearing measurements. Additionally, the objective function solves for all unknowns simultaneously, making the optimization inefficient. Therefore, based on the objective function in (26), we will propose an iterative al-ternating algorithm that reduces computational complexity by breaking down the problem into smaller and easier-to-solve subproblems. 
+
+B. Alternating Least Squares Algorithm 
+
+In order to reduce the computation required, we are going to alternate between updating the receiver poses ω and target positions u. This would allow us to turn the optimization into an iterative algorithm, where, in each iteration, we solve two simple optimization problems. Additionally, because we are performing iterative optimization, where we are slowly changing the values of the optimization variables, we can linearize the optimization function and solve it in closed form to further reduce the required computations in each iteration. 
+
+1) Subproblem 1 (receiver update): We consider the target positions to be fixed, and update the receiver pose. For each receiver, we create the expected measurements ( ˆrij and ˆθij )based on fixed target positions. We then try to minimize the difference between the generated expected measurements and the receiver’s actual measurements by optimizing its pose. This is achieved by minimizing the following objective function, 
+
+Vi( ˆ ωi) = 12 ∆m⊤ 
+
+> i
+
+Wm,i ∆mi + 12 ∆ω⊤ 
+
+> i
+
+Wω,i ∆ωi, (27) where ∆mi = ˆmi − mi is a stacked vector of the target observations made by the ith receiver, Wm,i =blkdiag( IKi×Ki γr , IKi×Ki γθ ) ∈ R2Ki×2Ki is the weight matrix of the measurements from the ith receiver, and Wω,i =blkdiag( I2γs, γ ϕ) ∈ R3×3 is the ith receiver prior weight matrix. The objective function can then be linearized by taking the first-order Taylor series expansion around the current estimate of the receiver pose ˆωi. Let δωi = ˆ ωi − ˆω(k) 
+
+> i
+
+be the update step where ˆω(k) 
+
+> i
+
+is the current receiver pose estimate at the 
+
+kth iteration. Then, we can linearize ˆmij around the current estimate by setting 
+
+∆mij = ˆ m(k) 
+
+> ij
+
+− mij + Jij δωi = ∆ m(k) 
+
+> ij
+
++ Jij δωi, (28) where Jωi = ∂ ˆmij /∂ ˆωi is the Jacobian of the ith receiver measurement vector with respect to the current estimate of the receiver pose provided in Appendix A. Similarly, we define 
+
+∆ωi = ∆ ω(k) 
+
+> i
+
++ δωi. Then, the linearized objective function is given as 
+
+˜Vi(δωi) = 12
+
+
+
+∆m(k) 
+
+> i
+
++ Jωi δωi
+
+⊤
+
+Wm,i 
+
+
+
+∆m(k) 
+
+> i
+
++ Jωi δωi
+
+
+
++ 12
+
+
+
+∆ω(k) 
+
+> i
+
++ δωi
+
+⊤
+
+Wω,i 
+
+
+
+∆ω(k) 
+
+> i
+
++ δωi
+
+
+
+.
+
+(29) The objective is now a linear function of the receiver pose estimate update, and the closed-form solution can be obtained by taking the derivative of the objective function in (29) with respect to δwi and setting it to zero. 
+
+∂ ˜Vi
+
+∂δ ωi
+
+= Jω⊤ 
+
+> i
+
+Wm,i 
+
+
+
+∆m(k) 
+
+> i
+
++ Jωi δωi
+
+
+
++
+
+Wω,i 
+
+
+
+∆ω(k) 
+
+> i
+
++ δωi
+
+
+
+.
+
+(30) Therefore, the updated receiver pose can be obtained by 
+
+ˆω(k+1)  
+
+> i
+
+= ˆ ω(k) 
+
+> i
+
+− G−1 
+
+> i
+
+gi, (31) where 
+
+Gi = Jω⊤ 
+
+> i
+
+Wm,i Jωi + Wω,i , (32) 
+
+gi = Jω⊤ 
+
+> i
+
+Wm,i ∆m(k) 
+
+> i
+
++ Wω,i ∆ω(k) 
+
+> i
+
+. (33) In order to ensure numerical stability of the iterative solu-tion, we will introduce a regularization term λi that ensures the matrix Gi is invertible. 
+
+ˆω(k+1)  
+
+> i
+
+= ˆ ω(k) 
+
+> i
+
+− (Gi + I3×3λi)−1gi. (34) Solving equation (34) yields the updated pose of the ith 
+
+receiver in closed form. 
+
+2) subproblem 2 (target update): We consider the receiver poses as fixed, and we optimize each target position. Similar to subproblem 1, this is done by minimizing the following objective function, 
+
+Vj (ˆ uj ) = 12 ∆m⊤ 
+
+> j
+
+Wm,j ∆mj , (35) where ∆mj = ˆ mj −mj is the stacked vector of the difference between the expected and actual measurements of the jth 
+
+target by all receivers. Here, we are trying to minimize the difference between the expected measurements as a function of the target position and the true measurements. Let ˆu(k)
+
+> j
+
+be the estimate of the jth target position at the kth , and let 
+
+δuj = ˆ uj − ˆu(k) 
+
+> j
+
+be the update step. Then we can define the linearized measurement vector around the current estimate as 
+
+∆mj = ˆ m(k) 
+
+> j
+
+− mj + Juj δuj = ∆ m(k) 
+
+> j
+
++ Juj δuj , (36) where Juj = ∂ ˆmj /∂ ˆuj denotes the Jacobian of the jth 
+
+target measurement vector with respect to its current estimated position as defined in Appendix A. The linearized objective function is then given by 
+
+˜Vj (δuj ) = 12
+
+
+
+∆m(k) 
+
+> j
+
++ Juj δuj
+
+⊤
+
+Wm,j 
+
+
+
+∆m(k) 
+
+> j
+
++ Juj δuj
+
+
+
+(37) where the objective function is linear, and the closed-form solution can be obtained by taking the derivative of the objective function in (37) with respect to δuj and setting it equal to zero. 
+
+∂ ˜Vj
+
+∂δ uj
+
+= Ju⊤ 
+
+> j
+
+Wm,j 
+
+
+
+∆m(k) 
+
+> j
+
++ Juj δuj
+
+
+
+. (38) Therefore, the updated receiver pose can be obtained by 
+
+ˆu(k+1)  
+
+> j
+
+= ˆ u(k) 
+
+> j
+
+− G−1 
+
+> j
+
+gj , (39) where 
+
+Gj = Ju⊤ 
+
+> j
+
+Wm,j Juj , (40) 
+
+gj = Ju⊤ 
+
+> j
+
+Wm,j ∆m(k) 
+
+> j
+
+. (41) Again, similar to subproblem 1, in order to ensure numerical stability, we will introduce a regularization term λj which ensures the matrix Gj is invertible 
+
+ˆu(k+1)  
+
+> j
+
+= ˆ u(k) 
+
+> j
+
+− (Gj + I2×2λj )−1gj . (42) The position of the jth target can be updated iteratively by solving the closed-form equation in (42). 
+
+3) Joint Alternating Algorithm: The final algorithm is achieved by iterating over subproblems 1 and 2 for each target and receiver until convergence. The initial target positions are obtained by solving the ray-ellipse intersection problem [9] for each receiver-target pair using the known transmitter position t◦ and the initial estimate of the receiver pose ˆω(0)  
+
+> i
+
+, and then taking the mean of the position estimates for each target from all receivers. The iterative procedure for jointly optimizing the receiver poses and target positions is presented in Algorithm (1). Each iteration of the algorithm is O(M K ) for the Jacobian computation and O(M + K) for the updates, because the Hessians are 2 × 2 for the target position and 3 × 3 for the receiver pose. Therefore, the complexity is dominated by either Hessian or Jacobian computation, which depends on the number of receivers M and targets K.Due to linearization and non-convexity of the original objec-tive function, the algorithm will converge to a local minimum that is dependent on the initialization. Thus, it is expected that the algorithm will perform worse for higher prior noise in the receiver poses. 
+
+Algorithm 1 Joint Alternating Algorithm 
+
+Require: transmitter position t◦, receiver’s initial estimate 
+
+{s(0)  
+
+> i
+
+, ϕ (0)  
+
+> i
+
+}Mi=1 , measurements {rij , θ ij } ∀ i ∈ M and 
+
+∀j ∈ K, tolerance τi and τj , regularization parameters, 
+
+λi and λj 
+
+> 1:
+
+{u(0)  
+
+> j
+
+}Kj=1 ← mean target positions based on {s(0)  
+
+> i
+
+, ϕ (0)  
+
+> i
+
+}
+
+and measurements {rij , θ ij }. 
+
+> 2:
+
+k ← 0 
+
+> 3:
+
+repeat  
+
+> 4:
+
+for i ∈ { 1, . . . , M } do  
+
+> 5:
+
+ˆω(k+1)  
+
+> i
+
+← solution of (34)  
+
+> 6:
+
+δ ˆωi ← ∥ ˆω(k+1)  
+
+> i
+
+− ˆω(k) 
+
+> i
+
+∥ 
+
+> 7:
+
+end for  
+
+> 8:
+
+for j ∈ { 1, . . . , K } do  
+
+> 9:
+
+u(k+1)  
+
+> j
+
+← solution of (42)  
+
+> 10:
+
+δ ˆuj ← ∥ ˆu(k+1)  
+
+> j
+
+− ˆu(k) 
+
+> j
+
+∥ 
+
+> 11:
+
+end for  
+
+> 12:
+
+k ← k + 1  
+
+> 13:
+
+until max i(δ ˆωi) ≤ τi and max j (δ ˆuj ) ≤ τj 
+
+> 14:
+
+return {u(k) 
+
+> j
+
+}Kj=1 and {ω(k) 
+
+> i
+
+}Mi=1 
+
+V. S IMULATION RESULTS 
+
+The performance of the proposed algorithm was evaluated using a Monte Carlo (MC) simulation for different geometries. Each experiment was simulated for 1000 trials and the root-mean-square error (RMSE) was computed and compared with the CRLB. Because the CRLB is geometry-dependent, it was computed for each scenario, and then the square root of the mean of the CRLB trace was computed and used for comparison. The simulation was set up where the transmitter, M re-ceivers, and K targets were uniformly distributed in a 100 ×
+
+100 meter area, and the receivers’ orientation was uniformly distributed over [−π, π ]. We then simulated different param-eter values while keeping the remaining parameters constant. The parameters that were considered are node position and orientation variance σ2 
+
+> s
+
+and σ2
+
+> ϕ
+
+, bistatic range and bearing measurement variance σ2 
+
+> r
+
+and σ2 
+
+> θ
+
+, and number of receivers 
+
+M and targets K. While performing the MC simulation for one parameter range, the rest of the parameters were fixed at the following values: M = 4 , K = 5 , σr = 1m , σs = 5m ,
+
+σθ = 1 ◦, and σϕ = 2 ◦.Figure 2 shows the convergence performance of Algorithm 1 by displaying the convergence criteria, which is the maximum change in ωi and uj . It can be observed that the algorithm has fast convergence, with the change in position approaching zero after approximately five iterations. 0 2 4 6 8 10 12 14 Iteration 024Change [m]  max( wi)     
+
+> max( uj)
+> Fig. 2. Convergence of the proposed algorithm as shown by change ωiand
+> ujper iteration.
+
+Figure 3 (a) shows the RMSE for the target position, node position, and orientation for different values of σs and σr . It can be seen that for low to moderate values of both parameters, the performance of the proposed algorithm approaches the CRLB. It is evident that as the noise increases, the perfor-mance of the algorithm is degraded because the linearization assumption no longer holds, but it can be observed that even at relatively high noise, the performance is still close to the CRLB. Additionally, the results show that the orientation is less sensitive to changes in σr and σs.Figure 3 (b) shows the performance when we varied the noise in the bearing measurement σθ and the initial estimate of the receiver orientation σϕ. We see that both the target and receiver position accuracy are not sensitive to changes in 
+
+σϕ while the orientation accuracy is very sensitive to changes in both σθ and σϕ. Additionally, the results show that the performance of the proposed algorithm approaches the CRLB, and at certain points, it is even below the CRLB, which is due to a slight bias in our estimator caused by the linearization of the highly nonlinear bearing measurement. Finally, figure 3 (c) shows the performance for different numbers of receivers M and targets K. We see that, since we are employing a cooperative algorithm, increasing the number of receivers lowers the error in both target position and receiver pose. However, the improvement diminishes, and after certain values of M and K it becomes ineffective to add more, because it increases the communication overhead and computations required for optimization. VI. C ONCLUSIONS 
+
+This study investigated the joint target localization and receiver self-calibration in multistatic radar systems with un-certain receiver poses. The CRLB analysis revealed that the receiver pose can be updated to be more accurate and to reduce the pose uncertainty below its prior value. A joint optimization non-linear least squares problem was proposed, which was 0 2 4 6 8 10              
+
+> s[m]
+> 0246
+> CRLB/RMSE of  uj [m]
+> r
+> r= 1 m
+> r= 5 m
+> r= 10 m
+> 0246810
+> s[m]
+> 0246
+> CRLB/RMSE of  si [m]
+
+(a)                 
+
+> 0246810
+> s[m]
+> 0.0 0.5 1.0 1.5 2.0
+> CRLB/RMSE of  i [deg]
+> Legend CRLB Proposed Algorithm 0246810
+> [deg]
+> 0123
+> CRLB/RMSE of  uj [m]
+> = 1 °
+> = 5 °
+> = 10 °
+> 0246810
+> [deg]
+> 0.0 0.5 1.0 1.5 2.0
+> CRLB/RMSE of  si [m]
+
+(b)               
+
+> 0246810
+> [deg]
+> 024
+> CRLB/RMSE of  i [deg]
+> 510 15 20
+> M
+> 0123
+> CRLB/RMSE of  uj [m]
+> KK= 1
+> K= 5
+> K= 10
+> 510 15 20
+> M
+> 0123
+> CRLB/RMSE of  si [m]
+
+(c)    
+
+> 510 15 20
+> M
+> 012
+> CRLB/RMSE of  i [deg]
+
+Fig. 3. Parameter sweep results showing CRLB (solid lines) and RMSE of the proposed algorith (open circles) for target position uj , receiver position si,and receiver orientation ϕi. In subfigure (a), we see the effect of different values of the receiver position prior noise ( σs) and range measurement noise ( σr ). In (b), we observe the effect of the bearing measurement noise ( σθ ) and the receiver prior orientation noise ( σϕ). Finally, in (c), we see the effect of the number of receivers ( M ) and the number of targets ( K). 
+
+then decoupled into an alternating optimization where we update the receiver poses first and then update the targets’ positions. This alternating optimization solves small linearized least squares problems in each iteration, which reduces the computational complexity of the proposed algorithm. Monte Carlo simulations were carried out, which showed that the performance of the proposed algorithm approaches the CRLB for low to moderate noise levels in the measurements and receiver priors. APPENDIX ALet dx = ux − sx, dy = uy − sy , d 2 
+
+> s
+
+= dx 2 + dy 2, d s =pd2
+
+> s
+
+, d t = ∥u−t∥. Define rt = ( u−t)/d t, r s = ( u−s)/d s.
+
+Then the row-vector Jacobians are 
+
+Jr,u ij = ( rt + rs)⊤, Jθ,u ij = 1
+
+dx 2 + dy 2
+
+ − dy, dx ,
+
+Jr,w ij =  − r⊤ 
+
+> s
+
+, 0, Jθ,w ij =  − Jθ,u ij , −1 =  dy d2
+
+> s
+
+, − dx d2
+
+> s
+
+, −1.
+
+Each observed pair (i, j ) contributes the 2×(2+3) block, 
+
+Jij = [ Jr,u ij , Jr,w ij ; Jθ,u ij , Jθ,w ij ] which is placed into Ju, Jω at the columns for target j and receiver i.REFERENCES [1] S. Sruti and K. Giridhar, “Emerging trends in radar: Perspective on future integrated multistatic radar,” IEEE Aerospace and Electronic Systems Magazine , vol. 40, no. 6, pp. 108–113, 2025. [2] P. Chen, L. Zheng, X. Wang, H. Li, and L. Wu, “Moving target detection using colocated mimo radar on multiple distributed moving platforms,” 
+
+IEEE Transactions on Signal Processing , vol. 65, no. 17, pp. 4670–4683, 2017. [3] B. Hao, K. C. Ho, and Z. Li, “Range-based rigid body localization with a calibration emitter for mitigating anchor position uncertainties,” IEEE Transactions on Wireless Communications , vol. 18, no. 12, pp. 5734– 5748, 2019. [4] T. Jia, X. Ke, H. Liu, K. C. Ho, and H. Su, “Target localization and sensor self-calibration of position and synchronization by range and angle measurements,” IEEE Transactions on Signal Processing , vol. 73, pp. 340–355, 2025. [5] Y. Zhang and K. C. Ho, “Multistatic moving object localization by a moving transmitter of unknown location and offset,” IEEE Transactions on Signal Processing , vol. 68, pp. 4438–4453, 2020. [6] M. Sun and K. C. Ho, “An asymptotically efficient estimator for tdoa and fdoa positioning of multiple disjoint sources in the presence of sensor location uncertainties,” IEEE Transactions on Signal Processing ,vol. 59, no. 7, pp. 3434–3440, 2011. [7] P. Biswas, H. Aghajan, and Y. Ye, “Semidefinite programming algo-rithms for sensor network localization using angle information,” in 
+
+Conference Record of the Thirty-Ninth Asilomar Conference onSignals, Systems and Computers, 2005. , 2005, pp. 220–224. [8] M. Weib, “Synchronisation of bistatic radar systems,” in IGARSS 2004. 2004 IEEE International Geoscience and Remote Sensing Symposium ,vol. 3, 2004, pp. 1750–1753 vol.3. [9] N. J. Willis, Bistatic radar . SciTech Publishing, 2005. [10] K. B. Petersen, M. S. Pedersen et al. , “The matrix cookbook,” Technical University of Denmark , 2008. [11] S. Sruti and K. Giridhar, “Non-parametric multi-target data association and tracking for multistatic radars,” IEEE Journal of Selected Areas in Sensors , 2024.

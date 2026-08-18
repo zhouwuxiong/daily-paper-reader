@@ -1,0 +1,481 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-08-18T19:18:09.085211+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 6,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 6,
+    "quick_skim_target": 11,
+    "quick_selected": 6
+  },
+  "deep_dive": [
+    {
+      "id": "2608.14902v1",
+      "source": "arxiv",
+      "title": "Geometry-Aware Online Mapping for 3D Gaussian Splatting SLAM",
+      "abstract": "Recent 3D Gaussian Splatting (3DGS) has enabled efficient photorealistic view synthesis and is rapidly being adopted in simultaneous localization and mapping (SLAM) systems for online mapping. In these systems, a Gaussian map must be expanded and refined incrementally while tracking runs in real time, so initialization and density control directly determine where limited computation and iterations are spent. This contrasts with offline 3DGS reconstruction, where such heuristics can be amortized over long optimization schedules. However, most 3DGS-SLAM pipelines inherit initialization and density-control heuristics from offline reconstruction, which can become brittle under the strict per-keyframe optimization budgets and incremental map growth of online SLAM. In this work, we revisit these heuristics in a decoupled 3DGS-SLAM setting and propose three geometry-aware methods that operate in the mapping thread: transmittance-preserving densification, camera-aware scale initialization from depth and intrinsics, and error-guided densification that focuses new primitives on high-residual regions. Our results show consistent improvements in rendering quality with negligible overhead, highlighting the coupling between photometric residuals and pose uncertainty in online SLAM. We will open-source our code to the community to foster growth and validate reproducibility.",
+      "authors": [
+        "Thai Luu",
+        "Quan Tran",
+        "Hieu Phan",
+        "Tuan Dang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-14T21:20:16+00:00",
+      "link": "https://arxiv.org/pdf/2608.14902v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Online 3DGS-based SLAM with geometry-aware mapping",
+      "llm_evidence_cn": "基于3D高斯泼溅的SLAM在线建图",
+      "llm_evidence": "基于3D高斯泼溅的SLAM在线建图",
+      "canonical_evidence": "基于3D高斯泼溅的SLAM在线建图",
+      "llm_tldr_en": "This work addresses brittle initialization and density control in 3DGS-SLAM by leveraging geometry-aware online mapping, improving incremental map quality under real-time tracking budgets.",
+      "llm_tldr_cn": "3D高斯泼溅被迅速用于SLAM系统在线建图，但大多数3DGS-SLAM继承了离线重建的初始化与密度控制启发式，难以适应在线逐关键帧优化预算和地图增量增长。该工作提出几何感知的在线建图方法，针对3DGS-SLAM的初始化与密度控制进行改进，在实时跟踪条件下提升增量重建质量，使3DGS-SLAM在严格预算下更稳定。",
+      "llm_tldr": "3D高斯泼溅被迅速用于SLAM系统在线建图，但大多数3DGS-SLAM继承了离线重建的初始化与密度控制启发式，难以适应在线逐关键帧优化预算和地图增量增长。该工作提出几何感知的在线建图方法，针对3DGS-SLAM的初始化与密度控制进行改进，在实时跟踪条件下提升增量重建质量，使3DGS-SLAM在严格预算下更稳定。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.14996v1",
+      "source": "arxiv",
+      "title": "HP2-SLAM: Adaptive Hybrid ICP for Robust and Efficient LiDAR SLAM",
+      "abstract": "Achieving robustness, accuracy, and efficiency simultaneously remains a central challenge in light detection and ranging (LiDAR) simultaneous localization and mapping (SLAM). While learning-based approaches deliver strong benchmark performance, they often require extensive training, substantial computational resources, and struggle to generalize to unseen or degenerate environments. Geometry-based methods are efficient and interpretable, yet their performance degrades in planar or repetitive scenes due to limitations of standard iterative closest point (ICP) formulations. We present HP2-SLAM, a minimalist yet robust LiDAR SLAM framework built around a neighborhood-size adaptive hybrid ICP. Our key insight is a planarity-aware adaptive threshold that dynamically classifies correspondences based on local geometric structure and density, thereby enabling a principled balance between point-to-plane and point-to-point residuals. This formulation stabilizes alignment in both structured and degenerate environments without feature engineering, learning modules, or dataset-specific tuning. Integrated into a complete SLAM pipeline with submap management, loop closure detection, and pose graph optimization, HP2-SLAM consistently outperforms strong geometry-based baselines across publicly available datasets while maintaining real-time performance on commodity hardware. Our results demonstrate that carefully designed geometric adaptation can achieve strong generalization and robustness without sacrificing simplicity or efficiency.",
+      "authors": [
+        "Nam Tran",
+        "Thu Tran",
+        "Hieu Phan",
+        "Thai Luu",
+        "Toan Nguyen",
+        "William J. Beksi",
+        "Tuan Dang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-15T02:52:54+00:00",
+      "link": "https://arxiv.org/pdf/2608.14996v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "LiDAR SLAM framework with adaptive hybrid ICP for robust and efficient mapping",
+      "llm_evidence_cn": "基于自适应混合ICP的LiDAR SLAM框架，提高鲁棒性和效率",
+      "llm_evidence": "基于自适应混合ICP的LiDAR SLAM框架，提高鲁棒性和效率",
+      "canonical_evidence": "基于自适应混合ICP的LiDAR SLAM框架，提高鲁棒性和效率",
+      "llm_tldr_en": "HP2-SLAM presents a minimal LiDAR SLAM framework using a neighborhood-size adaptive hybrid ICP with a planarity-aware threshold, aiming to balance robustness, accuracy, and efficiency across degenerate environments.",
+      "llm_tldr_cn": "针对几何方法在平面或重复场景中性能下降的问题，HP2-SLAM提出一种基于邻域大小自适应混合ICP的极简LiDAR SLAM框架。其核心是平面感知自适应阈值，能够动态调整配准策略。实验表明该方法在保持高效和可解释性的同时，显著提升了复杂和退化环境下的鲁棒性与精度。该工作为LiDAR SLAM提供了一种轻量且有效的替代方案。",
+      "llm_tldr": "针对几何方法在平面或重复场景中性能下降的问题，HP2-SLAM提出一种基于邻域大小自适应混合ICP的极简LiDAR SLAM框架。其核心是平面感知自适应阈值，能够动态调整配准策略。实验表明该方法在保持高效和可解释性的同时，显著提升了复杂和退化环境下的鲁棒性与精度。该工作为LiDAR SLAM提供了一种轻量且有效的替代方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.15024v1",
+      "source": "arxiv",
+      "title": "MotionGS-SLAM: Event-Modulated Gaussian Splatting for Motion-Blur Robust SLAM",
+      "abstract": "Current Vision-based SLAM systems fail catastrophically when motion blur corrupts the visual input, as they attempt the ill-posed inverse problem of recovering sharp content from degraded observations. We present MotionGS-SLAM, which fundamentally reimagines motion blur handling through a paradigm shift: rather than removing blur artifacts, we reformulate the challenge as a well-constrained forward problem that generatively models blur formation within the rendering pipeline. By leveraging event cameras' microsecond temporal resolution and immunity to motion blur, we introduce a novel event-modulated Gaussian kernel that dynamically adapts each Gaussian's rasterization based on precise motion cues. Our dual-modulation mechanism transforms 2D Gaussian projections from isotropic dots into anisotropic, motion-aligned elliptical brush strokes (spatial modulation) while adaptively varying exposure integral sampling density based on local velocity (temporal modulation). This physics-based approach enables joint optimization of intra-exposure camera trajectories and 3D scene geometry through blur-aware photometric and event-based constraints. Extensive experiments demonstrate significant improvements over state-of-the-art methods in trajectory accuracy and map quality under severe high-motion conditions.",
+      "authors": [
+        "Zhiqiang Hu",
+        "Shouren Huang",
+        "Masatoshi Ishikawa"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.CV"
+      ],
+      "published": "2026-08-15T04:20:51+00:00",
+      "link": "https://arxiv.org/pdf/2608.15024v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Event-modulated Gaussian splatting visual SLAM robust to motion blur",
+      "llm_evidence_cn": "基于事件调制高斯泼溅的运动模糊鲁棒视觉SLAM",
+      "llm_evidence": "基于事件调制高斯泼溅的运动模糊鲁棒视觉SLAM",
+      "canonical_evidence": "基于事件调制高斯泼溅的运动模糊鲁棒视觉SLAM",
+      "llm_tldr_en": "MotionGS-SLAM reformulates motion blur as a forward generative problem, using event cameras to modulate Gaussian splatting kernels, enabling robust vision-based SLAM under heavy motion blur.",
+      "llm_tldr_cn": "针对视觉SLAM在运动模糊下失效的问题，提出MotionGS-SLAM，将模糊处理从逆问题转为正向生成建模。利用事件相机微秒级时间分辨率，引入事件调制高斯核，动态调整各高斯的栅格化以建模模糊形成过程。在模糊数据上显示出显著的鲁棒性和精度提升。该工作为模糊场景下的视觉SLAM提供了新范式。",
+      "llm_tldr": "针对视觉SLAM在运动模糊下失效的问题，提出MotionGS-SLAM，将模糊处理从逆问题转为正向生成建模。利用事件相机微秒级时间分辨率，引入事件调制高斯核，动态调整各高斯的栅格化以建模模糊形成过程。在模糊数据上显示出显著的鲁棒性和精度提升。该工作为模糊场景下的视觉SLAM提供了新范式。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.16281v1",
+      "source": "arxiv",
+      "title": "Marker-Constrained Pose-Graph Correction for Cross-Platform Georeferencing in GNSS-Denied Environments",
+      "abstract": "Autonomous operation in GNSS-denied environments requires heterogeneous mapping pipelines to maintain a consistent spatial reference. This paper presents a framework using camouflage-matched fiducial markers fabricated from Cholesteric Spherical Reflectors (CSRs) as pre-surveyed visual anchors. The anchors georeference both a lightweight LiDAR-odometry trajectory and a dense RTAB-Map reconstruction, allowing their outputs to be expressed in a common LUREF frame (geodetic coordinate reference system used in Luxembourg) without requiring GNSS measurements during operation. The method combines coarse similarity alignment with marker-constrained pose-graph optimization. We evaluate it using two handheld acquisition sessions with ground-level and elevated motion profiles emulating UGV and UAV operation. A single iMarker was relocated among six surveyed positions, with the first position revisited to quantify drift correction. Marker-anchor correction reduced revisit inconsistency by 97.9% and 99.1% for the UAV- and UGV-emulating sessions, respectively, and improved held-out anchor prediction compared with one-time alignment. Separately georeferenced dense reconstructions achieved a median cross-session nearest-neighbour distance of 58 cm without explicit cross-session registration. Marker processing operated in real time, while trajectory correction required less than 0.25 s per session. These results demonstrate a proof of concept for georeferencing lightweight odometry and dense reconstructions using visually unobtrusive, pre-surveyed anchors during GNSS-denied operation.",
+      "authors": [
+        "Marco Giberna",
+        "Jose Luis Sanchez Lopez",
+        "Holger Voos"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.MA"
+      ],
+      "published": "2026-08-17T08:52:54+00:00",
+      "link": "https://arxiv.org/pdf/2608.16281v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "directly proposes marker-constrained pose-graph optimization for georeferencing and mapping in GNSS-denied environments",
+      "llm_evidence_cn": "直接提出标志物约束的位姿图优化，用于GNSS拒止环境下的定位与建图",
+      "llm_evidence": "直接提出标志物约束的位姿图优化，用于GNSS拒止环境下的定位与建图",
+      "canonical_evidence": "直接提出标志物约束的位姿图优化，用于GNSS拒止环境下的定位与建图",
+      "llm_tldr_en": "This paper presents a marker-constrained pose-graph correction framework that georeferences LiDAR-odometry and RTAB-Map reconstructions in a common LUREF frame using camouflage-matched fiducial markers, enabling consistent cross-platform SLAM without GNSS.",
+      "llm_tldr_cn": "GNSS拒止环境中的自主作业依赖多套建图管线维持一致空间参考。本文利用伪装匹配的胆甾相球形反射器标志物作为预测量视觉锚点，对轻量LiDAR里程计轨迹和RTAB-Map稠密重建进行地理配准，使其统一到LUREF坐标系。方法结合粗相似度对齐与标志物约束的位姿图优化，无需GNSS即可实现跨平台一致的建图与定位。实验证明其能有效校正漂移并保持全局一致性，适用于地下或城市峡谷等无卫星环境。",
+      "llm_tldr": "GNSS拒止环境中的自主作业依赖多套建图管线维持一致空间参考。本文利用伪装匹配的胆甾相球形反射器标志物作为预测量视觉锚点，对轻量LiDAR里程计轨迹和RTAB-Map稠密重建进行地理配准，使其统一到LUREF坐标系。方法结合粗相似度对齐与标志物约束的位姿图优化，无需GNSS即可实现跨平台一致的建图与定位。实验证明其能有效校正漂移并保持全局一致性，适用于地下或城市峡谷等无卫星环境。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "pose graph optimization methods for global consistency in simultaneous localization and mapping",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.15251v1",
+      "source": "arxiv",
+      "title": "Robust structure from motion for aerial-ground images via detector-free feature matching and multi-view track refinement",
+      "abstract": "Integrated 3D reconstruction from aerial-ground images is essential for generating high-precision urban 3D models, yet severe variations in viewpoint, scale, and rotation make robust feature matching highly challenging. To address these limitations, this study introduces a rotation-robust detector-free matching network coupled with multi-view track refinement for incremental Structure from Motion (ISfM). The proposed workflow features four key modules. First, rotation-aware feature extraction replaces traditional convolutions with an Omnidirectional State Space Block (OSS Block) that selectively scans across eight symmetrical directions to model long-range spatial dependencies and synthesize rotation-invariant feature maps. Second, multi-scale attention transformation utilizes quadtree attention to build a hierarchical token pyramid that isolates high-association token regions and discards irrelevant areas, capturing long-range context with linear computational complexity. Third, bi-directional feature matching executes a symmetric coarse-to-fine matching scheme where coarse alignment computes dual-direction Softmax confidence matrices under mutual nearest neighbor constraints, and fine alignment uses a multi-layer perceptron to regress sub-pixel coordinate offsets. Finally, multi-view track refinement employs an integrated indexing structure to evaluate localized spatial proximity and link disjoint sub-tracks to the highest-confidence anchor point, ensuring stable feature repeatability across the ISfM pipeline. By using real aerial-ground datasets, experimental results demonstrate that the proposed method improves AUC at 5° pose error by 93.9% compared with LoFTR and achieves the highest precision in ISfM reconstruction, with the improved accuracy ranging from 27.6% to 32.7%. The proposed method provides a reliable solution for integrated 3D reconstruction of aerial-ground images.",
+      "authors": [
+        "San Jiang",
+        "Hui Wang",
+        "Xing Zhang",
+        "Zhongwen Hu",
+        "Zhijun Wang",
+        "Ruisheng Wang",
+        "Wanshou Jiang",
+        "Qingquan Li"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-15T14:16:02+00:00",
+      "link": "https://arxiv.org/pdf/2608.15251v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Robust incremental structure from motion with detector-free matching for aerial-ground 3D urban reconstruction",
+      "llm_evidence_cn": "结合无检测器匹配与多视图轨迹优化的鲁棒增量式运动恢复结构，用于空地城市三维重建",
+      "llm_evidence": "结合无检测器匹配与多视图轨迹优化的鲁棒增量式运动恢复结构，用于空地城市三维重建",
+      "canonical_evidence": "结合无检测器匹配与多视图轨迹优化的鲁棒增量式运动恢复结构，用于空地城市三维重建",
+      "llm_tldr_en": "This paper couples a rotation-robust detector-free matching network with multi-view track refinement for incremental structure from motion, improving robustness and precision for integrated aerial-ground 3D urban reconstruction.",
+      "llm_tldr_cn": "空地图像集成三维重建对城市高精度模型至关重要，但视角、尺度和旋转差异大导致匹配困难。本文提出旋转鲁棒的免检测器匹配网络，并用多视图轨迹细化改进增量式运动恢复结构。八个方向的扫描模块增强了长程空间依赖与旋转不变特征。实验验证该方法在复杂空地图像上显著提升重建精度与鲁棒性。该技术可直接服务自动驾驶与机器人大场景三维建图。",
+      "llm_tldr": "空地图像集成三维重建对城市高精度模型至关重要，但视角、尺度和旋转差异大导致匹配困难。本文提出旋转鲁棒的免检测器匹配网络，并用多视图轨迹细化改进增量式运动恢复结构。八个方向的扫描模块增强了长程空间依赖与旋转不变特征。实验验证该方法在复杂空地图像上显著提升重建精度与鲁棒性。该技术可直接服务自动驾驶与机器人大场景三维建图。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.15260v1",
+      "source": "arxiv",
+      "title": "VGGT-Align: Bridging Local Reconstruction and Global Consistency for Long-Sequence 3D Reconstruction",
+      "abstract": "Maintaining global geometric consistency is a central challenge in long-sequence 3D reconstruction, with scale drift being the most critical failure mode. In chunk-based inference pipelines, the scale degree of freedom in sequential Sim(3) alignment is left unconstrained, causing estimation errors to compound multiplicatively and distort global trajectories and point cloud geometry. We present a scale-consistency enhancement framework built on a key insight: in structured environments such as driving scenes, geometric quantities arising from environmental regularity remain inherently invariant across temporal segments, and discrepancies in their per-chunk measurements directly expose inter-chunk scale drift. We propose Scene Geometric Invariant Anchoring (SGIA), which extracts dominant geometric invariants from each chunk's predicted point cloud via coarse-to-fine robust estimation and exploits their cross-chunk consistency to establish scale constraints independent of point cloud registration, explicitly degenerating 7-DoF Sim(3) alignment into 6-DoF rigid-body transformation and severing chain-wise scale error propagation at its source. We further introduce a lightweight test-time adaptation strategy that fine-tunes only normalization-layer parameters via multi-objective self-supervision, progressively improving intra-chunk predictions along the sequence. Both modules are plug-and-play and require no offline retraining. Experiments on multiple long-sequence benchmarks demonstrate state-of-the-art performance, reducing absolute trajectory error by up to 32% with significant gains in trajectory stability and reconstruction quality. Code: https://github.com/WZ-CS/VGGT-Align",
+      "authors": [
+        "Wei Zhang",
+        "Yihang Wu",
+        "Songhua Li",
+        "Qi Wang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-08-15T14:32:55+00:00",
+      "link": "https://arxiv.org/pdf/2608.15260v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "addresses global consistency and scale drift in long-sequence 3D reconstruction, key problem in SLAM global optimization",
+      "llm_evidence_cn": "处理长序列三维重建中的全局一致性与尺度漂移，是SLAM全局优化的关键问题",
+      "llm_evidence": "处理长序列三维重建中的全局一致性与尺度漂移，是SLAM全局优化的关键问题",
+      "canonical_evidence": "处理长序列三维重建中的全局一致性与尺度漂移，是SLAM全局优化的关键问题",
+      "llm_tldr_en": "VGGT-Align enhances global consistency in long-sequence 3D reconstruction by detecting and correcting inter-chunk scale drift using environmental invariant quantities, significantly improving trajectory and point cloud geometry.",
+      "llm_tldr_cn": "长序列三维重建中常见的尺度漂移会导致全局轨迹和点云几何严重变形。VGGT-Align利用结构化环境中跨时间段的几何不变量来估计并校正块间尺度漂移，从而在全球一致性上取得显著提升。该框架直接作用于基于块的重建管线，无需改动局部重建模块，有效改善了长序列轨迹和点云的质量。这项工作为SLAM和三维重建中的全局优化提供了关键支撑。",
+      "llm_tldr": "长序列三维重建中常见的尺度漂移会导致全局轨迹和点云几何严重变形。VGGT-Align利用结构化环境中跨时间段的几何不变量来估计并校正块间尺度漂移，从而在全球一致性上取得显著提升。该框架直接作用于基于块的重建管线，无需改动局部重建模块，有效改善了长序列轨迹和点云的质量。这项工作为SLAM和三维重建中的全局优化提供了关键支撑。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "pose graph optimization methods for global consistency in simultaneous localization and mapping",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2608.10756v1",
+      "source": "arxiv",
+      "title": "Embodied Multimodal Grounding for Open-Vocabulary Mobile Manipulation via Semantic 3D Gaussian Splatting",
+      "abstract": "Embodied mobile manipulation requires language, visual observations, three-dimensional scene structure, and action feasibility to be aligned before execution. We study open-vocabulary target grounding with few-shot manipulation in local household workspaces and present an embodied multimodal grounding framework that integrates active multi-view Semantic 3D Gaussian Splatting (Semantic-3DGS), reachability-aware base positioning, and a diffusion-based vision-language-action policy. A task-driven local Semantic-3DGS serves as a shared interface across active sensing, language-conditioned 3D localization, obstacle-aware scene reasoning, base preparation, and semantic conditioning of the action model. To preserve pretrained action priors, the 3D semantic cues are injected only into the late action-expert blocks. In expanded 50-trial real-robot evaluations against representative vision-language-action (VLA) approaches, the full system achieves 60% long-horizon success compared with 40% for PointVLA and 28% for DexVLA, and reaches 74% success in heavily cluttered manipulation compared with 52% for the single-view variant and 46% for PointVLA. It also maintains 75% success under a 75 cm height shift and eliminates photo-induced false grasps. These results indicate that explicit, refreshable 3D semantic grounding can improve robustness under clutter, occlusion, viewpoint variation, and embodiment constraints.",
+      "authors": [
+        "Huosen Ou",
+        "Dongni Song",
+        "Yuncong Wang",
+        "Tao Zhou",
+        "Yiding Ji"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "published": "2026-08-11T10:16:30+00:00",
+      "link": "https://arxiv.org/pdf/2608.10756v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Semantic 3D Gaussian Splatting as shared scene representation for open-vocabulary mobile manipulation",
+      "llm_evidence_cn": "利用语义3D高斯泼溅作为开放词汇移动操作的共享场景表征",
+      "llm_evidence": "利用语义3D高斯泼溅作为开放词汇移动操作的共享场景表征",
+      "canonical_evidence": "利用语义3D高斯泼溅作为开放词汇移动操作的共享场景表征",
+      "llm_tldr_en": "This framework integrates active multi-view Semantic-3DGS with reachability-aware base positioning and a diffusion vision-language-action policy, enabling open-vocabulary target grounding and few-shot mobile manipulation in household environments.",
+      "llm_tldr_cn": "针对开放词汇移动操作中语言、视觉、三维结构与动作可行性对齐的问题，提出具身多模态接地框架。该方法以任务驱动的局部语义3D高斯泼溅作为统一接口，联合主动多视角采集、可达性感知基座定位与扩散式视觉-语言-动作策略。在少量样本下实现了开放词汇目标定位与操作。该工作展示了语义显式场景表征在具身操作中的价值。",
+      "llm_tldr": "针对开放词汇移动操作中语言、视觉、三维结构与动作可行性对齐的问题，提出具身多模态接地框架。该方法以任务驱动的局部语义3D高斯泼溅作为统一接口，联合主动多视角采集、可达性感知基座定位与扩散式视觉-语言-动作策略。在少量样本下实现了开放词汇目标定位与操作。该工作展示了语义显式场景表征在具身操作中的价值。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.09321v1",
+      "source": "arxiv",
+      "title": "Warp-free Cross-view Geo-localization via Feature-space Consensus Mining",
+      "abstract": "Cross-view geo-localization is challenging due to drastic viewpoint changes and large appearance discrepancies between street-level and satellite imagery. Although existing methods often use geometric warping to expose co-visible cues, such transformations rely on restrictive spatial assumptions and inevitably introduce severe visual distortions under view-dependent visibility, yielding noisy supervision and fragile correspondences. To overcome this, we propose a novel joint-view consensus-guided learning framework that entirely bypasses explicit geometric warping. Instead of forcing rigid spatial alignment, we dynamically mine and adaptively strengthen a semantic consensus directly within the feature space. Specifically, an auxiliary joint-view pathway during training enables direct cross-view interaction, allowing each view to selectively aggregate corroborative evidence into a unified consensus representation. To resolve feature heterogeneity among the single- and joint-view streams, we introduce global pattern probes acting as a semantic dictionary to project divergent modalities into a strictly aligned metric space. Guided by a consensus-mediated contrastive objective, single-view embeddings are explicitly pulled toward the joint-view anchor during training, distilling this consensus-mining capability into the single-view encoders for robust retrieval at inference. Extensive experiments demonstrate that our method achieves state-of-the-art performance across four standard benchmarks, underscoring the importance of discovering cross-view semantic consensus for reliable geo-localization.",
+      "authors": [
+        "Zhuo Song",
+        "Lian Xu",
+        "Runqing Jiang",
+        "Yongjian Zhang",
+        "Kunhong Li",
+        "Ye Zhang",
+        "Yulan Guo"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-10T09:02:06+00:00",
+      "link": "https://arxiv.org/pdf/2608.09321v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Feature-space consensus mining for viewpoint-invariant cross-view geo-localization, applicable to place recognition in SLAM",
+      "llm_evidence_cn": "基于特征空间共识挖掘的跨视角地理定位，可用于SLAM中的位置识别与回环检测",
+      "llm_evidence": "基于特征空间共识挖掘的跨视角地理定位，可用于SLAM中的位置识别与回环检测",
+      "canonical_evidence": "基于特征空间共识挖掘的跨视角地理定位，可用于SLAM中的位置识别与回环检测",
+      "llm_tldr_en": "The paper proposes a joint-view consensus-guided learning framework for warp-free cross-view geo-localization, mining semantic consensus in feature space to overcome viewpoint and appearance gaps without geometric warping.",
+      "llm_tldr_cn": "针对跨视角地理定位中的视角剧变与外观差异，提出一种无需几何扭曲的联合视角共识引导学习框架。该方法在特征空间中动态挖掘并增强语义共识，替代传统刚性空间对齐，避免扭曲导致的噪声监督。在公开基准上取得了优于现有方法的定位性能。该工作可为SLAM回环检测提供视角鲁棒的特征匹配新思路。",
+      "llm_tldr": "针对跨视角地理定位中的视角剧变与外观差异，提出一种无需几何扭曲的联合视角共识引导学习框架。该方法在特征空间中动态挖掘并增强语义共识，替代传统刚性空间对齐，避免扭曲导致的噪声监督。在公开基准上取得了优于现有方法的定位性能。该工作可为SLAM回环检测提供视角鲁棒的特征匹配新思路。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "loop closure detection techniques to correct drift in SLAM systems",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.15501v1",
+      "source": "arxiv",
+      "title": "Target Localization and Self-Calibration in a Multistatic Radar System",
+      "abstract": "Target localization in a multistatic radar system, where multiple receivers cooperate to improve target positioning accuracy, has many applications, including cooperative simultaneous localization and mapping (SLAM) and autonomous robot networks. A key challenge in these applications is the uncertainty in the position and orientation (pose) of the radar receivers due to platform mobility. This work investigates the achievable improvements in both target localization and receiver pose estimation by deriving the Cramer-Rao lower bound (CRLB) for a multistatic radar system performing bistatic range and bearing measurements. We propose an alternating weighted least-squares algorithm that jointly optimizes target and receiver parameters. Monte Carlo simulations demonstrate that the algorithm performance approaches the CRLB for low to moderate noise levels.",
+      "authors": [
+        "Ahmad Musallam",
+        "Husheng Li"
+      ],
+      "primary_category": "eess.SP",
+      "categories": [
+        "eess.SP"
+      ],
+      "published": "2026-08-16T03:06:31+00:00",
+      "link": "https://arxiv.org/pdf/2608.15501v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "cooperative SLAM and receiver pose self-calibration in multistatic radar",
+      "llm_evidence_cn": "多基地雷达中的协同SLAM与接收机位姿自校准",
+      "llm_evidence": "多基地雷达中的协同SLAM与接收机位姿自校准",
+      "canonical_evidence": "多基地雷达中的协同SLAM与接收机位姿自校准",
+      "llm_tldr_en": "This paper proposes an alternating weighted least-squares algorithm for joint target and receiver pose estimation in multistatic radar, deriving the CRLB and targeting cooperative SLAM applications.",
+      "llm_tldr_cn": "多基地雷达中接收机随平台移动导致位姿不确定，影响目标定位与联合SLAM性能。本文推导了双基地距离-方位测量下目标定位与接收机姿态估计的克拉美-罗下界，并提出交替加权最小二乘算法联合优化目标与接收机参数。蒙特卡洛仿真表明该方法能有效提升定位精度和接收机位姿估计性能，为自主机器人网络中基于雷达的协同SLAM提供了理论基础。",
+      "llm_tldr": "多基地雷达中接收机随平台移动导致位姿不确定，影响目标定位与联合SLAM性能。本文推导了双基地距离-方位测量下目标定位与接收机姿态估计的克拉美-罗下界，并提出交替加权最小二乘算法联合优化目标与接收机参数。蒙特卡洛仿真表明该方法能有效提升定位精度和接收机位姿估计性能，为自主机器人网络中基于雷达的协同SLAM提供了理论基础。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.10888v1",
+      "source": "arxiv",
+      "title": "Sensor-Informed Per-Point Covariance for Structured-Light 3D Imaging",
+      "abstract": "Per-point uncertainty models are important in structured-light 3D reconstruction for probabilistic registration, fusion, and quality assessment. In practice, however, point-cloud covariances are often modeled as isotropic constants or inferred from local surface geometry and therefore do not explicitly reflect the measurement process. This is a limitation in fringe projection profilometry (FPP), where phase noise propagates through calibrated reconstruction and produces strongly anisotropic 3D uncertainty. This paper presents a sensor-informed first-order method for constructing a per-point 3 x 3 covariance field from experimentally measured phase precision and calibrated phase-to-depth and phase-to-3D mappings. The formulation separates a rank-1 phase-induced covariance from an effective full-rank completion obtained by incorporating fitted lateral image-space perturbation scales. Repeated-plane experiments under fixed imaging conditions show close alignment of the dominant covariance direction with the viewing ray, and consistency between the dominant phase-induced uncertainty scale and scalar depth uncertainty. In G-ICP registration, the proposed covariance substantially improves over a constant isotropic model while providing a sensor-derived uncertainty representation complementary to conventional geometry-based covariances.",
+      "authors": [
+        "Sehoon Tak",
+        "Jae-Sang Hyun"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-11T13:05:22+00:00",
+      "link": "https://arxiv.org/pdf/2608.10888v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Per-point covariance model for structured-light 3D reconstruction, enabling probabilistic registration and fusion",
+      "llm_evidence_cn": "面向结构光3D重建的逐点协方差模型，支持概率配准与融合",
+      "llm_evidence": "面向结构光3D重建的逐点协方差模型，支持概率配准与融合",
+      "canonical_evidence": "面向结构光3D重建的逐点协方差模型，支持概率配准与融合",
+      "llm_tldr_en": "This paper derives a sensor-informed first-order per-point 3D covariance field from measured phase precision and calibrated mappings, capturing anisotropic uncertainty in fringeprojection profilometry for better probabilistic reconstruction.",
+      "llm_tldr_cn": "针对结构光3D重建中点云不确定度常被简化为各向同性常数的问题，提出传感器感知的逐点协方差构建方法。利用实验测得的相位精度和标定的相位到深度/3D映射，通过一阶公式得到3×3协方差场，显式分离相位噪声带来的各向异性不确定性。这为概率配准、融合与质量评估提供了更准确的不确定度输入。该方法可推广至其他结构化光3D传感系统。",
+      "llm_tldr": "针对结构光3D重建中点云不确定度常被简化为各向同性常数的问题，提出传感器感知的逐点协方差构建方法。利用实验测得的相位精度和标定的相位到深度/3D映射，通过一阶公式得到3×3协方差场，显式分离相位噪声带来的各向异性不确定性。这为概率配准、融合与质量评估提供了更准确的不确定度输入。该方法可推广至其他结构化光3D传感系统。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.16490v1",
+      "source": "arxiv",
+      "title": "Towards Real-Time and Adaptable LiDAR Scene Completion",
+      "abstract": "LiDAR scene completion is a key component of 3D perception in autonomous driving, where the scene must be completed in real time to be usable in downstream tasks. Existing approaches typically follow an initialize-and-refine paradigm, in which a coarse initialization of the scene is first constructed, then refined into complete 3D geometry. Generative models are slower because they iteratively refine random Gaussian noise into the scene, while non-generative methods perturb the partial scene with a fixed noise scale, which limits coverage of large gaps and occluded regions and requires manual recalibration for each new sensor configuration. We present RapidLiDAR, a LiDAR scene completion method that treats the initialization itself as a learned, data-driven component. We propose an adaptive initialization module that predicts a spatially varying displacement for each partial input point, expanding the partial observations into a coarse scene initialization adapted to the local geometry, without requiring manual noise tuning. To refine this coarse initialization into a complete and coherent scene, we additionally propose a multi-scale reconstruction module that further refines point positions by querying multi-scale 3D voxel and 2D BEV feature maps constructed from the input scan. By replacing point-neighborhood operators such as farthest point sampling and $k$-nearest neighbor search with voxel- and BEV-based feature extraction, our architecture is faster and can handle different input resolutions by design. Experiments on SemanticKITTI and KITTI-360 show that our method achieves completion performance on par with the state of the art while completing a full scene in 0.1 seconds, which is 2.3 times faster than the fastest prior method. This matches the 10 Hz acquisition rate of typical automotive LiDAR sensors, taking a step toward real-time LiDAR scene completion.",
+      "authors": [
+        "Azhar Hussian",
+        "Martin Vossiek",
+        "Vasileios Belagiannis"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-17T12:28:50+00:00",
+      "link": "https://arxiv.org/pdf/2608.16490v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Real-time LiDAR scene completion for complete 3D geometry in autonomous driving perception",
+      "llm_evidence_cn": "面向自动驾驶的实时LiDAR场景补全，直接生成完整三维几何",
+      "llm_evidence": "面向自动驾驶的实时LiDAR场景补全，直接生成完整三维几何",
+      "canonical_evidence": "面向自动驾驶的实时LiDAR场景补全，直接生成完整三维几何",
+      "llm_tldr_en": "RapidLiDAR treats LiDAR scene initialization as a learned data-driven component to complete large gaps and occluded regions in real time, removing manual recalibration for different sensor configurations.",
+      "llm_tldr_cn": "LiDAR场景补全是自动驾驶3D感知的关键组件，要求实时完成缺失几何。现有生成式方法慢，非生成方法固定噪声尺度难以覆盖大空洞且需手动校准。RapidLiDAR将初始化本身作为可学习组件，数据驱动地完成大间隙和遮挡区域补全。实验表明其达到实时性能并适应不同传感器配置，可提升稠密建图的完整性。该方法为自动驾驶三维环境感知提供更高效补全方案。",
+      "llm_tldr": "LiDAR场景补全是自动驾驶3D感知的关键组件，要求实时完成缺失几何。现有生成式方法慢，非生成方法固定噪声尺度难以覆盖大空洞且需手动校准。RapidLiDAR将初始化本身作为可学习组件，数据驱动地完成大间隙和遮挡区域补全。实验表明其达到实时性能并适应不同传感器配置，可提升稠密建图的完整性。该方法为自动驾驶三维环境感知提供更高效补全方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.16499v1",
+      "source": "arxiv",
+      "title": "OccamView: Object-Conditioned View Selection for Frame-Budgeted Active 3D Gaussian Reconstruction",
+      "abstract": "Active 3D Gaussian reconstruction fundamentally relies on selecting informative next-best views under limited sensing budgets. Existing active 3DGS methods primarily plan viewpoints according to geometric information gain, treating object-induced hidden regions in the same manner as general unexplored space. Under tight frame budgets, such geometry-driven strategies may prioritize global scene coverage while leaving partially observed objects incompletely reconstructed. To address this limitation, we propose OccamView, an object-conditioned view-selection framework for frame-budgeted active 3D Gaussian reconstruction. Rather than predicting unseen object geometry or performing shape completion, OccamView maintains an online object memory from open-vocabulary detections grounded in measured RGB-D observations and represents unresolved local occupancy around detected objects as conservative hidden-region proxies. Candidate viewpoints are then evaluated using an occlusion-aware proxy-coverage score. Furthermore, we introduce a Geo-Floor mechanism that restricts object-conditioned re-ranking to geometrically competitive candidates, allowing object-conditioned cues to guide complementary observations while preserving the geometry-driven exploration behavior of the underlying planner. Experiments on Replica and Matterport3D under a unified frame-budgeted protocol show that OccamView consistently reduces Completion and improves Completion Ratio across five frame budgets, with particularly pronounced gains under limited frame budgets. These results demonstrate that lightweight object-conditioned cues effectively complement geometry-driven active view planning.",
+      "authors": [
+        "Hongbo Gao",
+        "Wei Zhang",
+        "Zeyu Ni",
+        "Dihao Zhu",
+        "Ruifeng Li",
+        "Yunke Wang",
+        "Chang Xu"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "published": "2026-08-17T12:38:56+00:00",
+      "link": "https://arxiv.org/pdf/2608.16499v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "active 3D Gaussian reconstruction with object-conditioned view selection for mapping",
+      "llm_evidence_cn": "面向建图的对象条件视图选择的主动三维高斯重建",
+      "llm_evidence": "面向建图的对象条件视图选择的主动三维高斯重建",
+      "canonical_evidence": "面向建图的对象条件视图选择的主动三维高斯重建",
+      "llm_tldr_en": "This paper presents OccamView, an object-conditioned view-selection framework for frame-budgeted active 3D Gaussian reconstruction that prioritizes partially observed objects over global coverage for better reconstruction.",
+      "llm_tldr_cn": "主动三维重建在有限帧预算下需要选择信息量最大的视角，但现有基于几何信息增益的方法容易忽略物体导致的遮挡区域，造成物体重建不完整。本文提出OccamView，在在线过程中维护物体的遮挡状态，并基于对象条件进行视角选择。实验表明该方法在相同预算下能显著改善部分观测物体的重建质量，同时保持较好的全局覆盖，为帧受限的机器人三维建图提供了有效策略。",
+      "llm_tldr": "主动三维重建在有限帧预算下需要选择信息量最大的视角，但现有基于几何信息增益的方法容易忽略物体导致的遮挡区域，造成物体重建不完整。本文提出OccamView，在在线过程中维护物体的遮挡状态，并基于对象条件进行视角选择。实验表明该方法在相同预算下能显著改善部分观测物体的重建质量，同时保持较好的全局覆盖，为帧受限的机器人三维建图提供了有效策略。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}
