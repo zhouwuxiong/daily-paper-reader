@@ -1,0 +1,382 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-08-19T19:35:09.908699+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 5,
+    "deep_cap": 6,
+    "deep_selected": 5,
+    "quick_candidates": 4,
+    "quick_skim_target": 11,
+    "quick_selected": 4
+  },
+  "deep_dive": [
+    {
+      "id": "2608.17389v1",
+      "source": "arxiv",
+      "title": "GeoWeaver: Accurate Long-Sequence 3D Reconstruction via Hierarchical Geometric Assembly",
+      "abstract": "Long-sequence 3D reconstruction from RGB videos requires both accurate local geometry and globally consistent camera motion. Feed-forward models provide strong depth and pose predictions, but their memory cost prevents joint inference over long sequences. Chunk-wise processing improves scalability, yet independently predicted chunks often exhibit scale drift, pose errors, and point-cloud misalignment. We present GeoWeaver, a unified framework comprising a Geometric Prior Model (GPM) and Test-Time Adaptation (TTA). The GPM predicts chunk-wise depth, confidence, and camera parameters as adjustable geometric priors. TTA then performs sequential initialization, global chunk-level Sim(3) alignment, and coarse-to-fine refinement of camera poses, affine depth corrections, and intrinsics. Dense correspondences provide adjacent, cross-chunk, and long-range constraints, while a robust CDF-style objective jointly optimizes weighted 2D reprojection and 3D consistency residuals. This design preserves local geometric accuracy while correcting accumulated pose, scale, depth, and calibration errors. Experiments across diverse long-sequence benchmarks demonstrate improved camera accuracy, global consistency, and point-cloud quality. Ablations verify the contribution of each adaptation stage, and applying the same TTA procedure to different geometric prior models consistently improves their trajectory estimates, demonstrating that GeoWeaver is not tied to a specific GPM.",
+      "authors": [
+        "Tinghao Jiang",
+        "Sheng Tang",
+        "Shengzhe Wei",
+        "Juntong Fang",
+        "Weiqi Zhang",
+        "Junsheng Zhou",
+        "Zesong Li"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-18T05:29:31+00:00",
+      "link": "https://arxiv.org/pdf/2608.17389v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Long-sequence 3D reconstruction with global alignment of chunk-wise depth and camera poses",
+      "llm_evidence_cn": "长序列3D重建，通过分块深度与相机位姿的全局对齐消除尺度漂移",
+      "llm_evidence": "长序列3D重建，通过分块深度与相机位姿的全局对齐消除尺度漂移",
+      "canonical_evidence": "长序列3D重建，通过分块深度与相机位姿的全局对齐消除尺度漂移",
+      "llm_tldr_en": "GeoWeaver combines a Geometric Prior Model for chunk-wise depth and pose prediction with Test-Time Adaptation for sequential initialization, global Sim(3) alignment, and coarse-to-fine pose refinement, enabling accurate long-sequence 3D reconstruction.",
+      "llm_tldr_cn": "长序列RGB视频的3D重建需要同时保证局部几何精度和全局相机运动一致性，但前馈模型受内存限制无法联合推理长序列。GeoWeaver提出分层几何组装框架，包括几何先验模型和测试时自适应：前者预测分块深度、置信度和相机参数，后者依次进行初始化、全局Sim(3)对齐和由粗到细的相机位姿精化。该方法在长序列重建中有效抑制尺度漂移和点云错位，提升了全局一致性。",
+      "llm_tldr": "长序列RGB视频的3D重建需要同时保证局部几何精度和全局相机运动一致性，但前馈模型受内存限制无法联合推理长序列。GeoWeaver提出分层几何组装框架，包括几何先验模型和测试时自适应：前者预测分块深度、置信度和相机参数，后者依次进行初始化、全局Sim(3)对齐和由粗到细的相机位姿精化。该方法在长序列重建中有效抑制尺度漂移和点云错位，提升了全局一致性。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.17553v1",
+      "source": "arxiv",
+      "title": "Scalix: Uncertainty-Aware Scale-Consistent Monocular SLAM",
+      "abstract": "Cameras are ubiquitous sensors in robotics due to their compact form factor and the perceptual richness captured through visual information. Monocular SLAM enables robots to understand the environment with a minimum setup, however, it inherently suffers from scale ambiguity. A common solution is to provide multi-modal sensor configurations, such as visual-inertial systems, where scale is observable unless the robot navigates under a constant-velocity motion, a common scenario in mobile robotics. With the advent of deep-learning, geometric foundation models have been used to address this problem, but the depths maps are often noisy and scale-inconsistent across frames. In this paper, we propose Scalix, a real-time monocular SLAM framework that achieves metric-scale state estimation by integrating learned depth cues into a probabilistic factor-graph formulation. By augmenting existing monocular depth models with both per-pixel depth uncertainty and per-frame scale uncertainty, Scalix treats scale predictions as independent measurements within its optimization, leading to improved scale consistency through multi-view data associations. Experiments in large-scale outdoor and indoor environments demonstrate state-of-the-art performance on both metric and up-to-scale benchmarks while maintaining real-time operation and generalization.",
+      "authors": [
+        "Sebastian Barbas Laina",
+        "Tianyi Zhang",
+        "Panagiotis Petropoulakis",
+        "Simon Schaefer",
+        "Simon Boche",
+        "Jaehyung Jung",
+        "Cedric Le Gentil",
+        "Stefan Leutenegger"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-18T09:14:37+00:00",
+      "link": "https://arxiv.org/pdf/2608.17553v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Real-time monocular SLAM with metric scale recovery and uncertainty awareness; direct visual SLAM.",
+      "llm_evidence_cn": "实时单目SLAM，实现度量尺度恢复与不确定性感知，属于直接视觉SLAM方法。",
+      "llm_evidence": "实时单目SLAM，实现度量尺度恢复与不确定性感知，属于直接视觉SLAM方法。",
+      "canonical_evidence": "实时单目SLAM，实现度量尺度恢复与不确定性感知，属于直接视觉SLAM方法。",
+      "llm_tldr_en": "Presents Scalix, a real-time monocular SLAM framework that achieves metric-scale and scale consistency using geometric foundation model depths while explicitly accounting for depth uncertainty.",
+      "llm_tldr_cn": "单目SLAM存在固有的尺度模糊，深度几何基础模型可辅助但深度图噪声大且帧间尺度不一致。本文提出Scalix，构建实时单目SLAM框架，在显式建模深度不确定性的同时融合几何基础模型深度，恢复度量尺度并保持尺度一致。该工作使纯视觉单目系统在机器人导航中具备更可靠的定位与建图能力，克服经典尺度漂移问题。",
+      "llm_tldr": "单目SLAM存在固有的尺度模糊，深度几何基础模型可辅助但深度图噪声大且帧间尺度不一致。本文提出Scalix，构建实时单目SLAM框架，在显式建模深度不确定性的同时融合几何基础模型深度，恢复度量尺度并保持尺度一致。该工作使纯视觉单目系统在机器人导航中具备更可靠的定位与建图能力，克服经典尺度漂移问题。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.17874v1",
+      "source": "arxiv",
+      "title": "Jetson-ORB-SLAM3: Accuracy-Preserving GPU Implementation for Edge Computing Devices",
+      "abstract": "Visual-inertial SLAM on low-power edge platforms is constrained by the cost of dense feature extraction and loop closure. Prior GPU ports of ORB-SLAM trade accuracy for speed by approximating the ORB detector, altering the feature set and therefore the estimated trajectory. We present an accuracy-preserving GPU implementation of ORB-SLAM3 for the NVIDIA Jetson Orin Nano, whose GPU ORB front end reproduces the reference CPU detector algorithmically to 94.7% exact keypoint agreement and 99.9% descriptor bit agreement. This work also makes CNN-based loop closure edge-viable through native TensorRT. The visual front end (feature extraction) is offloaded to the GPU while the mapping and optimization back end is kept on the CPU, matching each computation to the hardware it suits. The accuracy is verified by comparing four configurations: the GPU pipeline and the unmodified CPU reference, each run on both the Jetson Orin Nano and a desktop. On EuRoC dataset, all four agree to within 0.10cm in mean absolute trajectory error (SE(3)), so neither the GPU port nor the change of hardware shifts the estimated trajectory. The GPU-versus-CPU comparison is reproducible on TUM-VI and KITTI datasets, so the acceleration is accuracy-preserving rather than approximate. The proposed implementation is competitive with published ORB-SLAM3 on EuRoC, attains sub-centimeter accuracy on five of the six TUM-VI room sequences, and reaches sub-1% relative translation error on nine of eleven KITTI sequences. For loop closure, the generic ONNX-Runtime CUDA/TensorRT execution providers are unusable with our CosPlace ResNet-50 on the embedded platform, whereas a native libnvinfer FP16 engine reduces per-query inference to 2.2ms, a 180x speedup. Learned place recognition therefore runs concurrently with tracking on a 7W device. In monocular-inertial mode the system sustains 32FPS mean over the eleven EuRoC sequences.",
+      "authors": [
+        "Rajat Roy",
+        "Aditya Arun Kumar Yadav",
+        "Hardik Jain"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-18T15:07:37+00:00",
+      "link": "https://arxiv.org/pdf/2608.17874v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Visual-inertial SLAM with GPU ORB front end and CNN-based loop closure on edge devices",
+      "llm_evidence_cn": "面向边缘设备的视觉惯性SLAM，GPU ORB前端与CNN闭环",
+      "llm_evidence": "面向边缘设备的视觉惯性SLAM，GPU ORB前端与CNN闭环",
+      "canonical_evidence": "面向边缘设备的视觉惯性SLAM，GPU ORB前端与CNN闭环",
+      "llm_tldr_en": "Presents an accuracy-preserving GPU implementation of ORB-SLAM3 for Jetson Orin Nano, reproducing the CPU ORB detector to 94.7% keypoint agreement and enabling CNN-based loop closure via TensorRT.",
+      "llm_tldr_cn": "针对低功耗边缘平台上视觉惯性SLAM受稠密特征提取与闭环检测算力限制的问题，提出Jetson-ORB-SLAM3：在Jetson Orin Nano上以GPU实现ORB前端，算法级复现CPU检测器，达到94.7%关键点一致率和99.9%描述子位一致率，并通过TensorRT使CNN闭环检测在边缘可用。实验表明该实现在保持轨迹精度的同时加速特征提取，为边缘设备提供高性能SLAM方案。",
+      "llm_tldr": "针对低功耗边缘平台上视觉惯性SLAM受稠密特征提取与闭环检测算力限制的问题，提出Jetson-ORB-SLAM3：在Jetson Orin Nano上以GPU实现ORB前端，算法级复现CPU检测器，达到94.7%关键点一致率和99.9%描述子位一致率，并通过TensorRT使CNN闭环检测在边缘可用。实验表明该实现在保持轨迹精度的同时加速特征提取，为边缘设备提供高性能SLAM方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.17033v1",
+      "source": "arxiv",
+      "title": "YILDIZ-VPR: A Novel Dataset with Dense Coverage Under Diverse Environmental Conditions for Visual Place Recognition",
+      "abstract": "Visual Place Recognition (VPR) aims to recognize the location of a query image by comparing it with a set of geo-referenced images. Although many datasets have been proposed for VPR, collecting dense and diverse visual data from pedestrian-level viewpoints is still an important need. In this paper, we introduce YILDIZ-VPR, a visual geo-localization dataset collected through repeated walking traversals on the Davutpasa campus of Yildiz Technical University. The dataset includes outdoor scenes captured at different times of day, seasons, and weather conditions. It contains a wide range of visual content, including historical buildings, modern structures, roads, green areas, and wooded regions. Each video was recorded with a GoPro 9 camera and synchronized with GPS sensor data to provide location labels for the extracted frames. In addition to GPS coordinates, the dataset also includes auxiliary sensor information such as gyroscope, speed, and temperature data. With its dense coverage and long-term visual variability, YILDIZ-VPR provides a useful resource for studying image-based and temporal visual place recognition under realistic outdoor conditions.",
+      "authors": [
+        "Serdar Yildiz",
+        "Abbas Memiş",
+        "Songül Varli"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-08-17T18:30:23+00:00",
+      "link": "https://arxiv.org/pdf/2608.17033v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "dense diverse visual place recognition dataset directly supports loop closure detection research",
+      "llm_evidence_cn": "密集多样的视觉地点识别数据集，直接支持闭环检测研究",
+      "llm_evidence": "密集多样的视觉地点识别数据集，直接支持闭环检测研究",
+      "canonical_evidence": "密集多样的视觉地点识别数据集，直接支持闭环检测研究",
+      "llm_tldr_en": "Introduces YILDIZ-VPR, a visual geo-localization dataset with dense pedestrian-level traversals under diverse times, seasons, and weather, enabling robust VPR evaluation.",
+      "llm_tldr_cn": "该文针对视觉地点识别中行人视角密集且环境多样数据缺乏的问题，构建YILDIZ-VPR数据集。数据通过多次校园步行遍历采集，覆盖不同时刻、季节与天气条件，包含建筑、道路和绿地等多样内容。该数据集可直接用于评测和训练视觉地点识别与SLAM闭环检测算法，为相关研究提供重要基准。",
+      "llm_tldr": "该文针对视觉地点识别中行人视角密集且环境多样数据缺乏的问题，构建YILDIZ-VPR数据集。数据通过多次校园步行遍历采集，覆盖不同时刻、季节与天气条件，包含建筑、道路和绿地等多样内容。该数据集可直接用于评测和训练视觉地点识别与SLAM闭环检测算法，为相关研究提供重要基准。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "loop closure detection techniques to correct drift in SLAM systems",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.17283v1",
+      "source": "arxiv",
+      "title": "UniQuery4R: Unified 4D Scene Reconstruction from a Single Query",
+      "abstract": "Reconstructing dynamic 4D scenes requires jointly estimating correspondence, geometry, object motion, and camera motion. Existing feed-forward methods typically predict dense task-specific maps or independently process source-target pairs, leading to unnecessary computation for sparse queries and limited feature reuse across different frame pairs. We present UniQuery4R, a query-conditioned framework that encodes a multi-frame clip once and selects the source view, target view, and continuous source-image coordinate only at decoding time via source-to-target cross-attention. Each query jointly predicts target correspondence, target-time 3D position, and scene flow, along with source depth, while camera parameters are estimated per view. This design allows the encoded clip to be reused across arbitrary source-target selections and supports both sparse inference and dense reconstruction through batched queries, without learned temporal embeddings tied to a fixed clip length. We further introduce a direction-magnitude parameterization of scene flow with separate supervision for moving and static points. Among the evaluated methods, UniQuery4R achieves the best macro-average results on WorldTrack for both scene-flow estimation and dynamic-point reconstruction.",
+      "authors": [
+        "Tiancheng Chen",
+        "Sheng Tang",
+        "Wenhua Jin",
+        "Weiqi Zhang",
+        "Juntong Fang",
+        "Junsheng Zhou",
+        "Zesong Li"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-18T02:26:38+00:00",
+      "link": "https://arxiv.org/pdf/2608.17283v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Unified 4D scene reconstruction estimating camera motion and geometry",
+      "llm_evidence_cn": "统一4D场景重建，联合估计相机运动与几何结构",
+      "llm_evidence": "统一4D场景重建，联合估计相机运动与几何结构",
+      "canonical_evidence": "统一4D场景重建，联合估计相机运动与几何结构",
+      "llm_tldr_en": "UniQuery4R encodes a multi-frame clip once and uses query-conditioned cross-attention to jointly predict correspondence, 3D position, scene flow, and depth, enabling efficient dense 4D reconstruction.",
+      "llm_tldr_cn": "现有前馈方法往往独立处理源-目标帧对，导致稀疏查询时计算量大且特征复用有限。UniQuery4R提出一种查询条件化框架，仅编码一次多帧片段，在解码时通过源-目标交叉注意力联合预测对应点、目标时刻3D位置、场景流和源深度，并逐视图估计相机参数。该方法减少了冗余计算，同时实现了有效的跨帧特征复用，为动态场景的统一4D重建提供了高效方案。",
+      "llm_tldr": "现有前馈方法往往独立处理源-目标帧对，导致稀疏查询时计算量大且特征复用有限。UniQuery4R提出一种查询条件化框架，仅编码一次多帧片段，在解码时通过源-目标交叉注意力联合预测对应点、目标时刻3D位置、场景流和源深度，并逐视图估计相机参数。该方法减少了冗余计算，同时实现了有效的跨帧特征复用，为动态场景的统一4D重建提供了高效方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2608.16863v1",
+      "source": "arxiv",
+      "title": "SplatGuide: Geometric Priors from 3D Gaussians for Pose-Free Novel View Synthesis",
+      "abstract": "Generating photorealistic novel views from unposed images requires both 3D geometric understanding and the ability to synthesize unseen content. A natural strategy combines feed-forward 3DGS reconstruction with multi-view diffusion. Yet prior pipelines extract at most one signal from the reconstruction, either pixel rendering or learned features, while none exploits per-Gaussian visibility for occlusion-aware reference selection. This *information disconnect* leaves renderable geometry, visibility cues, and learned features unused. SplatGuide closes this disconnect by reusing a single 3DGS scene across three complementary roles. Rendered images provide pixel-aligned geometric conditioning. Per-Gaussian source-view indices are rendered into a target-view voting map for occlusion-aware reference selection. Reconstruction tokens supply feature-level guidance via cross-attention. All three signals derive from the same reconstruction forward pass. Across RealEstate10K, DL3DV, Tanks-and-Temples, and Mip-NeRF 360, SplatGuide achieves state-of-the-art pose-free novel view synthesis. On RealEstate10K, with a moderate number of input views, it surpasses the ground-truth-pose baseline.",
+      "authors": [
+        "Yejun Zhang",
+        "Zihan Wang",
+        "Xu Ji",
+        "Yihao Wang",
+        "Yuxin Hou",
+        "Junyuan Fang",
+        "Juho-Matti Kilpeläinen",
+        "Arno Solin",
+        "Hamed Rezazadegan Tavakoli",
+        "Esa Rahtu",
+        "Juho Kannala"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-17T17:45:57+00:00",
+      "link": "https://arxiv.org/pdf/2608.16863v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Pose-free novel view synthesis leveraging 3D Gaussian geometric priors for occlusion-aware reference selection",
+      "llm_evidence_cn": "利用3D高斯几何先验进行无位姿新视角合成，实现遮挡感知参考选择",
+      "llm_evidence": "利用3D高斯几何先验进行无位姿新视角合成，实现遮挡感知参考选择",
+      "canonical_evidence": "利用3D高斯几何先验进行无位姿新视角合成，实现遮挡感知参考选择",
+      "llm_tldr_en": "Introduces SplatGuide, which reuses a single 3DGS scene for rendered images, per-Gaussian visibility, and learned features to guide pose-free novel view synthesis, improving occlusion-aware reference selection.",
+      "llm_tldr_cn": "针对无位姿图像新视角合成中信息利用不足的问题，提出SplatGuide，复用单个3D高斯场景作为三重几何条件：渲染图像提供像素对齐几何约束，逐高斯源视角索引提供可见性线索，学习特征增强合成能力。该策略补全了以往管线忽略的可见性与几何线索，在无位姿新视角合成任务上提升了合成质量与遮挡处理能力，在多个公开基准上优于现有方法，为3D场景重建和视图合成提供了新的方法论。",
+      "llm_tldr": "针对无位姿图像新视角合成中信息利用不足的问题，提出SplatGuide，复用单个3D高斯场景作为三重几何条件：渲染图像提供像素对齐几何约束，逐高斯源视角索引提供可见性线索，学习特征增强合成能力。该策略补全了以往管线忽略的可见性与几何线索，在无位姿新视角合成任务上提升了合成质量与遮挡处理能力，在多个公开基准上优于现有方法，为3D场景重建和视图合成提供了新的方法论。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.14160v1",
+      "source": "arxiv",
+      "title": "OccPlanner: Goal-Aware Occupancy-Conditioned Diffusion Planner for Pixel-Goal Navigation",
+      "abstract": "Pixel-goal navigation specifies targets directly in the agent's camera view, but a target pixel provides neither metric depth nor traversability, making 3D goal grounding and collision-free continuous planning challenging. We present OccPlanner, a goal-aware occupancy-conditioned diffusion planner that grounds pixel goals in egocentric metric space and sequentially conditions the goal representation on temporal visual context and learned local 3D occupancy features. To provide occupancy supervision at scale, we introduce L3ROcc, which converts monocular RGB navigation videos into robot-centric local 3D occupancy annotations through geometric reconstruction and ray-based visibility reasoning. We train OccPlanner on InternData-N1 and evaluate it in closed-loop simulation across four unseen scene categories from InternScenes and two goal-distance ranges. In the 5-8 m setting, OccPlanner increases the average success rate (SR) over NavDP from 20.81% to 71.55% across the four categories, reaching 86.20% and 84.92% in cluttered-easy and cluttered-hard scenes, respectively. Real-world open-loop experiments on a Unitree Go2 further provide initial evidence of sim-to-real transfer and adaptation with L3ROcc-generated supervision.",
+      "authors": [
+        "Binling Huang",
+        "Nianjin Ye",
+        "Xi Yang",
+        "Liang Hu",
+        "Zhou Huang",
+        "Shuang Wei",
+        "Longrui Yang",
+        "Yanchi Chen",
+        "Lanpeng Jia"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-14T10:15:07+00:00",
+      "link": "https://arxiv.org/pdf/2608.14160v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Occupancy-conditioned diffusion planner with learned 3D occupancy reconstruction from RGB videos",
+      "llm_evidence_cn": "基于占用条件扩散的规划器，从RGB视频学习局部3D占用特征",
+      "llm_evidence": "基于占用条件扩散的规划器，从RGB视频学习局部3D占用特征",
+      "canonical_evidence": "基于占用条件扩散的规划器，从RGB视频学习局部3D占用特征",
+      "llm_tldr_en": "OccPlanner grounds pixel goals in egocentric metric space using learned local 3D occupancy from monocular RGB videos, enabling collision-free continuous planning and introducing L3ROcc for scalable occupancy supervision.",
+      "llm_tldr_cn": "像素目标导航中单个目标像素缺乏深度与可通行性信息，导致3D目标定位和碰撞避免困难。OccPlanner提出目标感知的占用条件扩散规划器，在自我中心度量空间中定位像素目标，并利用从单目RGB视频重建的局部3D占用特征进行连续规划。为了提供大规模监督，还提出了L3ROcc，通过几何重建和射线可见性推理将导航视频转换为机器人中心的局部3D占用标注。实验表明该方法能有效提升像素目标导航的规划性能。",
+      "llm_tldr": "像素目标导航中单个目标像素缺乏深度与可通行性信息，导致3D目标定位和碰撞避免困难。OccPlanner提出目标感知的占用条件扩散规划器，在自我中心度量空间中定位像素目标，并利用从单目RGB视频重建的局部3D占用特征进行连续规划。为了提供大规模监督，还提出了L3ROcc，通过几何重建和射线可见性推理将导航视频转换为机器人中心的局部3D占用标注。实验表明该方法能有效提升像素目标导航的规划性能。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.17535v1",
+      "source": "arxiv",
+      "title": "GroupForward: Building Referable 3D Scenes via Instance-Grouped Feed-Forward Gaussian Splatting",
+      "abstract": "Simultaneously reconstructing and understanding 3D environments is essential for embodied agents. Toward this goal, feed-forward semantic 3D Gaussian Splatting (3DGS) efficiently constructs semantic scene representations from sparse multi-view observations. However, existing methods lack explicit instance discrimination and mainly support category- or phrase-based semantic queries. To this end, we propose GroupForward, an instance-grouped feed-forward Gaussian splatting model that reconstructs geometry, appearance, instance structure, and semantics from sparse, unposed, and uncalibrated multi-view images. Unlike existing methods that attach high-dimensional semantic features to each Gaussian, GroupForward learns compact instance embeddings that group Gaussians into cross-view consistent 3D instances, reformulating feed-forward semantic 3DGS from per-Gaussian semantic feature rendering to instance-level semantic aggregation and propagation. Building on these instance groups, we further propose a Referential Scene Reasoning Framework (RSRF) for complex 3D referring segmentation. RSRF constructs an instance-grouped 3D scene graph and retrieves candidate instances for a given referring expression. A vision-language model then reasons over structured instance evidence and multi-view observations to identify the referred instance among the candidates. RSRF thereby extends language interaction from simple semantic querying to complex referential scene reasoning. Experiments on semantic reconstruction and referential reasoning demonstrate the effectiveness of our instance-grouped reconstruction and reasoning framework.",
+      "authors": [
+        "Qijian Tian",
+        "Zimeng Wu",
+        "Xuhong Wang",
+        "Lizhuang Ma",
+        "Xin Tan"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-18T08:55:52+00:00",
+      "link": "https://arxiv.org/pdf/2608.17535v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Feed-forward semantic 3D Gaussian splatting reconstructs geometry, appearance, instance structure from sparse multi-view images",
+      "llm_evidence_cn": "前馈语义3D高斯泼溅从稀疏多视图重建三维场景与实例结构",
+      "llm_evidence": "前馈语义3D高斯泼溅从稀疏多视图重建三维场景与实例结构",
+      "canonical_evidence": "前馈语义3D高斯泼溅从稀疏多视图重建三维场景与实例结构",
+      "llm_tldr_en": "GroupForward reconstructs geometry, appearance, instance structure, and semantics from sparse unposed multi-view images via instance-grouped feed-forward Gaussian splatting, enabling referable 3D scenes beyond category-level queries.",
+      "llm_tldr_cn": "面向具身智能体对3D场景重建与理解的需求，现有前馈语义3DGS缺少显式实例区分，仅支持类别或短语查询。GroupForward提出实例分组的前馈高斯泼溅模型，从稀疏、无位姿、未标定多视图图像中联合重建几何、外观、实例结构与语义，学习紧凑实例表示以支持更细粒度的可指代查询。实验证明其重建质量与实例语义能力优于基线，为实体场景感知提供新方法。",
+      "llm_tldr": "面向具身智能体对3D场景重建与理解的需求，现有前馈语义3DGS缺少显式实例区分，仅支持类别或短语查询。GroupForward提出实例分组的前馈高斯泼溅模型，从稀疏、无位姿、未标定多视图图像中联合重建几何、外观、实例结构与语义，学习紧凑实例表示以支持更细粒度的可指代查询。实验证明其重建质量与实例语义能力优于基线，为实体场景感知提供新方法。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.17633v1",
+      "source": "arxiv",
+      "title": "OVIP-SG: Open-Vocabulary Instance-Preserving Scene Graphs for Mapping and Retrieval of Small, Fine-Grained Objects",
+      "abstract": "Integrating open-vocabulary perception into object-level 3D scene graphs is a double-edged sword. While vision-language detectors recover long-tail categories and small, fine-grained objects overlooked by closed-set models, they also tend to fragment large surfaces and merge small objects into larger neighboring objects, compromising instance-level consistency and undermining mapping fidelity. Moreover, existing methods struggle to retrieve previously unmapped targets or determine whether a queried object is absent, hindering robust embodied open-world navigation and exploration. We present OVIP-SG, a unified framework for instance-preserving semantic mapping, functional scene partitioning, and language-guided small, fine-grained object retrieval. OVIP-SG uses a vision-language model (VLM) to enumerate scene-specific categories for robust open-world detection. Symmetric 3D Intersection over Union (IoU) association and area-weighted feature fusion preserve small independent instances, while VLM-inferred object functions partition scenes into compact functional search regions. A four-stage cascaded retrieval pipeline further incorporates voxel voting and determines target absence from exploration coverage. Under a unified evaluation protocol on Replica, OVIP-SG outperforms ConceptGraphs by 6.31 points in class-mean accuracy (mAcc) and 5.15 points in frequency-weighted mIoU (F-mIoU) while achieving a class-agnostic native-instance Panoptic Quality (PQ) of 0.398. It reduces the search area to 21.8% of the indoor floor space and reaches 0.773 balanced accuracy for object-presence classification. Real-world robotic experiments further demonstrate its practical effectiveness.",
+      "authors": [
+        "Tianjing Hao",
+        "Haiyu Lan",
+        "Angsong Li",
+        "Cheng Chen",
+        "Enyu Li",
+        "Jiarui Yang",
+        "Yuning Su",
+        "Peiwen Lin",
+        "Wang Chuang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-18T10:53:50+00:00",
+      "link": "https://arxiv.org/pdf/2608.17633v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Builds instance-preserving 3D scene graph maps for robotic mapping and retrieval",
+      "llm_evidence_cn": "构建保持实例一致性的3D场景图地图，支持机器人制图与检索",
+      "llm_evidence": "构建保持实例一致性的3D场景图地图，支持机器人制图与检索",
+      "canonical_evidence": "构建保持实例一致性的3D场景图地图，支持机器人制图与检索",
+      "llm_tldr_en": "Presents an open-vocabulary instance-preserving scene graph framework for mapping and retrieval of small objects, preventing instance fragmentation and merging while enabling language-guided retrieval for embodied navigation.",
+      "llm_tldr_cn": "针对开放词汇感知在构建3D场景图时常导致表面碎片化、小物体被合并的问题，提出OVIP-SG统一框架，在语义建图中保持实例一致性，并实现功能性场景划分与语言引导检索。该方法可有效提升小尺度细粒度物体的建图保真度，并支持检索未映射目标或判断目标是否存在，增强了具身智能体的开放世界导航与探索能力。",
+      "llm_tldr": "针对开放词汇感知在构建3D场景图时常导致表面碎片化、小物体被合并的问题，提出OVIP-SG统一框架，在语义建图中保持实例一致性，并实现功能性场景划分与语言引导检索。该方法可有效提升小尺度细粒度物体的建图保真度，并支持检索未映射目标或判断目标是否存在，增强了具身智能体的开放世界导航与探索能力。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}

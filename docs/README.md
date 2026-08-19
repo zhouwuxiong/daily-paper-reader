@@ -41,17 +41,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-08-18</span>
+      <span class="dpr-home-dashboard-kicker">2026-08-19</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 12 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 9 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
     <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>6</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>5</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>4</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-08-18 19:25:58 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-08-19 19:42:27 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,9 +62,7 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日共读12篇论文，精读6篇、速读6篇，聚焦三维视觉与LiDAR感知前沿。</p>
-<p>最值得关注的是几何感知的3D高斯溅射SLAM（满分10）与自适应混合ICP的HP2-SLAM（9分），两者分别推动稠密建图与LiDAR配准的鲁棒性提升。</p>
-<p>建议普通读者优先浏览精读两篇的摘要与图表，快速把握当前SLAM领域对几何感知和高效配准的核心诉求。</p>
+<p>今日精读9篇，聚焦长序列3D重建与尺度一致SLAM双高分解读。最值得看《GeoWeaver》的层级几何装配与《Scalix》的不确定性感知尺度一致方案，均为9.0分。建议普通读者优先关注3D重建的效率提升与SLAM鲁棒性场景应用。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -73,12 +71,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">6 篇</strong>
+    <strong class="dpr-home-dashboard-count">5 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Geometry-Aware Online Mapping for 3D Gaussian Splatting SLAM">Geometry-Aware Online Mapping for 3D Gaussian Splatting SLAM</span></li><li><span class="dpr-home-dashboard-paper-title" title="HP2-SLAM: Adaptive Hybrid ICP for Robust and Efficient LiDAR SLAM">HP2-SLAM: Adaptive Hybrid ICP for Robust and Efficient LiDAR SLAM</span></li><li><span class="dpr-home-dashboard-paper-title" title="MotionGS-SLAM: Event-Modulated Gaussian Splatting for Motion-Blur Robust SLAM">MotionGS-SLAM: Event-Modulated Gaussian Splatting for Motion-Blur Robust SLAM</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="GeoWeaver: Accurate Long-Sequence 3D Reconstruction via Hierarchical Geometric Assembly">GeoWeaver: Accurate Long-Sequence 3D Reconstruction via Hierarchical Geometric Assembly</span></li><li><span class="dpr-home-dashboard-paper-title" title="Scalix: Uncertainty-Aware Scale-Consistent Monocular SLAM">Scalix: Uncertainty-Aware Scale-Consistent Monocular SLAM</span></li><li><span class="dpr-home-dashboard-paper-title" title="Jetson-ORB-SLAM3: Accuracy-Preserving GPU Implementation for Edge Computing Devices">Jetson-ORB-SLAM3: Accuracy-Preserving GPU Implementation for Edge Computing Devices</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>6</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>5</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -86,12 +84,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">速读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">6 篇</strong>
+    <strong class="dpr-home-dashboard-count">4 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Embodied Multimodal Grounding for Open-Vocabulary Mobile Manipulation via Semantic 3D Gaussian Splatting">Embodied Multimodal Grounding for Open-Vocabulary Mobile Manipulation via Semantic 3D Gaussian Splatting</span></li><li><span class="dpr-home-dashboard-paper-title" title="Target Localization and Self-Calibration in a Multistatic Radar System">Target Localization and Self-Calibration in a Multistatic Radar System</span></li><li><span class="dpr-home-dashboard-paper-title" title="Towards Real-Time and Adaptable LiDAR Scene Completion">Towards Real-Time and Adaptable LiDAR Scene Completion</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="SplatGuide: Geometric Priors from 3D Gaussians for Pose-Free Novel View Synthesis">SplatGuide: Geometric Priors from 3D Gaussians for Pose-Free Novel View Synthesis</span></li><li><span class="dpr-home-dashboard-paper-title" title="GroupForward: Building Referable 3D Scenes via Instance-Grouped Feed-Forward Gaussian Splatting">GroupForward: Building Referable 3D Scenes via Instance-Grouped Feed-Forward Gaussian Splatting</span></li><li><span class="dpr-home-dashboard-paper-title" title="OccPlanner: Goal-Aware Occupancy-Conditioned Diffusion Planner for Pixel-Goal Navigation">OccPlanner: Goal-Aware Occupancy-Conditioned Diffusion Planner for Pixel-Goal Navigation</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>6</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>4</strong></span></div>
 </section>
 </div>
 

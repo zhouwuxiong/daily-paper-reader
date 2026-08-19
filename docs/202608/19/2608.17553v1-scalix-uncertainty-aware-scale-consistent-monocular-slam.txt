@@ -1,0 +1,687 @@
+Title: Scalix: Uncertainty-Aware Scale-Consistent Monocular SLAM
+
+URL Source: https://arxiv.org/pdf/2608.17553v1
+
+Published Time: Wed, 19 Aug 2026 00:44:46 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+This work has been submitted to the IEEE for possible publication. Copyright may be transferred without notice, after which this version may no longer be accessible. 
+
+# Scalix: Uncertainty-Aware Scale-Consistent Monocular SLAM 
+
+Sebastian Barbas Laina*, Tianyi Zhang*, Panagiotis Petropoulakis, Simon Schaefer, Simon Boche, Jaehyung Jung, Cedric Le Gentil, Stefan Leutenegger 
+
+Abstract —Cameras are ubiquitous sensors in robotics due to their compact form factor and the perceptual richness captured through visual information. Monocular SLAM enables robots to understand the environment with a minimum setup, however, it inherently suffers from scale ambiguity. A common solution is to provide multi-modal sensor configurations, such as visual–inertial systems, where scale is observable unless the robot navigates under a constant-velocity motion, a common scenario in mobile robotics. With the advent of deep-learning, geometric foundation models have been used to address this problem, but the depths maps are often noisy and scale-inconsistent across frames. In this paper, we propose Scalix, a real-time monocular SLAM frame-work that achieves metric-scale state estimation by integrating learned depth cues into a probabilistic factor-graph formulation. By augmenting existing monocular depth models with both per-pixel depth uncertainty and per-frame scale uncertainty, Scalix treats scale predictions as independent measurements within its optimization, leading to improved scale consistency through multi-view data associations. Experiments in large-scale outdoor and indoor environments demonstrate state-of-the-art performance on both metric and up-to-scale benchmarks while maintaining real-time operation and generalization. The code will be released upon acceptance. 
+
+I. I NTRODUCTION 
+
+Simultaneous Localisation And Mapping (SLAM) is at the core of many robotic applications, such as scene understanding and 3D reconstruction. Cameras have become the sensor of choice due to their low cost and ability to capture rich texture information of the environment. Nonetheless, a single camera is scale-ambiguous, making it unable to recover the metric or absolute scale of the environment. Multi-camera or multi-modal sensor configurations [1], [2], [3], [4] can address this problem, but require accurate extrinsic calibration, which is time-consuming and error-prone. Additionally, the form-factor of certian embodiments (e.g. small unnmaned aerial vehicles) only allows for monocular-inertial configurations, where the IMU becomes the only source of scale informa-tion. Nonetheless, the scales becomes non-observable under constant-velocity motions, motivating the need of metric-scale monocular SLAM for improved robustness. At the same time, monocular SLAM enables state estimation from casual online videos, thereby producing metric-scale annotated data required by downstream robot learning tasks [5], [6]. Pioneered by traditional pipelines such as [1], [7], recent monocular SLAM works have achieved impressive results by using learnt priors such as: monocular depth [8], [9], dense optical flow [10], [11], and multi-view geometry [12], [13], [14], [15]. However, these methods are limited by the scale Sparse Landmarks & Trajectory 
+
+Metric-scale Trajectory Back-projected Depth Maps & Trajectory 
+
+Fig. 1. Scalix on a Large-scale Sequence [16]. Scalix achieves accurate, metric-scale trajectory estimation on challenging scenes. The main figure shows the estimated trajectory (colored by time), the sparse landmarks (upper-right diagonal) and the dense back-projected depth maps scaled using the optimized scale factors (lower-left diagonal). In the lower-left corner, we directly align the trajectory to the map via SE(3) alignment. 
+
+inconsistencies of the learned models, causing scale drift or impeding metric-scale estimation. In this paper, we present Scalix, a monocular SLAM system that tightly couples visual data with learned scale and depth priors, enhancing scale consistency in the estimation process. By incorporating a scale into a factor-graph formulation, Scalix diminishes the scale ambiguities between consecutive frames via multi-view data associations, improving the overall estimated trajectory. This is done in a fully probabilistic fash-ion by learning the uncertainties from the latent representations of foundation monocular depth models. It allows the method to be deployed in a zero-shot fashion in different scenarios, including large-scale environments as illustrated in Fig. 1. The main contributions of this paper are:  
+
+> •
+
+A novel state-estimation backend parameterization that treats the depth image’s scales as optimized variables constrained by multi-view data association and unary priors in a factor-graph framework with marginalization for efficient real-time performance on CPU.  
+
+> •
+
+A metric depth decoupling formulation that models the per-frame scale error for depth-from-monocular founda-tion models, enabling the prediction of both the per-arXiv:2608.17553v1 [cs.RO] 18 Aug 2026 pixel depth uncertainty and scale uncertainty based on the latent representation of existing models.  
+
+> •
+
+The integration of the previous concepts into Scalix, a real-time metric-scale monocular SLAM method that achieves state-of-the-art results. II. R ELATED WORK 
+
+A. Monocular Visual SLAM 
+
+Monocular visual SLAM addresses the problem of recover-ing camera trajectory and scene structure using a single freely moving camera as the sole data source. Classic methods [17], [18], [19], [1], [20], [21] achieve this by minimizing image observation errors, including photometric errors, landmark reprojection errors, or a combination of both. Subsequent approaches [10], [11] introduce learning-based features to improve matching quality, such as dense optical flow or deep patches, further enhancing robustness and overall performance. To achieve real-time performance and keep the optimiza-tion problem bounded, most methods adopt sliding window bundle adjustment. However, relying exclusively on image observations, monocular visual SLAM systems suffer from scale ambiguity, making absolute metric scale unobservable. In addition to the global scale ambiguity, scale drift accumulates over large-scale trajectories, further limiting the applicability of monocular SLAM systems in real-world scenarios. 
+
+B. Monocular SLAM with Depth Priors 
+
+Recent developments in monocular metric depth prediction [22], [23], [24], [25], [26] have enabled models to predict dense 3D depth in real-world metrics from a single RGB image by inherently capturing semantic information and incorpo-rating camera intrinsics, demonstrating generalization ability across domains. While monocular metric depth prediction provides valuable depth priors for monocular SLAM, temporal inconsistency across frames limits its direct applicability. To address this issue, several SLAM pipelines [27], [28], [9] leverage monocular depth priors for initialization and couple depth errors with image observation errors in bundle adjust-ment to improve geometric consistency and trajectory quality. However, these dense methods rely on either computationally expensive dense bundle adjustment or iterative optimization, sacrificing real-time performance. With the rise of generic transformer architectures [29], [30], recent 3D foundation models [31], [32], [33] have demon-strated the ability to directly regress more consistent 3D point maps, poses, and camera parameters by jointly processing multiple images in an end-to-end manner. Following this direction, feedforward SLAM methods [12], [34], [13], [15], [35], [14], [36], [37] extend these ideas to sequential input. Several works utilize 3D foundation models in the frontend, either by leveraging correspondences [12] or employing frame chunks and local submaps [15], [35], [14], followed by a classic optimization backend. However, these methods still suffer from scale drift between chunks, and some require a full chunk upfront rather than processing frames sequentially, preventing them from being fully streamable. Another line of work, such as Spann3R [34], CUT3R [13], and subsequent methods [36], [37], addresses this limitation by maintaining an internal implicit memory through attention mechanisms. However, these approaches suffer from forgetting issues, ex-perience scale drift in long-term scenarios, and their GPU requirements make them difficult to deploy in onboard or resource-constrained applications. III. N OTATION AND OVERVIEW 
+
+Scalix proposes a tightly coupled, scale-aware monocular SLAM system that addresses scale inconsistencies by incor-porating the depth and scale measurements from a monocular depth model. We propose a learning formulation that jointly models and trains the scale and depth uncertainties of a foundation depth network (Section IV), allowing the scale to be used as a measurement that can be explicitly modeled as an optimizable variable by our SLAM pipeline, presented in Fig. 2. For convenience, we first define the notations used here. In the monocular visual SLAM problem, a moving camera is tracked with respect to a fixed world reference frame F−→W .We denote the camera coordinate frame by F−→C . The rigid body transformation T AB ∈ SE (3) transforms homogeneous points between two frames: ArP = T AB B rP , where ArP is the position of a point P in frame F−→A. The rotational part of 
+
+T AB is expressed by CAB ∈ SO (3) and ArB ∈ R3 denotes the translation component. We also denote the rotation CAB 
+
+with its unit quaternion form qAB . The covariance matrix of a variable a is represented as Σa. In Scalix, each new image at time step k is associated with a state, represented as: 
+
+x = W r⊤ 
+
+> C
+
+, qW C ⊤, W v⊤, s ⊤ , (1) where W rC , qW C and W v denote the position, orientation, and velocity of the camera in F−→W , and s is the estimated depth scale factor. IV. M ETRIC DEPTH DECOUPLING 
+
+A. Formulation 
+
+Our monocular metric depth network takes a single image 
+
+I as input to obtain geometrically plausible depth maps. Rather than purely local pixel-wise noise, the dominant failure mode often manifests as inaccurate global scale prediction and scale drift with respect to real-world geometry. To better characterize this behavior, we reformulate the relationship between the predicted depth d and the true metric depth dm
+
+through a metric depth decoupling formulation: 
+
+dm = s d, (2) where s is a global depth scale factor for each image. Under the assumption of a metric depth prediction model that gives depths close to the true metric values, we assume that the scale follows a normal distribution s ∼ N (˜ s, Σs ) with mean 
+
+˜s = 1 and variance Σs = σ2 
+
+> s
+
+. Apart from the global scale uncertainty, the depth prediction also exhibits pixel-wise independent uncertainty. We assume that the unscaled depth d follows a normal distribution d ∼ N (˜ d, Σd ), with a predicted mean depth ˜d and a variance Σd = diag( σ2 
+
+> d
+
+),where both σd and ˜d denote the vectorized per-pixel values. Depth Network 𝐼 !      
+
+> New State Initialization
+> 𝑇 !
+> Depth Uncertainty
+> Scale Uncertainty
+> Motion Stereo Triangulation
+> 𝑇 !
+> 𝑇 !"#
+> New State Initialization Keypoint Matching Motion Stereo Triangulation Place Recognition Re-localization & Loop-closure Init. Factor Graph Optimization
+> Scale Error
+> ||𝑠̃ − 𝑠|| $!
+> %
+> Reprojection Error Unscaled Depth Error
+> ||𝑑 ( − 𝑑 𝑠 || $"
+> %
+> Pose Graph Error
+> Factor Graph Optimization Pose Graph Construction Fixation of Old States Reviving Observations Fixation to Start of Loop Async. Optimization
+> Frontend
+> Real-time Estimator Full Graph Estimator
+> Depth Scale Uncertainty Depth Uncertainty
+> Monocular Depth Estimator
+> Active Scale Current 2D keypoints Current 3D points Back-projected depth points Keyframe camera Non-keyframe camera Scale uncertainty Depth uncertainty
+
+Fig. 2. Scalix System Overview. Our method builds upon OKVIS2 [2], a classical SLAM architecture comprising a frontend and a backend. Components with pink background indicate our key contributions. Each keyframe is associated with an additional scale state and we use an enhanced monocular depth model to obtain depth and scale measurements. In the frontend, landmark positions are initialized using the predicted depth and scale and the backend adds depth and scale error terms into the factor graph optimization. The pose graph is extended to account for the scale in the marginalization process. 
+
+This probabilistic decoupling formulation enables subsequent optimization within a unified probabilistic framework that eliminates the need for iterative scale alignment between frames or submaps during graph optimization. 
+
+B. Decoupled Prediction in Monocular Depth Model 
+
+In most metric depth prediction networks, only depth and pixel-wise independent confidence are provided, and the global depth scale is assumed to be 1. To predict both the global scale uncertainty and the independent depth uncertainty described above, we augment a base monocular depth model with an uncertainty decoder head and adopt a probabilistic loss for learning aleatoric uncertainty. As shown in Fig. 3, we define two uncertainty prediction networks, fs for global scale uncertainty and fd for pixel-wise independent uncertainty: 
+
+Σs = fs (I),
+
+Σd = fd (I). (3) During training, supervision is available only in the form of metric depth measurements. Therefore, both sources of uncertainty must be expressed in the metric depth domain during training. Since the scale is applied globally to all pixels, all pixel-wise depths are correlated, resulting in non-zero cross-correlation terms in the total metric depth uncertainty. Consequently, the metric depth uncertainty is not independent across pixels. Based on (2), we derive the metric depth covariance matrix Σdm via uncertainty propagation 
+
+Σdm = Σ s dd ⊤ + s2Σd . (4) We then adopt the multivariate Gaussian negative log-likelihood loss to learn uncertainty: 
+
+L(θ) = ( sd − dm,gt )⊤Σ−1 
+
+> dm
+
+(sd − dm,gt ) + log |Σdm |, (5) where θ denotes the network weights and dm,gt denotes the ground truth value. Directly computing (5) would re-quire large-scale matrix operations. We further derive the element-wise formulation by applying Sherman–Morrison for-mula [38]: 
+
+L(θ) = 1
+
+s2
+
+> N
+
+X
+
+> i=1
+
+e2
+
+> i
+
+σ2
+
+> di
+
+− λ
+
+> N
+
+X
+
+> i=1
+
+eidi
+
+σ2
+
+> di
+
+!2
+
++ N log( s2)+
+
+> N
+
+X
+
+> i=1
+
+log( σ2 
+
+> di
+
+) + log 1 + σ2
+
+> s
+
+s2
+
+> N
+
+X
+
+> i=1
+
+di2
+
+σ2
+
+> di
+
+!
+
+,
+
+(6) where di and σdi denote the depth and independent uncer-tainty of i-th pixel, respectively, and ei = sd i − dm,gt ,i 
+
+is the error at i-th pixel. The scalar λ is defined as λ = 
+
+> σ2
+> s
+> s4
+
+/
+
+
+
+1 + σ2
+
+> s
+> s2
+
+PNi=1 
+
+> di2
+> σ2
+> di
+
+
+
+.Our approach is agnostic to the network architecture, al-though we conducted our experiments using Metric3Dv2 [23]. Metric3Dv2 adapts ViT [30] and DPT [39] as en-decoder backbone to produce a hidden feature map and a confidence map, and then employs a CNN-based depth head enhanced with a GRU-based recurrent architecture to predict the final pixel-wise depth, normal and confidence. Our uncertainty prediction head fd adopts the same CNN architecture as the depth head in Metric3Dv2, and takes the feature map, the initial depth map, and the depth confidence map as input. The scale uncertainty head fs takes the feature map for global context information and adopts a series of strided convolutions followed by adaptive average pooling and an MLP to aggregate spatial features into a one-dimensional output. V. S CALE -AWARE MONOCULAR SLAM We illustrate our SLAM pipeline in Fig. 2. We adopt OKVIS2 [2] formulation of frames and keyframes and also ViT Encoder DPT Decoder Depth Scale Uncertainty Depth Uncertainty    
+
+> 𝜎 !
+> Frozen network Trainable network
+> ⊕⊗
+> projected total uncertainty
+> ⊗⊕
+> Addition Multiplication
+> depth map depth uncertainty total uncertainty Fig. 3. Monocular Depth Network Augmented with Decoupled Uncer-tainty Prediction. Modules with dark blue background denote the original depth prediction network architecture in Metric3Dv2 [23]. The yellow box denotes the scale uncertainty head, which outputs a global per-frame scale as a 1D scalar. The purple box denotes the depth uncertainty head, which outputs independent per-pixel uncertainty. The two uncertainties are combined to form the total uncertainty, and we visualize the projected total uncertainty in 3D space.
+
+utilize a real-time graph that optimizes a set of states and landmarks within a local window. Another full-graph is used to optimize the full trajectory upon loop-closure detections, enabling real-time local and global trajectory estimation in parallel. Place recognition is based on DBoW2 [40], with additional geometric verification rules as originally proposed in [2] to filter potentially incorrect loop closures. We also use the same keypoint detection and description algorithm described in [41]. 
+
+A. Visual Frontend 
+
+As shown in Fig. 2, the visual frontend mainly performs states and landmarks initialization. Camera poses are initial-ized through a 3D-2D matching step following [2]. The follow-ing describes the landmark initialization process for a monoc-ular camera in detail. For each keyframe, new landmarks are initialized using the predicted depth from the monocular depth network described in Section IV together with the associated scale:  
+
+> Ck
+
+lj = sd[u]π−1(u), W lj = T W C k Ck lj , (7) where Ck lj and W lj denotes the j-th landmark in k-th keyframe and world coordinate respectively, u is the pixel location of the keypoint, π−1(·) is the inverse projection function, and d[u] is the predicted depth at pixel location u.We only initialize landmarks with predicted depths within the valid range d ∈ [0 .01 m, 30 m].In addition to the depth-based initialization in keyframes, our frontend also initializes landmarks through triangulation between frames and earlier co-visible keyframes. In this case, depth measurements that were previously rejected due to violating the valid depth range can be incorporated later if they pass a χ2 consistency test with a significance level of 
+
+β = 0 .05 , computed as 
+
+(T Ck W W lj − skdk[u]) 2
+
+Σdmk [u]
+
+< β. (8) In this case, Ck denotes the keyframe at timestamp k involved in the triangulation, and Σdmk [u] is the propagated metric-depth uncertainty of keypoint u, computed according to (4). By combining these two strategies, our frontend achieves robust landmark initialization by leveraging both monocular depth predictions and multi-view geometric observations.            
+
+> Fig. 4. Factor Graph in Scalix. Top: the real-time local window estimator. The current keyframe and non-keyframe states are connected by visual reprojection errors. For every keyframe state in the optimization window, depth and scale errors are incorporated into the cost function. Bottom: the full real-time estimator. Old measurements are marginalized and substituted by pose-scale graph edges, reducing the computational complexity.
+
+B. Scale-aware Backend Optimization 
+
+For backend optimization, we use three error terms: the reprojection error of the landmarks, the depth error between a landmark’s depth and the predicted depth, and the difference between the scale prior and the optimized scale. 
+
+1) Reprojection error: We use the standard reprojection error ej,k  
+
+> r
+
+of the j-th landmark W lj in the camera image at time step k:
+
+erj,k = ˜ uj,k − π(T Ck W W lj ), (9) with the detected keypoint pixel location being ˜uj,k and π(·)
+
+denoting the camera projection. These errors constrain the rotation and the up-to-scale translation of a camera pose with respect to F−→W , therefore requiring additional error terms to produce metric-scale pose estimations. 
+
+2) Depth error: We propose a depth error term that exploits the learned depth prior from monocular depth prediction networks, constraining 3D points via unscaled depth while enabling the optimization to refine our scale measurements: 
+
+edj,k = ˜dj,k − n⊤ 
+
+> z
+
+T Ck W W lj
+
+sk
+
+, (10) with ˜dj,k being the network’s predicted depth of a keypoint, 
+
+sk the estimated scale and nz is a constant vector [0 , 0, 1, 0] 
+
+that extracts the z-coordinate of the landmark. 
+
+3) Scale error: To leverage metric scale prediction, we anchor each frame’s scale variable to a measurement with a prior error term: 
+
+esk = ˜ sk − sk, (11) with ˜sk = 1 .0 being the network’s scale prediction and sk the optimized scale in our problem. 
+
+C. Marginalization and Relative Pose–Scale Errors 
+
+To ensure real-time operation, we marginalize old states to keep the optimization problem bounded. Following the strategy of [2], our marginalization is performed between two keyframes r, c by eliminating the co-observed landmarks. This process converts the associated state error terms into relative pose error terms, yielding a pose graph where the nodes represent pose states and the edges encode relative pose errors. We refer the reader to [2] for a detailed explanation of how a Maximum Spanning Tree (MST) is employed to select the pose-graph edges to be created. Compared to [2], Scalix proposes to add scale into states: 
+
+p = [ Cr rCc , qCr Cc , s rel ], (12) where Cr rCc and qCr Cc are the relative position and orien-tation expressed in the reference frame F−→Cr , and srel = sc
+
+> sr
+
+denotes the relative scale. Therefore, the reprojection errors and depth errors with respect to the reference frame r become 
+
+erj,r = ˜ uj,r − π(Cr lj ), erj,c = ˜ uj,c − π(T CcCr Cr lj ), (13) 
+
+edj,r = ˜dj,r − n⊤  
+
+> zCr
+
+lj
+
+sr
+
+, e dj,c = ˜dj,c − n⊤ 
+
+> z
+
+T CcCr Cr lj
+
+sr srel 
+
+, (14) where we treat sr as constant in practice. Adopting landmark marginalization to all joint observations, we have the cost 
+
+gpr,c = 12
+
+> N
+
+X
+
+> i=1
+
+X 
+
+> j∈J (r)
+
+ρc
+
+
+
+e⊤ 
+
+> rj,r
+
+Wrerj,r 
+
+
+
++ X
+
+> j∈S (r)
+
+ρc
+
+
+
+e⊤ 
+
+> dj,r
+
+Wdj,r edj,r 
+
+
+
++ 12
+
+> N
+
+X
+
+> i=1
+
+X 
+
+> j∈J (c)
+
+ρc
+
+
+
+e⊤ 
+
+> rj,c
+
+Wrerj,c 
+
+
+
++ X
+
+> j∈S (c)
+
+ρc
+
+
+
+e⊤ 
+
+> dj,c
+
+Wdj,c edj,c 
+
+
+
+,
+
+(15) with the sets J (r) , J (c) denoting the covisible landmarks at frames Cr and Cc, with S ⊂ J denoting the keypoints that have an associated depth term. Now we approximate this cost as 
+
+gpr,c = 12 e⊤ 
+
+> pr,c
+
+Wpr,c epr,c , (16) 
+
+epr,c = ep,0r,c +
+
+Cr rCc − Cr rCc
+
+qCr Cc ⊟ qCr Cc
+
+srel − ¯srel 
+
+ , (17) where quantities with a bar ( ¯· ) are the linearization points selected during marginalization, and ep,0r,c is a constant term computed through the marginalization process. These terms are computed by applying Schur complement to the Gauss-Newton system that minimizes gpr,c (15): 
+
+
+
+Hp,p . . . Hp,j . . . 
+
+... . . . 0 0H⊤ 
+
+> p,j
+
+0 Hj,j 0
+
+... 0 0 . . .
+
+
+
+δp
+
+...
+
+δlj
+
+...
+
+ =
+
+
+
+bp
+
+...
+
+bj
+
+...
+
+ , (18) with δlj the update of the j-th landmark in the reference frame 
+
+Cr , and Hj,j , Hp,j the corresponding Hessian blocks associ-ated with the j-th landmark for simplicity. Now, landmarks are marginalized out using the Schur complement: 
+
+H∗ = Hp,p − X
+
+> j
+
+Hp,j H† 
+
+> j,j
+
+H⊤ 
+
+> p,j
+
+,
+
+b∗ = bp − X
+
+> j
+
+Hp,j H† 
+
+> j,j
+
+bj . (19) This yields the reduced Gauss-Newton system: 
+
+H∗δp = b∗, (20) where b∗ can be iteratively updated through b∗ 
+
+> t
+
+= b∗ −H∗∆χ
+
+following [2], with ∆χ denoting the state update term in (16). In this way, it is equivalent to a respective pose-scale error term of the following form 
+
+E⊤ 
+
+> pr,c
+
+Wpr,c Epr,c δp = −E⊤ 
+
+> pr,c
+
+Wpr,c (ep,0r,c + ∆ χ), (21) with E⊤ 
+
+> pr,c
+
+= I7 , Wpr,c = H∗, ep,0r,c = H∗† b∗. Note that in our system, as stated in Section V-A, there may be cases where a keyframe is not associated with a scale estimate or where some landmarks lack depth observations. If a frame lacks scale in the marginalization process, we set the linearization point of the relative scale to 1. When neither frame has scale association, the error term degenerates to the standard 6-dim relative pose error term described in [2]. 
+
+D. Factor-Graph Optimization 
+
+All of the aforementioned factors are combined in the overall minimization objective: 
+
+g (x) = 12
+
+X
+
+> k∈K
+
+X 
+
+> j∈J (k)
+
+ρc
+
+
+
+e⊤ 
+
+> rj,k
+
+Wrerj,k 
+
+
+
++ 12
+
+X
+
+> k∈K
+
+X
+
+> j∈S (k)
+
+ρc
+
+
+
+e⊤ 
+
+> dj,k
+
+Wdj,k edj,k 
+
+
+
++ 12
+
+X
+
+> k∈P∪K\ f
+
+e⊤ 
+
+> sk
+
+Wsk esk + 12
+
+X
+
+> r∈P
+
+X
+
+> c∈C (r)
+
+e⊤ 
+
+> pr,c
+
+Wpr,c epr,c .
+
+(22) Here, the set K contains the most recent frames as well as keyframes with observations of visible landmarks in J (k) and with S ⊂ J the keypoints that have a depth term associated to them at timestamp k. P contains all pose-scale graph frames and f denotes the most current frame. C (r) ⊂ P is the set of all pose-scale graph frames connected to a frame 
+
+Cr . The Cauchy robustifier ρc (·) is used for reprojection errors and depth-errors. In this formulation, Wa = Σ−1 
+
+> a
+
+, with a ∈ { r, d, s, p}, represents the weight of each residual, defined as the inverse of its covariance matrix. An example of our factor-graph formulation can be seen in Fig. 4. VI. E XPERIMENTS 
+
+A. Experiment Setup 1) Evaluation Dataset and Metrics: We evaluate our method on large-scale outdoor benchmarks, inherently prone to scale drift, and indoor scenarios to demonstrate that Scalix can generalize to different domains. We report Root Mean Squared Error (RMSE) of Absolute Trajectory Error (ATE) in the KITTI dataset [16] and 7-Scenes [42] after Sim(3) alignment. For methods that produce metric-scale estimates, we additionally report the results after SE(3) alignment. 
+
+2) Implementation Details: For training, we initialize Met-ric3Dv2 [23] with its small model variant, which employs DINOv2-reg (ViT-S) [30] as encoder and a DPT [39] decoder. During training, we freeze the network and train the uncer-tainty heads using ScanNet [43] and Waymo [44] for one day using a single NVIDIA L40s GPU. For the SLAM pipeline, we set the sliding window size to 10. All experiments were conducted on a PC equipped with an Intel i7-13700 CPU and an NVIDIA RTX 3080 GPU. TABLE I TRAJECTORY EVALUATION ON THE KITTI DATASET . RMSE ATE [ M] WITH SIM(3) AND SE(3) ALIGNMENTS (BEST , AND SECOND BEST ).                                                                                                                                                                                                        
+
+> Method 00 01 02 03 04 05 06 07 08 09 10 Avg. Avg.
+> 3.7 km 2.5 km 5.1 km 0.6 km 0.4 km 2.2 km 1.2 km 0.6 km 3.2 km 1.7 km 0.9 km success
+> SIM(3) ORB-SLAM3 †[1] 8.94 103.76 24.90 0.76 0.79 5.33 12.87 2.55 4.45 8.39 6.57 16.30 7.55 LDSO [7] 9.32 11.68 31.98 2.85 1.22 5.10 13.55 2.96 129.00 21.64 17.36 22.42 11.77 DROID-SLAM [10] 92.10 344.60 107.60 2.38 1.00 118.50 62.47 21.78 161.60 72.32 118.70 100.28 50.77 DPV-SLAM++ [11] 8.30 11.86 39.64 2.50 0.78 5.74 11.60 1.52 110.90 76.70 13.70 25.75 10.63 DROID+M3D †[10], [23] 12.84 150.44 20.03 2.08 0.83 7.78 3.19 18.32 9.73 3.76 4.83 21.26 8.34 CUT3R [13] 190.38 90.59 264.39 20.40 7.31 92.25 67.54 22.48 145.08 67.42 40.00 91.62 7.31 ViSTA-SLAM †[15] 160.90 414.40 257.30 39.32 25.85 110.63 58.68 51.99 215.60 154.60 88.24 143.41 /VGGT-Long [14] 8.67 121.20 32.08 6.12 4.23 8.31 5.34 4.63 53.10 41.99 18.37 27.64 18.28 LoGeR* [37] 30.47 47.91 36.32 5.30 1.95 26.34 6.60 5.55 24.41 10.12 10.11 18.64 18.64 Lingbot-map †[36] 24.24 83.63 65.75 2.50 1.02 74.77 7.51 9.87 19.45 42.55 19.69 31.91 21.40 Ours (w/o BA) 2.85 10.72 15.04 1.90 1.04 1.84 1.62 0.91 7.30 4.76 2.57 4.60 4.60
+> SE(3) DROID+M3D †[10], [23] 12.88 430.75 20.14 15.13 9.93 8.88 9.25 22.29 13.40 9.65 9.41 51.06 12.07 Ours (w/o BA) 3.96 21.47 16.55 9.44 3.25 4.30 1.99 2.15 7.66 4.86 3.46 7.19 7.19
+> Gray: failures (ATE >3% of seq. length). Avg. success : average excluding failed sequences. Methods with †are run by ourselves.
+
+B. Results 1) KITTI dataset: The KITTI dataset [16] provides grayscale and RGB stereo cameras, a LiDAR, and an IMU. For our experiments, we only use the left camera from the RGB pair. Quantitative results are presented in Table I, and qualitative results are shown in Fig. 5, where Scalix outper-forms other monocular methods. Under Sim(3) alignment, our method achieves the best result among the optimization-based and feedforward methods, improving by 37% over CUT3R[13], the second-best method. Additionally, compared to DROID-SLAM+Metric3D [10], [23], which also leverages metric depth to improve odometry accuracy, our method achieves significantly better results, demonstrating the effectiveness of our pipeline integration. On the KITTI dataset, some methods exhibit extremely large errors on certain sequences. For a fair comparison, we treat trajectories with ATE greater than 3% as failures and compute the average accuracy only over successful trajectories, reported in the “Avg. success” column. Even after filtering out failure cases, our method still performs best on average. Under SE(3) alignment, to our knowledge, only DROID+M3D (DROID-SLAM [10] with Metric3D [23]) achieves metric-scale re-construction. Using the same Metric3D model, our pipeline outperforms it by 40 .4% . Our results reported in Table I are obtained without full bundle adjustment (w/o BA). When full bundle adjustment is enabled, our method improves further, achieving an ATE of 3.87 m and 7.22 m under Sim(3) and SE(3) alignment. It is important to note that across our three runs, we observed similar results, except for sequence 1, where we observed one failure. 
+
+2) 7-scenes dataset: The 7-Scenes dataset [42] consists of handheld recordings with an RGB-D Kinect camera in indoor scenarios. Our setup only uses the RGB data. We compare our method with other baselines in Table II. In indoor scenarios, Scalix still achieves on-par results with state-of-the-art methods, which can be further improved by adding the full BA component, achieving 7.8cm and 11 .5cm ATE under Sim(3) and SE(3) alignment, respectively. DROID-SLAM [10], ViSTA-SLAM [15] and MASt3R-SLAM [12] achieve slightly better performance in indoor sequences. How-ever, as shown in Table I, these methods do not generalize well to large-scale outdoor scenes, either failing completely or exhibiting significant errors (Note that MASt3R-SLAM [12] is omitted from Table I due to tracking loss in all sequences). In contrast, our method maintains strong performance across both indoor and outdoor environments. The remaining gap in indoor sequences is due to the accuracy of Metric3Dv2 [23] in indoor scenes. This limitation is further evidenced by the performance degradation observed in DROID+M3D [10], [23] compared to the original DROID-SLAM. Compared to LoGeR* [37], Lingbot-map [36] and DROID+M3D [10], [23], which achieve decent results in both settings, our method achieves competitive results while also recovering metric-scale trajectories. 
+
+3) Runtime analysis: The system has two parallel threads: one for the frontend processing (keypoint matching, monocular inference and landmark initialization) and a second one for the backend optimization. Keypoint matching takes 20 ms, monocular network inference 79 ms (only triggered on a subset of frames), and landmark initialization 5 ms. The backend optimization is performed in 59ms. 
+
+C. Ablation study 
+
+To demonstrate the effectiveness of our tightly coupled scale formulation, we conduct ablations on the scale-aware optimization pipeline. Specifically, we first remove the scale optimization while retaining our proposed decoupled uncer-tainty modeling, and then assess the impact of the uncertainty decoupling by replacing it with a naive per-pixel uncertainty formulation. For the first ablation, we remove scale estimation from both the frontend and backend, equivalent to treating scale as a constant s = 1 in all states, marked as w/o s-opt . In this setting, the scale error term in (11) is set to zero, and the depth error term in (10) relies solely on the metric depth predicted by the network to optimize landmarks and poses. Metric depth uncertainty is modeled by propagating decoupled uncertainties through our proposed framework via (4), marked Fig. 5. Qualitative Trajectory Comparison on KITTI [16] under Sim(3) Alignment. The color gradient from red to green indicates trajectory error from high to low. The colored lines represent the estimated trajectories and the gray lines represent the ground-truth trajectories. TABLE II TRAJECTORY EVALUATION ON THE 7SCENES DATASET . RMSE ATE [ CM ] 
+
+> WITH
+
+SIM(3) AND SE(3) ALIGNMENTS (BEST , AND SECOND BEST ).         
+
+> Method chess fire heads office pump. kit. stairs Avg.
+> SIM(3)
+> ORB-SLAM3 †[1]
+
+4.2 2.9 16.3 8.6 40.8 37.3 1.2 15.9  
+
+> LDSO †[7]
+
+4.0 12.9 51.0 14.9 – 49.9 23.9 26.1  
+
+> DROID-SLAM[10]
+
+3.6 2.7 2.5 6.6 12.7 3.5 2.6 5.0  
+
+> DROID+M3D †[10], [23]
+
+4.9 6.4 9.6 14.2 16.3 4.7 14.6 10.1  
+
+> CUT3R[13]
+
+5.9 5.3 6.4 13.9 14.7 9.4 6.7 8.9  
+
+> MAST3R-SLAM[12]
+
+5.3 2.5 1.5 9.7 8.8 4.1 1.1 4.7  
+
+> ViSTA-SLAM[15]
+
+7.3 3.5 2.8 5.5 12.9 3.5 2.9 5.5  
+
+> VGGT-Long †[14]
+
+80.2 82.3 49.5 65.6 68.2 48.1 84.4 68.3  
+
+> LoGeR* †[37]
+
+8.6 4.1 4.8 9.7 15.0 7.7 2.8 7.5  
+
+> Lingbot-map[36]
+
+9.4 14.6 11.8 12.7 16.0 13.4 7.9 12.3  
+
+> Ours (w/o BA)
+
+6.8 6.0 7.7 8.8 18.9 6.8 5.5 8.6 SE(3)  DROID+M3D †[10], [23] 9.3 6.5 19.9 16.6 21.0 5.0 16.2 13.5  
+
+> Ours (w/o BA)
+
+7.1 6.3 21.0 15.3 19.6 6.8 8.2 12.0      
+
+> pump. and kit. are the abbreviations of pumpkin and kitchen. Methods with †are run by ourselves.
+
+as prop. in Table III. Comparing Scalix and w/o s-opt (prop.) 
+
+columns, using the same decoupled network but different SLAM backend integrations, our method improves ATE under both SE(3) and Sim(3) evaluation, indicating that scale-aware backend optimization enhances accuracy and consistency. Under the configuration without scale optimization, we further compare our uncertainty propagation strategy against directly learning per-pixel independent uncertainty from the metric depth predictions ( direct ). Comparing prop. and direct 
+
+columns in Table III, incorporating scale-dependent correla-tions leads to similar SLAM performance, demonstrating that our training strategy does not degrade the uncertainty accuracy. VII. C ONCLUSION 
+
+In this paper, we have presented Scalix, a monocular SLAM system that achieves metric-scale trajectories for both indoor and outdoor environments. This is done by treating the scale as a measurement that can be optimized in a tightly-coupled fashion using a factor-graph formulation. To achieve this, we have proposed a novel parametrization and training strategy that allows foundation depth networks to learn scale and depth 
+
+TABLE III TRAJECTORY EVALUATION ON THE KITTI DATASET . RMSE ATE [ M] WITH 
+
+SIM(3) AND SE(3) ALIGNMENTS (BEST , AND SECOND BEST ). SIM(3) SE(3) 
+
+Scalix w/o s-opt Scalix w/o s-opt Seq. prop. direct prop. direct 00 2.85 2.56 2.17 3.96 3.55 2.18 01 10.72 96.91 66.65 21.47 575.58 618.65 
+
+02 15.04 18.23 18.16 16.55 20.11 18.47 
+
+03 1.90 1.84 1.67 9.44 10.76 13.47 
+
+04 1.04 1.28 1.86 3.25 4.03 8.83 
+
+05 1.84 1.72 1.57 4.30 3.94 2.01 
+
+06 1.62 1.66 2.21 1.99 1.78 2.34 
+
+07 0.91 0.87 0.71 2.15 1.92 1.22 08 7.30 8.16 8.78 7.66 8.16 9.25 
+
+09 4.76 4.89 5.49 4.86 5.56 9.33 
+
+10 2.57 2.52 2.74 3.46 2.77 3.70 
+
+Avg. 4.60 12.78 10.18 7.19 58.01 62.67        
+
+> w/o s-opt = without scale optimization. prop. = propagated total uncertainty. direct =directly-predicted total uncertainty. Gray: failures (ATE >3% of seq. length).
+
+uncertainties, capturing the information and correlations of all the pixels used for monocular depth prediction. We have evaluated Scalix in both indoor and outdoor environments, demonstrating that it can be generalized to different scenarios. In particular, we demonstrate superior performance in outdoor scenarios, where Scalix improves the accuracy of the state estimates by 48% . In the future, we would like to investigate if this scale optimization strategy can be extended to multi-scale hypotheses while still using a tightly coupled and probabilistic formulation. Building on the factor-graph formulation, future work includes investigating how the proposed optimization integrates with multi-modal data from different embodiments, and how this can improve the robustness of the overall system. REFERENCES [1] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. Montiel, and J. D. Tard´ os. Orb-slam3: An accurate open-source library for visual, visual–inertial, and multimap slam. IEEE transactions on robotics , 37(6):1874–1890, 2021. [2] S. Leutenegger. Okvis2: Realtime scalable visual-inertial slam with loop closure. arXiv preprint arXiv:2202.09199 , 2022. [3] S. Boche, J. Jung, S. B. Laina, and S. Leutenegger. Okvis2-x: Open keyframe-based visual-inertial slam configurable with dense depth or lidar, and gnss. IEEE Transactions on Robotics , 2025. [4] P. Geneva, K. Eckenhoff, W. Lee, Y. Yang, and G. Huang. Openvins: A research platform for visual-inertial estimation. In 2020 IEEE International Conference on Robotics and Automation (ICRA) , pages 4666–4672. IEEE, 2020. [5] H. Chen, B. Sun, A. Zhang, M. Pollefeys, and S. Leutenegger. Vidbot: Learning generalizable 3d actions from in-the-wild 2d human videos for zero-shot robotic manipulation. In Proceedings of the Computer Vision and Pattern Recognition Conference , pages 27661–27672, 2025. [6] A. Zhang, H. Chen, Y. Burkhardt, Y. Zhong, J. Betz, H. Oleynikova, and S. Leutenegger. Actron3d: Learning actionable neural functions from videos for transferable robotic manipulation. arXiv preprint arXiv:2510.12971 , 2025. [7] X. Gao, R. Wang, N. Demmel, and D. Cremers. Ldso: Direct sparse odometry with loop closure. In 2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , pages 2198–2204. IEEE, 2018. [8] K. Tateno, F. Tombari, I. Laina, and N. Navab. Cnn-slam: Real-time dense monocular slam with learned depth prediction. In Proceedings of the IEEE conference on computer vision and pattern recognition , pages 6243–6252, 2017. [9] Z. Zhu, S. Peng, V. Larsson, Z. Cui, M. R. Oswald, A. Geiger, and M. Pollefeys. Nicer-slam: Neural implicit scene encoding for rgb slam. In 2024 International Conference on 3D Vision (3DV) , pages 42–52. IEEE, 2024. [10] Z. Teed and J. Deng. Droid-slam: Deep visual slam for monocular, stereo, and rgb-d cameras. Advances in neural information processing systems , 34:16558–16569, 2021. [11] L. Lipson, Z. Teed, and J. Deng. Deep patch visual slam. In European Conference on Computer Vision , pages 424–440. Springer, 2024. [12] R. Murai, E. Dexheimer, and A. J. Davison. Mast3r-slam: Real-time dense slam with 3d reconstruction priors. In Proceedings of the Computer Vision and Pattern Recognition Conference , pages 16695– 16705, 2025. [13] Q. Wang, Y. Zhang, A. Holynski, A. A. Efros, and A. Kanazawa. Continuous 3d perception model with persistent state. In Proceedings of the Computer Vision and Pattern Recognition Conference , pages 10510– 10522, 2025. [14] K. Deng, Z. Ti, J. Xu, J. Yang, and J. Xie. Vggt-long: Chunk it, loop it, align it–pushing vggt’s limits on kilometer-scale long rgb sequences. 
+
+arXiv preprint arXiv:2507.16443 , 2025. [15] G. Zhang, S. Qian, X. Wang, and D. Cremers. Vista-slam: Visual slam with symmetric two-view association. arXiv preprint arXiv:2509.01584 ,2025. [16] A. Geiger, P. Lenz, and R. Urtasun. Are we ready for autonomous driving? the kitti vision benchmark suite. In Conference on Computer Vision and Pattern Recognition (CVPR) , 2012. [17] J. Engel, V. Koltun, and D. Cremers. Direct sparse odometry. IEEE transactions on pattern analysis and machine intelligence , 40(3):611– 625, 2017. [18] J. Engel, T. Sch¨ ops, and D. Cremers. Lsd-slam: Large-scale direct monocular slam. In European conference on computer vision , pages 834–849. Springer, 2014. [19] A. J. Davison, I. D. Reid, N. D. Molton, and O. Stasse. Monoslam: Real-time single camera slam. IEEE transactions on pattern analysis and machine intelligence , 29(6):1052–1067, 2007. [20] G. Klein and D. Murray. Parallel tracking and mapping for small ar workspaces. In 2007 6th IEEE and ACM international symposium on mixed and augmented reality , pages 225–234. IEEE, 2007. [21] C. Forster, M. Pizzoli, and D. Scaramuzza. Svo: Fast semi-direct monocular visual odometry. In 2014 IEEE international conference on robotics and automation (ICRA) , pages 15–22. IEEE, 2014. [22] S. F. Bhat, R. Birkl, D. Wofk, P. Wonka, and M. M¨ uller. Zoedepth: Zero-shot transfer by combining relative and metric depth. arXiv preprint arXiv:2302.12288 , 2023. [23] M. Hu, W. Yin, C. Zhang, Z. Cai, X. Long, H. Chen, K. Wang, G. Yu, C. Shen, and S. Shen. Metric3d v2: A versatile monocular geometric foundation model for zero-shot metric depth and surface normal estimation. IEEE Transactions on Pattern Analysis and Machine Intelligence , 2024. [24] L. Piccinelli, C. Sakaridis, Y.-H. Yang, M. Segu, S. Li, W. Abbeloos, and L. Van Gool. Unidepthv2: Universal monocular metric depth estimation made simpler. arXiv preprint arXiv:2502.20110 , 2025. [25] L. Yang, B. Kang, Z. Huang, Z. Zhao, X. Xu, J. Feng, and H. Zhao. Depth anything v2. Advances in Neural Information Processing Systems ,37:21875–21911, 2024. [26] R. Wang, S. Xu, Y. Dong, Y. Deng, J. Xiang, Z. Lv, G. Sun, X. Tong, and J. Yang. Moge-2: Accurate monocular geometry with metric scale and sharp details. arXiv preprint arXiv:2507.02546 , 2025. [27] W. Zhang, Q. Cheng, D. Skuddis, N. Zeller, D. Cremers, and N. Haala. Hi-slam2: Geometry-aware gaussian slam for fast monocular scene reconstruction. IEEE Transactions on Robotics , 41:6478–6493, 2025. [28] E. Sandstr¨ om, G. Zhang, K. Tateno, M. Oechsle, M. Niemeyer, Y. Zhang, M. Patel, L. Van Gool, M. Oswald, and F. Tombari. Splat-slam: Globally optimized rgb-only slam with 3d gaussians. In Proceedings of the Computer Vision and Pattern Recognition Conference , pages 1680–1691, 2025. [29] M. Caron, H. Touvron, I. Misra, H. J´ egou, J. Mairal, P. Bojanowski, and A. Joulin. Emerging properties in self-supervised vision transformers. In Proceedings of the IEEE/CVF international conference on computer vision , pages 9650–9660, 2021. [30] M. Oquab, T. Darcet, T. Moutakanni, H. Vo, M. Szafraniec, V. Khalidov, P. Fernandez, D. Haziza, F. Massa, A. El-Nouby, et al. Dinov2: Learning robust visual features without supervision. arXiv preprint arXiv:2304.07193 , 2023. [31] S. Wang, V. Leroy, Y. Cabon, B. Chidlovskii, and J. Revaud. Dust3r: Geometric 3d vision made easy. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 20697– 20709, 2024. [32] J. Wang, M. Chen, N. Karaev, A. Vedaldi, C. Rupprecht, and D. Novotny. Vggt: Visual geometry grounded transformer. In Proceedings of the Computer Vision and Pattern Recognition Conference , pages 5294–5306, 2025. [33] N. Keetha, N. M¨ uller, J. Sch¨ onberger, L. Porzi, Y. Zhang, T. Fischer, A. Knapitsch, D. Zauss, E. Weber, N. Antunes, et al. Mapany-thing: Universal feed-forward metric 3d reconstruction. arXiv preprint arXiv:2509.13414 , 2025. [34] H. Wang and L. Agapito. 3d reconstruction with spatial memory. arXiv preprint arXiv:2408.16061 , 2024. [35] D. Maggio, H. Lim, and L. Carlone. Vggt-slam: Dense rgb slam optimized on the sl (4) manifold. arXiv preprint arXiv:2505.12549 ,2025. [36] L.-Z. Chen, J. Gao, Y. Chen, K. L. Cheng, Y. Sun, L. Hu, N. Xue, X. Zhu, Y. Shen, Y. Yao, et al. Geometric context transformer for streaming 3d reconstruction. arXiv preprint arXiv:2604.14141 , 2026. [37] J. Zhang, C. Herrmann, J. Hur, C. Sun, M.-H. Yang, F. Cole, T. Darrell, and D. Sun. Loger: Long-context geometric reconstruction with hybrid memory. arXiv preprint arXiv:2603.03269 , 2026. [38] J. Sherman and W. J. Morrison. Adjustment of an inverse matrix corresponding to a change in one element of a given matrix. The Annals of Mathematical Statistics , 21(1):124–127, 1950. [39] R. Ranftl, A. Bochkovskiy, and V. Koltun. Vision transformers for dense prediction. In Proceedings of the IEEE/CVF international conference on computer vision , pages 12179–12188, 2021. [40] D. G´ alvez-L´ opez and J. D. Tard´ os. Bags of binary words for fast place recognition in image sequences. IEEE Transactions on Robotics ,28(5):1188–1197, October 2012. [41] S. Leutenegger, M. Chli, and R. Y. Siegwart. Brisk: Binary robust invariant scalable keypoints. In 2011 International conference on computer vision , pages 2548–2555. Ieee, 2011. [42] J. Shotton, B. Glocker, C. Zach, S. Izadi, A. Criminisi, and A. Fitzgib-bon. Scene coordinate regression forests for camera relocalization in rgb-d images. In Proceedings of the IEEE conference on computer vision and pattern recognition , pages 2930–2937, 2013. [43] A. Dai, A. X. Chang, M. Savva, M. Halber, T. Funkhouser, and M. Nießner. Scannet: Richly-annotated 3d reconstructions of indoor scenes. In Proceedings of the IEEE conference on computer vision and pattern recognition , pages 5828–5839, 2017. [44] P. Sun, H. Kretzschmar, X. Dotiwalla, A. Chouard, V. Patnaik, P. Tsui, J. Guo, Y. Zhou, Y. Chai, B. Caine, et al. Scalability in perception for autonomous driving: Waymo open dataset. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , pages 2446–2454, 2020.
