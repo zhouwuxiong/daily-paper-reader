@@ -1,0 +1,39 @@
+{
+  "label": "2026-08-22",
+  "date": "2026-08-22",
+  "generated_at": "2026-08-22T19:22:26",
+  "count": 2,
+  "papers": [
+    {
+      "paper_id": "202608/22/2608.15317v1-lightloc-sensor-robust-representation-learning-for-efficient-outdoor-lidar-localization",
+      "section": "quick",
+      "title_en": "LightLoc++: Sensor-Robust Representation Learning for Efficient Outdoor LiDAR Localization",
+      "authors": "Wen Li, Shangshu Yu, Dunqiang Liu, Qiming Xia, Sheng Ao, Siqi Shen, Chenglu Wen, Cheng Wang",
+      "date": "2026-08-15",
+      "pdf": "https://arxiv.org/pdf/2608.15317v1",
+      "score": "6.0",
+      "evidence": "基于场景坐标回归的LiDAR定位可用于SLAM中的地点识别与回环检测",
+      "tldr": "现有高效户外LiDAR定位方法将场景坐标回归解耦为冻结的预训练骨干与轻量头，但骨干对传感器差异敏感。LightLoc++引入包含32/64/128线激光雷达的SULID数据集，通过跨传感器一致性学习预训练鲁棒骨干，并结合样本分类指导和冗余下采样。在多个公开基准上取得最优精度，同时新场景训练成本最低，实现了传感器鲁棒且高效的定位。",
+      "tags": "query:d-slam",
+      "abstract_en": "Scene coordinate regression (SCR) achieves strong performance in outdoor LiDAR localization, but it usually requires scene-specific training that can take days, limiting practical deployment. Recent works improve training efficiency by decoupling SCR into a scene-agnostic backbone and scene-specific prediction heads, where the backbone is pretrained on source datasets and frozen for new scenes, and only lightweight heads are optimized. However, we find that this paradigm heavily depends on the pretrained backbone. Existing decoupled methods can match conventional SCR methods fully optimized for each new scene when LiDAR configurations are similar to those used during backbone pretraining, but their accuracy drops noticeably on datasets collected with different LiDAR sensors. This suggests that efficient LiDAR localization requires representations that capture stable scene geometry across LiDAR configurations. Motivated by this observation, we propose LightLoc++, a sensor-robust and efficient outdoor LiDAR localization framework. To support sensor-robust representation learning, we introduce SULID, a synchronized urban multi-LiDAR dataset with representative 32-, 64-, and 128-beam rotating LiDARs, extensive cross-sensor overlap, and diverse urban scenes. Using SULID, we pretrain a sensor-robust backbone through cross-sensor consistency learning. LightLoc++ further preserves efficient new-scene learning by incorporating sample classification guidance and redundant sample downsampling, which reduce regression ambiguity and computational redundancy in large-scale outdoor scenes. Extensive experiments on multiple outdoor LiDAR localization benchmarks demonstrate that LightLoc++ achieves state-of-the-art localization performance with the lowest new-scene training cost among compared methods. Code and dataset will be made available at https://github.com/liw95/LightLoc-PlusPlus.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202608/22/2608.15659v2-worldrover-a-scalable-synthetic-video-data-engine-for-world-exploration-with-rich-annotations",
+      "section": "quick",
+      "title_en": "WorldRover: A Scalable Synthetic Video Data Engine for World Exploration with Rich Annotations",
+      "authors": "Xiaojie Xu, Zhengyuan Lin, Runyi Li, Yihao Liu, Kaipeng Zhang, Yongtao Ge",
+      "date": "2026-08-16",
+      "pdf": "https://arxiv.org/pdf/2608.15659v2",
+      "score": "6.0",
+      "evidence": "合成数据引擎提供相机运动、几何与对应关系，支持场景重建",
+      "tldr": "学习生成可探索世界需要视频与相机运动、几何、对应关系等标注，真实采集难以提供密集几何和长程对应。WorldRover提出可扩展合成数据引擎，基于Unreal Engine离线渲染分钟级轨迹并保留完整轨迹和场景几何，同一探索可切换视角和环境状态。构建WorldRover-10M数据集，提供RGB、度量深度、相机轨迹和动作信号，第三人称子集含光流和长程点跟踪。将长时序世界探索转为数据生成问题，为可交互世界模型提供监督。",
+      "tags": "query:d-slam",
+      "abstract_en": "Learning to generate or reconstruct explorable worlds requires video paired with more than RGB: camera motion, scene geometry, temporal correspondence and, for interactive models, control signals. Real capture can provide some of these signals, but dense geometry and long-range correspondence usually rely on estimation or specialised instrumentation. Rendering provides these quantities directly, yet existing synthetic resources rarely combine them on the same frames while also supporting controlled changes of viewpoint and appearance. We introduce WorldRover, a data engine for generating richly annotated, long-range explorations of artist-built environments. At its core, WorldRover-Engine is an Unreal Engine pipeline that executes and offline-renders minute-scale routes while preserving their full trajectories and scene geometry. The same exploration can be replayed from first-person, third-person, and 360 panoramic cameras under different environmental states. Using WorldRover-Engine, we construct WorldRover-10M, whose sequences pair RGB with metric depth, camera trajectories, and trajectory-derived action signals throughout each exploration. Third-person subsets additionally provide dense optical flow, long-range 2D/3D point tracks with visibility, and a character trajectory distinct from the camera trajectory. The engine can render a traversal from first-person, third-person and 360 panoramic viewpoints, under different environmental states or with a neutral white material, while preserving the route and scene geometry. WorldRover therefore turns long-horizon world exploration into a scalable data-generation problem, providing supervision for models that must build, maintain, and revisit coherent representations of an explorable world.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}

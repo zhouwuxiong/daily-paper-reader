@@ -1,0 +1,2889 @@
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+1
+LightLoc++: Sensor-Robust Representation
+Learning for Efficient Outdoor LiDAR Localization
+Wen Li, Shangshu Yu, Dunqiang Liu, Qiming Xia, Sheng Ao, Member, IEEE, Siqi Shen, Senior Member, IEEE,
+Chenglu Wen, Senior Member, IEEE and Cheng Wang, Senior Member, IEEE
+Abstract—Scene coordinate regression (SCR) achieves strong
+performance in outdoor LiDAR localization, but it usually
+requires scene-specific training that can take days, limiting its
+practicality for time-sensitive deployment. Recent works improve
+training efficiency by decoupling SCR into a scene-agnostic back-
+bone and scene-specific prediction heads, where the backbone is
+pretrained on source datasets and frozen for new scenes, and only
+lightweight heads are optimized. However, we find that the effec-
+tiveness of this paradigm heavily depends on the pretrained back-
+bone. Existing decoupled methods can match conventional SCR
+methods that are fully optimized for each new scene when the
+LiDAR configurations are similar to those used during backbone
+pretraining, but their accuracy drops noticeably on datasets col-
+lected with different LiDAR sensors. This suggests that efficient
+LiDAR localization requires representations that capture stable
+scene geometry across LiDAR configurations. Motivated by this
+observation, we propose LightLoc++, a sensor-robust and efficient
+outdoor LiDAR localization framework. To support sensor-robust
+representation learning, we introduce SULID, a synchronized
+urban multi-LiDAR dataset with representative 32-, 64-, and
+128-beam rotating LiDARs, extensive cross-sensor overlap, and
+diverse structured, open, and dense urban scenes. Using SULID,
+we pretrain a sensor-robust backbone through cross-sensor con-
+sistency learning. LightLoc++ further preserves efficient new-
+scene learning by incorporating sample classification guidance
+and redundant sample downsampling, which reduce regression
+ambiguity and computational redundancy in large-scale outdoor
+scenes. Extensive experiments on multiple outdoor LiDAR local-
+ization benchmarks demonstrate that LightLoc++ achieves state-
+of-the-art localization performance with the lowest new-scene
+training cost among compared methods. Code and dataset will
+be made available at https://github.com/liw95/LightLoc-PlusPlus.
+Index Terms—LiDAR localization, scene coordinate regression,
+sensor-robust learning, efficient training.
+I. INTRODUCTION
+LiDAR localization aims to estimate the 6-DoF pose of sen-
+sors, which is a fundamental component of many applications,
+Manuscript received xxxx, 2025; revised xxxx, 2025, accepted xxxx, 2025.
+This work was supported in part by the XXX. The Associate Editor for this
+paper was xxxx. (Corresponding author: Cheng Wang)
+Wen Li, Dunqiang Liu, Qiming Xia, Sheng Ao, Siqi Shen, Chenglu Wen,
+and Cheng Wang are with the Fujian Key Laboratory of Urban Intelligent
+Sensing and Computing, and with Key Laboratory of Multimedia Trusted
+Perception and Efficient Computing, Ministry of Education of China, School
+of Informatics, Xiamen University, 422 Siming Road South, Xiamen, FJ
+361005, P.R. China. Wen Li is s also with the School of Engineering
+Mathematics and Technology, University of Bristol, Bristol BS8 1TH,
+United Kingdom. (e-mail: wen.li.sd95@gmail.com; dqliu@stu.xmu.edu.cn;
+qimingxia@stu.xmu.edu.cn;
+aosh@xmu.edu.cn;
+siqishen@xmu.edu.cn;
+clwen@xmu.edu.cn; cwang@xmu.edu.cn).
+Shangshu Yu is with the School of Computer Science and Engineer-
+ing, Northeastern University, Shenyang 110819, China. (e-mail: yushang-
+shu@cse.neu.edu.cn).
+Boreas
+MulRan
+QEOxford
+HeRCLUES
+Training
+Efficiency
+LiSA
+FlashMix
+RALoc
+GTR-Loc
+LightLoc
+LightLoc++
+Normalized Score:
+Accuracy: Best ATE / ATE
+Efficiency: Best Time / Time
+Fig. 1. LiDAR localization performance vs. training efficiency. The figure
+compares normalized localization accuracy and training efficiency across
+multiple LiDAR benchmarks collected with different sensors [3]–[7]. Larger
+values indicate better performance. LightLoc++ achieves consistently strong
+localization performance across diverse sensing modalities while maintaining
+high training efficiency.
+e.g., autonomous driving [1] and robotics [2].
+Contemporary state-of-the-art LiDAR-based localization
+methods rely on explicit map usage, matching query points
+with a pre-built 3D map [8]–[12]. However, these approaches
+often require costly map storage and incur significant commu-
+nication overhead. Therefore, regression-based methods [13]–
+[17] have been proposed to address these limitations by
+memorizing the specific scene within a network. During in-
+ference, these methods eliminate the need for explicit map
+matching, thus reducing both storage and communication
+requirements. Based on their regression objectives, these
+methods can be categorized into Absolute Pose Regression
+(APR) [13]–[15] and Scene Coordinate Regression (SCR) [6],
+[16], [17]. Specifically, APR directly regresses poses, while
+SCR predicts point-to-world correspondences and estimates
+poses via RANSAC [18]. By explicitly leveraging geometric
+information, SCR achieves higher localization accuracy.
+Despite their effectiveness, due to training needs to be
+repeated for each new scene, long training times make it
+impractical for applications. For example, LiSA [17], a recent
+SCR-based localization method achieving 0.95m accuracy on
+the QEOxford dataset [5], [6], requires approximately 53 hours
+arXiv:2608.15317v1  [cs.CV]  15 Aug 2026
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+2
+of training as reported in [19]. To reduce this cost, several
+methods [19]–[21] decouple LiDAR localization into a scene-
+agnostic backbone and scene-specific prediction heads, where
+the backbone is pretrained on source datasets and frozen for
+new scenes, and only lightweight heads are optimized. For
+example, FlashMix [21] pretrains the backbone on MulRan [4]
+and Apollo-SouthBay [22], while LightLoc [19] uses a back-
+bone pretrained on nuScenes [23]. This decoupled paradigm
+substantially improves the efficiency of new-scene learning.
+However, the effectiveness of this decoupled paradigm crit-
+ically depends on the generalization ability of the pretrained
+backbone. As shown in Fig. 1, LightLoc achieves localization
+accuracy comparable to LiSA and RALoc [24] on QEOx-
+ford [5], [6], where the LiDAR configuration is similar to
+that used for backbone pretraining. However, when evaluated
+on benchmarks collected with different LiDAR configurations,
+such as Boreas [3], MulRan [4], and HeRCULES [7], the
+performance gap becomes much larger. This indicates that ex-
+isting pretrained backbones have limited generalization ability
+under sensor changes, which becomes a key bottleneck for
+efficient LiDAR localization.
+An intuitive way to mitigate this bottleneck is to pretrain the
+backbone with data collected from multiple LiDAR sensors.
+This exposes the backbone to diverse LiDAR configurations
+and can improve its generalization ability. However, as LiDAR
+hardware continues to evolve, it is impractical to exhaustively
+collect data for every sensor type or retrain the backbone
+whenever a new sensor becomes available. We argue that gen-
+eralization should not rely solely on increasing sensor coverage
+during training. Instead, the backbone should learn sensor-
+robust representations that capture stable scene geometry while
+reducing the influence of sensor-specific configurations.
+Learning sensor-robust representations benefits from ob-
+serving the same scene with multiple LiDAR sensors, as it
+allows the model to associate different sensor measurements
+with the same underlying physical structures. Although recent
+datasets such as HeLiPR [25] and GEODE [26] provide syn-
+chronized multi-LiDAR measurements, their effective cross-
+sensor overlap is often restricted by sensor placement, field-
+of-view differences, and occlusions. This limits the availability
+of rich cross-sensor correspondences over large scene regions.
+Moreover, these datasets provide limited coverage of diverse
+large-scale urban layouts. These limitations motivate us to
+collect a new dataset specifically designed for sensor-robust
+backbone pretraining in efficient outdoor LiDAR localization.
+We introduce SULID, a Synchronized Urban muLtI-LiDAR
+dataset for sensor-robust representation learning. Benefiting
+from the carefully designed sensor layout, SULID provides
+near-360◦shared observations among three representative ro-
+tating LiDAR sensors, i.e., 32-, 64-, and 128-beam LiDARs,
+while preserving their different LiDAR configurations. This
+enables rich cross-sensor correspondences over most surround-
+ing structures, making SULID well suited for learning sensor-
+robust representations. In addition, SULID is collected across
+multiple urban regions and covers a wide range of scene types,
+including structured environments with regular layouts, open
+areas with weak geometric constraints, and dense urban areas
+with severe occlusions and complex scene structures. By com-
+bining representative LiDAR configurations, near-panoramic
+shared observations, and diverse urban scene coverage, SULID
+goes beyond the specific localization task studied in this paper
+and can serve as a valuable resource for future research on
+sensor-robust perception and localization [27]–[29].
+Based on SULID, we adopt a cross-sensor consistency
+learning strategy [30], [31] to pretrain a sensor-robust back-
+bone. Synchronized scans from the three LiDAR sensors are
+encoded by a shared backbone, where pooled scan-level fea-
+tures are aligned for global consistency and nearest-neighbor
+local features are aligned for local geometric consistency.
+Beyond backbone pretraining, we further address efficient
+scene-specific training under the SCR framework. In related
+domains such as camera localization, prior works [14], [16],
+[32], [33] accelerate training by storing intermediate fea-
+tures in GPU buffers and jointly optimizing multiple views.
+However, directly applying such strategies to large-scale out-
+door LiDAR localization is challenging. Outdoor localization
+benchmarks [5], [6] typically cover areas of up to 2 km2 and
+contain approximately 150K training samples. Even storing
+sampled features, e.g., 1024 points with 512-dimensional
+features per scan, would require more than 150 GB of GPU
+memory under half-precision storage, making buffer-based
+strategies impractical. For large-scale outdoor LiDAR local-
+ization, we identify two key challenges in efficient scene-
+specific training: (1) extensive spatial coverage introduces
+many geometrically similar regions that increase regression
+ambiguity, (2) while the large data volume leads to substantial
+computational and storage costs.
+In this paper, we integrate the SULID-pretrained sensor-
+robust backbone into the original LightLoc framework and
+develop LightLoc++. LightLoc++ retains two efficient train-
+ing strategies from LightLoc [19] to accelerate learning in
+large-scale outdoor scenes. Sample classification guidance
+(SCG) trains an auxiliary classification branch within a few
+minutes and uses the resulting probability distribution to
+guide scene coordinate regression, reducing ambiguity in geo-
+metrically similar regions. Redundant sample downsampling
+(RSD) identifies well-learned frames using the variance of
+the median loss and removes redundant samples, reducing
+computational cost without compromising localization accu-
+racy. We evaluate LightLoc++ on multiple outdoor LiDAR
+localization benchmarks, including Oxford/QEOxford, Boreas,
+MulRan, and HeRCULES, with an overview shown in Fig. 1.
+We further conduct cross-sensor generalization experiments
+on HeLiPR [25]. The results demonstrate that LightLoc++
+improves backbone generalization while preserving the fast
+scene-specific training capability of LightLoc.
+Our contributions can be summarized as follows:
+• LightLoc++, an efficient and sensor-robust outdoor Li-
+DAR localization method, achieves state-of-the-art per-
+formance across multiple benchmarks collected with di-
+verse LiDAR sensors. It can learn a new large-scale
+outdoor scene in just 1 hour, while previous state-of-
+the-art SCR methods require about 2 days of training to
+achieve comparable accuracy.
+• SULID is introduced for sensor-robust representation
+learning. It provides synchronized observations from
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+3
+three representative rotating LiDARs, near-panoramic
+cross-sensor shared observations, and diverse large-scale
+urban scenes, making it a valuable resource for future
+research on sensor-robust perception and localization.
+• A sensor-robust LiDAR backbone is pretrained on SULID
+through cross-sensor consistency learning. In direct cross-
+sensor testing on HeLiPR, where the regressor is trained
+on Ouster and directly evaluated on Aeva and Velodyne
+without fine-tuning, the pretrained backbone shows sub-
+stantially stronger generalization than existing methods.
+• We integrate two techniques, SCG and RSD, to address
+the challenges of large coverage and vast amounts of
+data in large-scale outdoor LiDAR localization, further
+improving the efficiency of new-scene learning.
+This paper substantially extends our previous conference
+version, LightLoc (CVPR 2025) [19]. Compared with the
+conference version, this paper expands the original focus on
+efficient scene-specific training toward sensor-robust repre-
+sentation learning for outdoor LiDAR localization. (1) We
+introduce SULID, a synchronized urban multi-LiDAR dataset
+that provides extensive cross-sensor observations from three
+representative rotating LiDAR sensors in diverse large-scale
+urban environments. (2) We pretrain a sensor-robust LiDAR
+backbone on SULID through cross-sensor consistency learn-
+ing, improving the generalization ability of the scene-agnostic
+backbone under different LiDAR configurations. (3) We in-
+tegrate the SULID-pretrained backbone into the LightLoc
+framework, resulting in LightLoc++ while preserving the effi-
+cient scene-specific training capability of the original method.
+(4) We provide substantially expanded experiments, including
+additional benchmarks, direct cross-sensor generalization eval-
+uation, and detailed analyses of the learned representations.
+II. RELATED WORK
+A. Map-based Localization
+Map-based LiDAR localization methods estimate poses by
+matching query point clouds to a pre-built 3D map [8]–[10],
+[12], [34]–[47]. These methods typically achieve high local-
+ization accuracy by leveraging explicit geometric information.
+However, they require storing and accessing large-scale maps,
+resulting in high storage and communication overhead, which
+limits their scalability in large-scale applications.
+B. Regression-based Localization
+To
+overcome
+the
+limitations
+of
+map-based
+methods,
+regression-based approaches have been proposed and have
+recently attracted significant attention. These methods can be
+broadly categorized into Absolute Pose Regression (APR) and
+Scene Coordinate Regression (SCR).
+Absolute Pose Regression. APR directly regresses the global
+6-DoF pose of the sensor in an end-to-end manner [13],
+[14], [20], [48]–[53]. Early LiDAR APR methods, such as
+PointLoc [54], adopt point-cloud backbones and attention
+mechanisms for pose regression. Subsequent works [20], [55]
+improve feature learning through enhanced backbones and
+multi-modal representations. To further improve accuracy,
+some methods [15], [56], [57] incorporate temporal informa-
+tion from multi-frame point clouds. DiffLoc [15], [58] formu-
+lates pose estimation as a conditional generation problem and
+achieves strong APR performance, but introduces additional
+computational complexity and longer training times.
+Scene Coordinate Regression. In contrast to APR, SCR [6],
+[17], [24], [59]–[61] predicts point-to-world correspondences
+and estimates poses via RANSAC [18], explicitly leveraging
+scene geometry [6], achieving higher accuracy than APR.
+SGLoc [6] decouples localization into correspondence pre-
+diction and pose estimation, achieving improved robust-
+ness and approximately 1.5-meter accuracy on QEOxford.
+LiSA [17] further enhances performance by incorporating
+semantic information, reaching an accuracy of 0.95 meters.
+RALoc [24] introduces additional regularization to improve
+correspondence learning and robustness under challenging
+conditions, further advancing SCR-based localization. Despite
+their superior accuracy, SCR-based methods typically require
+substantially longer training times, often exceeding two days
+per large-scale outdoor scene.
+C. Efficient Training in Regression-based Localization
+Regression-based localization methods encode scene in-
+formation into network parameters and avoid explicit map
+matching during inference. However, they typically require
+scene-specific training, which can take hours or even days
+for each new environment. Since training must be repeated
+independently for every scene, improving training efficiency
+is critical for practical deployment.
+Recent works [19]–[21] improve training efficiency by de-
+coupling representation learning from scene-specific optimiza-
+tion. In this paradigm, a scene-agnostic backbone is pretrained
+and reused across scenes, while only lightweight scene-specific
+components are optimized for each new environment. Early
+work [20] demonstrates the feasibility of reusing pretrained
+backbones across scenes on datasets such as Oxford [5] and
+vReLoc [54]. FlashMix [21] pretrains a backbone with place
+recognition objectives on large-scale datasets such as Mul-
+Ran [4] and Apollo SouthBay [22], and adapts it to new scenes
+by training only regression heads. LightLoc [19] improves the
+efficiency of SCR by pretraining a scene-agnostic backbone on
+nuScenes [23] using a multi-scene parallel optimization strat-
+egy [16]. GTR-Loc [62] builds upon the pretrained backbone
+from LightLoc and incorporates geospatial text regularization
+to enhance localization performance.
+Although these methods substantially reduce the cost of
+scene-specific training, their effectiveness relies heavily on the
+generalization ability of the pretrained backbone. Our analysis
+shows that when the target scene is collected with a LiDAR
+configuration different from that used during pretraining, the
+learned representation can become less reliable, leading to
+degraded localization performance, as shown in Fig. 1. This
+observation motivates us to improve the pretrained backbone
+itself through sensor-robust representation learning.
+With a scene-agnostic backbone, efficient scene-specific
+training remains important for large-scale outdoor LiDAR
+localization. Outdoor benchmarks [5], [6] often cover large
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+4
+TABLE I
+COMPARISON OF LIDAR LOCALIZATION DATASETS. LIDAR DIVERSITY REFERS TO THE USE OF SENSORS WITH DIFFERENT CONFIGURATIONS (E.G.,
+BEAM NUMBERS AND SAMPLING DENSITIES), WHILE CROSS-SENSOR CONSISTENCY INDICATES ALIGNED OBSERVATIONS OF THE SAME SCENE ACROSS
+SENSORS. SCENE TYPES ARE CATEGORIZED AS OPEN (SPARSE URBAN ENVIRONMENTS WITH WEAK STRUCTURAL CONSTRAINTS), STRUCTURED
+(REGULAR LAYOUTS WITH REPEATED GEOMETRIC PATTERNS), DENSE (CLUTTERED ENVIRONMENTS WITH HIGH STRUCTURAL DENSITY AND STRONG
+OCCLUSIONS), AND DEGENERATE (LOW-FEATURE OR GEOMETRICALLY AMBIGUOUS ENVIRONMENTS WITH LIMITED OBSERVABILITY).
+Datasets
+Reference
+Diverse LiDAR
+Cross-LiDAR Consistency
+Diverse Scene
+Scene Types
+Total Distance
+KITTI [63]
+CVPR’12
+✗
+✗
+✓
+Open
+44 Km
+NCLT [64]
+IJRR’16
+✗
+✗
+✗
+Structured
+147 Km
+Oxford [5]
+ICRA’20
+✗
+✗
+✗
+Open
+280 Km
+MulRan [4]
+ICRA’20
+✗
+✗
+✓
+Open, Structured
+123 Km
+Apollo-SouthBay [22]
+CVPR’19
+✗
+✗
+✓
+Open
+381 Km
+nuScenes [23]
+CVPR’20
+✗
+✗
+✓
+Open
+242 Km
+Tiers [65]
+IROS’22
+✓
+✓
+✓
+Structured
+2.1 Km
+BotanicGarden [66]
+RAL’23
+✓
+✓
+✗
+Degenerate
+17 Km
+Boreas [3]
+IJRR’23
+✗
+✗
+✗
+Open
+350 Km
+HeLiPR [25]
+IJRR’24
+✓
+✗
+✓
+Open, Structured
+164 Km
+HeRCULES [7]
+ICRA’25
+✗
+✗
+✓
+Open, Structured
+59 Km
+GEODE [26]
+IJRR’26
+✓
+✗
+✓
+Degenerate
+64 Km
+SULID
+Ours
+✓
+✓
+✓
+Open, Structured, Dense
+219 Km
+spatial areas and contain hundreds of thousands of training
+samples, leading to substantial computational and storage
+costs. Moreover, large-scale scenes contain many geomet-
+rically similar regions, which increases ambiguity in scene
+coordinate regression. To address these challenges, Light-
+Loc introduces sample classification guidance and redundant
+sample downsampling to reduce regression ambiguity and
+computational redundancy. In this work, we integrate the
+sensor-robust backbone with these efficient training strategies,
+improving representation generalization while retaining the
+fast new-scene learning capability of LightLoc.
+D. Multi-LiDAR datasets
+Sensor-robust LiDAR representation learning requires cross-
+sensor observations of the same physical structures. Un-
+like mixed single-sensor datasets, synchronized multi-LiDAR
+datasets with large common observation areas provide direct
+correspondences for learning geometry-centric representations
+and evaluating cross-sensor localization.
+As summarized in Tab. I, existing LiDAR localization
+datasets can be categorized into two groups according to Li-
+DAR diversity. Widely used benchmarks such as KITTI [63],
+Oxford [5], MulRan [4], nuScenes [23], and Boreas [3] provide
+valuable large-scale driving sequences for localization and
+perception. However, since each sequence is collected with
+a single sensor configuration, they cannot provide aligned ob-
+servations of the same scene across different LiDAR sensors.
+This limits their use for studying cross-sensor consistency and
+sensor-robust representation learning.
+Recent multi-LiDAR datasets, such as Tiers [65], He-
+LiPR [25], BotanicGarden [66], and GEODE [26], introduce
+multiple LiDAR sensing configurations and enable evaluation
+under diverse sensing conditions. Nevertheless, as shown in
+Tab. I, they still have different limitations. Tiers and Botan-
+icGarden provide cross-LiDAR observations, but their scale
+is relatively limited and their scenes are mainly structured
+or degenerate. HeLiPR provides multiple LiDAR sensors and
+covers large-scale open and structured scenes, but its cross-
+LiDAR consistency is limited by the sensor mounting layout:
+the Ouster sensor is placed near the center of the platform
+and provides a 360◦field of view, while the Aeva sensor is
+forward-facing and the Velodyne sensor is rear-mounted with
+partial occlusions. Due to differences in mounting positions,
+fields of view, and scanning patterns, LiDAR sensors in
+existing multi-LiDAR datasets often observe only partially
+overlapping regions, which limits the availability of shared
+physical structures for cross-sensor representation learning.
+GEODE focuses on heterogeneous sensing in degenerate envi-
+ronments, but its coverage of general large-scale urban scenes
+remains limited. As a result, existing multi-LiDAR datasets
+do not simultaneously provide diverse LiDAR configurations,
+extensive cross-LiDAR consistency, and diverse large-scale
+urban scene coverage.
+To address these limitations, we construct SULID, a syn-
+chronized urban multi-LiDAR dataset designed for sensor-
+robust representation learning. SULID provides synchronized
+observations from representative 32-, 64-, and 128-beam rotat-
+ing LiDARs, while the sensing platform is carefully designed
+to maximize the common observation area across sensors. In
+addition, SULID covers diverse urban scene types, including
+open, structured, and dense environments. These properties en-
+able direct cross-sensor comparison and consistency learning,
+making SULID suitable for sensor-robust LiDAR representa-
+tion learning and cross-sensor localization research.
+III. SULID
+SULID is designed to support sensor-robust LiDAR repre-
+sentation learning in large-scale urban environments. Its design
+follows three main principles: diverse LiDAR configurations,
+extensive cross-sensor shared observations, and diverse urban
+scene coverage. To this end, we build a synchronized multi-
+LiDAR acquisition platform equipped with representative 32-,
+64-, and 128-beam rotating LiDARs, and collect data across
+structured, open, and dense urban environments. The key
+characteristics of SULID are summarized in Tab. I.
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+5
+0.06m
+XT-32
+OS1-64 OS1-128
+M39
+z
+x
+y
+0.04m
+0.10m
+0.08m
+1.96m
+2.32m
+2.44m
+2.61m
+Platform
+Sensors Location Diagram
+Urban-Road
+Urban-Hub
+Campus-A
+Campus-B
+2.96 km
+2.52 km
+2.24 km
+2.00 km
+1.35 km
+1.27 km
+2.59 km
+1.22 km
+(a) Aerial views of collected scenes with LiDAR trajectories. 
+(b) Sensor platform with multi-LiDAR configuration and coordinate systems. 
+Fig. 2. Overview of the SULID dataset. (a) Aerial views of the collected scenes, including Campus-A, Campus-B, Urban-Road, and Urban-Hub, with
+LiDAR trajectories overlaid, covering diverse urban environments. (b) The data collection platform is equipped with multiple LiDAR sensors of different
+configurations, along with their spatial arrangement and coordinate systems, enabling synchronized multi-LiDAR observations.
+A. Sensor Platform
+To provide diverse LiDAR observations of the same scene,
+we build a multi-LiDAR acquisition platform mounted on a
+Buick GL8, as shown in Fig. 2 (b). The platform integrates
+three rotating LiDAR sensors with different configurations:
+Hesai XT-32, Ouster OS1-64, and Ouster OS1-128. As sum-
+marized in Tab. II, these sensors differ in vertical resolution,
+field of view, and point density, covering representative 32-,
+64-, and 128-beam LiDAR configurations. All LiDARs operate
+at 10 Hz. A high-precision GNSS/INS system (M39) is also
+installed to provide ego-motion estimates at 200 Hz.
+All sensors are rigidly mounted on the vehicle roof to
+maintain fixed relative poses during data collection. Since
+different LiDAR configurations produce distinct point-cloud
+characteristics, the platform is carefully designed to reduce
+mutual occlusions and enlarge the common observation area
+across sensors. In particular, the LiDAR sensors are mounted
+at different heights and horizontally offset positions, as shown
+in Fig. 2 (b), allowing them to observe largely overlapping
+scene regions while preserving their distinct LiDAR configu-
+rations. Fig. 3 shows that synchronized point clouds captured
+at the same location exhibit different point densities and spatial
+distributions, while still preserving largely overlapping scene
+structures. This design provides rich cross-sensor observations
+of the same physical scene, forming a natural basis for learning
+sensor-robust representations.
+B. Synchronization and Calibration
+Synchronization. To ensure temporal consistency, all Li-
+DAR sensors are synchronized using Precision Time Protocol
+(PTP) [67], with the GNSS/INS system providing a shared
+time reference. In addition, synchronized triggering is used
+to align the acquisition cycles of different LiDAR sensors.
+This setup enables point clouds from different LiDAR sensors
+to be captured at the same nominal timestamp, ensuring
+that synchronized scans correspond to the same underlying
+scene. Such temporal alignment is essential for constructing
+TABLE II
+SPECIFICATIONS OF MULTI-LIDAR SENSORS USED IN SULID.
+Sensor
+Resolution (V×H)
+FOV (H×V)
+Range
+FPS
+Ouster OS1-128
+128×2048
+360◦×45◦
+120m
+10Hz
+Ouster OS1-64
+64×1024
+360◦×45◦
+120m
+10Hz
+Hesai XT-32
+32×1800
+360◦×31◦
+120m
+10Hz
+Hesai XT-32
+Ouster OS1-64
+Ouster OS1-128
+Fig. 3.
+Cross-sensor point-cloud observations in SULID. Point clouds
+captured simultaneously at the same location by Ouster OS1-128, Ouster
+OS1-64, and Hesai XT-32. The sensors exhibit different sampling densities
+and spatial patterns while preserving largely overlapping scene structures,
+providing shared observations for cross-sensor representation learning.
+reliable cross-sensor correspondences and supporting cross-
+sensor consistency learning.
+Calibration. For spatial alignment, we perform both LiDAR-
+to-LiDAR and LiDAR-to-GNSS/INS calibration. LiDAR-to-
+LiDAR calibration is conducted in scenes with rigid structures
+and distinctive geometric features, where the relative trans-
+formations between sensors are estimated using point cloud
+registration [68]. For LiDAR-to-GNSS/INS calibration, we
+follow a standard calibration procedure similar to KITTI [63],
+estimating the rigid transformation between the reference
+LiDAR frame and the GNSS/INS frame by aligning LiDAR
+observations with ego-motion trajectories provided by the
+GNSS/INS system. The calibrated extrinsics are used to asso-
+ciate synchronized multi-LiDAR observations with ego poses
+and transform point clouds into a unified coordinate system.
+Pose Reference. Accurate pose references are obtained using
+the post-processing software provided with the GNSS/INS
+system (M39). The system records raw GNSS and INS
+measurements during data collection, and the post-processing
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+6
+Structured
+Open
+Dense
+Submap (Accumulated)
+Single-frame Point Cloud
+Repetitive Structures
+Sparse Geometry
+Dynamic Objects / Occlusion
+Fig. 4. Representative scene types in SULID. Each column corresponds to a scene type, including structured, open, and dense environments. The top row
+shows accumulated point cloud maps (submaps), while the bottom row presents single-frame point clouds. Structured environments exhibit repetitive geometric
+patterns, open environments contain sparse structures with weak geometric constraints, and dense environments are characterized by strong occlusions and
+clutter. The red line indicates the driving trajectory. The red dot highlights the reference position.
+pipeline fuses these measurements to generate stable and
+temporally consistent ego-motion trajectories. The resulting
+poses are used as supervision for training and evaluation.
+C. Scene Design and Data Collection
+To support sensor-robust representation learning under di-
+verse urban conditions, SULID is collected across four ur-
+ban regions: Campus-A, Campus-B, Urban-Road, and Urban-
+Hub, as shown in Fig. 2 (a). These regions are organized
+into three representative scene types: structured, open, and
+dense environments. The aerial views and overlaid trajectories
+in Fig. 2 (a) show the spatial coverage of each region,
+while Fig. 4 presents representative accumulated submaps
+and single-frame point clouds. These scene types introduce
+complementary challenges for LiDAR localization, including
+structural repetition, sparse geometric constraints, and dy-
+namic occlusions.
+Campus (Structured Scenario). The structured scenes are
+collected in campus areas, including Campus-A and Campus-
+B. These environments are characterized by regular building
+layouts, organized road networks, and repeated roadside el-
+ements, as shown in Fig. 4. Such regular structures provide
+stable geometric cues, but they may also introduce local
+ambiguity because similar facades, repeated buildings, and
+regularly arranged objects can produce visually similar ob-
+servations at different locations.
+SULID includes two campus subsets with complementary
+spatial coverage. Campus-A contains 6 trajectories, each ap-
+proximately 8.0 km, with largely overlapping routes. Campus-
+B contains 8 trajectories, each approximately 9.7 km, covering
+a broader spatial extent under similar structured layouts. These
+repeated traversals allow the evaluation of representation con-
+5
+15
+25
+35
+45
+55
+65
+Range (m)
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Normalized Point Count
+Campus
+Urban-Road
+Urban-Hub
+Fig. 5. Range-dependent point distributions across different scene types.
+Point counts are computed within distance bins using Ouster OS1-128 scans
+and normalized by the nearest-range bin. The structured, open, and dense
+scenes exhibit distinct distribution patterns, reflecting differences in geometric
+sparsity, structural density, and occlusion characteristics.
+sistency under revisits, structural regularity, and repetitive
+geometric patterns.
+Urban-Road (Open Scenario). The open scenes are collected
+in Urban-Road, which covers major urban roads and a cross-
+sea bridge. This environment is dominated by wide road sur-
+faces, open surroundings, and relatively sparse nearby struc-
+tures. Compared with structured scenes, open environments
+provide fewer distinctive geometric elements, making it more
+challenging to extract stable localization cues from single-
+frame LiDAR observations.
+We collect 5 trajectories in Urban-Road, each approximately
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+7
+RSD
+Copy
+Backbone Weight
+C
+SC
+Max Pooling
+(b) Scene-specific Prediction Heads Training
+LPC
+LPC
+Backbone
+MLP
+Backbone
+Max Pooling
+MLP
+MLP
+WPC
+Copy
+Backbone&
+MLP Weight
+Backbone
+Selected Scene Index
+×N
+MLP
+Local Cons.
+Global Cons.
+LPC
+WPC
+(a)  Sensor-robust Backbone Learning
+C
+Legend
+Trainable Params
+Frozen Params
+Gaussian Noise
+Add
+Concat
+Fig. 6. Training pipeline of LightLoc++. (a) In sensor-robust backbone learning, synchronized scans are transformed into a unified LiDAR coordinate system
+and fed into a shared backbone with multi-scene regression heads. Local and global consistency losses are imposed across synchronized LiDAR observations to
+learn sensor-robust representations. (b) In new-scene learning, the pretrained backbone is frozen, while lightweight scene-specific heads are trained with SCG
+and RSD for efficient SCR. LPC and WPC denote local point coordinates in the unified LiDAR coordinate system and world point coordinates, respectively.
+SC denotes sample classification.
+8.8 km, with repeated traversals along similar routes. This
+scene type is designed to evaluate whether the learned repre-
+sentation can remain reliable when local geometric constraints
+are weak and informative structures are sparsely distributed.
+Urban-Hub (Dense Scenario). The dense scenes are collected
+in Urban-Hub, a major urban transportation area with com-
+plex road layouts, dense roadside facilities, heavy traffic, and
+frequent occlusions. In contrast to open scenes, Urban-Hub
+contains abundant geometric details, but many observations are
+affected by dynamic objects, such as vehicles and pedestrians.
+This requires the learned representation to focus on stable
+scene geometry while being robust to clutter and objects.
+SULID collects 5 trajectories in Urban-Hub, each approx-
+imately 9.8 km. The trajectories cover similar spatial regions
+under different traffic conditions and dynamic patterns, pro-
+viding challenging data for evaluating localization robustness
+in dense and dynamic urban environments.
+Overall, SULID contains 24 trajectories across multiple
+urban regions, covering approximately 219 km. To further
+quantify the geometric differences among scene types, we ana-
+lyze the range-dependent point distributions using Ouster OS1-
+128, as shown in Fig. 5. The three scene categories exhibit
+distinct distribution patterns, reflecting differences in structural
+regularity, geometric sparsity, and occlusion characteristics.
+D. Dataset Summary
+As summarized in Tab. I, SULID provides synchronized
+multi-LiDAR observations across diverse large-scale urban en-
+vironments. The sensor platform and sensor specifications are
+shown in Fig. 2 and Tab. II, respectively, demonstrating that
+SULID covers representative 32-, 64-, and 128-beam LiDAR
+configurations. The extensive cross-sensor shared observations
+are illustrated in Fig. 3, while the structured, open, and dense
+urban scenes are shown in Fig. 4. Overall, SULID contains 24
+trajectories covering approximately 219 km. These properties
+provide the data foundation for the sensor-robust representa-
+tion learning framework introduced in the next section.
+IV. LIGHTLOC++
+A. Overview
+We now present LightLoc++, as illustrated in Fig. 6. The
+proposed framework follows the decoupled training paradigm
+introduced in previous works [16], [19], [19], where scene-
+agnostic representation learning and scene-specific prediction
+head training are separated.
+LightLoc++ consists of two main components. The first
+component is sensor-robust backbone learning, which lever-
+ages synchronized observations from multiple LiDAR sen-
+sors to learn representations that remain effective across
+different LiDAR configurations. By enforcing cross-sensor
+consistency during pretraining, the backbone is encouraged
+to capture stable scene geometry while reducing sensitivity
+to sensor-specific configurations. The second component is
+scene-specific prediction head training, where the pretrained
+backbone is frozen and lightweight scene-specific heads are
+optimized for new scenes.
+Compared with LightLoc, the key extension of LightLoc++
+lies in the backbone learning stage. Instead of pretraining
+the backbone on a single-LiDAR dataset, LightLoc++ uses
+synchronized multi-LiDAR observations and cross-sensor con-
+sistency learning to improve backbone generalization under
+different LiDAR configurations. The network architectures,
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+8
+Conv block (kernel size, stride, channels)
+ReLU activation
+Skip connection
+Conv 3, 1, 32
+Conv 3, 2, 64
+Conv 3, 2, 128
+Conv 3, 2, 256
+Conv 3, 1, 256
+Conv 1, 1, 256
+Conv 3, 1, 256
+Conv 3, 1, 512
+Conv 1, 1, 512
+Conv 3, 1, 512
+FC, 512
+FC, 256
+FC, k
+FC, 2×(512+k)
+FC, 2×(512+k)
+×2
+FC, 512+k
+FC, 512+k
+FC, 512+k
+FC, 512+k
+FC, 512+k
+FC, 512+k
+FC, 3
+FC block (channels)
+Dropout
+Concat
+C
+C
+Backbone
+Reg. head
+Cls. head
+Max pooling
+Fig. 7. Network architectures used in LightLoc++. LightLoc++ uses the same backbone and prediction-head architectures as LightLoc [19]. Cls. head and
+Reg. head denote the sample classification head and the scene coordinate regression head, respectively. The backbone extracts scene-agnostic point features,
+the classification head provides spatial guidance for SCG, and the regression head predicts scene coordinates for pose estimation. Here, k denotes the number
+of spatial clusters used for sample classification in SCG.
+including the backbone and prediction heads, remain the same
+as LightLoc [19], as illustrated in Fig. 7. Meanwhile, the
+scene-specific training pipeline is retained, preserving the fast
+new-scene learning capability of LightLoc.
+B. Revisiting LightLoc
+We first briefly revisit LightLoc [19]. LightLoc adopts a
+decoupled training paradigm that separates backbone learning
+from scene-specific prediction head training.
+For the network architecture, LightLoc adopts the backbone
+of SGLoc [6] with a reduced feature dimension and fewer
+residual layers to reduce the number of parameters and shorten
+the training time. In the backbone training stage, following
+ACE [16], LightLoc trains N regression heads in parallel, each
+corresponding to one of N training scenes. Specifically, given
+an input point cloud P = {pi}M
+i=1, where M is the number
+of input points and pi ∈R3 denotes a local point coordinate
+(LPC) in the LiDAR coordinate system, the backbone network
+fθ is used to extract point-wise features. Given the scene index
+idx, the corresponding regression head hidx is selected to
+predict the world point coordinates (WPC): hidx (fθ (P)) =
+{p′
+i}M ′
+i=1, where M ′ denotes the number of output points
+after feature extraction. In LightLoc, M ′ = M/8 due to
+the downsampling in the backbone. The training objective
+minimizes the L1 distance between the predicted WPC and
+the ground-truth WPC:
+Lreg =
+1
+M ′
+M ′
+X
+i=1
+∥p′
+i −p∗
+i ∥1 .
+(1)
+This multi-scene parallel training strategy encourages the
+backbone to learn features that generalize across diverse
+scenes. In practice, LightLoc partitions nuScenes [23], includ-
+ing both the trainval and test splits, into 18 spatial training
+scenes using k-means clustering over trajectory locations. The
+partitioned data contain approximately 350K training samples,
+with about 19.5K samples per partition on average. Each
+partition is assigned to an independent regression head during
+multi-scene parallel backbone training.
+In addition to freezing the backbone for new-scene learning,
+LightLoc introduces two complementary strategies to address
+the training challenges caused by large spatial coverage and a
+large number of training samples. First, sample classification
+guidance (SCG) uses an auxiliary spatial classification task
+to provide global guidance for scene coordinate regression,
+reducing ambiguity in geometrically similar regions. Second,
+redundant sample downsampling (RSD) dynamically filters
+out well-learned samples according to loss statistics, reducing
+computational redundancy during training.
+During inference, similar to SGLoc [6], LightLoc takes LPC
+as input and directly predicts their corresponding WPC. The
+final 6-DoF pose is then estimated from these correspondences
+using RANSAC [18].
+C. Sensor-Robust Backbone Training
+LightLoc achieves strong performance on Oxford [5] and
+QEOxford [6], where the LiDAR configuration is relatively
+close to that of the pretraining data. However, on datasets
+collected with different LiDAR sensors, such as Boreas [3],
+MulRan [7], and HeRCULES [7], the performance gap com-
+pared with conventional SCR methods becomes much larger.
+These results indicate that the effectiveness of decoupled SCR
+methods largely depends on the generalization ability of the
+pretrained backbone, which remains limited under LiDAR
+sensor variations.
+We argue that a robust pretrained backbone should capture
+geometric properties of the scene that remain stable across
+different LiDAR configurations. Therefore, we leverage the
+synchronized multi-LiDAR observations provided by SULID
+to learn sensor-robust representations. Following LightLoc, we
+divide SULID into multiple spatial training scenes and attach
+a dedicated regression head to each scene.
+Given a synchronized timestamp, we use the calibrated
+LiDAR-to-LiDAR extrinsics to transform point clouds from
+different sensors into a unified LiDAR coordinate system. The
+resulting synchronized point cloud from sensor s is denoted
+as Ps, where s ∈S and S = {O128, O64, H32} denotes the
+Ouster OS1-128, Ouster OS1-64, and Hesai XT-32 sensors,
+respectively. Each point cloud Ps is then fed into the shared
+backbone fθ to extract point-wise features:
+Fs = fθ (Ps) ,
+s ∈S.
+(2)
+Inspired by contrastive representation learning [30], [31], we
+impose cross-sensor consistency constraints on the extracted
+features Fs, including global scan-level consistency and local
+point-level consistency.
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+9
+Global Consistency. The synchronized point clouds from
+different LiDAR sensors correspond to the same timestamp
+and observe the same geometric properties. Therefore, we first
+align their scene-level representations.
+Let g(·) denote a permutation-invariant pooling operator that
+maps a sparse feature set to a unit-norm global descriptor.
+For sensor s, the global descriptor is defined as gs = g(Fs).
+We then compute the cross-sensor consensus descriptor as
+¯g =
+1
+|S|
+P
+s∈S gs. We enforce global consistency by mini-
+mizing the deviation of each sensor-specific descriptor from
+the consensus:
+Lglobal = 1
+|S|
+X
+s∈S
+∥gs −¯g∥2 .
+(3)
+Local Consistency. Since synchronized point clouds from
+different LiDAR sensors are transformed into a common
+LiDAR coordinate frame, their point-level features can be
+compared according to their 3D positions. We therefore per-
+form geometric nearest-neighbor matching across sensors to
+identify reliable shared points. A point is retained only when
+its nearest-neighbor distance across sensors is smaller than a
+predefined threshold, yielding a set of reliable shared points
+denoted as V. For each shared point v ∈V, let F s
+v denote the
+local feature extracted from sensor s, and define the cross-
+sensor consensus feature as ¯Fv =
+1
+|S|
+P
+s∈S F s
+v . Then, the
+local consistency loss is defined as follows:
+Llocal =
+1
+|V||S|
+X
+v∈V
+X
+s∈S
+F s
+v −¯Fv
+
+2 .
+(4)
+Defined on reliable cross-sensor observations, the local
+consistency term provides per-location supervision for learning
+sensor-invariant features on shared scene structures.
+The backbone loss combines the two terms:
+Lcons = Llocal + Lglobal,
+(5)
+Despite its simple formulation, Lcons is enabled by the tri-
+sensor synchronization and shared coordinate frame provided
+by SULID, which allows reliable cross-sensor feature align-
+ment at both global and local levels.
+D. Scene-specific Prediction Heads Training
+As shown in Fig. 6, after obtaining the pretrained backbone,
+we freeze its parameters for new scenes, training only scene-
+specific prediction heads. However, two challenges that remain
+for accelerating SCR training in large-scale outdoor scenes:
+the extensive coverage area, which complicates regression
+learning, and the vast amount of data, which imposes a
+significant computational burden. To address these issues, we
+adopt SCG and RSD techniques.
+SCG. SCG is designed to generate a sample-wise probability
+distribution feature with only a few minutes of auxiliary
+training. The generated feature is then used to guide SCR
+training, reducing the training time required for new scenes. Its
+network structure is illustrated in Fig. 7, where the auxiliary
+training objective is formulated as a sample classification task.
+We first generate classification labels from the training
+trajectory. Specifically, K-Means is applied to partition the
+Algorithm 1: Pseudocode for RSD.
+Input: Training set T , downsampling ratio rd, start
+ratio rst, stop ratio rsp, training epochs E,
+length of sliding window W.
+1 First downsampling epochs E1 ←⌈E × rst⌉.
+2 Second downsampling epochs E2 ←⌊E × rst+rsp
+2
+⌋.
+3 Stop downsampling epochs Es ←⌊E × rsp⌋.
+4 T
+′ ←T .
+5 for e = 0, . . . , E −1 do
+6
+▷In parallel on GPUs.
+7
+Sample a batch B ∼T
+′.
+8
+for (Pi, P∗
+i ) ∈B do
+9
+Compute the median point-wise L1 loss as Li
+m.
+10
+if e ∈[Ej, Ej + W) then
+// j ∈[1, 2]
+11
+Record Li
+m within W.
+12
+if e = Ej + S then
+13
+Compute the loss variance σ2
+i of Li
+m within W.
+14
+Sort T
+′ in descending order of V.
+15
+T
+′ ←front (1 −rd) ×
+T
+′ samples.
+16
+if e = Es then
+17
+T
+′ ←T .
+Return: T
+′.
+training positions into k spatial clusters, and the cluster index
+of each sample is used as its pseudo classification label. This
+label generation process requires no manual annotation and
+provides a coarse spatial partition of the target scene.
+Subsequently, we train the classification network. For the
+input point cloud P, we use the pretrained backbone fθ to
+extract features fθ(P). A global max-pooling operation is
+then applied to aggregate the point-wise features into a global
+feature vector, which is fed into an MLP classifier to predict
+the probability distribution over the k spatial clusters. The
+classifier is trained using the cross-entropy loss with label
+smoothing (ϵ = 0.1) [69]:
+Lcls = −
+k1
+X
+i=1
+
+l∗
+i (1 −ϵ) + ϵ
+k1
+
+log
+
+l
+′
+i
+
+,
+(6)
+where l
+′
+i and l∗
+i denote the predicted probability and ground-
+truth label of class i, respectively.
+After training, the predicted probability distribution is used
+as the SCG feature to provide coarse spatial guidance for
+SCR. As shown in the right part of Fig. 6 (b), following
+GLACE [33], [70], we further perturb the SCG feature with
+Gaussian noise of standard deviation σ = 0.1 and normalize
+it back to the unit sphere. The resulting guidance feature is
+incorporated into the SCR framework, providing scene-level
+spatial priors that facilitate faster convergence and improve the
+robustness of regression learning.
+RSD. Large-scale outdoor LiDAR datasets usually contain
+substantial redundancy due to the long sensing range (up
+to 100m) and high acquisition frequency (10Hz). To reduce
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+10
+unnecessary computation during scene-specific SCR training,
+we introduce the RSD strategy, as shown in Alg. 1.
+RSD performs hierarchical sample downsampling by parti-
+tioning the training process into multiple stages, controlled by
+predefined epochs and a downsampling ratio. Specifically, we
+define E1 epochs for the initial stage, E2 for the intermediate
+stage, and Es as the final epoch, together with a downsampling
+ratio rd. Below, we describe each stage.
+In the first stage, we optimize SCR using the full training
+set T for E1 epochs. For each sample, we compute the median
+point-level L1 loss, denoted as Lm, where the median is used
+for its robustness to outliers.
+In the second stage, we assess the convergence of each
+sample by calculating the variance of Lm within a sliding
+window of size W. We denote the loss variance of sample i
+as σ2
+i . At epoch E1 + W, we sort the samples in T by σ2
+i in
+descending order and retain the top (1−rd)|T | samples as the
+reduced set T ′. High-variance samples are prioritized because
+they indicate slower convergence and therefore require more
+training focus.
+In the third stage, we repeat the same procedure on T ′.
+Specifically, we compute the median loss and its variance
+within the sliding window of size W, and further retain the top
+(1−rd)|T ′| samples according to σ2
+i . As a result, the training
+set is reduced to (1 −rd)2|T | samples.
+In the final stage, we reintroduce the full training set T from
+epoch Es onward to ensure that all samples are sufficiently
+optimized before convergence.
+With RSD, the network can exclude well-converged samples
+during intermediate training stages by simply computing loss
+variance within a sliding window. This strategy introduces
+minimal overhead, accelerates SCR training, and preserves
+localization accuracy.
+E. Loss Function.
+The training objective of LightLoc++ consists of two stages:
+sensor-robust backbone pretraining and scene-specific predic-
+tion head optimization.
+For backbone pretraining, we jointly optimize the scene
+coordinate regression loss Lreg and the cross-sensor con-
+sistency loss Lcons. The regression loss preserves the task-
+specific localization capability of the backbone, while the
+consistency loss encourages synchronized LiDAR scans from
+different sensors to produce sensor-invariant representations.
+The backbone training objective is defined as:
+Lbackbone = Lreg + λLcons,
+(7)
+where λ is a balancing weight that controls the contribution of
+the cross-sensor consistency loss during backbone pretraining.
+For scene-specific prediction head training, we optimize two
+objectives: the auxiliary classification loss Lcls and the scene
+coordinate regression loss Lreg. Specifically, Lcls is used to
+train the SCG branch with cross-entropy loss and a label
+smoothing factor of ϵ = 0.1, as defined in Eq. 6. The learned
+sample probability distribution is then used as spatial guidance
+for SCR, where the regression head is optimized using Lreg
+defined in Eq. 1.
+V. EXPERIMENTS
+A. Datasets
+We evaluate LightLoc++ under diverse LiDAR configura-
+tions and large-scale outdoor environments. Specifically, lo-
+calization benchmarking is conducted on five datasets: Oxford
+Radar RobotCar (Oxford) [5], QEOxford [6], MulRan [4],
+Boreas [3], and HeRCULES [7]. These datasets cover different
+LiDAR sensors, acquisition platforms, urban layouts, and envi-
+ronmental conditions, enabling a comprehensive evaluation of
+localization accuracy and cross-dataset robustness. In addition,
+we use HeLiPR [25] for cross-sensor generalization evaluation,
+where models trained with other LiDAR sensors are tested on
+another to assess sensor robustness.
+Oxford Radar RobotCar (Oxford) is collected using an
+autonomous-capable Nissan LEAF platform for urban local-
+ization. Each trajectory spans approximately 10 km and covers
+an area of about 2 km2. Point clouds are captured by the
+Velodyne HDL-32E LiDAR sensor, and ground-truth poses
+are provided by a GPS/INS system. The dataset contains
+repeated traversals under diverse weather, illumination, and
+traffic conditions, making it a widely used benchmark for
+urban localization.
+QEOxford is a quality-enhanced version of Oxford, where
+GPS/INS pose errors are reduced through trajectory alignment.
+The improved pose quality has been shown to benefit scene
+coordinate regression-based localization [6]. For both Oxford
+and QEOxford, we follow SGLoc [6]. The sequences 11-14-
+02-26, 14-12-05-52, 14-14-48-55, and 18-15-20-12 are used
+for training, while 15-13-06-37, 17-13-26-39, 17-14-03-00,
+and 18-14-14-42 are used for testing.
+Boreas is a multi-season autonomous driving dataset collected
+with a Velodyne Alpha-Prime 128-beam LiDAR. Each tra-
+jectory spans approximately 9 km, with repeated traversals
+under different seasonal and weather conditions. Its high-
+resolution LiDAR measurements and significant environmental
+variations make it challenging for localization. We use the
+sequences 2020-11-26, 2021-03-23, 2021-03-30, and 2021-04-
+13 for training, and 2020-12-01, 2021-02-02, 2021-03-02, and
+2021-04-29 for testing.
+MulRan was collected using a vehicle-mounted platform
+equipped with an Ouster OS1-64 LiDAR sensor, covering
+multiple urban environments. Following FlashMix [21], we
+use the DCC sequence, which features dense urban structures
+and has an average trajectory length of approximately 4.8 km.
+Specifically, DCC01 and DCC02 are used for training, and
+DCC03 is used for testing.
+HeRCULES is a heterogeneous sensing dataset that includes
+LiDAR measurements acquired with an Aeva Aeries II sen-
+sor, whose sensing characteristics differ from conventional
+LiDARs. In this work, we use the Library and Sports Complex
+sequences. The Library sequence spans approximately 1.6
+km and features a narrow campus road with curves and
+elevation changes, while the Sports Complex sequence spans
+approximately 1.4 km, covering open areas with parking lots
+and roads of varying slopes.
+In the Sports scene, Sports01 and Sports02 are used for
+training, and Sports03 is used for testing. In the Library scene,
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+11
+TABLE III
+QUANTITATIVE RESULTS ON THE QEOXFORD DATASET. MEAN ATE (M) / ARE (◦) ARE REPORTED. . BEST RESULTS IN BOLD, SECOND BEST RESULTS
+UNDERLINED. TRAINING TIME IS ALSO INCLUDED.
+Methods
+Reference
+Training Time
+15-13-06-37
+17-13-26-39
+17-14-03-00
+18-14-14-42
+Average
+PointLoc [54]
+Sens. J.’22
+125 hrs.
+10.75 / 2.36
+11.07 / 2.21
+11.53 / 1.92
+9.82 / 2.07
+10.79 / 2.14
+PosePN [20]
+PR’22
+5 hrs.
+9.47 / 2.80
+12.98 / 2.35
+8.64 / 2.19
+6.26 / 1.64
+9.34 / 2.25
+PosePN++ [20]
+PR’22
+11 hrs.
+4.54 / 1.83
+6.44 / 1.78
+4.89 / 1.55
+4.64 / 1.61
+5.13 / 1.69
+STCLoc [56]
+TITS’23
+20 hrs.
+5.14 / 1.27
+6.12 / 1.21
+5.32 / 1.08
+4.76 / 1.19
+5.34 / 1.19
+NIDALoc [57]
+TITS’24
+20 hrs.
+3.71 / 1.50
+5.40 / 1.40
+3.94 / 1.30
+4.08 / 1.30
+4.28 / 1.38
+HypLiLoc [55]
+CVPR’23
+17 hrs.
+5.03 / 1.46
+4.31 / 1.43
+3.61 / 1.11
+2.61 / 1.09
+3.89 / 1.27
+APR
+DiffLoc [15]
+CVPR’24
+145 hrs.
+2.03 / 1.04
+1.78 / 0.79
+2.05 / 0.83
+1.56 / 0.83
+1.86 / 0.87
+FlashMix [21]
+WACV’25
+1 hr.
+2.04 / 1.95
+1.95 / 1.83
+2.44 / 2.18
+2.81 / 2.14
+2.31 / 2.03
+SGLoc [6]
+CVPR’23
+50 hrs.
+1.79 / 1.67
+1.81 / 1.76
+1.33 / 1.59
+1.19 / 1.39
+1.53 / 1.60
+LiSA [17]
+CVPR’24
+53 hrs.
+0.94 / 1.10
+1.17 / 1.21
+0.84 / 1.15
+0.85 / 1.11
+0.95 / 1.14
+RALoc [24]
+ICCV’25
+98 hrs.
+1.53 / 1.48
+1.72 / 1.27
+1.38 / 1.21
+1.42 / 1.24
+1.51 / 1.30
+GTR-Loc [62]
+NeurIPS’25
+4 hrs.
+0.77 / 1.02
+0.77 / 1.01
+0.67 / 1.01
+0.80 / 1.07
+0.75 / 1.03
+SCR
+LightLoc [19]
+CVPR’25
+1 hr.
+0.82 / 1.12
+0.85 / 1.07
+0.81 / 1.11
+0.82 / 1.16
+0.83 / 1.12
+LightLoc++
+Ours
+1 hr.
+0.79 / 1.01
+0.71 / 0.94
+0.62 / 0.96
+0.68 / 0.99
+0.70 / 0.99
+TABLE IV
+QUANTITATIVE RESULTS ON THE OXFORD DATASET. MEAN ATE (M) / ARE (◦) ARE REPORTED. BEST RESULTS IN BOLD, SECOND BEST RESULTS
+UNDERLINED. TRAINING TIME IS ALSO INCLUDED.
+Methods
+Reference
+Training Time
+15-13-06-37
+17-13-26-39
+17-14-03-00
+18-14-14-42
+Average
+PointLoc [54]
+Sens. J.’22
+125 hrs.
+12.42 / 2.26
+13.14 / 2.50
+12.91 / 1.92
+11.31 / 1.98
+12.45 / 2.17
+PosePN [20]
+PR’22
+5 hrs.
+14.32 / 3.06
+16.97 / 2.49
+13.48 / 2.60
+9.14 / 1.78
+13.48 / 2.48
+PosePN++ [20]
+PR’22
+11 hrs.
+9.59 / 1.92
+10.66 / 1.92
+9.01 / 1.51
+8.44 / 1.71
+9.43 / 1.77
+STCLoc [56]
+TITS’23
+20 hrs.
+6.93 / 1.48
+7.55 / 1.23
+7.44 / 1.24
+6.13 / 1.15
+7.01 / 1.28
+NIDALoc [57]
+TITS’24
+20 hrs.
+5.45 / 1.40
+7.63 / 1.56
+6.68 / 1.26
+4.80 / 1.18
+6.14 / 1.35
+HypLiLoc [55]
+CVPR’23
+17 hrs.
+6.88 / 1.09
+6.79 / 1.29
+5.82 / 0.97
+3.45 / 0.84
+5.74 / 1.05
+APR
+DiffLoc [15]
+CVPR’24
+145 hrs.
+3.57 / 0.88
+3.65 / 0.68
+4.03 / 0.70
+2.86 / 0.60
+3.53 / 0.72
+FlashMix [21]
+WACV’25
+1 hr.
+3.05 / 1.96
+4.55 / 2.05
+4.67 / 2.05
+2.94 / 1.79
+3.80 / 1.96
+SGLoc [6]
+CVPR’23
+50 hrs.
+3.01 / 1.91
+4.07 / 2.07
+3.37 / 1.89
+2.12 / 1.66
+3.14 / 1.88
+LiSA [17]
+CVPR’24
+53 hrs.
+2.36 / 1.29
+3.47 / 1.43
+3.19 / 1.34
+1.95 / 1.23
+2.74 / 1.32
+RALoc [24]
+ICCV’25
+98 hrs.
+3.19 / 4.10
+3.87 / 3.96
+3.32 / 3.87
+2.59 / 3.71
+3.24 / 3.91
+GTR-Loc [62]
+NeurIPS’25
+4 hrs.
+2.29 / 1.17
+3.07 / 1.21
+2.99 / 1.20
+2.00 / 1.18
+2.59 / 1.19
+SCR
+LightLoc [19]
+CVPR’25
+1 hr.
+2.33 / 1.21
+3.19 / 1.34
+3.11 / 1.24
+2.05 / 1.20
+2.67 / 1.25
+LightLoc++
+Ours
+1 hr.
+2.24 / 1.06
+3.00 / 1.04
+2.99 / 1.04
+1.90 / 1.01
+2.53 / 1.04
+Library01 and Library02 are used for training, and Library03
+is used for testing.
+HeLiPR is a heterogeneous LiDAR dataset used for cross-
+sensor generalization evaluation. We use the DCC trajectories,
+with an average length of approximately 5.2 km, where
+DCC04 and DCC06 are used for training and DCC05 for
+testing. The model is trained only on Ouster OS2-128 data
+and evaluated on Ouster OS2-128, Aeva Aeries II, and Velo-
+dyne VLP-16 data, allowing us to assess both same-sensor
+performance and cross-sensor robustness.
+B. Experimental Setup
+Evaluation Metrics. We evaluate localization accuracy using
+two standard pose estimation metrics: Absolute Trajectory Er-
+ror (ATE) and Absolute Rotation Error (ARE). ATE measures
+the Euclidean distance between the predicted and ground-
+truth translations, while ARE measures the angular difference
+between the predicted and ground-truth rotations:
+ATE = ∥ˆt−t∥2,
+ARE = arccos
+ 
+trace( ˆRR⊤) −1
+2
+!
+. (8)
+For each trajectory with N frames, we report the mean ATE
+and ARE over all frames. In addition, we report the training
+time to evaluate the efficiency of learning a new scene.
+Implementation Details. LightLoc++ is implemented using
+PyTorch [71] and MinkowskiEngine [39].
+For sensor-robust backbone pretraining, we use the proposed
+SULID dataset. We apply K-Means clustering to the training
+positions and group spatially overlapping samples from dif-
+ferent trajectories into 26 spatial scene partitions. Following
+LightLoc [19], each partition is assigned a dedicated regression
+head, while the backbone is shared across all partitions.
+Each training sample contains synchronized observations
+from multiple LiDAR sensors, which are transformed into a
+unified LiDAR coordinate system using calibrated LiDAR-to-
+LiDAR extrinsics. Each input point cloud is voxelized with
+a voxel size of 0.3 m before being fed into the backbone.
+For the Lglobal, the distance threshold used to identify reliable
+cross-sensor correspondences is set to 0.3 m. The backbone
+and all regression heads are jointly optimized using Lbackbone
+in Eq. 7, with λ = 0.1. We train for 100 epochs with a batch
+size of 128 using AdamW [72]. More details can be found in
+the appendix.
+We use mixed-precision training to reduce memory con-
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+12
+TABLE V
+QUANTITATIVE RESULTS ON THE BOREAS DATASET. MEAN ATE (M) / ARE (◦) ARE REPORTED. . BEST RESULTS IN BOLD, SECOND BEST RESULTS
+UNDERLINED. TRAINING TIME IS ALSO INCLUDED.
+Methods
+Reference
+Training Time
+2020-12-01
+2021-02-02
+2021-03-02
+2021-04-29
+Average
+PointLoc [54]
+Sens. J.’22
+26 hrs.
+14.45 / 1.55
+12.73 / 1.59
+12.00 / 1.40
+13.00 / 1.48
+13.05 / 1.57
+PosePN [20]
+PR’22
+6 hrs.
+15.59 / 4.18
+5.58 / 0.99
+4.59 / 0.86
+5.82 / 0.88
+7.90 / 1.73
+PosePN++ [20]
+PR’22
+8 hrs.
+7.69 / 1.45
+4.87 / 0.98
+4.53 / 0.89
+5.14 / 0.87
+5.56 / 1.01
+STCLoc [56]
+TITS’23
+13 hrs.
+4.64 / 0.73
+4.56 / 0.80
+4.38 / 0.80
+4.71 / 0.63
+4.57 / 0.74
+NIDALoc [57]
+TITS’24
+21 hrs.
+5.01 / 0.87
+4.87 / 0.82
+4.87 / 0.82
+4.78 / 0.71
+4.88 / 0.81
+HypLiLoc [55]
+CVPR’23
+8 hrs.
+4.46 / 0.70
+1.86 / 0.71
+1.66 / 0.53
+1.57 / 0.44
+2.39 / 0.60
+APR
+DiffLoc [15]
+CVPR’24
+39 hrs.
+6.70 / 3.05
+5.64 / 2.86
+5.40 / 2.41
+4.58 / 2.15
+5.58 / 2.62
+FlashMix [21]
+WACV’25
+1 hr.
+52.67 / 12.63
+2.36 / 1.90
+2.35 / 1.78
+1.91 / 1.49
+14.82 / 4.45
+SGLoc [6]
+CVPR’23
+15 hrs.
+1.88 / 1.12
+1.49 / 1.10
+1.43 / 1.04
+1.51 / 1.09
+1.58 / 1.09
+LiSA [17]
+CVPR’24
+18 hrs.
+1.62 / 0.89
+1.34 / 0.86
+1.30 / 0.78
+1.41 / 0.81
+1.42 / 0.84
+RALoc [24]
+ICCV’25
+43 hrs.
+1.58 / 0.70
+1.58 / 0.60
+1.61 / 0.58
+1.59 / 0.63
+1.59 / 0.63
+GTR-Loc [62]
+NeurIPS’25
+4 hrs.
+2.51 / 1.21
+2.36 / 1.14
+2.31 / 1.06
+2.37 / 1.14
+2.39 / 1.14
+SCR
+LightLoc [19]
+CVPR’25
+1 hr.
+2.39 / 1.18
+2.24 / 1.14
+2.20 / 1.04
+2.33 / 1.12
+2.29 / 1.12
+LightLoc++
+Ours
+1 hr.
+0.97 / 0.67
+0.83 / 0.65
+0.78 / 0.59
+0.88 / 0.64
+0.87 / 0.64
+sumption, and backbone pretraining takes approximately 2
+days on 4 NVIDIA GH200 GPUs.
+For scene-specific heads training, the pretrained backbone
+is frozen, and only lightweight scene-specific prediction heads
+are optimized. For the Oxford and QEOxford dataset, sparse
+voxelization uses a voxel size of 0.3m, and the number of
+spatial clusters in SCG is set to k = 25. A 150MB GPU feature
+buffer is maintained to cache global features for efficient SCG
+training. The SCG classification head is trained for 50 epochs
+with a batch size of 512. For RSD, the downsampling ratio
+rd is fixed at 0.25, while the start and stop ratios rst and
+rsp are set to 0.25 and 0.85, respectively. For SCR training,
+the regression head is optimized for 25 epochs with a batch
+size of 256 using AdamW [72]. The learning rate follows a
+one-cycle schedule [73], ranging from 5 × 10−4 to 5 × 10−3.
+Dataset-specific settings, such as voxel size and feature buffer
+size, are provided in the appendix.
+All scene-specific models are trained on a single NVIDIA
+RTX 4090 GPU, and all reported training times correspond to
+this setting for fair comparison.
+C. Comparison with State-of-the-Art Methods
+Results on Oxford and QEOxford. We first evaluate Light-
+Loc++ on Oxford and QEOxford, both of which are collected
+using Velodyne HDL-32E LiDARs that are not included in the
+SULID pretraining set. We report the training time to assess
+scene adaptation efficiency, and use the mean ATE and mean
+ARE over all test trajectories to evaluate localization accuracy.
+Tab.
+III
+reports
+the
+results
+on
+QEOxford.
+Light-
+Loc++ achieves 0.70m/0.99◦, improving upon LightLoc
+(0.83m/1.12◦) and achieving the best position accuracy and
+second-best orientation accuracy among all compared meth-
+ods. Notably, LightLoc++ only replaces the backbone weights
+while preserving the original LightLoc architecture, enabling
+new-scene learning within one hour while maintaining the
+same compact 22M-parameter model. Compared with GTR-
+Loc, which introduces geospatial text supervision at the cost of
+approximately 4× longer training time, LightLoc++ achieves
+superior localization accuracy while retaining significantly
+higher training efficiency. It also outperforms the recently
+proposed RALoc. Although DiffLoc achieves slightly better
+orientation accuracy (0.87◦vs. 0.99◦), LightLoc++ improves
+position accuracy by 62.4% while requiring only single-frame
+input and 145× less training time.
+Tab. IV presents the evaluation results on the original Ox-
+ford benchmark. Consistent with the observations on QEOx-
+ford, LightLoc++ improves the average localization error
+of LightLoc from 2.67m/1.25◦to 2.53m/1.04◦. It achieves
+the best position accuracy and the second-best orientation
+accuracy among all compared methods, while maintaining
+the one-hour training time. These results demonstrate that
+the proposed sensor-robust backbone improves localization
+performance on unseen LiDAR sensors without sacrificing the
+rapid deployment capability of LightLoc.
+Results on Boreas. We further evaluate the proposed method
+on the Boreas dataset, which is collected using a Velodyne
+Alpha-Prime 128-beam LiDAR. Compared with LightLoc,
+LightLoc++ achieves significant gains in both position and
+orientation accuracy, reaching 0.87m/0.64◦and reducing the
+localization errors by 62.0% and 42.9%, respectively. Com-
+pared with LiSA, RALoc, GTR-Loc, and FlashMix, Light-
+Loc++ achieves the best overall localization performance
+while retaining the fast deployment capability.
+Since LightLoc++ keeps the downstream architecture and
+training protocol unchanged, the improvement over LightLoc
+on Boreas can be mainly attributed to the SULID-pretrained
+backbone. This demonstrates that multi-LiDAR consistency
+pretraining helps learn more sensor-robust representations,
+improving transferability to unseen LiDAR sensors.
+Results on MulRan. We further evaluate the proposed method
+on the DCC sequence of the MulRan dataset, which is col-
+lected by an Ouster OS1-64 LiDAR. As shown in Tab. VI,
+LightLoc++ achieves the best position accuracy among all
+compared methods, reaching 3.36m/2.18◦, and improves the
+position error of LightLoc from 4.76m to 3.36m while main-
+taining comparable orientation accuracy. Notably, LightLoc++
+preserves the efficient deployment pipeline of LightLoc and
+requires only 12 minutes to learn a new scene, substantially
+faster than LiSA and RALoc.
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+13
+TABLE VI
+QUANTITATIVE RESULTS ON THE MULRAN DATASET. MEAN ATE (M) /
+ARE (◦) ARE REPORTED. . BEST RESULTS IN BOLD, SECOND BEST
+RESULTS UNDERLINED. TRAINING TIME IS ALSO INCLUDED.
+Methods
+Reference
+Training Time
+DCC
+PointLoc [54]
+Sens. J.’22
+725 mins.
+16.38 / 5.16
+PosePN [20]
+PR’22
+70 mins.
+18.30 / 7.68
+PosePN++ [20]
+PR’22
+200 mins.
+6.64 / 3.43
+STCLoc [56]
+TITS’23
+230 mins.
+7.89 / 3.25
+NIDALoc [57]
+TITS’24
+321 mins.
+5.87 / 3.39
+HypLiLoc [55]
+CVPR’23
+110 mins.
+8.96 / 2.64
+APR
+DiffLoc [15]
+CVPR’24
+525 mins.
+11.61 / 3.06
+FlashMix [21]
+WACV’23
+20 mins.
+5.82 / 3.96
+SGLoc [6]
+CVPR’23
+203 mins
+4.43 / 2.34
+LiSA [17]
+CVPR’24
+270 mins
+4.59 / 3.17
+RALoc [24]
+ICCV’25
+577 mins
+3.42 / 2.64
+GTR-Loc [62]
+NeurIPS’25
+42 mins.
+3.51 / 2.13
+SCR
+LightLoc [19]
+CVPR’25
+12 mins.
+4.76 / 2.77
+LightLoc++
+Ours
+12 mins.
+3.36 / 2.18
+TABLE VII
+QUANTITATIVE RESULTS ON THE HERCULES DATASET. MEAN ATE
+(M) / ARE (◦) ARE REPORTED. THE BEST AND SECOND-BEST RESULTS
+ARE HIGHLIGHTED IN BOLD AND UNDERLINE, RESPECTIVELY. AVERAGE
+TRAINING TIME ACROSS TWO SCENES IS ALSO INCLUDED.
+Methods
+Training Time
+Library
+Sports
+PointLoc [54]
+288 mins.
+6.25 / 3.15
+4.45 / 4.62
+PosePN [20]
+28 mins.
+7.54 / 4.65
+4.23 / 5.26
+PosePN++ [20]
+70 mins.
+4.70 / 2.75
+5.82 / 4.93
+STCLoc [56]
+98 mins.
+8.40 / 5.09
+5.92 / 4.87
+NIDALoc [57]
+113 mins.
+3.15 / 2.08
+2.45 / 3.66
+HypLiLoc [55]
+39 mins.
+5.81 / 2.07
+4.87 / 3.65
+APR
+DiffLoc [15]
+211 mins.
+13.69 / 6.15
+12.27 / 14.21
+FlashMix [21]
+11 mins.
+11.56 / 6.39
+16.46 / 11.41
+SGLoc [6]
+103 mins.
+2.96 / 4.21
+1.99 / 2.60
+LiSA [17]
+132 mins.
+2.48 / 2.40
+1.73 / 3.04
+RALoc [24]
+175 mins.
+2.13 / 2.60
+1.69 / 3.49
+GTR-Loc [62]
+31 mins.
+3.19 / 3.23
+2.94 / 3.92
+SCR
+LightLoc [19]
+14 mins.
+2.66 / 2.58
+1.88 / 3.26
+LightLoc++
+14 mins.
+1.79 / 2.08
+1.71 / 3.11
+Results on HeRCULES. Finally, we evaluate the proposed
+method on the HeRCULES dataset, which is collected using
+an Aeva Aeries II LiDAR. Compared with the rotating LiDAR
+sensors used in SULID pre-training, this sensor exhibits sub-
+stantially different measurement characteristics, making HeR-
+CULES a particularly challenging benchmark for evaluating
+representation generalization. As shown in Tab. VII, Light-
+Loc++ achieves average localization errors of 1.75m/3.32◦
+across the Library and Sports scenes, improving the position
+accuracy of LightLoc by 22.9% while maintaining the same
+deployment efficiency. Compared with GTR-Loc, LightLoc++
+reduces the average position error from 3.07m to 1.75m while
+requiring less than half of the training time. Although RALoc
+achieves a similar overall accuracy, it requires more than 12
+times longer training time.
+These results demonstrate that our pretrained backbone can
+generalize to LiDAR sensors with substantially different sens-
+ing characteristics, enabling LightLoc++ to maintain strong
+localization accuracy and efficient new-scene learning under
+severe sensor domain shifts. As visualized in Fig. 8, Light-
+TABLE VIII
+EFFECT OF MULTI-LIDAR REPRESENTATION LEARNING. WE
+EVALUATE LOCALIZATION PERFORMANCE ACROSS MULTIPLE LIDAR
+BENCHMARKS USING ENCODERS PRETRAINED UNDER DIFFERENT
+SETTINGS. RESULTS ARE REPORTED AS MEAN ATE (M) / ARE (◦).
+Pretraining
+QEOxford
+Boreas
+MulRan
+HeRCULES
+KITTI
+1.50 / 1.73
+2.75 / 1.17
+5.33 / 4.32
+2.09 / 2.98
+nuScenes
+0.83 / 1.12
+2.12 / 1.24
+4.76 / 2.77
+2.27 / 2.92
+HeliPR
+0.95 / 1.27
+1.31 / 0.82
+3.62 / 2.50
+2.13 / 2.95
+SULID
+0.72 / 1.03
+0.98 / 0.66
+3.50 / 2.39
+2.02 / 2.81
++Lglobal
+0.69 / 1.02
+0.92 / 0.66
+3.56 / 2.41
+1.83 / 2.62
++Llocal
+0.70 / 0.99
+0.87 / 0.64
+3.36 / 2.18
+1.75 / 2.60
+Loc++ generates smoother and more accurate trajectories than
+the compared methods, with predictions consistently closer to
+the ground-truth paths across different datasets.
+Model Size and Runtime. Model size, trainable parameters,
+and runtime are critical factors for practical LiDAR local-
+ization systems. LightLoc++ keeps the lightweight design of
+LightLoc, with 22M parameters in total, including a 16M-
+parameter backbone and 6M-parameter scene-specific heads.
+Since the backbone is frozen during new-scene learning, only
+the 6M parameters in the heads are optimized.
+In contrast, LISA and SGLoc contain about 105M parame-
+ters, RALoc contains 104M, DiffLoc contains 40M, and Hy-
+pLiLoc contains 52M, all of which require full model training
+for new scenes. FlashMix contains 56M parameters in total,
+with 15M trainable parameters for new-scene learning. GTR-
+Loc involves an 80M-parameter training framework, with
+54M trainable parameters during new-scene learning. After
+distillation, it adopts the same inference structure as LightLoc.
+Therefore, LightLoc++ requires fewer trainable parameters
+while maintaining a lightweight model size and efficient
+inference. It runs at 25ms per scan, including regression and
+RANSAC-based pose refinement, corresponding to 50Hz and
+satisfying real-time deployment requirements.
+D. Analysis of Learned Representations
+Effect of Multi-LiDAR Pretraining. Tab. VIII compares
+different pretraining datasets under the same downstream
+localization framework, where the backbone is frozen and only
+the scene-specific regression heads are optimized. This setting
+allows us to directly evaluate the generalization ability of the
+learned LiDAR representations.
+We first compare two single-sensor pretraining datasets,
+KITTI and nuScenes. Overall, nuScenes provides stronger
+performance than KITTI, especially on QEOxford, Boreas,
+and MulRan. This suggests that larger-scale urban driving
+data helps improve the generalization ability of the pretrained
+backbone. However, both datasets are collected using a single
+LiDAR type, which limits their robustness.
+We then compare HeLiPR, which contains heterogeneous
+LiDAR sensors and uses Ouster and Aeva LiDAR data in
+this paper. HeLiPR improves over nuScenes on Boreas and
+MulRan, reducing the ATE from 2.12m to 1.31m and from
+4.76m to 3.62m, respectively. This indicates that multi-LiDAR
+data is beneficial for learning more generalizable representa-
+tions. However, HeLiPR does not consistently improve over
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+14
+HeRCULES (Library)
+RALoc (1.42m / 1.24°)
+RALoc (1.58m / 0.60°)
+RALoc (3.42m / 2.64°)
+RALoc (1.69m / 3.49°)
+RALoc (2.13m / 2.60°)
+FlashMix (2.81m / 2.14°)
+FlashMix (2.36m / 1.90°)
+FlashMix (5.82m / 3.96°)
+FlashMix (16.46m / 11.41°)
+FlashMix (11.56m / 6.39°)
+LightLoc (0.82m / 1.16°)
+LightLoc (2.24m / 1.14°)
+LightLoc (4.76m / 2.77°)
+LightLoc (1.88m / 3.26°)
+LightLoc (2.66m / 2.58°)
+LightLoc++ (0.68m / 0.99°)
+LightLoc++ (0.83m / 0.65°)
+LightLoc++ (3.36m / 2.18°)
+LightLoc++ (1.71m / 3.11°)
+LightLoc++ (1.78m / 2.08°)
+MulRan (DCC)
+HeRCULES (Sports)
+Fig. 8. Visualization results of predicted trajectories on QEOxford, Boreas, MulRan, and HeRCULES. The ground truth and prediction are black and
+red lines, respectively. The star denotes the first frame. The caption of each subfigure shows the mean ATE (m) and ARE (◦). For each trajectory, we highlight
+the best and second-best results.
+nuScenes on all benchmarks, showing that sensor diversity
+alone is not sufficient.
+Using SULID for pretraining further improves performance
+across all benchmarks. Compared with HeLiPR, SULID re-
+duces the localization error from 0.95m/1.27◦to 0.72m/1.03◦
+on QEOxford, from 1.31m/0.82◦to 0.98m/0.66◦on Boreas,
+from 3.62m/2.50◦to 3.50m/2.39◦on MulRan, and from
+2.13m/2.95◦to 2.02m/2.81◦on HeRCULES. In this setting,
+SULID is used only as a multi-LiDAR pretraining dataset,
+without explicit cross-sensor consistency constraints. These
+results suggest that, beyond sensor diversity, large-scale data
+collection and richer coverage of typical urban scenarios are
+important for learning generalizable representations.
+Effect of Cross-Sensor Consistency Constraints. Starting
+from the SULID-pretrained backbone, we further exploit the
+synchronized multi-LiDAR observations by introducing cross-
+sensor consistency constraints.
+As shown in Tab. VIII, adding the global consistency
+loss Lglobal improves the performance on most benchmarks.
+In particular, it reduces the ATE from 0.72m to 0.69m on
+QEOxford, from 0.98m to 0.92m on Boreas, and from 2.02m
+to 1.83m on HeRCULES. This shows that aligning scene-level
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+15
+TABLE IX
+CROSS-SENSOR GENERALIZATION. LISA, RALOC, AND FLASHMIX
+ARE INCLUDED AS REFERENCE LOCALIZATION METHODS TO INDICATE
+THE CROSS-SENSOR GENERALIZATION CAPABILITY OF EXISTING
+APPROACHES. FOR OUR FRAMEWORK, SCG AND RSD ARE DISABLED,
+AND ONLY THE PRETRAINED ENCODER IS VARIED. RESULTS ARE
+REPORTED AS MEAN ATE (M) / ARE (◦).
+Method
+O→O
+O→A
+O→V
+Average
+Reference Localization Methods
+LiSA
+0.88 / 0.70
+2.18 / 2.62
+101.94 / 47.56
+41.39 / 14.35
+RALoc
+1.95 / 1.01 22.05 / 26.01 246.13 / 120.23
+90.04 / 49.08
+FlashMix 6.76 / 5.69 245.61 / 73.77 164.89 / 100.68 104.32 / 60.05
+Our Framework with Different Pretrained Backbones
+KITTI
+1.74 / 1.14 38.22 / 25.63 213.73 / 103.25
+84.56 / 43.34
+nuScenes 0.97 / 0.64 40.31 / 20.58
+186.27 / 85.23
+75.85 / 35.48
+HeliPR
+0.69 / 0.50
+1.40 / 1.51
+34.20 / 20.14
+12.10 / 7.38
+SULID
+0.72 / 0.50
+2.46 / 2.75
+3.18 / 3.53
+2.12 / 2.26
++Lglobal
+0.72 / 0.49
+2.41 / 2.83
+3.15 / 3.61
+2.09 / 2.31
++Llocal
+0.71 / 0.50
+2.29 / 2.75
+1.94 / 3.06
+1.65 / 2.10
+(c) Velodyne VLP-16
+(b) Aeva Aeries II-64
+(a) Ouster OS2-128
+(d) Cross-Sensor Localization
+GT
+O→O
+O→A
+O→V
+Fig. 9.
+Cross-sensor localization generalization on the HeLiPR DCC
+sequence. Despite the substantial differences in sensing characteristics and
+fields of view, our method maintains accurate localization across Ouster, Aeva,
+and Velodyne sensors without fine-tuning. The star denotes the first frame.
+representations across synchronized LiDAR sensors helps the
+backbone learn a more sensor-robust representation.
+Further adding the local consistency loss Llocal leads to
+the best overall performance. Compared with the SULID-
+pretrained backbone without consistency constraints, the final
+model reduces the localization error from 0.72m/1.03◦to
+0.70m/0.99◦on QEOxford, from 0.98m/0.66◦to 0.87m/0.64◦
+on Boreas, from 3.50m/2.39◦to 3.36m/2.18◦on MulRan,
+and from 2.02m/2.81◦to 1.75m/2.60◦on HeRCULES. This
+demonstrates that local point-level consistency complements
+global scene-level alignment for exploiting synchronized
+multi-LiDAR observations.
+E. Cross-Sensor Generalization
+We further evaluate cross-sensor generalization on the DCC
+sequence of HeLiPR. In this setting, all methods are trained
+only with Ouster OS2-128 data and are directly tested on
+Ouster OS2-128 (O), Aeva Aeries II (A), and Velodyne VLP-
+16 (V) data without any fine-tuning. This protocol evaluates
+whether a localization model trained on one LiDAR sensor can
+generalize to other sensors observing the same scene geometry.
+For LightLoc++, we freeze the pretrained backbone and
+train only the regression head with Ouster OS2-128 data. To
+isolate the effect of representation learning, SCG and RSD
+are disabled, and only the pretrained backbone is varied. This
+allows us to directly examine whether the learned backbone
+can produce consistent and generalizable representations.
+Fig. 9 (a)-(c) visualize point clouds collected by O, A, and
+V at the same location. Although the sensors observe the same
+scene, their point clouds show clear differences in sampling
+patterns, fields of view, and point densities. In particular, V
+produces much sparser observations than O and A, making the
+O→V setting more challenging for cross-sensor localization.
+The first three rows of Tab. IX report the results of
+reference localization methods. Under the O→O setting, all
+methods achieve reasonable performance, indicating that they
+can perform well when the training and testing data come
+from the same LiDAR sensor. In the O→A setting, FlashMix
+suffers from a significant performance drop, while LiSA still
+maintains reasonable accuracy. This suggests that the semantic
+cues used by LiSA retain certain robustness under moderate
+sensor changes. However, under the more challenging O→V
+setting, all reference methods fail to localize reliably.
+We then evaluate our framework with different pretrained
+backbones. When using KITTI and nuScenes pretraining,
+showing a similar trend as reference methods, performance
+drops significantly in the O→A and O→V setting. HeLiPR
+pretraining achieves strong results on O→O and O→A, partly
+because Ouster and Aeva sensors are included during its back-
+bone pretraining. However, its performance drops significantly
+under O→V, where Velodyne is not included in pretraining. In
+contrast, the SULID-pretrained backbone achieves much lower
+error on O→V, reducing the ATE/ARE from 34.20m/20.14◦to
+3.18m/◦compared with HeLiPR. This shows that SULID pre-
+training provides more generalizable LiDAR representations,
+especially for unseen sensor types.
+Finally, we evaluate the effect of the cross-sensor consis-
+tency learning. Compared with the SULID-pretrained back-
+bone, adding the consistency constraints further improves
+cross-sensor generalization, especially under the most chal-
+lenging O→V setting. The ATE/ARE is reduced from
+3.18m/3.53◦to 1.94m/3.06◦, and the average error is reduced
+from 2.12m/2.26◦to 1.65m/2.10◦. This demonstrates that
+exploiting synchronized multi-LiDAR observations during pre-
+training helps the backbone learn more sensor-robust LiDAR
+representations. Such representations produce more consistent
+responses to the same scene geometry under different LiDAR
+sampling patterns, reducing the impact of sensor discrepancies.
+F. Effect of SCG and RSD on Training Efficiency
+Tab. X evaluates the impact of the sensor-robust backbone,
+SCG, and RSD on new-scene learning. Starting from random
+initialization, training the regression model requires 5.7 hours
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+16
+TABLE X
+ABLATION STUDY. TRAINING TIME REQUIRED TO ACHIEVE COMPARABLE
+ACCURACY ON QEOXFORD. BACKBONE: MULTI-LIDAR BACKBONE.
+SCG: SAMPLE CLASSIFICATION GUIDANCE FOR REGRESSION LEARNING.
+RSD: REDUNDANT SAMPLE DOWNSAMPLING FOR FILTERING
+WELL-LEARNED SAMPLES DURING TRAINING.
+Backbone
+SCG
+RSD
+Training Time
+Mean Error [m/◦]
+1
+5.7 hrs.
+1.02 / 1.23
+2
+✓
+2.4 hrs.
+0.84 / 1.12
+3
+✓
+✓
+1.3 hrs.
+0.71 / 0.95
+4
+✓
+✓
+2 hrs.
+0.86 / 1.15
+5
+✓
+✓
+✓
+1 hrs.
+0.70 / 0.99
+TABLE XI
+EFFECT OF CLUSTER NUMBER k IN SCG.WE REPORT THE
+CLASSIFICATION ACCURACY (%) AND LOCALIZATION ERROR (ATE/ARE)
+ON THE QEOXFORD DATASET.
+Clusters
+5
+15
+25
+50
+100
+Acc.
+100
+99.89
+99.76
+99.62
+99.17
+Err.
+0.76/1.06
+0.73/1.05
+0.70/0.99
+0.73/1.02
+0.77/1.07
+and achieves a localization error of 1.02 m/1.23◦. Replacing
+it with the proposed pretrained backbone reduces the training
+time to 2.4 hours and improves the accuracy to 0.84m/1.12◦.
+This shows that the learned backbone provides strong fixed
+representations for efficient scene-specific head training.
+Effect of SCG. Building upon the pretrained backbone, we
+further evaluate the effect of SCG. As shown in Rows 2 and 3
+of Tab. X, SCG improves both ATE and ARE, reducing the
+localization error from 0.84m/1.12◦to 0.71m/0.95◦. Mean-
+while, the training time is reduced from 2.4 hours to 1.3 hours.
+This demonstrates that the sample-wise probability distribu-
+tion learned by SCG provides effective spatial guidance for
+regression, improving both localization accuracy and training
+efficiency. Notably, SCG requires only 5 minutes of auxiliary
+training for each new scene.
+We further study the sensitivity of the cluster number k
+in Tab. XI. The classification accuracy remains above 99%
+across a wide range of cluster numbers, indicating that the
+learned scene partition is stable. In practice, we set k = 25,
+which achieves the best localization accuracy and is used in
+all experiments.
+Effect of RSD. The results for RSD are shown in Row 4 and
+Row 5 of Tab. X. Comparing Row 2 and Row 4, RSD reduces
+training time from 2.4 hours to 2 hours with minimal accuracy
+loss (0.84m/1.12◦vs. 0.86m/1.15◦). Additionally, comparing
+Row 3 and Row 5, when using our method with SCG, the
+improvement is significant, boosting training efficiency by
+23.1%. With RSD, training time is further reduced, ultimately
+achieving the goal of completing training within 1 hour. This
+study demonstrates that RSD can significantly reduce training
+time without sacrificing accuracy, effectively addressing the
+challenge of handling large volumes of data in large-scale
+outdoor scenes.
+We also compare RSD with random and uniform sampling
+under different pruning ratios, as shown in Tab. XII. Uniform
+sampling achieves comparable performance at a 15% pruning
+ratio, but its accuracy degrades when more samples are re-
+TABLE XII
+IMPACT OF DIFFERENT SAMPLING STRATEGIES AND RATIOS. WE
+REPORT THE MEAN ERROR [M/◦] ON THE QEOXFORD DATASET.
+Sampling
+Random
+Uniform
+RSD
+15%
+0.84 / 1.21
+0.77 / 0.98
+0.71 / 0.97
+25%
+0.96 / 1.27
+0.83 / 1.00
+0.70 / 0.99
+35%
+1.12 / 1.43
+1.04 / 1.32
+0.82 / 1.02
+moved. In contrast, RSD introduces no measurable accuracy
+drop at 25% pruning and remains effective even at 35%. By
+identifying well-learned samples through prediction variance,
+RSD reduces redundant training samples while preserving
+informative supervision.
+VI. CONCLUSION
+In this paper, we presented LightLoc++, a sensor-robust and
+efficient outdoor LiDAR localization framework. We first show
+that the efficiency of decoupled SCR methods largely depends
+on the generalization ability of the pretrained backbone, which
+can degrade under different LiDAR configurations. To address
+this issue, we introduced SULID, a synchronized urban multi-
+LiDAR dataset covering representative LiDAR types and di-
+verse urban scenes. Based on SULID, we adopt global and
+local cross-sensor consistency learning to improve the sensor
+robustness of the backbone. LightLoc++ further preserves
+efficient new-scene learning by freezing the backbone and
+optimizing only lightweight scene-specific heads, with SCG
+and RSD reducing regression ambiguity and redundant compu-
+tation. Extensive experiments on benchmark datasets demon-
+strate that LightLoc++ achieves strong localization accuracy,
+efficient training, and robust cross-sensor generalization across
+different LiDAR sensors.
+APPENDIX
+A. Benchmark Datasets
+We use Oxford Radar RobotCar [5], QEOxford [6],
+Boreas [3], MulRan [4], and HeRCULES [7] for standard
+localization benchmarking. HeLiPR [25] is additionally used
+for cross-sensor generalization evaluation. Detailed sequence
+splits and conditions are provided below.
+Oxford Radar RobotCar (Oxford). The Oxford Radar
+RobotCar [5] dataset was collected in January 2019 along a
+central Oxford route using dual Velodyne HDL-32E LiDARs.
+It contains repeated traversals under different weather and illu-
+mination conditions, such as sunny and overcast scenes, mak-
+ing localization challenging. Following previous works [6],
+[15], [19], [24], [62], we use the left LiDAR for evaluation.
+Specifically, we use 11-14-02-26, 14-12-05-52, 14-14-48-55,
+and 18-15-20-12 for training, and 15-13-06-37, 17-13-26-39,
+17-14-03-00, and 18-14-14-42 for testing.
+QEOxford. The QEOxford [6] dataset is a quality-enhanced
+version of the Oxford dataset, where the GPS/INS pose errors
+are reduced through trajectory alignment. The improved pose
+quality provides more reliable supervision for scene coordinate
+regression-based localization. Following SGLoc [6], QEOx-
+ford uses the same training and testing split as Oxford.
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+17
+TABLE XIII
+DATASET DESCRIPTIONS ON THE OXFORD AND QEOXFORD DATASET.
+Sequence
+Length
+Tag
+Training
+Testing
+11-14-02-26
+9.37km
+Sunny
+✓
+14-12-05-52
+9.22km
+Overcast
+✓
+14-14-48-55
+9.04km
+Overcast
+✓
+18-15-20-12
+9.04km
+Overcast
+✓
+15-13-06-37
+8.85km
+Overcast
+✓
+17-13-26-39
+9.02km
+Sunny
+✓
+17-14-03-00
+9.02km
+Sunny
+✓
+18-14-14-42
+9.04km
+Overcast
+✓
+TABLE XIV
+DATASET DESCRIPTIONS ON THE BOREAS DATASET.
+Sequence
+Length
+Tag
+Training Testing
+2020-11-26 7.95km
+Overcast, Snow, Loop
+✓
+2021-03-23 7.95km
+Overcast, Construction, Loop
+✓
+2021-03-30 7.95km Sunny, Cloudy, Construction, Loop
+✓
+2021-04-13 7.96km Sunny, Cloudy, Construction, Loop
+✓
+2020-12-01 7.95km
+Overcast, Snow, Snowing, Loop
+✓
+2021-02-02 7.94km
+Overcast, Snow, Loop
+✓
+2021-03-02 7.97km
+Sunny, Cloudy, Snow, Loop
+✓
+2021-04-29 7.95km
+Overcast, Rain, Loop
+✓
+TABLE XV
+DATASET DESCRIPTIONS ON THE DCC SEQUENCE OF MULRAN DATASET.
+Sequence
+Length
+Tag
+Training
+Testing
+DCC01
+4.92km
+Sunny
+✓
+DCC02
+5.43km
+Sunny
+✓
+DCC03
+5.44km
+Sunny
+✓
+TABLE XVI
+DATASET DESCRIPTIONS ON THE SPORTS AND LIBRARY SEQUENCES OF
+HERCULES DATASET.
+Sequence
+Length
+Tag
+Training
+Testing
+Sports01
+1.40km
+Sunny
+✓
+Sports02
+0.71km
+Cloudy
+✓
+Sports03
+1.40km
+Snow
+✓
+Library01
+1.51km
+Sunny
+✓
+Library02
+1.52km
+Cloudy
+✓
+Library03
+0.76km
+Snow
+✓
+TABLE XVII
+DATASET DESCRIPTIONS ON THE DCC SEQUENCE OF HELIPR DATASET.
+Sequence
+Length
+Tag
+Training
+Testing
+DCC04
+5.51km
+Sunny, Night
+✓
+DCC06
+4.65km
+Sunny, Night
+✓
+DCC05
+5.31km
+Sunny, Morning
+✓
+Boreas. The Boreas [3] dataset was mainly collected along a
+repeated route near the University of Toronto with a Velodyne
+AlphaPrime 128-beam LiDAR, referred to as the Glen Shields
+route. The data were collected over the course of one year,
+covering diverse seasonal and weather conditions, such as sun,
+rain, and snow. In our experiments, we use four sequences,
+2020-11-26, 2021-03-23, 2021-03-30, and 2021-04-13, for
+training, and four sequences, 2020-12-01, 2021-02-02, 2021-
+03-02, and 2021-04-29, for testing. The sequence lengths and
+weather tags are summarized in Tab. XIV.
+MulRan. The MulRan [4] DCC sequence was collected
+around the Daejeon Convention Center in South Korea using
+an Ouster OS1-64 LiDAR. Although the DCC route is rela-
+tively short, it contains diverse urban structures, including a
+square, narrow roads between high-rise buildings, a mountain
+(a) Campus-A
+(b) Urban-Road
+(c) Urban-Hub
+(d) Campus-B
+1 (15248)
+2 (12615)
+3 (17740)
+4 (11106)
+5 (14901)
+6 (16824)
+7 (8446)
+8 (14977)
+9 (22983)
+10 (23470)
+11 (12071)
+12 (21669)
+13 (21624)
+14 (14510)
+15 (8685)
+16 (16254)
+17 (10177)
+18 (16526)
+19 (10072)
+20 (8210)
+21 (23438)
+22 (14206)
+23 (13234)
+24 (19306)
+25 (17492)
+26 (10305)
+Fig. 10. Visualization of the K-Means-based spatial partitions in SULID.
+Different colors denote different scene partitions, and the number in paren-
+theses indicates the number of synchronized groups.
+area, and crossroads. Following FlashMix [21], we use DCC01
+and DCC02 for training and DCC03 for testing. The trajectory
+lengths and weather tags are summarized in Tab. XV.
+HeRCULES. The HeRCULES [7] dataset contains heteroge-
+neous LiDAR measurements collected with an Aeva Aeries II
+sensor. In this work, we use the Library and Sports Complex
+sequences. The Library sequence was collected along a long
+and narrow one-way campus road near the library, including
+curves as well as uphill and downhill sections. The Sports
+Complex sequence was collected around a sports complex,
+covering parking areas and roads with flat, gently sloped, and
+steep sections. For the Sports scene, Sports01 and Sports02
+are used for training, and Sports03 is used for testing. For the
+Library scene, Library01 and Library02 are used for training,
+and Library03 is used for testing. The trajectory lengths and
+weather tags are summarized in Tab. XVI.
+HeLiPR. HeLiPR [25] is a heterogeneous LiDAR dataset de-
+signed for inter-LiDAR place recognition under spatiotemporal
+variations. In this work, we use the DCC trajectories for cross-
+sensor generalization evaluation. Specifically, DCC04 and
+DCC06 are used for training, while DCC05 is used for testing.
+The regression head is trained only with Ouster OS2-128 data
+and directly evaluated on Ouster OS2-128, Aeva Aeries II, and
+Velodyne VLP-16 data without fine-tuning. This setting allows
+us to evaluate both same-sensor localization performance and
+cross-sensor robustness. The trajectory lengths and conditions
+are summarized in Tab. XVII.
+B. Sensor-Robust Backbone Training
+We apply K-Means clustering to the training positions and
+divide SULID into 26 spatial scene partitions. As shown in
+Fig. 10, each partition contains a set of spatially overlapping
+samples from different trajectories, and the number of samples
+in each partition is reported in the figure. Following Light-
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+18
+Loc [19], each partition is assigned a dedicated regression
+head, while the backbone is shared across all partitions.
+Each training sample consists of synchronized observations
+from multiple LiDAR sensors, which are transformed into the
+Ouster OS1-128 LiDAR coordinate system using calibrated
+LiDAR-to-LiDAR extrinsics. Each input point cloud is vox-
+elized with a voxel size of 0.3 m before being fed into the
+backbone. For the local consistency loss, the distance threshold
+for selecting reliable cross-sensor correspondences is set to
+0.3 m. Each regression head is implemented as a 6-layer
+MLP with a hidden dimension of 512 and a skip connection
+after the third layer. During pretraining, the backbone and all
+regression heads are jointly optimized using Lbackbone, where
+the regression loss provides scene-coordinate supervision and
+the cross-sensor consistency loss encourages the backbone to
+produce similar representations for the same scene geometry
+under different LiDAR sampling patterns.
+We use mixed-precision training and apply random data
+augmentation to the input point clouds. With a probability
+of 0.5, we apply translations along the x and y axes within
+[−1, 1] m, roll and pitch rotations within [−5◦, 5◦], and
+yaw rotations within [−10◦, 10◦]. The scene-coordinate labels
+remain unchanged under these input perturbations. We train
+the backbone for 100 epochs with a batch size of 128 using
+AdamW [72]. The learning rate follows a single-cycle cosine
+annealing schedule with a 5-epoch linear warm-up and a peak
+learning rate of 1 × 10−3.
+C. Scene-Specific Prediction Heads
+After sensor-robust backbone pretraining, the backbone is
+frozen and only scene-specific prediction heads are optimized
+for each target dataset. For standard localization benchmarks,
+we use dataset-specific voxel sizes: 0.3m for Oxford, QEOx-
+ford, and HeRCULES, 0.4m for MulRan, and 0.5m for Boreas.
+We also set the GPU feature buffer size according to the
+dataset scale, with 160K samples for Oxford and QEOxford,
+50K for Boreas, 20K for MulRan, and 10K for HeRCULES.
+The number of spatial clusters in SCG is fixed to k = 25 for
+all datasets.
+For classification head training, we accelerate the process
+by maintaining a GPU buffer that stores global features and
+their corresponding classification labels. The buffer is filled
+by repeatedly cycling through the shuffled training sequence,
+where each point cloud is augmented using the same data aug-
+mentation strategy as backbone pretraining. The classification
+head is then trained by iterating over the shuffled buffer. In
+practice, SCG training takes about 5 minutes for each new
+scene, including the time for filling the buffer, and completes
+50 epochs with a batch size of 512.
+For regression head training, we also apply the same data
+augmentation strategy as backbone pretraining to each input
+point cloud. The augmented point cloud is then passed through
+the frozen backbone to obtain dense descriptors. The features
+from the classification head are normalized to the unit sphere,
+perturbed with Gaussian noise, and normalized again. The
+dense descriptors and classification features are concatenated,
+and 256 voxels are randomly selected to regress their corre-
+sponding scene coordinates. The regression head is trained for
+25 epochs on Oxford, QEOxford, Boreas, and HeRCULES,
+and for 15 epochs on MulRan. We use a batch size of 256
+for all datasets except Boreas, where the batch size is set to
+100. For RSD, we use the same setting across all datasets: the
+downsampling ratio rd is set to 0.25, and the start and stop
+ratios rst and rsp are set to 0.25 and 0.85, respectively.
+REFERENCES
+[1] H. Yin, X. Xu, S. Lu, X. Chen, R. Xiong, S. Shen, C. Stachniss, and
+Y. Wang, “A survey on global lidar localization: Challenges, advances
+and open problems,” IJCV, pp. 1–33, 2024.
+[2] T. Zhang, G. Wang, Y. Chen, H. Zhang, and J. Hu, “Multi-constellation-
+inspired single-shot global lidar localization,” in AAAI, vol. 38, no. 9,
+2024, pp. 10 404–10 412.
+[3] K. Burnett, D. J. Yoon, Y. Wu, A. Z. Li, H. Zhang, S. Lu, J. Qian,
+W.-K. Tseng, A. Lambert, K. Y. Leung et al., “Boreas: A multi-season
+autonomous driving dataset,” Int. J. of Rob. Res., vol. 42, no. 1-2, pp.
+33–42, 2023.
+[4] G. Kim, Y. S. Park, Y. Cho, J. Jeong, and A. Kim, “Mulran: Multimodal
+range dataset for urban place recognition,” in ICRA, 2020, pp. 6246–
+6253.
+[5] D. Barnes, M. Gadd, P. Murcutt, P. Newman, and I. Posner, “The oxford
+radar robotcar dataset: A radar extension to the oxford robotcar dataset,”
+in ICRA, 2020, pp. 6433–6438.
+[6] W. Li, S. Yu, C. Wang, G. Hu, S. Shen, and C. Wen, “Sgloc: Scene
+geometry encoding for outdoor lidar localization,” in CVPR, 2023, pp.
+9286–9295.
+[7] H. Kim, M. Jung, C. Noh, S. Jung, H. Song, W. Yang, H. Jang,
+and A. Kim, “Hercules: Heterogeneous radar dataset in complex urban
+environment for multi-session radar slam,” in ICRA, 2025, pp. 4649–
+4656.
+[8] Y. Xia, Y. Xu, S. Li, R. Wang, J. Du, D. Cremers, and U. Stilla, “Soe-
+net: A self-attention and orientation encoding network for point cloud
+based place recognition,” in CVPR, 2021, pp. 11 348–11 357.
+[9] Y. Xia, M. Gladkova, R. Wang, Q. Li, U. Stilla, J. F. Henriques, and
+D. Cremers, “Casspr: Cross attention single scan place recognition,” in
+ICCV, 2023, pp. 8461–8472.
+[10] S. Wang, R. She, Q. Kang, X. Jian, K. Zhao, Y. Song, and W. P.
+Tay, “Distilvpr: Cross-modal knowledge distillation for visual place
+recognition,” in AAAI, vol. 38, no. 9, 2024, pp. 10 377–10 385.
+[11] P. Yin, J. Jiao, S. Zhao, L. Xu, G. Huang, H. Choset, S. Scherer,
+and J. Han, “General place recognition survey: Towards real-world
+autonomy,” IEEE TRO, vol. 41, pp. 3019–3038, 2025.
+[12] L. Luo, S.-Y. Cao, X. Li, J. Xu, R. Ai, Z. Yu, and X. Chen, “Bevplace++:
+Fast, robust, and lightweight lidar global localization for unmanned
+ground vehicles,” IEEE TRO, vol. 41, pp. 4479–4498, 2025.
+[13] S. Brahmbhatt, J. Gu, K. Kim, J. Hays, and J. Kautz, “Geometry-aware
+learning of maps for camera localization,” in CVPR, 2018, pp. 2616–
+2625.
+[14] S. Chen, T. Cavallari, V. A. Prisacariu, and E. Brachmann, “Map-relative
+pose regression for visual re-localization,” in CVPR, 2024, pp. 20 665–
+20 674.
+[15] W. Li, Y. Yang, S. Yu, G. Hu, C. Wen, M. Cheng, and C. Wang, “Diffloc:
+Diffusion model for outdoor lidar localization,” in CVPR, 2024, pp.
+15 045–15 054.
+[16] E. Brachmann, T. Cavallari, and V. A. Prisacariu, “Accelerated coordi-
+nate encoding: Learning to relocalize in minutes using rgb and poses,”
+in CVPR, 2023, pp. 5044–5053.
+[17] B. Yang, Z. Li, W. Li, Z. Cai, C. Wen, Y. Zang, M. Muller, and C. Wang,
+“Lisa: Lidar localization with semantic awareness,” in CVPR, 2024, pp.
+15 271–15 280.
+[18] M. A. Fischler and R. C. Bolles, “Random sample consensus: A
+paradigm for model fitting with applications to image analysis and
+automated cartography,” Commun. ACM, vol. 15, pp. 381–395, 1981.
+[19] W. Li, C. Liu, S. Yu, D. Liu, Y. Zhou, S. Shen, C. Wen, and C. Wang,
+“Lightloc: Learning outdoor lidar localization at light speed,” in CVPR,
+2025, pp. 6680–6689.
+[20] S. Yu, C. Wang, C. Wen, M. Cheng, M. Liu, Z. Zhang, and X. Li,
+“Lidar-based localization using universal encoding and memory-aware
+regression,” PR, vol. 128, p. 108915, 2022.
+[21] R. G. Goswami, N. Patel, P. Krishnamurthy, and F. Khorrami, “Flashmix:
+Fast map-free lidar localization via feature mixing and contrastive-
+constrained accelerated training,” in WACV, 2025, pp. 2011–2020.
+
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021
+19
+[22] W. Lu, Y. Zhou, G. Wan, S. Hou, and S. Song, “L3-net: Towards learning
+based lidar localization for autonomous driving,” in CVPR, 2019, pp.
+6389–6398.
+[23] H. Caesar, V. Bankiti, A. H. Lang, S. Vora, V. E. Liong, Q. Xu, A. Kr-
+ishnan, Y. Pan, G. Baldan, and O. Beijbom, “nuscenes: A multimodal
+dataset for autonomous driving,” in CVPR, 2020, pp. 11 621–11 631.
+[24] Y. Yang, W. Li, S. Ao, Q. Xu, S. Yu, Y. Guo, Y. Zhou, S. Shen,
+and C. Wang, “Raloc: Enhancing outdoor lidar localization via rotation
+awareness,” in ICCV, 2025, pp. 3304–3313.
+[25] M. Jung, W. Yang, D. Lee, H. Gil, G. Kim, and A. Kim, “Helipr:
+Heterogeneous lidar dataset for inter-lidar place recognition under spa-
+tiotemporal variations,” IJRR, vol. 43, no. 12, pp. 1867–1883, 2024.
+[26] Z. Chen, Y. Qi, D. Feng, X. Zhuang, H. Chen, X. Hu, J. Wu, K. Peng,
+and P. Lu, “Heterogeneous lidar dataset for benchmarking robust local-
+ization in diverse degenerate scenarios,” Int. J. of Rob. Res., vol. 45,
+no. 1, pp. 6–22, 2026.
+[27] Z. Yuan, W. Zeng, Y. Su, W. Liu, M. Cheng, Y. Guo, and C. Wang,
+“Density-guided translator boosts synthetic-to-real unsupervised domain
+adaptive segmentation of 3d point clouds,” in CVPR, 2024, pp. 23 303–
+23 312.
+[28] C. Liu, W. Li, Y. Huang, M. Zhu, Y. Yang, D. Liu, S. Ao, and C. Wang,
+“Rcp-lo: A relative coordinate prediction framework for generalizable
+deep lidar odometry,” in AAAI, vol. 40, no. 9, 2026, pp. 7078–7086.
+[29] J. Liu, W. Ye, G. Wang, C. Jiang, L. Pan, J. Han, Z. Liu, G. Zhang,
+and H. Wang, “Difflow3d: Hierarchical diffusion models for uncertainty-
+aware 3d scene flow estimation,” IEEE TPAMI, 2025.
+[30] S. Xie, J. Gu, D. Guo, C. R. Qi, L. Guibas, and O. Litany, “Pointcontrast:
+Unsupervised pre-training for 3d point cloud understanding,” in ECCV,
+2020, pp. 574–591.
+[31] L. Nunes, R. Marcuzzi, X. Chen, J. Behley, and C. Stachniss, “Seg-
+contrast: 3d point cloud feature representation learning through self-
+supervised segment discrimination,” IEEE RAL, vol. 7, no. 2, pp. 2116–
+2123, 2022.
+[32] S. T. Nguyen, A. Fontan, M. Milford, and T. Fischer, “Focustune: Tuning
+visual localization through focus-guided sampling,” in WACV, 2024, pp.
+3606–3615.
+[33] F. Wang, X. Jiang, S. Galliani, C. Vogel, and M. Pollefeys, “Glace:
+Global local accelerated coordinate encoding,” in CVPR, 2024, pp.
+21 562–21 571.
+[34] S. Yu, C. Wang, Z. Yu, X. Li, M. Cheng, and Y. Zang, “Deep regression
+for lidar-based localization in dense urban areas,” ISPRS-JPRS, vol. 172,
+p. 240–252, 2021.
+[35] J. Komorowski, “Minkloc3d: Point cloud based large-scale place recog-
+nition,” in WACV, 2021, pp. 1790–1799.
+[36] M. A. Uy and G. H. Lee, “Pointnetvlad: Deep point cloud based retrieval
+for large-scale place recognition,” in CVPR, 2018, pp. 4470–4479.
+[37] L. Luo, S. Zheng, Y. Li, Y. Fan, B. Yu, S.-Y. Cao, J. Li, and H.-L. Shen,
+“Bevplace: Learning lidar-based place recognition using bird’s eye view
+images,” in ICCV, 2023, pp. 8700–8709.
+[38] Y. Wang and J. M. Solomon, “Deep closest point: Learning representa-
+tions for point cloud registration,” in ICCV, 2019, pp. 3523–3532.
+[39] C. Choy, J. Park, and V. Koltun, “Fully convolutional geometric fea-
+tures,” in CVPR, 2019, pp. 8958–8966.
+[40] Z. Qin, H. Yu, C. Wang, Y. Guo, Y. Peng, and K. Xu, “Geometric
+transformer for fast and robust point cloud registration,” in CVPR, 2022,
+pp. 11 143–11 152.
+[41] S. Ao, Q. Hu, H. Wang, K. Xu, and Y. Guo, “Buffer: Balancing accuracy,
+efficiency, and generalizability in point cloud registration,” in CVPR,
+2023, pp. 1255–1264.
+[42] X. Zhang, J. Yang, S. Zhang, and Y. Zhang, “3d registration with
+maximal cliques,” in CVPR, 2023, pp. 17 745–17 754.
+[43] S. Jin, I. Armeni, M. Pollefeys, and D. Barath, “Multiway point cloud
+mosaicking with diffusion and global optimization,” in CVPR, 2024, pp.
+20 838–20 849.
+[44] J. Liu, G. Wang, Z. Liu, C. Jiang, M. Pollefeys, and H. Wang,
+“Regformer: an efficient projection-aware transformer network for large-
+scale point cloud registration,” in ICCV, 2023, pp. 8451–8460.
+[45] Z. Qin, H. Yu, C. Wang, Y. Guo, Y. Peng, S. Ilic, D. Hu, and K. Xu,
+“Geotransformer: Fast and robust point cloud registration with geometric
+transformer,” IEEE TPAMI, vol. 45, no. 8, pp. 9806–9821, 2023.
+[46] H. Wang, Y. Liu, Q. Hu, B. Wang, J. Chen, Z. Dong, Y. Guo, W. Wang,
+and B. Yang, “Roreg: Pairwise point cloud registration with oriented
+descriptors and local rotations,” IEEE TPAMI, vol. 45, no. 8, pp. 10 376–
+10 393, 2023.
+[47] J. Yang, X. Zhang, P. Wang, Y. Guo, K. Sun, Q. Wu, S. Zhang, and
+Y. Zhang, “Mac: Maximal cliques for 3d registration,” IEEE TPAMI,
+vol. 46, no. 12, pp. 10 645–10 662, 2024.
+[48] A. Kendall, M. Grimes, and R. Cipolla, “Posenet: A convolutional
+network for real-time 6-dof camera relocalization,” in ICCV, 2015, p.
+2938–2946.
+[49] B. Wang, C. Chen, C. Lu, P. Zhao, N. Trigoni, and A. Markham, “Atloc:
+Attention guided camera localization,” in AAAI, 2020, pp. 10 393–
+10 401.
+[50] S. Wang, Q. Kang, R. She, W. P. Tay, A. Hartmannsgruber, and D. N.
+Navarro, “Robustloc: Robust camera pose regression in challenging
+driving environments,” in AAAI, vol. 37, no. 5, 2023, pp. 6209–6216.
+[51] S. Chen, Y. Bhalgat, X. Li, J.-W. Bian, K. Li, Z. Wang, and V. A.
+Prisacariu, “Neural refinement for absolute pose regression with feature
+synthesis,” in CVPR, 2024, pp. 20 987–20 996.
+[52] S. Chen, X. Li, Z. Wang, and V. Prisacariu, “Dfnet: Enhance absolute
+pose regression with direct feature matching,” in ECCV, 2022.
+[53] Y. Shavit, R. Ferens, and Y. Keller, “Coarse-to-fine multi-scene pose
+regression with transformers,” IEEE TPAMI, vol. 45, no. 12, pp. 14 222–
+14 233, 2023.
+[54] W. Wang, B. Wang, P. Zhao, C. Chen, R. Clark, B. Yang, A. Markham,
+and N. Trigoni, “Pointloc: Deep pose regressor for lidar point cloud
+localization,” IEEE Sensors, vol. 22, pp. 959–968, 2022.
+[55] S. Wang, Q. Kang, R. She, W. Wang, K. Zhao, Y. Song, and W. P.
+Tay, “Hypliloc: Towards effective lidar pose regression with hyperbolic
+fusion,” in CVPR, 2023, pp. 5176–5185.
+[56] S. Yu, C. Wang, Y. Lin, C. Wen, M. Cheng, and G. Hu, “Stcloc: Deep
+lidar localization with spatio-temporal constraints,” IEEE TITS, vol. 24,
+no. 1, pp. 489–500, 2023.
+[57] S. Yu, X. Sun, W. Li, C. Wen, Y. Yang, B. Si, G. Hu, and C. Wang,
+“Nidaloc: Neurobiologically inspired deep lidar localization,” IEEE
+TITS, 2024.
+[58] Z. Wang, C. Shi, N. Wang, Q. Yu, X. Chen, and H. Lu, “Bevdiffloc: End-
+to-end lidar global localization in bev view based on diffusion model,”
+in IROS, 2025, pp. 16 240–16 246.
+[59] L. Bruns, A. Barroso-Laguna, T. Cavallari, A. Monszpart, S. Munukutla,
+V. A. Prisacariu, and E. Brachmann, “Ace-g: Improving generalization
+of scene coordinate regression through query pre-training,” in ICCV,
+2025, pp. 26 751–26 761.
+[60] C. Liu, S. Chen, Y. Bhalgat, S. Hu, M. Cheng, Z. Wang, V. Prisacariu,
+and T. Braud, “Gs-cpr: Efficient camera pose refinement via 3d gaussian
+splatting,” in ICLR, vol. 2025, 2025, pp. 76 761–76 780.
+[61] S. Wang, Z. Laskar, I. Melekhov, X. Li, Y. Zhao, G. Tolias, and
+J. Kannala, “Hscnet++: Hierarchical scene coordinate classification and
+regression for visual localization with transformer,” IJCV, vol. 132, no. 7,
+pp. 2530–2550, 2024.
+[62] S. Yu, W. Li, X. Sun, Z. Yuan, X. Wang, S. Wang, R. She, and
+C. Wang, “Gtr-loc: Geospatial text regularization assisted outdoor lidar
+localization,” NeurIPS, vol. 38, 2025.
+[63] A. Geiger, P. Lenz, and R. Urtasun, “Are we ready for autonomous
+driving? the kitti vision benchmark suite,” in CVPR, 2012, pp. 3354–
+3361.
+[64] C.-B. Nicholas, K. U. Arash, and M. E. Ryan, “University of michigan
+north campus long-term vision and lidar dataset,” IJRR, vol. 35, pp.
+545–565, 2016.
+[65] L. Qingqing, Y. Xianjia, J. P. Queralta, and T. Westerlund, “Multi-modal
+lidar dataset for benchmarking general-purpose localization and mapping
+algorithms,” in IROS, 2022, pp. 3837–3844.
+[66] Y. Liu, Y. Fu, M. Qin, Y. Xu, B. Xu, F. Chen, B. Goossens, P. Z. Sun,
+H. Yu, C. Liu et al., “Botanicgarden: A high-quality dataset for robot
+navigation in unstructured natural environments,” IEEE RAL, vol. 9,
+no. 3, pp. 2798–2805, 2024.
+[67] IEEE Standard for a Precision Clock Synchronization Protocol for
+Networked Measurement and Control Systems, IEEE Std., 2008.
+[68] A. Segal, D. Haehnel, S. Thrun et al., “Generalized-icp.” in RSS, vol. 2,
+no. 4, 2009, p. 435.
+[69] R. M¨uller, S. Kornblith, and G. E. Hinton, “When does label smoothing
+help?” NeurIPS, vol. 32, 2019.
+[70] X. Jiang, F. Wang, S. Galliani, C. Vogel, and M. Pollefeys, “R-score:
+Revisiting scene coordinate regression for robust large-scale visual
+localization,” in CVPR, 2025, pp. 11 536–11 546.
+[71] A. Paszke, S. Gross, F. Massa, A. Lerer, J. Bradbury, G. Chanan,
+T. Killeen, Z. Lin, N. Gimelshein, L. Antiga et al., “Pytorch: An
+imperative style, high-performance deep learning library,” NeurIPS,
+vol. 32, 2019.
+[72] L. Ilya and F. Hutter, “Decoupled weight decay regularization,” in ICLR,
+2020.
+[73] L. N. Smith and N. Topin, “Super-convergence: Very fast training of
+neural networks using large learning rates,” in AIMDO, vol. 11006, 2019,
+pp. 369–386.
