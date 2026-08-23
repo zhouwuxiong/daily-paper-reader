@@ -41,17 +41,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-08-22</span>
+      <span class="dpr-home-dashboard-kicker">2026-08-23</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 2 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 5 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
     <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
     <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>0</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>2</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>5</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-08-22 19:22:23 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-08-23 19:33:32 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,7 +62,7 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日速读2篇，均获6.0分，均未精读。最值得关注的方向：LiDAR定位的传感器鲁棒表示学习，以及用于世界探索的合成视频数据引擎。建议优先精读其中一篇，深入验证其方法在真实场景中的适用性。</p>
+<p>今日共速读5篇论文，无精读；其中《Hydra-0》评分最高（7.0/10），聚焦通用世界建模与控制，值得关注。另两篇分别涉及学习型观测器的稳定性与点云补全任务，可作为扩展阅读。若时间有限，建议优先浏览Hydra-0的动作流方法，并留意其与机器人控制的潜在关联。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -84,12 +84,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">速读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">2 篇</strong>
+    <strong class="dpr-home-dashboard-count">5 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="LightLoc++: Sensor-Robust Representation Learning for Efficient Outdoor LiDAR Localization">LightLoc++: Sensor-Robust Representation Learning for Efficient Outdoor LiDAR Localization</span></li><li><span class="dpr-home-dashboard-paper-title" title="WorldRover: A Scalable Synthetic Video Data Engine for World Exploration with Rich Annotations">WorldRover: A Scalable Synthetic Video Data Engine for World Exploration with Rich Annotations</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Hydra-0: Action Flow for Generalist World Modeling and Control">Hydra-0: Action Flow for Generalist World Modeling and Control</span></li><li><span class="dpr-home-dashboard-paper-title" title="Geometry Induced Contraction Degradation and Stabilization of Learning Enabled Observers">Geometry Induced Contraction Degradation and Stabilization of Learning Enabled Observers</span></li><li><span class="dpr-home-dashboard-paper-title" title="ProjFormer: Point Cloud Completion via Geometric-Projective Transformer and Cross-Modal Semantic Constraints">ProjFormer: Point Cloud Completion via Geometric-Projective Transformer and Cross-Modal Semantic Constraints</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>2</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">rl-motion <strong>3</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>2</strong></span></div>
 </section>
 </div>
 

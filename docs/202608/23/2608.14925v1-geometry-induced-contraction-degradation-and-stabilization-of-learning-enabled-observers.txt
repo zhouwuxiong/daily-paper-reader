@@ -1,0 +1,482 @@
+Title: Geometry Induced Contraction Degradation and Stabilization of Learning Enabled Observers
+
+URL Source: https://arxiv.org/pdf/2608.14925v1
+
+Published Time: Tue, 18 Aug 2026 00:17:03 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Geometry–Induced Contraction Degradation and Stabilization of Learning-Enabled Observers 
+
+Aditi Acharya and Andrew Fleck 
+
+Abstract — Learned perception models are increasingly used as measurement maps within nonlinear observers, mapping high-dimensional sensory inputs to low-dimensional quantities for state estimation. Unlike analytic measurement functions, learned models introduce state-dependent Jacobians whose effect on observer stability is rarely characterized. We show that learned measurement geometry enters the observer error dynamics explicitly and rescales Euclidean contraction margins. Under fixed gains, increased measurement sensitivity reduces the certifiable contraction region and can eliminate exponential convergence guarantees. To address this effect, we introduce a representation-aware gain normalization that compensates for geometry-induced am-plification using only local Jacobian information. The proposed approach treats the learned measurement model as a black box and requires no retraining or architectural modification. The normalization removes the dominant sensitivity dependence and restores a uniform Euclidean contraction bound while preserving a simple observer structure. Numerical and real-data experiments validate the predicted sensitivity–convergence relationship and demonstrate improved robustness and stability in learning-enabled observer architectures. 
+
+I. I NTRODUCTION 
+
+State-dependent Jacobians in learned measurement models can rescale observer contraction margins and degrade sta-bility. This paper presents a representation-aware gain nor-malization to restore uniform Euclidean contraction without modifying the learned model. Such learned measurement mappings commonly arise in hybrid learning/model-based estimators, which retain recursive observer structure while learning components that are difficult to model analytically [1]–[3]. In learning-enabled nonlinear observers, learned models typically appear in the measurement interface or in observer coordinate mappings, where their derivative properties influence stability. These architectures are partic-ularly useful when high-dimensional sensory inputs must be mapped to low-dimensional quantities for state estimation, or when plant and measurement models are only partially known [1], [3], [4].        
+
+> This work was supported by Purdue University. Both authors had equal contribution. Aditi Acharya is an Independent Researcher, Purdue University,
+
+acharya1@purdue.edu 
+
+> Andrew Fleck is a Research Assistant with Agricultural and Biological Engineering, Purdue University, 225 S. University St., West Lafayette, IN
+
+fleck2@purdue.edu 
+
+> © 2026 IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted component of this work in other works.
+
+In applications such as terrestrial drone tracking and underwater visual tracking, representation geometry can vary due to changing viewing conditions, scale variation, occlu-sions, and environmental distortions, leading to time-varying measurement sensitivity that impacts observer stability [5]– [7]. As a result, learning-based nonlinear observers exhibit a convergence–robustness tradeoff when neural components interact with closed-loop dynamical systems [4]. Existing convergence analyses commonly assume smoothness, Lip-schitz, or bounded-Jacobian conditions for learned compo-nents, yielding stability and robustness guarantees [8], [9]. While these assumptions provide sufficient guarantees, they do not quantify how local measurement geometry modulates contraction margins under fixed observer gains, nor whether geometry-induced instability can be compensated without modifying the learned representation. Contraction theory provides a natural framework for an-alyzing nonlinear observer stability by bounding the in-duced norm of the error propagation operator [10]–[13]. Contraction-based analyses of the extended Kalman filter establish exponential convergence using differential error dynamics [14], while related work studies contraction ob-servers and control contraction metrics using state-dependent Riemannian metrics [15], [16]. In contrast, this work char-acterizes how learned measurement geometry influences Euclidean contraction margins. The measurement Jacobian associated with learned representations enters the observer error dynamics and can shrink contraction margins under fixed gains, yielding a geometry-dependent degradation law in which sufficiently large measurement sensitivity elimi-nates the certifiable contraction region. To address this effect, we introduce a representation-aware gain normalization that compensates for geometry-induced amplification using local Jacobian information. The approach treats the learned measurement model as a black box and requires no retraining or architectural access. By remov-ing the dominant sensitivity dependence, the normalization restores a uniform contraction margin while preserving a simple observer structure. 
+
+Contributions.  
+
+> •
+
+We identify a geometry-dependent contraction mecha-nism for learning-enabled observers. The measurement Jacobian of learned representations enters the observer error dynamics and can shrink Euclidean contraction margins under fixed gains.  
+
+> •
+
+We propose a representation-aware gain normalization that counteracts geometry-induced amplification while treating the learned model as a black box. The resulting arXiv:2608.14925v1 [eess.SY] 14 Aug 2026 observer restores a uniform contraction margin without modifying the learned measurement mapping.  
+
+> •
+
+Numerical and real-data experiments validate the pre-dicted sensitivity–convergence relationship and demon-strate improved robustness and stability. We deliberately remain in the Euclidean norm. In Eu-clidean induced norms, contraction margins are tied to the largest eigenvalue of the symmetric part of the error Jacobian, yielding an interpretable certificate for incremental exponen-tial stability [10]–[12]. Alternative approaches employ non-Euclidean contraction metrics or control contraction metrics based on state-dependent Riemannian metrics [15]–[17]. Re-maining in the Euclidean norm preserves interpretability of contraction margins and avoids constructing state-dependent metrics, enabling a lightweight stability certificate compati-ble with standard observer structures. II. G EOMETRY -D EPENDENT CONTRACTION AND 
+
+STABILIZATION OF NONLINEAR OBSERVERS 
+
+This section formalizes the mechanism highlighted in the introduction: the learned measurement Jacobian enters the observer error dynamics multiplicatively and can rescale Euclidean contraction margins in a state-dependent man-ner [10], [11]. Contraction-based analysis provides a nat-ural framework for studying nonlinear observer stability by bounding the induced norm of the error propagation operator [10]–[12]. Such learning-enabled observers appear in neural-augmented Kalman filtering and learned measurement mod-els [1]. However, the mechanism by which learned measure-ment geometry influences contraction-based stability guaran-tees remains largely unexplored. We show that the measure-ment Jacobian associated with the learned representation can shrink Euclidean contraction margins under fixed gains, and introduce a representation-aware normalization that restores a uniform contraction certificate. Our goal is twofold: (i) quantify how representation geometry, through Jh, degrades a fixed-gain Euclidean contraction certificate, and (ii) design a black-box Jacobian-only normalization αt that restores a uniform contraction margin. 
+
+A. Problem Formulation 
+
+Consider the discrete-time nonlinear system 
+
+xt+1 = f (xt) + wt, (1) with measurement model 
+
+yt = hϕ(xt) + vt, (2) where xt ∈ Rn is the system state, yt ∈ Rm is the measurement, and wt, vt are bounded disturbances. The map 
+
+hϕ : Rn → Rm denotes a learned measurement model. Define the Jacobians 
+
+Jf (x) := ∂f (x)
+
+∂x , Jh(x) := ∂h ϕ(x)
+
+∂x .
+
+The Jacobian Jh(x) characterizes the local geometry of the learned measurement representation. Spatial variation in 
+
+Jh(x) reflects changes in representation sensitivity across the state space and therefore modifies how measurement feedback enters the observer dynamics. We consider the observer 
+
+ˆxt+1 = f (ˆ xt) + αt ˜K yt − hϕ(ˆ xt), (3) where ˜K ∈ Rn×m is a constant gain matrix and αt > 0 is a scalar correction gain. Define the estimation error 
+
+et := xt − ˆxt. (4) Throughout, ∥ · ∥ denotes the Euclidean vector norm and its induced matrix norm. 
+
+Assumption 1. The map f is continuously differentiable on a region X ⊂ Rn, and there exists Lf ≥ 0 such that 
+
+∥Jf (x)∥ ≤ Lf , ∀x ∈ X . (5) 
+
+Assumption 2. The map hϕ is continuously differentiable on X .
+
+Assumption 3. The Jacobian Jh is locally Lipschitz on X :there exists Lh ≥ 0 such that 
+
+∥Jh(x) − Jh(z)∥ ≤ Lh∥x − z∥, ∀x, z ∈ X . (6) 
+
+B. Error Dynamics and Propagation Operator 
+
+To avoid ambiguity associated with pointwise mean-value representations, define the averaged Jacobians 
+
+¯Jf,t := 
+
+Z 10
+
+Jf (ˆ xt +se t) ds, ¯Jh,t := 
+
+Z 10
+
+Jh(ˆ xt +se t) ds. 
+
+(7) Applying the fundamental theorem of calculus componen-twise along the segment ˆxt + se t, s ∈ [0 , 1] , yields 
+
+f (xt) − f (ˆ xt) = ¯Jf,t et, hϕ(xt) − hϕ(ˆ xt) = ¯Jh,t et. (8) The exact error dynamics therefore become 
+
+et+1 = Atet + dt, (9) where 
+
+At := ¯Jf,t − αt ˜K ¯Jh,t , dt := wt − αt ˜Kv t. (10) 
+
+C. Euclidean Contraction and Geometry Dependence 
+
+Define the local contraction factor 
+
+ρt := ∥At∥, (11) and contraction margin 
+
+μt := 1 − ρt. (12) A sufficient condition for one-step Euclidean contraction is 
+
+ρt < 1, (13) in which case 
+
+∥et+1 ∥ ≤ ρt∥et∥ + ∥dt∥. (14) ∥ ¯Jh,t ∥                               
+
+> ρt
+> 1
+> fixed gain: ρt≤Lf+α∥˜K∥ ∥ ¯Jh,t ∥
+> Scrit
+> normalized: ρt≤Lf+β
+> certified uncertified threshold
+> Fig. 1. Geometry-induced contraction degradation and stabilization. Under fixed gain, the contraction bound satisfies ρt≤Lf+α∥˜K∥ ∥ ¯Jh,t ∥, so increasing measurement sensitivity reduces the available contraction margin. The threshold Scrit marks the point beyond which the sufficient Euclidean contraction condition ρt<1can no longer be certified. Under ideal geometry normalization, the contraction bound becomes ρt≤Lf+β,yielding a geometry-independent leading-order contraction certificate.
+
+D. Geometry-Induced Contraction Degradation 
+
+The error propagation operator shows that the learned measurement Jacobian enters multiplicatively in the ob-server correction term. Consequently, spatial variation in measurement sensitivity rescales the feedback applied to the estimation error. This yields a geometry-dependent contrac-tion certificate, in which the contraction margin decreases as measurement sensitivity increases. The following result formalizes this dependence under fixed observer gains. 
+
+Theorem 1 (Geometry-dependent contraction law) . Suppose Assumptions 1–2 hold and 
+
+{ˆxt + se t : s ∈ [0 , 1] } ⊂ X . (15) 
+
+Under fixed gain αt ≡ α, the error propagation matrix satisfies 
+
+∥At∥ ≤ Lf + α∥ ˜K∥∥ ¯Jh,t ∥. (16) The bound shows that measurement sensitivity ∥ ¯Jh,t ∥
+
+directly increases the contraction factor. Regions of suffi-ciently large Jacobian magnitude can remove the certifiable contraction margin. Consequently, the sufficient Euclidean contraction condition can no longer be certified, and fixed-gain exponential convergence guarantees may be lost. 
+
+Corollary 1 (Sensitivity threshold) . Define 
+
+Scrit = 1 − Lf
+
+α∥ ˜K∥ . (17) 
+
+If 
+
+∥ ¯Jh,t ∥ > S crit , (18) 
+
+then the sufficient Euclidean contraction condition ∥At∥ < 1
+
+cannot be certified. E. Geometry-Normalized Stabilization 
+
+Proposition 1 (Ideal geometry normalization) . Suppose As-sumptions 1–2 hold and 
+
+{ˆxt + se t : s ∈ [0 , 1] } ⊂ X . (19) 
+
+Define 
+
+αideal  
+
+> t
+
+= β
+
+∥ ˜K ¯Jh,t ∥ + ε , β > 0, ε > 0. (20) 
+
+Then 
+
+∥At∥ ≤ Lf + β. (21) This result shows that geometry dependence is not intrinsic to the system dynamics, but arises from gain scaling in the observer correction term. 
+
+Theorem 2 (Geometry-normalized local contraction bound) .
+
+Suppose Assumptions 1–3 hold and 
+
+{ˆxt + se t : s ∈ [0 , 1] } ⊂ X . (22) 
+
+Let 
+
+αt = β
+
+∥ ˜KJ h(ˆ xt)∥ + ε , β > 0, ε > 0. (23) 
+
+Then 
+
+∥At∥ ≤ Lf + β + ce∥et∥, (24) 
+
+where 
+
+ce = βε ∥ ˜K∥Lh. (25) This result shows that geometry dependence arises from gain scaling rather than intrinsic system dynamics. By com-pensating for local measurement sensitivity, the normal-ization restores a geometry-independent leading-order con-traction certificate. The remaining dependence appears only through the Jacobian mismatch term, which vanishes as the estimation error decreases. Thus, the proposed normalization provides a practical mechanism for restoring a uniform contraction margin while treating the learned measurement model as a black box. 
+
+Corollary 2 (Uniform region-wise contraction bound) . Sup-pose Assumptions 1–2 hold and there exists ∆h ≥ 0 such that 
+
+∥ ¯Jh,t − Jh(ˆ xt)∥ ≤ ∆h. (26) 
+
+Then 
+
+∥At∥ ≤ Lf + β + βε ∥ ˜K∥∆h. (27) 
+
+Hence if 
+
+Lf + β + βε ∥ ˜K∥∆h < 1, (28) 
+
+the sufficient Euclidean contraction condition is uniformly certified. F. Discussion 
+
+The analysis shows that stability of learning-enabled ob-servers depends on the geometry of the learned measurement representation. Under fixed gains, the measurement Jaco-bian enters the error propagation operator and reduces the certifiable Euclidean contraction margin in regions of high sensitivity. The proposed normalization scales the correction inversely with measurement sensitivity, yielding a geometry-independent contraction bound at leading order. The im-plementable form preserves this behavior up to a bounded Jacobian mismatch term, ensuring a uniform contraction certificate. These results link measurement geometry to con-traction degradation and representation-aware stabilization. 
+
+G. Stability Consequences 
+
+Uniform contraction implies that the estimation error de-cays exponentially in the disturbance-free case. When distur-bances are bounded, the estimation error remains bounded, with its size proportional to the disturbance magnitude. These results establish that learned measurement geometry directly influences observer stability under fixed gains, and that representation-aware normalization restores a uniform contraction margin without modifying the learned measure-ment model. III. N UMERICAL EXPERIMENTS 
+
+This section empirically demonstrates geometry-induced degradation of contraction-based stability and its restoration via representation-aware gain normalization. The experi-ments validate the mechanism developed in Section II: mea-surement geometry modifies the observer error propagation operator, reducing the Euclidean contraction margin under fixed gains, while normalization restores a uniform contrac-tion bound and stabilizes the estimation error. The evalua-tion proceeds in three stages. A scalar nonlinear example isolates geometry-dependent degradation of the contraction certificate. A sensitivity-threshold study verifies the transition from stable to unstable error dynamics. Monte Carlo and Duffing oscillator experiments then demonstrate robustness and higher-dimensional behavior. Unless otherwise stated, simulations use 
+
+Lf = 0 .8, ∥ ˜K∥ = 1 , α = 0 .4, β = 0 .3, ε = 10 −3.
+
+These values ensure contraction in low-sensitivity regions while allowing instability to emerge when measurement sensitivity exceeds the predicted threshold. 
+
+A. Geometry-Dependent Contraction and Sensitivity Thresh-old 
+
+We isolate the effect of measurement geometry using the nonlinear measurement model 
+
+hϕ(x) = x + κxe −x2
+
+, (29) with Jacobian 
+
+∂h ϕ(x) = 1 + κe −x2
+
+(1 − 2x2). (30) The parameter κ scales measurement sensitivity and modifies the error propagation operator 
+
+At = ¯Jf,t − α ˜K ¯Jh,t , ρt = ∥At∥. (31) The contraction factor ρt determines local stability, with ρt <
+
+1 indicating exponential convergence. Under fixed gains, 
+
+ρt ≤ Lf + α∥ ˜K∥∥ ¯Jh,t ∥, (32) so increasing measurement sensitivity ∥ ¯Jh,t ∥ enlarges ρt and reduces the available contraction margin. When ρt crosses −2 −1 0 1 20.50 0.75 1.00 1.25 1.50 1.75 2.00 2.25         
+
+> Value
+> Scrit
+> γ(x) = 1
+> (a) Sensitivity and contraction certificate
+> |Jh(x)|
+> γ(x)
+> 25 50 75 100 125 150 175 200
+> Time step t
+> 0.00 0.02 0.04 0.06 0.08 0.10 0.12 0.14 0.16
+> Rolling RMSE (b) Observer performance under sensitivity variation
+> Fixed, low sensitivity Fixed, high sensitivity Normalized, high sensitivity
+
+Fig. 2. Geometry-dependent contraction degradation. (a) Measurement sensitivity and contraction certificate under fixed gains. The dashed line denotes ρt = 1 . (b) Observer performance under sensitivity variation. High sensitivity degrades fixed-gain convergence. 0 10 20 30 40 50 60 Time step 10 −11                             
+
+> 10 −9
+> 10 −7
+> 10 −5
+> 10 −3
+> 10 −1
+> ‖et‖
+> (a) Sensitivity-dependent error trajectories
+> κ= 0.2
+> κ= 0.6
+> κ= 1.0
+> κ= 1.4 010 20 30 40 50 60 Time step 0.0 0.2 0.4 0.6 0.8 1.0
+> γt
+> (b) Fixed-gain contraction certificate
+> fixed, κ= 0.2 fixed, κ= 1.4
+> γt= 1 010 20 30 40 50 60 Time step 0.2 0.4 0.6 0.8 1.0
+> γt
+> (c) Normalized contraction certificate
+> fixed gain normalized gain
+> γt= 1 010 20 30 40 50 60 Time step 10 −11
+> 10 −9
+> 10 −7
+> 10 −5
+> 10 −3
+> 10 −1
+> ‖et‖
+> (d) High-sensitivity error comparison
+> fixed gain normalized gain exp envelope
+
+Fig. 3. Sensitivity-threshold behavior and normalization-based stabilization. (a) Estimation-error trajectories for increasing sensitivity. (b) Fixed-gain contraction certificate ρt showing loss of contraction. (c) High-sensitivity contraction certificate for fixed and normalized gains. (d) Error comparison demonstrating restored convergence. 
+
+unity, contraction-based stability is lost, as illustrated in Fig. 2. This transition occurs when sensitivity exceeds 
+
+Scrit = 1 − Lf
+
+α∥ ˜K∥ . (33) To compensate for sensitivity-induced amplification, we apply the representation-aware normalization 
+
+αt = β
+
+∥ ˜KJ h(ˆ xt)∥ + ε . (34) Substituting into the propagation operator removes leading-order dependence on measurement sensitivity and restores a uniform contraction region. The normalized observer there-fore maintains ρt < 1 even in high-sensitivity regimes (Fig. 3). 
+
+B. Robustness Under Disturbances 
+
+Robustness is evaluated using Monte Carlo simulations with randomized initial conditions and Gaussian process and measurement noise ( σw = 0.01 , σv = 0.01 ). For each sensitivity level, N = 200 trials are performed. Under high measurement sensitivity, fixed-gain observers frequently lose contraction and exhibit growing estimation error. The 0 10 20 30 40 50 60 Time step 10 −6           
+
+> 10 −5
+> 10 −4
+> 10 −3
+> 10 −2
+> 10 −1
+> 10 0
+> |et|
+> Monte Carlo error trace ( κ= 1.8)
+> theory envelope fixed gain normalized gain Fixed Norm. Final RMS 8.35e-01 1.13e-02 Steady 8.34e-01 9.00e-03 Peak 2.90e+00 2.81e+00 Contr. rate 0.9862 0.9082
+
+Fig. 4. Monte Carlo robustness at κ = 1 .8 over N = 200 trials. Left: mean estimation error with standard deviation. Right: summary statistics. 
+
+normalized observer maintains bounded error and consistent convergence across trials. 
+
+1) Duffing Oscillator Validation: To evaluate geometry-induced contraction degradation in a higher-dimensional nonlinear setting, we consider the planar forced Duffing os-cillator. Duffing dynamics provide a representative nonlinear benchmark in which Euclidean contraction may fail even when weaker contraction properties hold, making stability sensitive to geometry [10], [18], [19]. 
+
+a) Numerical setup.: The system is 
+
+˙x1 = x2, ˙x2 = −δx 2 − αx 1 − βx 31 + γ cos( ωt ), (35) with parameters 
+
+δ = 0 .3, α = −1.0, β = 1 .0, γ = 0 .30 , ω = 1 .2.
+
+To induce geometry-dependent sensitivity, the learned measurement model is 
+
+yt = hϕ(xt), hϕ(xt) = x1,t + κx 1,t e−x21,t , (36) with Jacobian 
+
+Jh(xt) = 
+
+h
+
+1 + κe −x21 (1 − 2x21) 0
+
+i
+
+. (37) The observer follows 
+
+ˆxt+1 = f (ˆ xt) + αt ˜K yt − hϕ(ˆ xt), (38) with either fixed gain αt ≡ α or normalized gain 
+
+αt = β
+
+∥ ˜KJ h(ˆ xt)∥ + ε . (39) 
+
+b) Geometry-induced degradation: The contraction be-havior is characterized using the continuous-time proxy 
+
+μt = λmax (sym( At)) , (40) where μt < 0 indicates local contraction. Under fixed gains, increased measurement sensitivity enlarges μt and produces extended intervals with μt > 0, corresponding to degraded tracking and reduced stability. 
+
+c) Representation-aware stabilization: Applying the normalized gain compensates for sensitivity-induced am-plification. This reduces peak contraction-rate values and increases the fraction of time with μt < 0, restoring contraction behavior along the Duffing trajectory. Fig. 5(a) shows improved trajectory tracking under normalization, while Fig. 5(b) confirms reduced contraction-rate peaks and increased time in the contracting regime. The normalized −1.5 −1.0 −0.5 0.0 0.5 1.0 1.5          
+
+> x1
+> −1.0 −0.5 0.0 0.5 1.0
+> x2
+> (a) Duffing phase portrait
+> True Fixed gain Normalized
+> 0510 15 20 25 30 35 40 Time 0.0 0.5 1.0 1.5 2.0
+> μt = λmax (sym( At))
+> (b) Continuous-time contraction-rate proxy
+> Fixed gain Normalized
+> μt= 0
+
+Fig. 5. Higher-dimensional validation using the planar forced Duffing oscillator. (a) Phase portrait comparing true trajectory and observer es-timates. The fixed-gain observer deviates from the attractor, while nor-malization improves tracking. (b) Continuous-time contraction-rate proxy 
+
+μt = λmax (sym( At)) . The normalized observer reduces peak contraction rates and increases the fraction of time with μt < 0, indicating improved local contraction. 
+
+observer reduces the maximum contraction-rate proxy (2.26 
+
+→ 1.76), lowers the mean value (0.36 → 0.30), and increases the fraction of time with μt < 0 (23% → 30%), indicat-ing improved local stability. These results demonstrate that geometry-induced contraction degradation extends to non-linear higher-dimensional dynamics and that representation-aware normalization improves stability without modifying the learned measurement model. 
+
+C. Summary of Experimental Results 
+
+Across all experiments, measurement sensitivity directly influences the Euclidean contraction margin under fixed gains, consistent with Theorem 1. The sensitivity thresh-old accurately predicts loss of certifiable contraction. Representation-aware normalization restores a geometry-independent contraction bound, consistent with Theorem 2. The scalar experiments illustrate the contraction mechanism, Monte Carlo simulations confirm robustness, and Duff-ing oscillator results demonstrate generalization to higher-dimensional nonlinear dynamics. Together, these tests em-pirically validate the theory linking learned measurement geometry, contraction degradation, and representation-aware stabilization. IV. R EAL -D ATA VALIDATION UNDER ENVIRONMENTAL 
+
+GEOMETRY SHIFT 
+
+We next evaluate whether the geometry-dependent effects predicted by the contraction analysis appear in practice, and whether normalization improves observer robustness with learned measurement models. Thus, we consider two datasets exhibiting environmental variation: (i) illumination changes in terrestrial tracking sequences, and (ii) visibility and lighting variation in underwater tracking. The learned perception module is treated as a black box and is not retrained or modified during evaluation. 
+
+A. Measurement Model and Observer Setup 
+
+To evaluate the proposed geometry-aware observer in a learning-enabled pipeline, we use a pretrained YOLOv8-based visual tracker as the measurement function. Each video frame is processed by the tracker, which outputs a bounding box for the target object. The center of this bounding box is used as the measurement for the observer. Formally, let xt ∈ Rn denote the latent object state and define the learned measurement model 
+
+yt = hϕ(xt), (41) where hϕ denotes the pretrained tracking model treated as a black box. In practice, the observer uses the bounding-box center, 
+
+yt =
+
+cx
+
+cy
+
+
+
+, (42) where (cx, c y ) are the predicted center coordinates. The observer dynamics follow the same structure as in the theoretical development, 
+
+ˆxt+1 = f (ˆ xt) + αt ˜K yt − hϕ(ˆ xt), (43) where ˜K is fixed and αt is either constant (fixed-gain observer) or computed using the proposed geometry-aware normalization. The learned measurement model is not modified, retrained, or linearized. The observer interacts with the tracker only through its input-output mapping, preserving a modular separation between perception and estimation. This reflects practical learning-enabled pipelines in which the perception model is used as provided. Ground-truth trajectories are obtained from the annotated bounding boxes in each dataset. These annotations are used to compute estimation error and assess convergence. Both fixed-gain and normalized observers use identical tracker outputs, so any performance differences arise solely from the gain normalization. To approximate measurement sensitivity without access to internal model parameters, we use a finite-difference proxy for the local measurement Jacobian. Given a perturbation 
+
+∆xt, the sensitivity proxy is defined as 
+
+St ≈ ∥hϕ(xt + ∆ xt) − hϕ(xt)∥∥∆xt∥ . (44) Under mild smoothness assumptions, St approximates the local operator norm of the measurement Jacobian and serves as a practical proxy for representation sensitivity. This al-lows us to evaluate geometry-dependent contraction effects directly in real-world learning-based measurement models, without requiring access to internal network parameters. 
+
+B. Dataset 1: Illumination-Induced Geometry Variation (Vis-Drone) 
+
+We first evaluate the proposed observer using sequences from the VisDrone object tracking dataset [5]. This dataset provides annotated bounding boxes for moving objects ob-served under a wide range of illumination conditions, in-cluding varying times of day and low-visibility environ-ments. These variations alter contrast, texture visibility, and signal-to-noise characteristics, affecting the sensitivity of the learned measurement model. In this setting, the learned measurement function corre-sponds to the output of a pretrained visual tracker. For each frame, the tracker produces a bounding box 
+
+hϕ(xt) = 
+
+cx(xt)
+
+cy (xt)
+
+
+
+, (45) where (cx, c y ) denotes the predicted bounding-box center. The mapping hϕ is treated as a black-box learned measure-ment model and is not modified during evaluation. Reduced illumination weakens visual features and in-creases noise sensitivity, causing small state changes to produce larger variations in predicted bounding boxes. In the proposed framework, this corresponds to increased mea-surement sensitivity and spatial variation in the effective measurement Jacobian Jh(x). Conversely, well-lit conditions yield more stable features and lower sensitivity. There-fore, the VisDrone dataset induces state-dependent variation in measurement geometry without modifying the learned model. This illumination-driven variation provides a prac-tical testbed for evaluating geometry-dependent contraction degradation and assessing whether representation-aware nor-malization improves robustness under changing lighting con-ditions. 
+
+C. Dataset 2: Medium-Induced Geometry Variation (UOT32) 
+
+As a second real-data validation, we evaluate sequences from the UOT32 underwater object tracking dataset [20], [21]. This dataset provides annotated bounding boxes for moving underwater targets captured under varying visibility and lighting conditions. Underwater imaging introduces chal-lenges including light attenuation, scattering, color distortion, and turbidity, all of which influence learned measurement models. As in the terrestrial setting, the learned measurement model corresponds to the output of a pretrained tracker. For each frame, the measurement is defined as the bounding-box center 
+
+hϕ(xt) = 
+
+cx(xt)
+
+cy (xt)
+
+
+
+, (46) where (cx, c y ) denotes the predicted bounding-box center under underwater distortion. The mapping hϕ is treated as a black-box learned measurement model. Underwater distortion alters object appearance along the trajectory. Changes in visibility and contrast modify how the tracker responds to state perturbations, producing state-dependent variation in bounding-box predictions. In the proposed framework, this corresponds to variation in mea-surement sensitivity and therefore changes in the effective measurement geometry. Unlike illumination changes in ter-restrial scenes, underwater distortion introduces medium-dependent variability that evolves continuously along the trajectory. This provides a complementary form of real-world geometry variation that is not tied solely to lighting, but to environmental propagation effects. Evaluating the observer Fig. 6. Real-data validation on a representative VisDrone track. (a) Representative frame showing ground truth, tracker measurement, and ob-server estimates. (b) Center-error trajectories for fixed-gain and normalized observers; shaded regions denote intervals of elevated measurement sensi-tivity. (c) Sensitivity proxy over time with empirical threshold indicating regimes where geometry-dependent contraction degradation is expected. (d) RMSE comparison between fixed-gain and normalized observers. 
+
+on these sequences allows us to examine whether geometry-dependent contraction degradation arises under medium-induced variability and whether representation-aware nor-malization improves tracking robustness. 
+
+D. Sensitivity Variation Under Environmental Changes 
+
+We examine how environmental conditions affect the local sensitivity of the learned measurement model. To evaluate time-varying measurement geometry, we employ the sensi-tivity proxy defined above. Figure 6 shows that measurement sensitivity varies along the trajectory, with elevated sensitivity intervals coinciding with increased estimation error for the fixed-gain observer. The normalized observer reduces error growth during these regimes and improves overall tracking accuracy. On this sequence, the normalized observer reduced pixel RMSE by 16.9% relative to the fixed-gain observer. These results show that environmental variation produces substantial changes in measurement sensitivity, confirming that real-world illumi-nation changes induce geometry-dependent variation in the learned measurement representation. 
+
+E. Fixed-Gain Observer Degradation 
+
+We evaluate the fixed-gain observer under varying envi-ronmental conditions. 
+
+a) Setup.: The observer gain α and matrix ˜K are held constant across all experiments. The same learned measurement model is used in all conditions. 
+
+b) Observation.: Elevated measurement sensitivity cor-relates with increased estimation error for the fixed-gain ob-server. High-sensitivity intervals coincide with larger track-ing error and slower convergence. This behavior is consistent with Theorem 1 and Corollary 1, which predict that increased measurement sensitivity reduces the available contraction margin and may invalidate fixed-gain contraction guarantees. (a) Representative frame                  
+
+> 0200 400 600 800 1000
+> Frame
+> 0.6 0.8 1.0 1.2 1.4 1.6
+> St
+> Threshold = 1.18
+> (c) Sensitivity
+> Empirical sensitivity threshold 0200 400 600 800 1000
+> Frame
+> 0510 15 20 25
+> Center error (pixels)
+> (b) Center error
+> Fixed gain (rolling RMSE) Normalized gain (rolling RMSE) Fixed Normalized 0246810
+> RMSE (pixels)
+> Improvement: 18.7%
+> (d) RMSE
+> 0.00 0.05 0.10 0.15 0.20 0.25 0.30
+> Normalized center-error threshold
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Precision
+> @0.10 @0.10 AUC(0–0.3): 0.691 / 0.750 @0.10: 0.594 / 0.733
+> (e) Normalized precision
+> Fixed gain Normalized gain
+
+Fig. 7. Real-data validation on a representative UOT32 underwater track. (a) Representative frame showing ground truth, tracker measurement, and observer estimates. (b) Center-error trajectories for fixed-gain and nor-malized observers; shaded regions denote intervals of elevated measurement sensitivity. (c) Sensitivity proxy over time with empirical threshold indicat-ing regimes where geometry-dependent contraction degradation is expected. (d) RMSE comparison between fixed-gain and normalized observers. (e) Normalized precision curve showing improved scale-normalized localization accuracy under the representation-aware normalized observer. 
+
+F. Normalization-Based Stabilization 
+
+We evaluate the proposed representation-aware gain nor-malization under the same experimental conditions. 
+
+a) Setup.: We replace the fixed gain with the normal-ized gain 
+
+αt = β
+
+∥ ˜KJ h(ˆ xt)∥ + ε , (47) while keeping all other components unchanged. Under this normalization, observer performance is evaluated on real-data sequences exhibiting temporally varying measurement sensitivity. Figure 7 shows representative results on an underwater sequence from UOT32. It can be seen that measurement sensitivity varies persistently along the trajectory, reflect-ing temporally evolving environmental distortion. Elevated sensitivity intervals correspond to increased estimation er-ror for the fixed-gain observer. The normalized observer reduces sensitivity-induced degradation and maintains im-proved tracking across environmental conditions, with the largest gains occurring in high-sensitivity regimes. Underwater scenes are complex and dynamic due to scattering, attenuation, and visibility changes that evolve TABLE I OBSERVER PERFORMANCE ACROSS DATASETS .Dataset Tracks Improved Mean (%) Best (%) Hedges g
+
+VisDrone 5 5/5 11.09 19.15 1.38 UOT32 1 1/1 18.72 18.72 –
+
+over time [22], [23]. Consequently, tracking features must be propagated across temporal sequences to maintain stable localization under persistent distortion [23], [24]. For the underwater dataset, we report a representative 30-second sequence. Each UOT32 video tracks a single object un-der distinct environmental conditions, producing sequence-specific measurement geometry and temporally accumulated distortion. On this sequence, the normalized observer reduces pixel RMSE by 18.7% relative to the fixed-gain observer. 
+
+G. Aggregate Performance Across Datasets 
+
+Performance is evaluated over individual object tracks, defined as contiguous frame sequences. Results are reported subject to a minimum track length, and tracks shorter than 80 frames are excluded. Table I summarizes performance across the remaining tracks. Across the terrestrial tracks, the normalized observer yields a large paired effect size relative to the fixed-gain observer ( g = 1.38 ), indicating that the improvement is substantial compared with across-track variability and is consistent across sequences. 
+
+a) Summary: Across both datasets, the normalized ob-server consistently reduces estimation error relative to the fixed-gain observer. The largest improvements occur in high-sensitivity regimes, confirming that geometry-dependent degradation predicted by the theory appears in real data and that representation-aware normalization mitigates this effect. VisDrone demonstrates illumination-induced variation in measurement sensitivity and UOT32 captures medium-induced visibility changes. Together, these results support the proposed black-box stabilization mechanism and demon-strate improved robustness across diverse environmental con-ditions. V. C ONCLUSION 
+
+In this paper, we present a control-theoretic framework for enabling more stable estimation and improving the re-liability of learning-based measurement models. We iden-tify a geometry-dependent contraction certificate govern-ing observer stability and introduce a representation-aware normalization to mitigate sensitivity-induced amplification. Numerical and real-data experiments validate the analysis and establish a direct link between measurement geometry, contraction degradation, and stabilization. These results pro-vide a practical mechanism for improving robustness and reliability in real-world learning-enabled observer architec-tures. REFERENCES [1] G. Revach, N. Shlezinger, X. Ni et al. , “Kalmannet: Neural network aided kalman filtering for partially known dynamics,” IEEE Transac-tions on Signal Processing , vol. 70, pp. 1532–1547, 2022. [2] N. Shlezinger, G. Revach, and Y. C. Eldar, “Neural dynamical kalman filtering,” IEEE Transactions on Signal Processing , 2023. [3] G. Beintema et al. , “Learning-based nonlinear observers: A review,” 
+
+Annual Reviews in Control , 2023. [4] Y. Miao et al. , “Learning neural observers with conver-gence–robustness trade-offs,” in Proceedings of Machine Learning Research , vol. 211, 2023, pp. 1–17. [5] P. Zhu, L. Wen, D. Du, X. Bian, H. Fan, Q. Hu, and H. Ling, “Detection and tracking meet drones challenge,” IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 44, no. 11, pp. 7380–7399, 2021. [6] K. Panetta, L. Kezebou, V. Oludare, and S. Agaian, “Comprehen-sive underwater object tracking benchmark dataset and underwater image enhancement with gan,” IEEE Journal of Oceanic Engineering ,vol. 47, no. 1, pp. 59–75, 2022. [7] B. Alawode, Y. Guo, M. Ummar, N. Werghi, J. Dias, A. Mian, and S. Javed, “Utb180: A high-quality benchmark for underwater tracking,” in Asian Conference on Computer Vision (ACCV) , ser. Lecture Notes in Computer Science, vol. 13845. Springer, 2022, pp. 442–458. [8] Y. Tang et al. , “Learning-based observer design with lipschitz stability guarantees,” arXiv preprint arXiv:2310.03187 , 2023. [9] D. Sun et al. , “Stable neural observers with guaranteed error bounds,” 
+
+arXiv preprint , 2024. [10] W. Lohmiller and J.-J. E. Slotine, “On contraction analysis for nonlinear systems,” Automatica , vol. 34, no. 6, pp. 683–696, 1998. [11] S. Bonnabel and J.-J. E. Slotine, “A contraction theory-based analysis of the stability of the deterministic extended kalman filter,” IEEE Transactions on Automatic Control , vol. 60, no. 2, pp. 565–569, Feb. 2015. [12] F. Forni and R. Sepulchre, “A differential lyapunov framework for con-traction analysis,” IEEE Transactions on Automatic Control , vol. 59, no. 3, pp. 614–628, 2014. [13] S.-Y. Yi and I. R. Manchester, “Reduced-order nonlinear observers via contraction analysis and convex optimization,” arXiv preprint arXiv:2012.06158 , 2020. [14] S. Bonnabel and J.-J. Slotine, “Contraction-based stability analysis of the extended kalman filter,” arXiv preprint arXiv:1211.6624 , 2012. [15] I. R. Manchester and J.-J. Slotine, “Control contraction metrics: Convex and intrinsic criteria for nonlinear feedback design,” IEEE Transactions on Automatic Control , vol. 62, no. 6, pp. 3046–3053, 2017. [16] J. Le Ny and G. Pappas, “Differentially private nonlinear observer design using contraction analysis,” International Journal of Robust and Nonlinear Control , 2018. [17] I. R. Manchester and J.-J. Slotine, “Control contraction metrics: Convex and intrinsic criteria for nonlinear feedback design,” IEEE Transactions on Automatic Control , vol. 62, no. 6, pp. 3046–3053, 2017. [18] C. Wu and D. Dimarogonas, “From partial and horizontal contraction to k-contraction,” IEEE TAC , 2023. [19] R. Ofir, M. Margaliot, Y. Levron, and J.-J. E. Slotine, “A new approach to the analysis of contractive systems,” Automatica , vol. 131, p. 109744, 2021. [20] K. Panetta, L. Kezebou, and V. Oludare, “Comprehensive underwater object tracking benchmark dataset and underwater image enhancement with gan,” IEEE Journal of Oceanic Engineering , vol. PP, pp. 1–17, 07 2021. [21] L. Kezebou, V. Oludare, K. Panetta, and S. S. Agaian, “Underwater object tracking benchmark and dataset,” in 2019 IEEE International Symposium on Technologies for Homeland Security (HST) , 2019, pp. 1–6. [22] O. Alawode, X. Li et al. , “Uvot400: A large-scale benchmark for underwater visual object tracking,” arXiv preprint arXiv:2308.15816 ,2023. [23] Q. Zhang, X. Li et al. , “Webuot-1m: A large-scale underwater object tracking dataset,” arXiv preprint arXiv:2405.19818 , 2024. [24] S. Vohra, A. Gupta et al. , “Temporally consistent video processing via deep feature propagation,” arXiv preprint arXiv:2303.16961 , 2023.

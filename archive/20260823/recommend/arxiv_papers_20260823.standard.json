@@ -1,0 +1,215 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-08-23T19:31:35.026958+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 0,
+    "deep_cap": 6,
+    "deep_selected": 0,
+    "quick_candidates": 5,
+    "quick_skim_target": 11,
+    "quick_selected": 5
+  },
+  "deep_dive": [],
+  "quick_skim": [
+    {
+      "id": "2608.18077v1",
+      "source": "arxiv",
+      "title": "Hydra-0: Action Flow for Generalist World Modeling and Control",
+      "abstract": "We introduce Hydra-0, a generalist world model conditioned on action flow, which represents robot actions as pixel motion. This shared visual interface enables generalist world modeling and control by learning action consequences across embodiments, tasks, environments, and video-generation backbones. Our best configuration achieves 90.4% lower robot-motion error and 60.2% lower object-motion error than our action-conditioned baseline, while supporting zero-shot composition and data-efficient adaptation. On the RoboLab benchmark, Hydra-0 achieves a Pearson correlation of r=0.96 between replayed and reference success rates. Finally, we uncover an emergent inverse mode of this interface: a world action model that predicts compatible robot motion from desired object flow transferred from a human demonstration. A trained action head maps the resulting latent features to executable actions without requiring task-specific expert robot demonstrations. Together, these results demonstrate the potential of action flow as a shared control interface connecting heterogeneous training data, open-loop policy evaluation, and robot control.",
+      "authors": [
+        "Hongyu Li",
+        "Bowen Wen",
+        "Xinghao Zhu",
+        "Yixuan Wang",
+        "Yilun Du",
+        "Yunzhu Li",
+        "George Konidaris",
+        "Stan Birchfield",
+        "Soha Pouya",
+        "Chenran Li",
+        "Yan Chang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-18T17:59:30+00:00",
+      "link": "https://arxiv.org/pdf/2608.18077v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "generalist world model for robot control using action flow, relevant to learning-based motion control",
+      "llm_evidence_cn": "用于机器人控制的世界模型，以动作流为条件，与基于学习的运动控制相关",
+      "llm_evidence": "用于机器人控制的世界模型，以动作流为条件，与基于学习的运动控制相关",
+      "canonical_evidence": "用于机器人控制的世界模型，以动作流为条件，与基于学习的运动控制相关",
+      "llm_tldr_en": "Hydra-0 is a generalist world model conditioned on action flow represented as pixel motion, enabling cross-embodiment control and yielding lower robot/object motion error and strong RoboLab correlation.",
+      "llm_tldr_cn": "针对机器人控制中跨本体、跨任务泛化难的问题，本文提出Hydra-0，将机器人动作表示为像素运动作为共享视觉接口，使世界模型能统一学习动作后果并支持视频生成骨干。相比动作条件基线，机器人运动误差降低90.4%、物体运动误差降低60.2%，并支持零样本组合和数据高效迁移。在RoboLab基准上回放与参考成功率相关系数达0.96，还涌现出由期望物体运动预测机器人动作的逆向模式。该工作为基于学习的世界模型控制提供了新思路。",
+      "llm_tldr": "针对机器人控制中跨本体、跨任务泛化难的问题，本文提出Hydra-0，将机器人动作表示为像素运动作为共享视觉接口，使世界模型能统一学习动作后果并支持视频生成骨干。相比动作条件基线，机器人运动误差降低90.4%、物体运动误差降低60.2%，并支持零样本组合和数据高效迁移。在RoboLab基准上回放与参考成功率相关系数达0.96，还涌现出由期望物体运动预测机器人动作的逆向模式。该工作为基于学习的世界模型控制提供了新思路。",
+      "llm_tags": [
+        "query:rl-motion:composite"
+      ],
+      "matched_query_tag": "query:rl-motion:composite",
+      "matched_query_text": "Papers central to 查找强化学习和运动控制相关的最新论文, especially work that connects or combines: reinforcement learning approaches for physical systems; motion control strategies in robotics; robot control using learning methods; continuous state and action control; recent advances in reinforcement learning for motion control; deep reinforcement learning for robot locomotion.",
+      "matched_requirement_id": "req-composite-rl-motion",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.14925v1",
+      "source": "arxiv",
+      "title": "Geometry Induced Contraction Degradation and Stabilization of Learning Enabled Observers",
+      "abstract": "Learned perception models are increasingly used as measurement maps within nonlinear observers, mapping high dimensional sensory inputs to low dimensional quantities for state estimation. Unlike analytic measurement functions, learned models introduce state dependent Jacobians whose effect on observer stability is rarely characterized. We show that learned measurement geometry enters the observer error dynamics explicitly and rescales Euclidean contraction margins. Under fixed gains, increased measurement sensitivity reduces the certifiable contraction region and can eliminate exponential convergence guarantees. To address this effect, we introduce a representation aware gain normalization that compensates for geometry induced amplification using only local Jacobian information. The proposed approach treats the learned measurement model as a black box and requires no retraining or architectural modification. The normalization removes the dominant sensitivity dependence and restores a uniform Euclidean contraction bound while preserving a simple observer structure. Numerical and real data experiments validate the predicted sensitivity convergence relationship and demonstrate improved robustness and stability in learning enabled observer architectures.",
+      "authors": [
+        "Aditi Acharya",
+        "Andrew Fleck"
+      ],
+      "primary_category": "eess.SY",
+      "categories": [
+        "eess.SY"
+      ],
+      "published": "2026-08-14T22:29:15+00:00",
+      "link": "https://arxiv.org/pdf/2608.14925v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "learned perception models in nonlinear observers for state estimation; relevant to visual SLAM measurement maps",
+      "llm_evidence_cn": "学习型感知模型用于非线性观测器状态估计，与视觉SLAM的测量映射相关",
+      "llm_evidence": "学习型感知模型用于非线性观测器状态估计，与视觉SLAM的测量映射相关",
+      "canonical_evidence": "学习型感知模型用于非线性观测器状态估计，与视觉SLAM的测量映射相关",
+      "llm_tldr_en": "Learned measurement geometry in nonlinear observers rescales contraction margins; a representation-aware gain normalization compensates for geometry-induced degradation and restores exponential convergence guarantees.",
+      "llm_tldr_cn": "学习型感知模型被用作非线性观测器的测量映射时，其几何特性会通过状态相关雅可比影响误差动力学，导致收缩区域缩小甚至丧失指数收敛保证。本文分析了这一退化机制，并提出表示感知的增益归一化方法来补偿几何放大效应，从而稳定观测器并恢复可证明的收敛性。该工作为视觉SLAM等基于学习感知的状态估计系统提供了重要的稳定性分析与设计工具。",
+      "llm_tldr": "学习型感知模型被用作非线性观测器的测量映射时，其几何特性会通过状态相关雅可比影响误差动力学，导致收缩区域缩小甚至丧失指数收敛保证。本文分析了这一退化机制，并提出表示感知的增益归一化方法来补偿几何放大效应，从而稳定观测器并恢复可证明的收敛性。该工作为视觉SLAM等基于学习感知的状态估计系统提供了重要的稳定性分析与设计工具。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.15104v1",
+      "source": "arxiv",
+      "title": "ProjFormer: Point Cloud Completion via Geometric-Projective Transformer and Cross-Modal Semantic Constraints",
+      "abstract": "Point cloud completion is inherently ill-posed due to severe sparsity and ambiguity in partial observations. Existing multi-view methods alleviate this by incorporating 2D semantics, but often rely on learned attention and fixed fusion, which lack geometric consistency and adaptability. We propose ProjFormer, a cross-modal framework that enforces geometry-consistent 2D-3D interaction through explicit projection and adaptive feature routing. A Projective Guided View Attention module aligns 3D points with multi-view features via deterministic projection, enabling efficient and geometrically consistent aggregation. Building on this, a geometry-aware routing network performs point-wise adaptive fusion of structural and observation-driven features for progressive refinement. Experiments show that, under a lightweight design, ProjFormer delivers competitive performance with improved structural completeness.",
+      "authors": [
+        "Sheng Liu",
+        "Meng Wang",
+        "Ruihui Li",
+        "Huilong Pi",
+        "Zhuo Tang",
+        "Kenli Li"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-15T08:05:48+00:00",
+      "link": "https://arxiv.org/pdf/2608.15104v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "point cloud completion with geometric-projective fusion supports dense 3D scene reconstruction",
+      "llm_evidence_cn": "点云补全与多视角几何融合可支持稠密三维场景重建",
+      "llm_evidence": "点云补全与多视角几何融合可支持稠密三维场景重建",
+      "canonical_evidence": "点云补全与多视角几何融合可支持稠密三维场景重建",
+      "llm_tldr_en": "ProjFormer completes partial point clouds by enforcing geometry-consistent 2D-3D interaction through explicit projection and adaptive feature routing, improving structural and semantic reconstruction.",
+      "llm_tldr_cn": "针对部分观测点云稀疏且歧义大、现有跨模态方法几何一致性不足的问题，本文提出ProjFormer，通过显式投影与自适应特征路由实现几何一致的2D-3D交互。其投影引导视角注意力模块将3D点与多视角特征对齐，完成高效聚合，并利用几何感知路由网络进行逐点自适应融合。实验表明该方法在结构保持和语义约束下有效提升点云补全质量。该框架可为机器人稠密建图提供可迁移的几何补全手段。",
+      "llm_tldr": "针对部分观测点云稀疏且歧义大、现有跨模态方法几何一致性不足的问题，本文提出ProjFormer，通过显式投影与自适应特征路由实现几何一致的2D-3D交互。其投影引导视角注意力模块将3D点与多视角特征对齐，完成高效聚合，并利用几何感知路由网络进行逐点自适应融合。实验表明该方法在结构保持和语义约束下有效提升点云补全质量。该框架可为机器人稠密建图提供可迁移的几何补全手段。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.15440v1",
+      "source": "arxiv",
+      "title": "Accelerating Mixed Discrete-Continuous Motion Planning via Neural Graphs of Convex Sets",
+      "abstract": "Motion planning problems such as collision-free navigation and contact-rich manipulation can be naturally formulated as optimization problems that couple discrete decisions with continuous trajectories. The Graphs of Convex Sets (GCS) framework offers a practical solution to these problems. It represents discrete decisions as nodes of a graph and encodes continuous trajectories in the edges connecting them. However, the resulting optimization subproblems can become computationally prohibitive for online replanning.   In this work, we propose a learning-based strategy to mitigate this limitation. Specifically, we replace the costly convex relaxation step required by nominal GCS with a single forward pass through a Graph Attention Network that predicts a set of highly probable candidate paths through the graph. A lightweight ranking network then orders these candidates by their estimated trajectory cost. Evaluating them in this order, we terminate our search early while still recovering a near-optimal motion plan. We validate the resulting pipeline across diverse robotic tasks, including collision-free motion planning for a 3D quadrotor and a 7-DoF manipulator, and planning through contact for planar pushing. Across both convex and non-convex cost and constraint settings, our approach yields up to two orders of magnitude speedup over nominal GCS while maintaining a 100% success rate, at the cost of some suboptimality in the recovered solutions. Code implementations and video demonstrations can be found at https://neural-gcs.github.io/.",
+      "authors": [
+        "Ananya Trivedi",
+        "Sarvesh Prajapati",
+        "Mohamed Khalid M Jaffar",
+        "Zhexin Xu",
+        "David Rosen",
+        "Taskin Padir"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-15T22:51:56+00:00",
+      "link": "https://arxiv.org/pdf/2608.15440v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "learning-based acceleration of convex optimization for discrete-continuous motion planning in robotics",
+      "llm_evidence_cn": "基于学习的凸优化加速，面向机器人离散-连续运动规划",
+      "llm_evidence": "基于学习的凸优化加速，面向机器人离散-连续运动规划",
+      "canonical_evidence": "基于学习的凸优化加速，面向机器人离散-连续运动规划",
+      "llm_tldr_en": "Proposes a learning-based method that replaces expensive convex relaxation in Graphs of Convex Sets motion planning with a graph attention network forward pass, enabling faster online replanning.",
+      "llm_tldr_cn": "无碰撞导航和接触丰富的操作等运动规划可建模为离散决策与连续轨迹耦合的优化问题，凸集图框架虽有效但凸松弛子问题计算开销大，难以在线重规划。该文提出用图注意力网络的一次前向传播替代GCS中代价高昂的凸松弛步骤，在保持解质量的同时显著提升规划速度。该策略为机器人混合离散-连续运动规划的实时应用提供了一种可学习的加速范式。",
+      "llm_tldr": "无碰撞导航和接触丰富的操作等运动规划可建模为离散决策与连续轨迹耦合的优化问题，凸集图框架虽有效但凸松弛子问题计算开销大，难以在线重规划。该文提出用图注意力网络的一次前向传播替代GCS中代价高昂的凸松弛步骤，在保持解质量的同时显著提升规划速度。该策略为机器人混合离散-连续运动规划的实时应用提供了一种可学习的加速范式。",
+      "llm_tags": [
+        "query:rl-motion:composite"
+      ],
+      "matched_query_tag": "query:rl-motion:composite",
+      "matched_query_text": "Papers central to 查找强化学习和运动控制相关的最新论文, especially work that connects or combines: reinforcement learning approaches for physical systems; motion control strategies in robotics; robot control using learning methods; continuous state and action control; recent advances in reinforcement learning for motion control; deep reinforcement learning for robot locomotion.",
+      "matched_requirement_id": "req-composite-rl-motion",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.18673v1",
+      "source": "arxiv",
+      "title": "DynCur-Geo: Dynamic Curiosity Reward Shaping for Multimodal Active Geo-Localization",
+      "abstract": "Active geo-localization enables low-altitude UAVs to search for specified targets from limited local aerial observations, supporting time-sensitive applications such as search and rescue and emergency inspection. However, multimodal target cues, restricted views, and sparse feedback make it difficult to balance exploration with target convergence. Existing curiosity-driven methods assign a fixed intrinsic-reward weight throughout search, which can continue rewarding novelty after the agent nears the target and induce detours. We propose DynCur-Geo, a dynamic curiosity framework that adjusts prediction-error intrinsic reward according to remaining target distance. A distance-aware gate encourages early exploration and shifts the policy toward goal-directed behavior near the target, while potential-based reward shaping supplies dense progress guidance. Experiments across multimodal, cross-scene, disaster-affected, and long-range settings show consistent gains over active geo-localization baselines.",
+      "authors": [
+        "Yiming Sun",
+        "Yang Zhang",
+        "Pengfei Zhu"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-19T08:24:49+00:00",
+      "link": "https://arxiv.org/pdf/2608.18673v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "reinforcement learning with dynamic intrinsic reward shaping for UAV active search and navigation",
+      "llm_evidence_cn": "用于无人机主动搜索和导航的强化学习动态内在奖励塑形",
+      "llm_evidence": "用于无人机主动搜索和导航的强化学习动态内在奖励塑形",
+      "canonical_evidence": "用于无人机主动搜索和导航的强化学习动态内在奖励塑形",
+      "llm_tldr_en": "Proposes a dynamic curiosity reward-shaping framework for active geo-localization, where a distance-aware gate adjusts intrinsic prediction-error reward relative to remaining target distance to balance exploration and convergence.",
+      "llm_tldr_cn": "主动地理定位要求无人机在有限局部观测下搜索指定目标，但多模态线索和稀疏反馈使探索与收敛难以平衡。现有好奇心方法使用固定内在奖励权重，靠近目标后仍可能奖励新颖性导致绕路。该文提出DynCur-Geo，依据剩余目标距离动态调整预测误差内在奖励，用距离感知门控在前期鼓励探索、后期转向收敛，从而减少绕路并提升目标定位效率，为无人机自主学习导航提供奖励设计新思路。",
+      "llm_tldr": "主动地理定位要求无人机在有限局部观测下搜索指定目标，但多模态线索和稀疏反馈使探索与收敛难以平衡。现有好奇心方法使用固定内在奖励权重，靠近目标后仍可能奖励新颖性导致绕路。该文提出DynCur-Geo，依据剩余目标距离动态调整预测误差内在奖励，用距离感知门控在前期鼓励探索、后期转向收敛，从而减少绕路并提升目标定位效率，为无人机自主学习导航提供奖励设计新思路。",
+      "llm_tags": [
+        "query:rl-motion:composite"
+      ],
+      "matched_query_tag": "query:rl-motion:composite",
+      "matched_query_text": "Papers central to 查找强化学习和运动控制相关的最新论文, especially work that connects or combines: reinforcement learning approaches for physical systems; motion control strategies in robotics; robot control using learning methods; continuous state and action control; recent advances in reinforcement learning for motion control; deep reinforcement learning for robot locomotion.",
+      "matched_requirement_id": "req-composite-rl-motion",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}
