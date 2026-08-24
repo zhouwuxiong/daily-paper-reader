@@ -1,0 +1,1124 @@
+Title: A Theoretical Framework for Parallel Lifelong MAPF Using Group Decentralized Planning
+
+URL Source: https://arxiv.org/pdf/2608.17928v1
+
+Published Time: Wed, 19 Aug 2026 01:18:33 GMT
+
+Number of Pages: 16
+
+Markdown Content:
+# A Theoretical Framework for Parallel Lifelong MAPF Using Group Decentralized Planning 
+
+## Alex DeWeese 1, Jiaoyang Li 2, Guannan Qu 1
+
+> 1
+
+Department of Electrical and Computer Engineering, Carnegie Mellon University, Pittsburgh, PA 15213, US  
+
+> 2
+
+Robotics Institute, Carnegie Mellon University, Pittsburgh, PA 15213, US {mdeweese, gqu}@andrew.cmu.edu, {jiaoyangli}@cmu.edu 
+
+Abstract 
+
+In the Lifelong Multi-Agent Path Finding (L-MAPF) prob-lem, agents must repeatedly move from one destination to another while avoiding obstacles and inter-agent collisions. Widely regarded as one of the highest-performing solutions to this problem is the Rolling-Horizon Collision Resolution (RHCR) framework. However, commensurate with its quality solutions, it incurs a computational cost that limits its appli-cability to even modest agent counts. In this paper, leveraging theoretical methods from the Locally Interdependent Multi-Agent MDP literature (DeWeese and Qu 2024), we first the-oretically prove the near-optimality of RHCR in a discounted MDP formulation of the L-MAPF problem. Then, we lever-age these results to naturally motivate an extended framework called Group Decentralized RHCR (GD-RHCR) which incor-porates a group decentralized structure that partitions agents based on a transitive communication scheme and plans for each partition of agents in parallel. We show that both RHCR and GD-RHCR achieve similar exponentially close to opti-mal guarantees, establishing a theoretical duality between the time based restrictions performed by vanilla RHCR and the additional space based partitioning performed by GD-RHCR. Lastly, we show that across varying maps, GD-RHCR is able to attain high throughput that scales into higher agent counts while maintaining a significantly lower per plan cost. 
+
+## 1 Introduction 
+
+The (one-shot) multi-agent path finding (MAPF) problem is a highly studied area which navigates a large number of agents from some start points to end points on a map while avoiding obstacles as well as collisions among each other. Applications are broad, encompassing warehouse logistics (Ma et al. 2017), airport logistics (Li et al. 2019), UAV traffic management (Ho et al. 2019), parking navigation (Okoso, Otaki, and Nishi 2019), video games (Li et al. 2020) etc. When agents are continuously moving such as in auto-mated package delivery in warehouses, this shifts to a new paradigm called Lifelong MAPF (L-MAPF). In this setting as agents reach a destination, they are immediately assigned a new destination. They must attain a high throughput (e.g. delivered packages) while avoiding collisions with obstacles and with other agents. A wide range of methods have been proposed for this life-long setting (see section 2). Of these, one important baseline is Priority Inheritance with Backtracking (PIBT), an ultra fast and scalable method that serves as a strong baseline but can have greedy behavior. In contrast to PIBT, another popular solution is the Rolling-Horizon Collision Resolu-tion (RHCR) framework which is seen as one of the highest performing solutions in terms of attaining high throughput. Unfortunately, a weakness of RHCR is its high computa-tional cost especially when compared to PIBT. In practical scenarios like robot navigation in warehouses, RHCR must repeatedly use one-shot MAPF solvers in a short amount of time. Even when using suboptimal solvers like Priority Based Search (PBS), we observe that RHCR explodes expo-nentially in computational cost. In fact, within the research community, running RHCR as a baseline is seen as a com-putationally expensive part of running simulations and often must be reported as a partial plan before timeouts hit or run on a smaller subset of problems (Arita and Okumura 2026; Chen et al. 2024). In practice, RHCR can be used with a fall-back mechanism where another algorithm (such as PIBT) is taken when some timeout is hit. While it is tempting to speed up RHCR by developing par-allelized versions of it (across agents), it remains open how to do so in a theoretically principled way without sacrificing the performance of RHCR. 
+
+1.1 Contributions 
+
+The goal of this work is to develop theoretically principled parallelized RHCR methods that keep (or exceeds) the high-throughput of RHCR, and plans with a fraction of the compute cost. Towards this goal, we build a novel theoretical foun-dation for RHCR , which leads to a theoretically principled parallelization of RHCR called Group Decentralized RHCR (GD-RHCR) , as detailed below. 
+
+Theoretical foundation of RHCR. We start with a the-oretical underpinning of vanilla RHCR as a near-optimal method when modeling the MAPF problem as a discounted MDP using newly established techniques from the Locally Interdependent Multi-Agent MDP (LI-MDP) literature (De-Weese and Qu 2024, 2025). That is, in this discounted set-ting, the performance of RHCR converges to optimal ex-ponentially fast with the increase in the planning horizon (theorem 4.1). This worst-case bound is agnostic to the re-arXiv:2608.17928v1 [cs.MA] 18 Aug 2026 plan window (the frequency of reevaluation), suggesting a theoretical motivation for this previously existing concept. 
+
+Group Decentralized RHCR. The theoretical foundation also motivates a Group Decentralized (GD) version (see the-orem 3.1) to the RHCR framework. We show that the new GD-RHCR framework satisfies similar theoretical guaran-tees as RHCR up to constant factors (theorem 6.1), establish-ing a theoretical duality between the time based restrictions performed by RHCR and the group decentralized distance based partitioning scheme performed by GD-RHCR. These theory results mean GD-RHCR keeps the high-performance advantage of RHCR. In addition to the theoretical guarantee, GD-RHCR has a variety of desirable empirical characteristics that signifi-cantly reduce the computational cost compared to RHCR. (1) The time complexity of near-optimal one-shot MAPF algorithms (e.g., CBS and PBS) grows exponentially with the number of agents. By partitioning agents into groups and solving each group independently, GD-RHCR signifi-cantly reduces the complexity of the planning problem. (2) GD-RHCR enables replanning for different groups to be per-formed in parallel and even asynchronously. In particular, only a subset of the groups needs to be replanned at each timestep, reducing the computational burden of online plan-ning. (3) GD-RHCR allows different one-shot MAPF plan-ners to be assigned to different groups. For example, more optimal solvers such as PBS can be used for small groups, while more scalable planners such as PIBT can be used for large groups, providing a natural trade-off between solution quality and computational efficiency. Because of these strengths, for small agent counts that RHCR can already handle, GD-RHCR achieves similar throughput in many cases with significantly faster planning speed; for large agent counts that only PIBT can handle, GD-RHCR can also solve them yet with consistently higher throughput. 
+
+Experimental Validation. We demonstrate GD-RHCR empirically across a variety of maps and show that the av-erage plan time of can be reduced by a factor of 24 .9x and match RHCR in performance before its collapse. Further, it performs well deeper into the large agent range and shows up to a 57 .7% improvement in the throughput against PIBT and collapsed RHCR. 
+
+## 2 Related Works 
+
+One-Shot MAPF One-shot MAPF solvers are widely put into two categories: Theoretically guaranteed versus greedy methods. The theoretically guaranteed methods provide op-timal or near-optimal solution at a potential of high compu-tation time. Some algorithms include Conflict Based Search (CBS) (Sharon et al. 2015), Enhanced CBS (ECBS) (Barer et al. 2014), Explicit Estimation CBS (EECBS) (Li, Ruml, and Koenig 2021). However, since solving MAPF optimally is NP-Hard (Yu and LaValle 2013), these methods can tend to blow up in computation time especially as the number of agents increase. For greedy methods, there are priority based planners such as Priority Planning (Erdmann and Lozano-Perez 1987) and Priority Based Search (PBS) (Ma et al. 2019). These meth-ods can be fast but forgo the theoretical near-optimality. In a similar vein, there are ultra-fast but greedy methods that rely on Priority Inheritance with Backtracking (PIBT) (Oku-mura et al. 2022) and its variants such as LaCAM (Okumura 2023b,a). These methods are extremely scalable but may be suboptimal (see section 7). There are also learning based methods that use reinforce-ment learning or imitation learning directly to solve the MAPF problem (Sartoretti et al. 2019). These methods can perform some parallelism through decentralization, yet there is no guarantee on how much performance is lost due to parallelization/decentralization. 
+
+Lifelong MAPF Largely, this literature is divided into the the slow but high quality solutions provided by RHCR and the fast but greedy solutions like PIBT. Recall, RHCR enables conversion of the one-shot MAPF solvers to the lifelong setting but may incur a large computation time since one-shot MAPF is NP-hard (Morag, Stern, and Felner 2023). On the other hand, PIBT is a method that can be used in the one-shot context or the lifelong setting and it along with its variations (Chen et al. 2024; Okumura, Tamura, and Défago 2019) remain as a fast alternatives that are greedy and can often suffer from deadlocks when the graph is not biconnected (Okumura et al. 2022). Analogously we have multi-agent RL and imitation learn-ing methods for this setting as well (Damani et al. 2021; Jiang et al. 2025). 
+
+Grouping in MAPF There have been a number of prior works that attempt to speed up computation by grouping agents. A static grouping method can divide the map into sub-regions and treat agents in each sub-region as a group (Leet, Li, and Koenig 2022). In another context, more sophis-ticated methods attempt to dynamically identify independent groupings (Veerapaneni et al. 2025; Zhang et al. 2026). This however is done in the context of speeding up an algorithm that maintains completeness guarantees rather than identify-ing coordination groups that may perform well together. 
+
+Locally Interdependent Multi-Agent MDP Adjacent to the MAPF literature, there has been a recent breakthrough in the study of discounted multi-agent MDP environments with dynamic local dependencies. A model was proposed called the Locally Interdependent Multi-Agent MDP (LI-MDP) which is a theoretical model for multi-agent systems with local interactions (DeWeese and Qu 2024, 2025). Further the same works proposed the group decentralized setting which connects agents transitively based on their vis-ibility and connected agents are allowed to coordinate. This special observability structure in between the centralized and decentralized setting permits strong theoretical guarantees not available to the decentralized setting (exponentially close to optimal with respect to visibility) but still allows for groups of agents to plan in parallel. We show that the LI-MDP framework brings insight into the effectiveness of existing methods like RHCR to prove near optimality and can be used to propose new methods like GD-RHCR that integrates this new observability structure. k · · · 2 1 Gk · · · G2 G1                   
+
+> t=kt= 2 t= 1
+> (a) Naive Decentralized
+> 2kcells
+> k· · · 21Gk· · · G2G1
+> t= 1 t= 1 t= 1
+> (b) Centralized / Group Decentralized
+
+Figure 1: k agents with goal locations Gi on the right. Arrows depict timestep of first movement. 
+
+## 3 Motivation: Natural Extension to RHCR 
+
+To motivate our method, we begin by introducing an ab-stracted version of RHCR. To stay consistent with traditional MDP notation, we will use H to refer to the planning horizon and α will refer to the replanning period. 
+
+RHCR: Assume a one-shot solver SOLVER(sources, des-tinations, H) that produces a H step collision-free path for all agents and as H → ∞ , the path moves all agents from their sources to destinations. The RHCR framework proposes to run SOLVER for some α ≤ H timesteps before recom-puting and repeating. That is, at each t = kα , RHCR will run 
+
+SOLV ER (positions [kα ], remaining _destinations [kα ], H )
+
+and that path will be taken for t′ ∈ [kα, kα + α).In this paper, we seek to mitigate the computational re-quirements of repeatedly using SOLV ER in RHCR by run-ning SOLV ER on groups of agents in parallel. Our observa-tion is that we can view RHCR as temporally ignoring agent interactions beyond some time horizon H to reduce compu-tation time. Therefore, if we want to achieve parallelization, a natural idea is also to ignore interactions but now based on spatial distance (e.g. with some threshold V) – this way, the planning can be broken up into parallel groups where inter-group interactions have been intentionally ignored. The question is then, (*) what is the “correct way” to ignore inter-actions based on distance to achieve parallelization without sacrificing the performance of RHCR? 
+
+Failure of Naive Decentralization: Naively, it appears that the conventional fully decentralized method, where all agents are computed independently in parallel using the in-formation within visibility V of the agents (without commu-nication), would be the answer to the question. However, in fig. 1, we show a counter example. Notice that a centralized scheme could move the agents to their goals in k steps but for a decentralized scheme it would take at least 2k timesteps because agents cannot move before the agent in front has moved (at least k iterations for agent k to move its first step). Therefore, increasing V for the independent decentralized setting is clearly not analogous to increasing the time horizon 
+
+H in SOLV ER , which would approach the optimal solution as H → ∞ .
+
+Figure 2: Group decentralized partitioning for V = 2 . Groups are connected by lines and color coded (colors are reused). 
+
+Group Decentralized Setting: Fortunately, it turns out that L-MAPF problem can be modeled as a recently proposed Locally Independent Multi-Agent MDP (LI-MDP) model (DeWeese and Qu 2024), which also presents a theoretically grounded method to divide the agents into parallel groups without sacrificing much performance. The main solution concept is the group decentralized setting. 
+
+Definition 3.1 (group decentralization) . Given visibility ra-dius V and a distance metric, for agents N treated as vertices, create a graph there is an edge between two agents if they are within distance V. We define groups as the connected com-ponents of the graph. Each group is planned independently. Notice this resolves the issues faced in fig. 1. See fig. 2 for a visual of a group decentralization partitioning. In section 4, we will formally formulate L-MAPF as a discounted LI-MDP problem and provide a theoretical guar-antee for RHCR. Then, we propose our full extension to the RHCR framework that uses this group decentralized setting (GD-RHCR) in section 5, then formally prove this new framework non-trivially satisfies a similar guarantee to RHCR in section 6. We show the performance of this method in practice in section 7. 
+
+## 4 Theory: LI-MDP Analysis of RHCR 
+
+In this section we will set up the L-MAPF as a discounted reward LI-MDP model. RHCR when viewed in a LI-MDP environment will turn out to be a near optimal method. 
+
+Conventional L-MAPF Model: n agents are placed in a grid environment with open spaces X . At each step every agent i may use movements D =
+
+{U P, DOW N, LEF T, RIGHT, ST AY } to transition from xprev i ∈ X to the same or an adjacent space xi ∈ X 
+
+if no other agent moves to the space at the same time 
+
+xi̸ = xj ∀j ∈ N (vertex collision) and agents do not in-terchange locations ¬(xprev i = xj ∧ xprev j = xi), ∀j ∈ N 
+
+(edge collision). Each agent i is assigned a list of goal lo-cations g1 
+
+> i
+
+, g 2 
+
+> i
+
+, . . . to be navigated to in sequence and the metric of evaluation is number of goals achieved per unit time referred to as the throughput. 
+
+L-MAPF as Multi-Agent MDP: To model the L-MAPF problem an MDP with n agents, we will assume the state space for every agent i is Si = X × D × G where D is interpretted as the direction the agent came from and G ⊂X is a set of goal states. This creates the joint state S =
+
+S1 × S 2 . . . × S n. The action space for every agent i will be the standard MAPF grid movements Ai = D with joint action space A = A1 × A 2, . . . An. The transition function will transition an agent i’s state (xi, d i, g i) deterministically with action ai by updating xi based on the action taken and adjacent positions in X , update di with the direction of their previous locations, and set a new goal whenever xi = gi
+
+(keeping the same gi otherwise). If the spaces are blocked by obstacles, they will remain in their current positions. Lastly, the reward function will be the sum of a positive reward rgoal > 0 for every agent i at their goal ( gi = xi) and negative reward (penalty) pcollide < 0 for every agent i in-volved in a vertex or edge collision. That is r(( x, d, g ), a ) = P
+
+> i
+
+ I[xi = gi]rgoal + P 
+
+> j
+
+I[collision (xi, x j )] pcollide 
+
+.Here collision refers to any vertex or edge collisions where 
+
+xprev j is inferred from the current positions x and the direc-tions they came from d. We will assume |pcollide | is much larger than |rgoal |. Without loss of generality, we will also assume |r| ≤ 1 for bounded reward. Our metric for evaluation will be V π (s) =
+
+Eτ ∼π|s [P 
+
+> t
+
+γtr(s(t), a (t))] where γ ∈ (0 , 1) and the trajec-tory τ ∼ π|s is the trajectory (s(t), a (t)) starting at s(0) = s
+
+taking the policy π : S → ∆( A) at each timestep. This dis-counted model is helpful for the lifelong setting as the sum of rgoal terms may diverge as t → ∞ but the discounted rewards will remain finite. For analysis purposes, for a fi-nite horizon policy πf inite (s) = {π0, π 1, . . . , π H−1} we will define the finite horizon value function V πf inite  
+
+> h
+
+(s) = 
+
+Eτ ∼πf inite |s [PH−1 
+
+> t=h
+
+γt−hr(s(t), a (t))] .
+
+Denote π∗ as the optimal stationary infinite horizon policy and the optimal discounted finite horizon policy for horizon 
+
+H as π∗ 
+
+> f inite
+
+= {π∗ 
+
+> 0
+
+, π ∗ 
+
+> 1
+
+, . . . , π ∗ 
+
+> H
+
+}. We will denote V ∗(s) = 
+
+V π∗
+
+(s) and V ∗ 
+
+> h
+
+(s) = V π∗ 
+
+> f inite
+> h
+
+(s).
+
+L-MAPF as LI-MDP: It turns out that these assumptions made on the multi-agent MDP fit into the LI-MDP model (DeWeese and Qu 2024) except for a minor discrepancy with edge collisions. Agents move independently in a space with a distance metric (shortest path) and move at most 1 space at a time with local rewards and penalties for interactions. See section A for a formal introduction to the LI-MDP and how this model is a near special case of LI-MDP. Modeling the MAPF problem as a LI-MDP has two conse-quences (1) leveraging techniques from the LI-MDP theory, we prove a near optimality guarantee for RHCR below (2) LI-MDP theory also suggests a near optimal group decen-tralized policy structure (see Theorem 3.1), which motivates our GD-RHCR framework. 
+
+Near Optimality of RHCR: Under this model, if we as-sume that SOLV ER outputs a trajectory τ SOLV ER s is ϵ-near optimal V ∗ 
+
+> 0
+
+− Eτ SOLV ER s [P 
+
+> t
+
+γtr(s(t), a (t))] ≤ ϵ then, 
+
+Theorem 4.1. Let τ RHCR s denote the trajectory generated by RHCR with planning horizon H and replan window 
+
+α ∈ [1 , H ] starting at the state s. Let V RHCR (s) the corre-sponding sum of discounted rewards for τ RHCR s . Then, the following result holds: 
+
+V ∗(s) − V RHCR (s) ≤ 2γH 
+
+> (1 −γ)2
+
++ ϵ
+
+> 1−γ
+
+Algorithm 1: GD-RHCR  
+
+> 1:
+
+λi ← ∅ for each agent i ∈ N  
+
+> 2:
+
+for t = 0 , 1, 2, . . . do  
+
+> 3:
+
+G ← Connected Components (N , V) 
+
+> 4:
+
+¯λ ← λ := ( λi)i∈N // snapshot end-of-previous-step plans  
+
+> 5:
+
+for all groups g ∈ G in parallel do  
+
+> 6:
+
+if |g| ≥ Kth then  
+
+> 7:
+
+P ← Solver2 (g) // early termination  
+
+> 8:
+
+λi ← P for all i ∈ g 
+
+> 9:
+
+else if t = 0 or ∃ i, j ∈ g : λi, λ j not from same solve or (λi)i∈g exhausted then  
+
+> 10:
+
+C ← SoftConstraints ({¯λk : k / ∈ g}, c soft ) 
+
+> 11:
+
+P ← Solver (g, H, C, τ ) // lazy recompute  
+
+> 12:
+
+if P = N U LL then  
+
+> 13:
+
+P ← SOLVER2 (g) // solver timeout  
+
+> 14:
+
+end if  
+
+> 15:
+
+λi ← P for all i ∈ g 
+
+> 16:
+
+else  
+
+> 17:
+
+continue // all agents agree: reuse cached plan  
+
+> 18:
+
+end if  
+
+> 19:
+
+end for  
+
+> 20:
+
+advance each i ∈ N one step along λi 
+
+> 21:
+
+end for 
+
+Aside from the error from the ϵ-optimality of SOLV ER ,we can see that the suboptimality decreases exponentially fast with the increase in H. Also, perhaps counterintuitively, we see that the guarantee is independent of the replan window α
+
+establishing a theoretical justification for using a replan win-dow to improve on computation time from (Li et al. 2021). Note however, that a smaller α can be still be useful in prac-tice to reduce V ∗(s) − V RHCR (s) within [0 , 2γH 
+
+> (1 −γ)2
+
++ ϵ 
+
+> 1−γ
+
+].
+
+Why group decentralized? It is shown in DeWeese and Qu (2024) that group decentralized policies can also satisfy these type of near optimality bounds, so we expect a group decentralized version of RHCR (algorithm 1) to satisfy a similar guarantee (see section 6). The primary intuition will be that agents within different groups theoretically cannot collide within ⌊ V 
+
+> 2
+
+⌋ steps (see theorem B.1). This means that agents in different groups can safely be “ignored” in the computation when considering a finite horizon. This will also be the explanation to why the group decentralized scheme is the answer to question (*) posed in section 3. After introducing our algorithm in the following section, we show in section 6 the theoretical results for our group decentralized method. 
+
+## 5 Our Method: Group Decentralized RHCR 
+
+Our algorithm will consist of four components and is sum-marized in algorithm 1. Firstly, we will identify the groups from the group decentralized scheme described earlier. Sec-ondly, our algorithm will have a “as needed” lazy evaluation scheme which will dynamically adjust the reevaluation win-dow α for groups of agents. Next, to improve the accuracy of our parallel computation across groups, we will add soft constraints for out of view agents in other groups in our lower level planner. Lastly, the algorithm will include a fast secondary solver to rapidly solve large congestion groups. 
+
+Group Decentralized: We begin by identifying the par-titions in the group decentralized setting by identifying the connected components as in definition 3.1. This is performed at each timestep shown in line 3 of the algorithm. In practice, we use the shortest path distance and the union find data structure to hold the connected components. The shortest path will become longer near obstacles, allowing us to take advantage of map topology (such as warehouse-10-20-2-1 in section 7). Agents remain sparser and the grouping scheme is more likely to break apart into smaller groups. 
+
+Lazy Evaluation: Now that the groups have been iden-tified, we will now decide which groups will require com-putation. At the first timestep of the algorithm, we will run 
+
+SOLV ER with some horizon H on every identified group in parallel (line 11). Agents are given a reference to the finite horizon “plan” (λi)i∈g computed for their group and move according to their plan. Then, at every subsequent timestep, if all of the agents in a group have references to the same solution, then the agents will act according to the referenced “plan” (line 17). On the other hand, if the agents in the group disagree about the plan, the agents will recompute a new plan which all the agents will now reference (again line 11). Intuitively, this triggers when a new agent unaccounted for in the plan has just joined the group. Notice this lazy evaluation scheme can be interpereted as dynamically deciding on a replan window α for different subsets of agents. This can improve the the longevity of our often cheap parallel computations made across groups and staggers the evaluations which significantly reduces the per iteration computational load compared to RHCR. 
+
+Soft Constraints: When planning for a group, we will take the plans of all of the agents not within our group at the end of the previous timestep (line 4) and any collision with those plans caused during our compute in SOLV ER will introduce a cost csof t , applied to the lower level search (line 10). For example, our simulations we will use PBS with an efficient space-time A* implementation, SIPP, as the lower level planner, and a soft penalty csof t is applied to the lower level SIPP search every time the constraint is violated. Plans from the previous timestep are used because the parallel computation across groups must begin computation before plans for other groups are settled. However, the stal-eness of those trajectories is mitigated with lazy evaluation, since not all groups are planning at the same time. Therefore, only the plans of a subset of agents which are planning are stale at any given time. It is important that csof t remains relatively small as a large cost can increase the computation time of the lower level planner (e.g. SIPP) that is called frequently (see our ablation simulation in appendix B.3). In fact, if we use hard constraints ( csof t = ∞), we may have no solution as this would effectively give all agents in other groups higher pri-ority than agents we are planning for. 
+
+Secondary Solver: Since the large computation time for RHCR can often be caused by a small number of congested regions, we may use our group decentralized mechanism to use different algorithms in different locations. For our algo-rithm, if the group size reaches some threshold Kthreshold ,we will immediately use a fast secondary solver SOLV ER 2
+
+(in our case PIBT) to avoid those expensive computations (line 7). This allows for the use of our primary SOLV ER 
+
+for routing other groups while a faster secondary solver like PIBT is used to decongest large groups. This will also have the counterintuitive but highly desir-able property that when Kthreshold is hit more and uses 
+
+SOLV ER 2 (e.g. highly congested problems), the algorithm will speed up . This is in contrast to RHCR which will run 
+
+SOLV ER all the way to timeout every time it fails to find a solution quickly enough before relying on a secondary solver. Therefore GD-RHCR leverages the “fallback” as a part of the algorithm rather than a “failure” of the method as in RHCR. 
+
+Flexible choice of solvers. Our framework allows flexi-ble choice of potentially heterogeneous solvers for different groups, exploiting heterogeneous structures of the groups. Although for this work, our specific implementation uses a specific ( SOLV ER , SOLV ER 2) pair that mirrors a fall-back mechanism similar to RHCR across different groups. In general, this group decentralization sets up a modular frame-work where different solvers can easily be used for different groups of agents. We believe this will open the door to many variations and new research directions. 
+
+## 6 Theory: Near Optimality of GD-RHCR 
+
+For the theoretical results, we will again consider the L-MAPF problem modeled as a discounted MDP as described in section 4. We will also consider a simplified version of the algorithm where Kthreshold = ∞ so the secondary solver is not used and the soft constraint cost csof t = 0 to simplify the analysis. In practice csof t will be small and incorporating estimations of out of view often does not change the overall theoretical guarantee (DeWeese and Qu 2025). Again assuming that SOLV ER outputs an ϵ-optimal fi-nite horizon policy, we have the following theorem. 
+
+Theorem 6.1. Let τ GD s denote the trajectory generated by GD-RHCR with csof t = 0 , Kthreshold = ∞, and horizon H
+
+starting at the state s. Let V GD (s) be the corresponding sum of discounted rewards (taking expectation over τ GD s ). Then, the following result holds: 
+
+V ∗(s) − V GD (s) ≤ 6γmin( ⌊V /2⌋+1 ,H ) 
+
+> (1 −γ)2
+
++ ϵ
+
+> 1−γ
+
+Notice that the exponent min( ⌊V /2⌋ + 1 , H ) captures the duality between the space restriction and time restriction. With the group decentralized scheme (and csof t = 0 ), we will be ignoring agents beyond distance V from any agent in the group. Notice that by the Dependence Time Lemma in lemma B.1, agents in different groups are not able to collide within ⌊V /2⌋ timesteps, so if H = ⌊V /2⌋ + 1 computing according to parallel groups will have no consequence on the solution and improves the computation time for free. In practice, V and H may not be aligned so the theoretical guarantee depends on the minimum of the two. Overall, in the same way that the replan window α in RHCR can be motivated through theoretical justification (see section 4), the theory also motivates this group decentralized parallelization scheme as well as the lazy evaluation scheme. warehouse-10-20-10-2-1 warehouse-10-20-10-2-2 sortation-1 sortation-2 
+
+> package throughput plan runtime [s]
+
+agents Figure 3: MAPD simulations. Agents move between red stars and blue squares. Color coding is GD-RHCR, RHCR, and PIBT 
+
+## 7 Simulations 
+
+Algorithm 1 is simulate across in different maps and settings. We will plot the behavior between PIBT, RHCR with PIBT fallback, and GD-RHCR with PIBT as SOLV ER 2.
+
+Average Plan Time Metric: There will be important nu-ance with the computational runtime graphs, where we will compare the average planning time and assume perfect par-allelism . That is, for GD-RHCR we will plot the average maximum time to complete the parallel groups across that timestep (only a subset of groups will be computing at each timestep). For RHCR and PIBT, the average planning time 
+
+is just the average of the planning times whenever it plans (RHCR only plans every 1/α iterations). For RHCR, this is a useful metric when there is a uniform computation limit across all timesteps such as in applications with physical robots and move times. However, this metric may not capture this reduced number of overall computations (reduced by 1/α ). In section C, total wall times are provided which incorporate the imperfect parallelism as well as the reduced frequency of RHCR evaluations. Our method still demonstrates a improvement in this case as well. 
+
+Maps: We will consider the Multi-Agent Pickup Delivery (MAPD) setting with 4 maps in fig. 3 where agents move from random pickup and dropoff locations. The sortation-1 and sortation-2 maps are inspired by (Li et al. 2021). We also consider the random navigation L-MAPF setting where agents are assigned goals to random open spaces with 6 maps in fig. 4. We introduce three more custom maps room-32-32-var1, room-64-64-var1, room-64-64-var2 which are variations on the traditional room maps (room-32-32-4 and room-64-64-8) with uniform openings between the rooms (see fig. 4). This is because the specifically placed openings between the rooms in the traditional room maps make it more “maze like” and suitable for traditional MAPF rather than testing the topology of the room structure in L-MAPF. 
+
+Parameters: All RHCR simulations are run with PBS as the main solver with PIBT fallback and α = 5 ,H =20 . Simulations for GD-RHCR will primarily use csof t =1, H = 20 , V = 2 and a threshold that depends on the agent count Kthresh = min( ⌊0.1k⌋, 20) (sortation-2 uses 
+
+Kthresh = min( ⌊0.1k⌋, 50) ). We use 30 seeds with 3 in parallel for 500 timesteps on a 13th Gen Intel(R) Core(TM) i9-13900HX. Plotted is the average with 1-SD bands. 
+
+7.1 Results 
+
+The outcomes of our MAPD simulations are shown in fig. 3 and random navigation simulations in fig. 4. See appendix B.3 and D for abalations and group statistics respectively. 
+
+Near RCHR Throughput of GD-RHCR with Reduced Compute Cost. For a wide variety of maps (warehouse-10-20-10-2-1, warehouse-10-20-10-2-2, sortation-1, random-64-64-20, room-64-64-var1, room-64-64-var2), GD-RHCR is able to maintain near RHCR performance before RHCR collapses. For example in warehouse-10-20-10-2-1, the throughput of GD-RHCR stays within ≈ 2% with an av-erage of 24 .9x improvement in plan time over RHCR before collapse. Although the visibility remains V = 2 , the soft con-straints contributes significantly to incorporate global agent information across groups (see section B.3). Further, we see that this is done at a significantly lower per-plan cost over RHCR. The staggered lazy evaluations of random-64-64-20 room-64-64-var1 room-64-64-var2 random-32-32-20 room-32-32-var1 empty-48-48 
+
+> throughput plan runtime [s]
+
+agents Figure 4: Random navigation simulations. The color coding is GD-RHCR, RHCR, and PIBT GD-RHCR significantly reduces the plan time required at each step because not all agents are planning simultaneously. Further, the paralellism substantially reduces the planning time for the agents that do evaluate at the same time. 
+
+GD-RHCR Extends the Range of RHCR Because GD-RHCR restricts to planning for small groups (based on 
+
+Kthreshold ), it is able to retain the planning leverage much further than RHCR. Even if challenging large congestion re-gions form, GD-RHCR will immediately use PIBT for those groups and continue to plan for the other smaller groups. This means that the throughput can remain higher and results in a much more graceful return to the PIBT as a fallback planner. We see the most dramatic improvement in throughput on the warehouse-10-20-10-2-1 map. At its peak at k = 800 ,GD-RHCR sees a +57.7% improvement over collapsed RHCR / PIBT while retaining its low per plan cost. Even at 
+
+k = 1000 , there are an average of approximately 250 groups that remain separated (see appendix D for full graphs). For warehouse-10-20-10-2-2 and sortation-1, we see an improve-ment of 12 .6% and 9.66% respectively at k = 1000 .
+
+Topology Influences Performance Overall, the topology of the map can substantially influence the performance of the algorithms. In maps such as warehouse-10-20-10-2-1 where the obstacles are dense and the shortest path (which wraps around obstacles) and Manhattan distance (which goes through obstacles) differ significantly, the topology induces smaller groups that allow for a significant advantage through the parallelism and group decentralized planning. However, the advantage of GD-RHCR over the two meth-ods is not as large when the maps are small (random-32-32-20 and room-32-32-var1) or less obstacle dense maps (sortation-2 and empty-48-48). In both cases, the topology induces large groups which must be planned all at once or drops through to the PIBT fallback when Kthreshold is reached. Further, random-32-32-20, and room-32-32-var1 are not biconnected and can cause deadlocking in PIBT. Therefore for GD-RHCR that begins to rely on PIBT before RHCR can cause a reduced performance. However, we do see that com-putationally, GD-RHCR hits Kthreshold early and actually 
+
+speeds up with more agents. We also see in empty-48-48 that trivially all methods have similar throughput because RHCR itself does not have a significant advantage. However, the computation time of GD-RHCR is near PIBT because the large groups immediately transition to PIBT. 
+
+## 8 Conclusion and Future Work 
+
+In this work, we provided a theoretical grounding for RHCR using methods from the LI-MDP literature. We then used those analytical techniques to motivate our new GD-RHCR framework that satisfies similar theoretical guarantees to RHCR and performs well empirically across many maps into larger agent counts over RHCR. For future works, we believe that group decentralization is a relatively new concept to the MAPF community and can be integrated in various ways. For example with traditional learning based methods or performing parallelism for other methods such as PIBT. Further, this work creates a simple setup to use different algoriths in different locations / settings which opens up many research directions. 9 Acknowledgements 
+
+Guannan Qu is supported by NSF Grants 2339112, 2512805, Jane Street, and Pennsylvania Infrastructure Technology Al-liance. Jiaoyang Li is supported by NSF Grants 2328671 and 2441629. In addition, Alex DeWeese is supported by Leo Finzi Memorial Fellowship in Electrical & Computer Engi-neering, the David H. Barakat and LaVerne Owen-Barakat CIT Dean’s Fellowship, and the Fritsch Family Fellowship. 
+
+## References 
+
+Arita, T.; and Okumura, K. 2026. Lifelong LaCAM with Local Guidance for Lifelong MAPF. arXiv preprint arXiv:2605.16855 .Barer, M.; Sharon, G.; Stern, R.; and Felner, A. 2014. Subop-timal variants of the conflict-based search algorithm for the multi-agent pathfinding problem. In Proceedings of the in-ternational symposium on combinatorial Search , volume 5, 19–27. Chen, Z.; Harabor, D.; Li, J.; and Stuckey, P. J. 2024. Traf-fic flow optimisation for lifelong multi-agent path finding. In Proceedings of the AAAI Conference on Artificial Intelli-gence , volume 38, 20674–20682. Damani, M.; Luo, Z.; Wenzel, E.; and Sartoretti, G. 2021. PRIMAL _ 2: Pathfinding via reinforcement and imitation multi-agent learning-lifelong. IEEE Robotics and Automa-tion Letters , 6(2): 2666–2673. DeWeese, A.; and Qu, G. 2024. Locally interdepen-dent multi-agent mdp: Theoretical framework for decen-tralized agents with dynamic dependencies. arXiv preprint arXiv:2406.06823 .DeWeese, A.; and Qu, G. 2025. Thinking Beyond Visibility: A Near-Optimal Policy Framework for Locally Interdepen-dent Multi-Agent MDPs. arXiv preprint arXiv:2506.04215 .Erdmann, M.; and Lozano-Perez, T. 1987. On multiple mov-ing objects. Algorithmica , 2(1): 477–521. Ho, F.; Goncalves, A.; Salta, A.; Cavazza, M.; Geraldes, R.; and Prendinger, H. 2019. Multi-agent path finding for UAV traffic management: Robotics track. Jiang, H.; Wang, Y.; Veerapaneni, R.; Duhan, T.; Sartoretti, G.; and Li, J. 2025. Deploying ten thousand robots: Scalable imitation learning for lifelong multi-agent path finding. In 
+
+2025 IEEE International Conference on Robotics and Au-tomation (ICRA) , 1–7. IEEE. Leet, C.; Li, J.; and Koenig, S. 2022. Shard systems: Scalable, robust and persistent multi-agent path finding with perfor-mance guarantees. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 36, 9386–9395. Li, J.; Gong, M.; Liang, Z.; Liu, W.; Tong, Z.; Yi, L.; Morris, R.; Pasearanu, C.; and Koenig, S. 2019. Departure schedul-ing and taxiway path planning under uncertainty. In AIAA Aviation 2019 Forum , 2930. Li, J.; Ruml, W.; and Koenig, S. 2021. Eecbs: A bounded-suboptimal search for multi-agent path finding. In Proceed-ings of the AAAI conference on artificial intelligence , vol-ume 35, 12353–12362. Li, J.; Sun, K.; Ma, H.; Felner, A.; Kumar, T.; and Koenig, S. 2020. Moving agents in formation in congested environ-ments. In Proceedings of the International Symposium on Combinatorial Search , volume 11, 131–132. Li, J.; Tinka, A.; Kiesel, S.; Durham, J. W.; Kumar, T. S.; and Koenig, S. 2021. Lifelong multi-agent path finding in large-scale warehouses. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 35, 11272–11281. Ma, H.; Harabor, D.; Stuckey, P. J.; Li, J.; and Koenig, S. 2019. Searching with consistent prioritization for multi-agent path finding. In Proceedings of the AAAI conference on artificial intelligence , volume 33, 7643–7650. Ma, H.; Li, J.; Kumar, T.; and Koenig, S. 2017. Lifelong multi-agent path finding for online pickup and delivery tasks. 
+
+arXiv preprint arXiv:1705.10868 .Morag, J.; Stern, R.; and Felner, A. 2023. Adapting to plan-ning failures in lifelong multi-agent path finding. In Pro-ceedings of the International Symposium on Combinatorial Search , volume 16, 47–55. Okoso, A.; Otaki, K.; and Nishi, T. 2019. Multi-agent path finding with priority for cooperative automated valet parking. In 2019 IEEE intelligent transportation systems conference (ITSC) , 2135–2140. IEEE. Okumura, K. 2023a. Improving lacam for scalable even-tually optimal multi-agent pathfinding. arXiv preprint arXiv:2305.03632 .Okumura, K. 2023b. Lacam: Search-based algorithm for quick multi-agent pathfinding. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 37, 11655– 11662. Okumura, K.; Machida, M.; Défago, X.; and Tamura, Y. 2022. Priority inheritance with backtracking for iterative multi-agent path finding. Artificial Intelligence , 310: 103752. Okumura, K.; Tamura, Y.; and Défago, X. 2019. winpibt: Extended prioritized algorithm for iterative multi-agent path finding. arXiv preprint arXiv:1905.10149 .Sartoretti, G.; Kerr, J.; Shi, Y.; Wagner, G.; Kumar, T. S.; Koenig, S.; and Choset, H. 2019. Primal: Pathfinding via reinforcement and imitation multi-agent learning. IEEE Robotics and Automation Letters , 4(3): 2378–2385. Sharon, G.; Stern, R.; Felner, A.; and Sturtevant, N. R. 2015. Conflict-based search for optimal multi-agent pathfinding. 
+
+Artificial Intelligence , 219: 40–66. Veerapaneni, R.; Saleem, M. S.; Li, J.; and Likhachev, M. 2025. Windowed MAPF with completeness guarantees. In 
+
+Proceedings of the AAAI Conference on Artificial Intelli-gence , volume 39, 23323–23332. Yu, J.; and LaValle, S. 2013. Structure and intractability of optimal multi-robot path planning on graphs. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 27, 1443–1449. Zhang, T.; Veerapaneni, R.; Chan, S.-H.; Li, J.; and Likhachev, M. 2026. Dynamic agent grouping ecbs: Scaling windowed multi-agent path finding with completeness guar-antees. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 40, 29911–29920. A MAPF as LI-MDP 
+
+Below, we give the formal definition of the Locally Interde-pendent Multi-Agent MDP (LI-MDP) and demonstrate how our MAPF MDP model from section 4 fits into this model. Assume we have agent N with some metric space X with a corresponding distance metric d. Each agent i may each also have an internal state Yi (e.g. battery power) resulting in a state space of Si = ( X , Yi) with an arbitrary action space of Ai. Each agent i will transition independently in the environment according to a individual transition function 
+
+Pi(s′
+
+> i
+
+|si, a i) with si, s ′ 
+
+> i
+
+∈ S i, ai ∈ A i however, we assert that this probability is 0 when d(si, s ′
+
+> i
+
+) > 1 (agents cannot move more than 1 space at a time in the environment). Lastly, for any two agents i, j ∈ N we will assume a local reward function ri,j (si, a i, s j , a j ) which is 0 when d(si, s j ) > R
+
+according to a dependence radius R ≥ 0. Here, i, j can be equal in which case ri,i (si, a i, s i, a i) represents the “single agent reward” which depends only on a single agent state / action (the agent will always be within distance R of itself so the restriction does not apply). Therefore the reward function decomposes into P 
+
+> i,j ∈g
+
+ri,j (si, a i, s j , a j ) =
+
+P 
+
+> i∈N
+
+ri(si, a i) + P 
+
+> i̸=j
+
+ri,j (si, a i, s j , a j ) where 
+
+ri(si, a i) = ri,i (si, a i, s i, a i).To summarize, we have the following: 
+
+Definition A.1. Assume the definition of the components mentioned above. The LI-MDP is defined as: 
+
+• S := ×i∈N Si where Si = ( X , Yi)
+
+• A := ×i∈N Ai
+
+• P (s′|s, a ) = Q 
+
+> i∈N
+
+Pi(s′
+
+> i
+
+|si, a i)
+
+• r(s, a ) = P 
+
+> i∈N
+
+ri(si, a i) + P 
+
+> i̸=j
+
+ri,j (si, a i, s j , a j )
+
+Notice the similarities with the MAPF MDP formulation described in section 4. Each agent moves in an environment with a metric space at most one space at a time individually. The agents have a single agent goal incentive captured by 
+
+ri(si, a i) and a interdependent collision penalty when agents have vertex collisions captured by ri,j (si, a i, s j , a j ) with 
+
+R = 0 . The only discrepancy is the edge collisions which allow for collision penalties with agents 1 step away (which we want to handle with R = 0 ). It turns out that this does not impact the theory as a critical lemma called the Dependence Time Lemma (lemma B.1) still holds. 
+
+## B Proofs 
+
+B.1 RHCR 
+
+If πf inite (s) = {π0, π 1, . . . , π H−1} is a finite horizon pol-icy, let V πf inite  
+
+> h
+
+(s) = Eτ ∼πf inite |s [PH−1 
+
+> t=h
+
+γt−hr(st, a t)] .Assume π∗
+
+> f inite
+
+(s) = {π∗ 
+
+> 0
+
+, π ∗ 
+
+> 1
+
+, . . . , π ∗
+
+> H−1
+
+} is the finite hori-zon optimal policy calculated by RHCR at each replan win-dow α.Recall, RHCR repeatedly takes the finite horizon pol-icy only up to a certain number of timesteps α. So, to express the discounted sum of rewards (the value function) of RHCR, we can repeatedly take the dis-counted rewards in the value function V π∗ 
+
+> f inite
+> 0
+
+(st) up to timesteps α and subtract the discounted value func-tion beyond timestep α. This takes the form as follows 
+
+V RHCR (s) = Eτ ∼π|s
+
+
+
+V π∗ 
+
+> f inite
+> 0
+
+(s) − P∞ 
+
+> ℓ=1
+
+γαℓ ∆τℓ
+
+
+
+where 
+
+∆τℓ = V π∗ 
+
+> f inite
+> α
+
+(s(αℓ )) − V π∗ 
+
+> f inite
+> 0
+
+(s(αℓ )) .Now, we would like to bound ∆τℓ . However, no-tice the value function terms within ∆τℓ contain dis-counted rewards that consider different time intervals. 
+
+V π∗ 
+
+> f inite
+> α
+
+(s(ℓα )) = Eτ ∼π∗ 
+
+> f inite |s
+
+[PH−1 
+
+> t=α
+
+γt−αr(s(t), a (t))] 
+
+only considers H − α timesteps and V π∗ 
+
+> f inite
+> 0
+
+(sαℓ ) =
+
+Eτ ∼π∗ 
+
+> f inite |s
+
+[PH−1 
+
+> t=0
+
+γtr(s(t), a (t))] considers H timesteps. We will take an arbitrary finite horizon policy πf inite 
+
+and complete the trajectory within V π∗ 
+
+> f inite
+> α
+
+(s(α(ℓ − 1))) .The extended value function V ℓ,extended can be expressed as follows.                                      
+
+> Vℓ,extended =Eτ∼π∗
+> f inite |s
+> H−1X
+> t=α
+> γt−αr(st, a t)
+> 
+> +Eτ∼πf inite |s
+> H+α−1X
+> t=H
+> γt−αr(s(t), a (t))
+> 
+> =Vπ∗
+> f inite α(s(α(ℓ−1))) + Eτ∼πf inite |s
+> H+α−1X
+> t=H
+> γt−αr(st, a t)
+> 
+> ≥Vπ∗
+> f inite α(s(α(ℓ−1))) −γH−α( 1−γα
+> 1−γ)
+> ≥Vπ∗
+> f inite α(s(α(ℓ−1))) −γH−α
+> 1−γ
+
+Now, since V π∗ 
+
+> f inite
+> 0
+
+(s(αℓ )) is the optimal finite horizon reward, we may bound ∆τi as follows: 
+
+∆τℓ = V π∗ 
+
+> f inite
+> α
+
+(s(αℓ )) − V π∗ 
+
+> f inite
+> 0
+
+(s(αℓ )) 
+
+≤ V ℓ,extended − V π∗ 
+
+> f inite
+> 0
+
+(s(αℓ )) + γH−α
+
+1 − γ
+
+≤ ϵ + γH−α
+
+1 − γ
+
+Therefore, 
+
+V RHCR (s) = Eτ ∼π|s
+
+
+
+V π∗ 
+
+> f inite
+> 0
+
+(s) −
+
+> ∞
+
+X
+
+> ℓ=1
+
+γαℓ ∆τℓ
+
+
+
+≥ V π∗ 
+
+> f inite
+> 0
+
+(s) − γH
+
+(1 − γ)2 − ϵ
+
+1 − γ
+
+To complete our analysis, we may compare the optimal stationary policy π∗ and the RHCR trajectory as follows: 
+
+V ∗(s) − V RHCR (s) ≤ V ∗(s) − V π∗ 
+
+> f inite
+> 0
+
+(s)+ γH
+
+(1 − γ)2 + ϵ
+
+1 − γ
+
+≤ γH
+
+1 − γ + γH
+
+(1 − γ)2 + ϵ
+
+1 − γ
+
+≤ 2γH
+
+(1 − γ)2 + ϵ
+
+1 − γ
+
+B.2 Group Decentralized RHCR 
+
+In this section, we will prove theorem 6.1. Recall, we will be using csof t = 0 and Kthreshold = ∞.Let Z(s) = {z1, z 2, . . . , z ℓ} where zi ⊂ N be the parti-tion formed by the transitive “grouped decentralized” con-nections. Similar to (DeWeese and Qu 2024), our proofs will rely on a fundamental geometric property that agents in separate groups cannot interact with each other within a certain num-ber of steps. In the MAPF case, this means agents will not be able to collide within c = ⌊ V 
+
+> 2
+
+⌋ timesteps. This is a special case of the Dependence Time Lemma from (DeWeese and Qu 2024) with R = 0 which shows up in c = ⌊ V−R  
+
+> 2
+
+⌋ with the exception of edge collisions. 
+
+Lemma B.1 (Dependence Time Lemma for MAPF) . For some state s ∈ S , let i, j ∈ N be any two agents in different partitions in Z(s). Then, agents i, j cannot have vertex or edge collisions within ⌊ V 
+
+> 2
+
+⌋ timesteps. Proof. See proof for the Dependence Time Lemma in (De-Weese and Qu 2024) with R = 0 . Edge collisions do not make a difference in the proof because showing that the clos-est two agents in different groups can get is distance 1 in ⌊ V 
+
+> 2
+
+⌋
+
+steps rules out both vertex and edge collisions. Notice by our reward model in section 4, r(s, a ) =P
+
+> i
+
+ I[xi = gi]rgoal + P 
+
+> j
+
+I[collision (xi, x j )] pcollide 
+
+, for any policy π, we may decompose the value function as fol-lows for any partition P :
+
+V πh (s) = X
+
+> p∈P
+
+
+
+[V πh ]p(sp) + X
+
+> i∈p
+
+[V πh ]i→p(s)
+
+
+
+where we define p := N \ p and for every p′ ⊂ N both 
+
+[V πh ]p′ (s) = E
+
+ ∞X
+
+> t=0
+
+γt X
+
+> i∈p′
+
+I[xi = gi]rgoal 
+
++ X
+
+> j∈p′
+
+I[collision (xi, x j )] pcollide 
+
+
+
+and 
+
+[V πh ]i→p′ (s) = E
+
+ ∞X
+
+> t=0
+
+γt X
+
+> j∈p′
+
+I[collision (xi, x j )] pcollide 
+
+
+
+.
+
+Symbolically, i → p′ represents the interactions of agent i
+
+(or collisions) with agents in p′.Using these new notations, we may express the trajectory value obtained by GD-RHCR as 
+
+V GD (s) ≥ Eτ ∼π|s
+
+ X
+
+> z∈Z(s)
+
+[V π∗ 
+
+> f inite
+> 0
+
+]z (s) −
+
+> ∞
+
+X
+
+> t=1
+
+γt∆τt
+
+
+
+− ϵ
+
+1 − γ
+
+where             
+
+> ∆τt=X
+> z∈Z(s)
+> I[lazy (z, t )]
+>  X
+> i∈z
+> 
+> [Vπ∗
+> f inite δti
+> ]z(szt,i (t)) + [ Vπ∗
+> f inite δti
+> ]i→zt,i \z(szt,i (t))
+> 
+> −[Vπ∗
+> f inite
+> 0]z(s(t))
+> 
+
+Here I(lazy (z, t )) is an indicator whether lazy evaluation was triggered at that timestep and zt,i is the group associated with the previous "plan". Intuitively, we repeatedly remove the remainder of the trajectory when lazy evaluation is triggered and bring in the new trajectory plan for each of the groups. This accounts for the collisions across groups because in order for agents to collide, they must enter each others groups first (triggering a lazy evaluation). Next, as in section B.1, we will extend the trajectory of 
+
+[V π∗
+
+> f inite
+> δti
+
+]i(szt,i (t)) with some arbitrary policy πi,f inite . No-tice here that in our extension V i,t,ext , we will only consider collisions between agents that were initially in the same zt,i 
+
+group. Defining ri,max as the maximum reward possible for a single agent (we assume P 
+
+> i∈N
+
+|ri,max | ≤ 1), we have                                
+
+> X
+> i∈N
+> I[lazy (z, t )] Vi,t,ext =X
+> i∈N
+> I[lazy (z, t )]
+> 
+> Vπ∗
+> f inite δti
+> (szt,i (t)) +Eτ∼πi,f inite |s
+> H+δti−1
+> X
+> t′=H
+> γt′−δti
+> 
+> I[xi=gi]rgoal
+> +X
+> j∈zt,i
+> I[collision (xi, x j)] pcollide
+> 
+> ≥X
+> i∈N
+> I[lazy (z, t )]
+> 
+> Vπ∗
+> f inite δti
+> (szt,i (t)) −γH−δti( 1−γδti
+> 1−γ)ri,max
+> 
+> ≥X
+> i∈N
+> I[lazy (z, t )]
+> 
+> Vπ∗
+> f inite δti
+> (szt,i (t)) −γH−δti
+> 1−γ ri,max
+> 
+
+Now we may bound ∆τt as follows.                                                            
+
+> γt∆τt=γtX
+> z∈Z(s)
+> I[lazy (z, t )]
+>  X
+> i∈z
+> 
+> [Vπ∗
+> f inite δti
+> ]z(szt,i (t)) + [ Vπ∗
+> f inite δti
+> ]i→zt,i \z(szt,i (t))
+> 
+> −[Vπ∗
+> f inite
+> 0]z(s(t))
+> 
+> (1)
+> ≤γtX
+> z∈Z(s(t))
+> I[lazy (z, t )]
+>  X
+> i∈z
+> Vi,t,ext −[Vπ∗
+> f inite
+> 0]z(s(t))
+> X
+> i∈z
+> [Vπ∗
+> f inite δti
+> ]i→zt,i \z(szt,i (t)) + X
+> i∈z
+> γH−δtiri,max
+> 1−γ
+> 
+> (2)
+> ≤X
+> z∈Z(s)
+> I[lazy (z, t )]
+> 
+> γt(X
+> i∈z
+> Vi,t,ext −[Vπ∗
+> f inite
+> 0]z(s(t))) (3)
+> +X
+> i∈z
+> γ⌊ V
+> 2⌋+t−δti+1 ri,max
+> 1−γ+γH+t−δtiri,max
+> 1−γ
+> 
+> (4)
+> ≤X
+> z∈Z(s)
+> I[lazy (z, t )]
+>  X
+> i∈z
+> γI[t> ⌊ V
+> 2⌋]·tri,max (5)
+> +X
+> i∈z
+> γ⌊ V
+> 2⌋+t−δti+1 ri,max
+> 1−γ+γH+t−δtiri,max
+> 1−γ
+> 
+> (6)
+
+In line 2, we substitute our extension. In line 4, we use the Dependence Time Lemma (lemma B.1) where cross group interactions are beyond ⌊ V 
+
+> 2
+
+⌋ iterations (with a head start of 
+
+δti iterations). In line 6, recall that in the definition of V i,t,ext 
+
+only the collisions between agents in the same zt,i groups were added. For cross group interactions, these may leave residual terms. However, these terms must occur beyond ⌊ V 
+
+> 2
+
+⌋iterations by the Dependence Time Lemma. Therefore we introduce the quantity with the indicator in the exponent 
+
+I[t > ⌊ V 
+
+> 2
+
+⌋] · t.Now notice that t − δti is some quantity unique for every t (when the indicator I[lazy (z, t )] is triggered) and therefore the t − δti terms can be summed up as indices of 1, . . . , ∞.Therefore we have 
+
+Eτ ∼π|s
+
+ ∞X
+
+> t=1
+
+γt∆τt
+
+
+
+≤ γH
+
+(1 − γ)2 + 2γ⌊V /2⌋+1 
+
+(1 − γ)2
+
+And substituting into our V GD expression, 
+
+V GD (s) ≥ Eτ ∼π|s
+
+ X
+
+> z∈Z(s)
+
+[V π∗ 
+
+> f inite
+> 0
+
+]z (s) −
+
+> ∞
+
+X
+
+> t=1
+
+γt∆τt
+
+
+
+− ϵ
+
+1 − γ
+
+≥ X
+
+> z∈Z(s)
+
+[V π∗ 
+
+> f inite
+> 0
+
+]z (s) − γH
+
+(1 − γ)2 − 2γ⌊V /2⌋+1 
+
+(1 − γ)2 − ϵ
+
+1 − γ
+
+≥ X
+
+> z∈Z(s)
+
+[V π∗ 
+
+> f inite
+> 0
+
+]z (s) − 4γmin( H, ⌊V /2⌋+1) 
+
+(1 − γ)2 − ϵ
+
+1 − γ
+
+Finally, we complete our analysis by comparing to the opti-mal value function V ∗(s).
+
+V ∗(s) − V GD (s) ≤ V ∗(s) − X
+
+> z∈Z(s)
+
+[V π∗ 
+
+> f inite
+> 0
+
+]z (s)+ 4γmin( H, ⌊V /2⌋+1) 
+
+(1 − γ)2 + ϵ
+
+1 − γ
+
+≤ 2γmin( H, ⌊V /2⌋+1) 
+
+1 − γ + 4γmin( H, ⌊V /2⌋+1) 
+
+(1 − γ)2 + ϵ
+
+1 − γ
+
+≤ 6γmin( H, ⌊V /2⌋+1) 
+
+(1 − γ)2 + ϵ
+
+1 − γ
+
+Here, the penultimate line uses again the Dependence Time Lemma (lemma B.1). B.3 Abalations 
+
+The outcome of our ablation simulations on warehouse-10-20-10-2-1 are shown in fig. 5. 
+
+Advantage of Smaller Visibilities When using different visibilities with a fixed Kthreshold = 20 , overall we observe that the algorithm hits this threshold sooner resulting a degra-dation of performance fig. 5. Without this threshold, if we view RHCR as GD-RHCR with V = ∞ (ignoring a minor discrepancy with the replan window), we observed in pre-vious simulations that in the region before RHCR collapse that the throughput remains close for most maps (aside from the smaller 32x32 maps) indicating the effectiveness of using smaller visibilities with soft constraints. 
+
+Advantage of Smaller Soft Constraints When increasing 
+
+csof t , we observe a relatively fast degradation in the com-putation time which translates to a lower throughput when groups begin to time out. 
+
+Advantage of Lower Fallback The simulation shows that the throughput is relatively agnostic to the increase in K of 
+
+Kthreshold = min(0 .1k, K ). This is because for this map, the topology breaks agents into smaller groups which GD-RHCR continues to route into the large agent range and the PIBT fallback is effectively decongesting the larger groups. 
+
+## C Simulation Times 
+
+In this section, we will show the scaled plan times and wall times for each of the following simulations shown in fig. 6 and fig. 7. It is important to note for the following that the timeout cap placed on RHCR will cap the wall time but if this wall time is hit, this means RHCR has failed and is simply running the PIBT fallback. Below, we have plotted both the scaled planning time and total wall times. The scaled planning time is simply the av-erage plan time plots taken from fig. 3 and fig. 4 and scaled down the RHCR times by 1/5 representing the evaluation of RHCR happening 1/5th of the timesteps due to the simula-tion replan window α = 5 that were used. We hope that by showing both these plots, we can get better insight into the contribution of the due to the fewer evaluations by RHCR and the error of the core contention and scheduling issues. 
+
+Wall Times Are Faster Aside from some anomolous maps, we see that overall the wall times are consistently achieve at least a 2x improvement in computation time in the range before RHCR collapse. If we include the region of RHCR after collapse, this improvement ratio can often be made exponentially large as we increase the timeout time for RHCR. Also beyond the RHCR collapse region, RHCR is simply taking the fallback PIBT and not accomplishing any meaningful work. The anomalous maps appear to be the smaller 32x32 ran-dom and room maps which is expected by our main discus-sion in section 7, however, we see that warehouse-10-20-10-2-2 has an oddly large wall time that matches RHCR. Looking at the discrepancy between the scaled plan time and wall time gives a much clearer picture that this is mostly due to scheduling issues and core contention. This primarily shows in the warehouse-10-20-10-2-2 map because the number of groups is large (the largest of all the simulations - see appendix D). 
+
+Fallback Means Faster Wall Times The maps where GD-RHCR begins to rely on SOLV ER 2 (PIBT) more and cannot perform well in, we see that the computation time speeds up, sometimes significantly as in random-32-32-20 and room-32-32-var1. For larger agent counts, the groups join and become large and immediately enters PIBT, dropping the wall time. This graceful retreat to the fallback is compared to RHCR which has a computation time that is often exponential with the number of agents only to hit a timeout and falling back anyways. 
+
+## D Group Statistics 
+
+A summary of group stastics for each simulation is provided in fig. 8 and fig. 9. We can see that for most maps the aver-age number of groups increases then trends down with the number of agents. This makes sense as the density of agents increases on the map, they tend to form larger groups indi-cated by the larger average group size. We see clearly for the examples where GD-RHCR had throughput near PIBT (sortation-2, random-32-32-20, room-32-32-var1) the aver-age number of groups is low towards the end range and has a high average max group size. Visibility Soft Constraint Fallback 
+
+> throughput plan runtime [s]
+
+agents 
+
+Figure 5: Warehouse-10-20-10-2-1 abalation simulations: red, orange, pink, purple, brown is least to most of value (see legend)    
+
+> warehouse-10-20-10-2-1 warehouse-10-20-10-2-2 sortation-1 sortation-2
+> scaled plan time[s] wall time [s]
+
+agents 
+
+Figure 6: Wall times for MAPD. The color coding is GD-RHCR, RHCR, and PIBT random-64-64-20 room-64-64-var1 room-64-64-var2 random-32-32-20 room-32-32-var1 empty-48-48 
+
+> scaled plan time[s] wall time [s]
+
+agents Figure 7: Wall times for random navigation. The color coding is GD-RHCR, RHCR, and PIBT warehouse-10-20-10-2-1 warehouse-10-20-10-2-2 sortation-1 sortation-2 
+
+> mean num groups mean group size mean max group size
+
+agents 
+
+Figure 8: MAPD group statistics for GD-RHCR. The color coding is GD-RHCR random-64-64-20 room-64-64-var1 room-64-64-var2 random-32-32-20 room-32-32-var1 empty-48-48 
+
+> mean num groups mean group size mean max group size
+
+agents Figure 9: Random navigation group statistics for GD-RHCR. The color coding is GD-RHCR

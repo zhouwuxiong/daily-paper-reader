@@ -1,0 +1,233 @@
+Title: Adaptive Repulsive Pheromone Clustering for Foraging Robot Swarms
+
+URL Source: https://arxiv.org/pdf/2608.16822v1
+
+Published Time: Tue, 18 Aug 2026 02:26:04 GMT
+
+Number of Pages: 14
+
+Markdown Content:
+# Adaptive Repulsive Pheromone Clustering for Foraging Robot Swarms 
+
+Carlos Pena-Caballero [0009 −0003 −6576 −3033] , Constantine Tarawneh [0000 −0002 −4074 −5627] , and Qi Lu [0000 −0002 −8425 −4686] 
+
+The University of Texas Rio Grande Valley, Edinburg, TX, USA 
+
+{carlos.penacaballero01,constantine.tarawneh,qi.lu}@utrgv.edu 
+
+Abstract. The Central Place Foraging Algorithm (CPFA) combines site fidelity, pheromone-guided navigation, and uninformed random search to enable decentralized resource collection in robot swarms. However, CPFA often revisits previously explored regions while leaving other areas insuf-ficiently searched, reducing efficiency as resources become scarce. In this paper, we propose Adaptive Repulsive Pheromone Clustering (ARPC), a bio-inspired method in which robots deposit repulsive pheromone way-points to mark previously explored locations. These waypoints are clus-tered around the nest to estimate low-value search regions, allowing robots to be redirected toward likely unvisited areas. By integrating the exploitation of known resources with systematic avoidance of redundant exploration, ARPC improves search diversity and resource discovery ef-ficiency. Extensive simulations in ARGoS across varying arena sizes, re-source densities, and clustered, random, and power-law spatial distribu-tions demonstrate that ARPC consistently outperforms CPFA and the Grid-Based CPFA (GPFA). In particular, ARPC yields significant gains during both early discovery (10%) and late-stage (up to 60%) collection, where conventional methods typically degrade. These results indicate that ARPC provides a scalable and robust strategy for large-scale het-erogeneous swarm foraging environments. 
+
+Keywords: Swarm Robotics · Foraging Robots · Repulsive Pheromones. 
+
+## 1 Introduction 
+
+Swarm robotics is a research field that explores the coordination of multiple simple and autonomous robots to perform complex tasks in a decentralized way [21]. Contemporary research explores a range of collective behaviors, including self-organization [9], [16], task allocation [22], aggregation [1], [2], object sorting [26], [27], foraging [10, 13, 15, 17]. The Central Place Foraging Algorithm (CPFA) [13] is a bio-inspired swarm robotics method that captures the group foraging dynamics of desert harvester ants (Pogonomyrmex barbatus)[11]. It integrates site fidelity, pheromone-based guidance, and uninformed random search to achieve decentralized resource gath-ering by a swarm of robots. Despite its effectiveness, the standard CPFA exhibits arXiv:2608.16822v1 [cs.RO] 17 Aug 2026 2 C. Pena-Caballero and Q. Lu 
+
+spatial blindness: robots tend to repeatedly revisit familiar regions while ne-glecting other areas that may contain abundant resources. In [12], experimental results indicate that CPFA spends 63% and 75% of its total run time collecting the final 12% of resources. Being able to quickly and cheaply recall regions of interest is crucial for speed-ing up resource collection. However, in real-world settings, this information is usually unavailable, so we need a mechanism to quickly exclude areas that do not warrant further exploration. In this paper, we propose the Adaptive Repulsive Pheromone Cluster algorithm (ARPC), an algorithm that can rapidly identify and eliminate locations that no longer justify exploration, thereby reducing the time needed to gather the remaining 12% of resources. In our method, robots lay down repulsive pheromones along their paths to mark and subsequently avoid already explored regions. They then report these repulsive pheromone positions back to the nest, where we use them to build a clustered map of zones that no longer require exploration. We then take the complement of this map to iden-tify never-visited locations and dispatch robots specifically to those areas. The design of this algorithm will be detailed in Section 4. To validate our approach, we will perform three experiments to evaluate its performance across different arena sizes, resource distributions, and total quantities of available resources. ARPC targets a core practical challenge: enabling large teams to coordinate exploration with a single collaborative generated map of negative information (repulsive pheromones) that can be aggregated intermittently at the central de-pot, the approach is compatible with realistic swarm constraints such as limited computation, intermittent communication, and noisy sensing. The rest of the paper is organized as follows: in Section 2, we explore re-lated works trying to improve on the CPFA algorithm; in Section 3 Section we introduce the original CPFA algorithm; 4 discusses the new algorithm ARPC; Section 5 explains the experimental setup for ARPC; and in Section 7, we give our summary of our contributions and future work. 
+
+## 2 Related Work 
+
+Numerous projects have sought to enhance the foraging efficiency of decentral-ized robotic systems. The CPFA algorithm introduced site fidelity and pheromone trails to enable robots, respectively, to return to previously discovered resource locations and to share those locations with other robots. This approach achieved consistent retrieval times when resources were highly clustered; however, the al-gorithm exhibits degraded performance when resources follow Power-law or ran-dom spatial distributions. A substantial improvement over CPFA was reported in [8], where the authors incorporated a squared-spiral search trajectory to more systematically survey the environment. Although this method yielded superior results, robots in that framework spent a considerable portion of their time traversing a predetermined path, and the peripheral regions of the environment required a prolonged period to be explored. This limitation was subsequently mitigated in [20] by partitioning the environment into N regions. Nevertheless, Adaptive Repulsive Pheromone Clustering 3
+
+all experiments in that work were conducted in relatively small arenas; conse-quently, as the foraging area increases, the number of regions also grows, which may lengthen the time needed to collect resources when they are concentrated within only a subset of those regions. In [18,19,24], the authors proposed a multipleplaced foraging algorithm that further improves foraging performance. In this approach, multiple collection zones or multiple dynamic depots are deployed throughout the environment, and robots deliver resources to their nearest depot. The depots then relocate to the centroid of the resource locations discovered by the robots. By distributing multiple depots in this manner, our method alleviates congestion around the sin-gle central collection zone used in CPFA and reduces the average travel distance required for robots to deliver resources. Furthermore in the Grid-Based CPFA (GPFA) [10], we proposed a way to separate the map into grid sections, then kept track of the number of times a grid was visited and sent robots to the least visited locations in 3 ×3 grid, once there the robot would perform a spiral search similar to [20], but as CPFA the algorithm was wasting about 20% of its time looking for the last 10% of resources. 
+
+## 3 The Central Placed Foraging Algorithm for Robot Swarms 
+
+To establish the theoretical control for our study, we utilize the canonical foraging algorithm, CPFA [13]. The robot controller is a finite state machine that governs the transitions between traveling, searching, surveying, and returning to a central collection zone as described in [13] (see Fig. 1); changes to the original algorithm for our approach are shown in red. 
+
+Fig. 1: The flow chart of an individual robots behavior and states in the CPFA; additions to the algorithm for ARPC are shown in red. 
+
+Departing: The robots depart from the central collection zone to a randomly selected location. Robots have the probability to stop on the way at any time and transition to Searching. Robots do not have any prior information about the location of resources in the environment. Every robot can remember the 4 C. Pena-Caballero and Q. Lu 
+
+location of a previously found resource and can return to this location, a process called site fidelity in ants [3]. The robot cannot remember all previously visited locations and can only remember the location in the last round of searching. Robots can also communicate using pheromones [14, 25], which are simulated as artificial waypoints [5] to recruit robots to known locations with resources. If a robot returns (Returning) to the center and then departs, it can depart using site fidelity or pheromone waypoints in the center. 
+
+Searching: Robots search for resources using random walk [6]. Successful searches lead to Surveying. If a robot finds resources, it can only pick up one resource and deliver it to the center. Otherwise, it keeps searching, and it has the probability of giving up the search and returning to the center, which leads to Returning. 
+
+Surveying: Robots assess the local resource density within a search radius, recording the number of resources. The density information will be used by the central server in the center to determine the creation of pheromone waypoints [13]. 
+
+Returning: Robots deliver resources back to the center. The density of re-sources λlp is taken into account to generate a probability of laying a new pheromone waypoint. The robots then restart the cycle from Departing. The exploration strategy, "Uninformed Search," is triggered when a robot has no prior information about resource locations (pheromone or site fidelity) and is unable to exploit them. In this state, the robot selects a random location close to the boundaries of the arena. While traveling toward this target location, the robot has a probability (76% every 5 seconds) of transitioning into a Correlated Random Walk (CRW). This CRW is a stochastic movement pattern where the robots heading is updated by a random angle and the step size is fixed. 
+
+## 4 Methodology 
+
+The proposed method, ARPC, maintains a persistent, incrementally updated set of spatial clusters defined over the locations visited by the robots, where they place repulsive pheromones to avoid visiting that location during informed searches. The procedure comprises four stages and is governed by four tunable parameters: the distance tolerance between recorded locations, α; the recording frequency, ρ; the maximum number of recorded locations per robot, λ; and the growth tolerance of cluster size, τ .One of the primary limitations of the original CPFA algorithm is its tendency to leave large regions of the environment unexplored for extended periods of time. In contrast, the improved GPFA algorithm assigns equal priority to all locations within the environment, relying solely on visitation frequency within a fixed 3×3 grid and thus ignoring other potentially informative spatial or contextual features. We propose an enhancement of the CPFA exploration phase that enables (i) rapid elimination of regions that do not warrant further exploration, (ii) Adaptive Repulsive Pheromone Clustering 5
+
+dynamic identification of high-value locations for subsequent visits, and (iii) early initiation of informed search behaviors. The objective is to ensure that the environment is explored in a more consistent, comprehensive, and efficient manner. 
+
+4.1 Clustering 
+
+The proposed algorithm modifies the CPFA controller in three principal ways. While in the surveying state, each robot maintains a record of repulsive-pheromone waypoints, up to a maximum capacity of λ entries. Once this ca-pacity is reached, newly generated repulsive pheromones overwrite the oldest entries in the list. Simultaneously, the robots probability of transitioning to the 
+
+returning state is increased. A robot communicates its recorded repulsive pheromones to the nest only when it returns with a resource or when it terminates its search without success. At this point, the robot transitions to the departing state and selects one of the following four actions (cf. Fig. 1). 1) Return to the most recent successful collection site (site fidelity); 2) Follow a pheromone trail left by another robot; 3) Choose a random location outside all repulsive-pheromone clusters. The robot moves to this target while logging visited positions and scanning for resources. If it detects a resource en route, it immediately returns to the Central Collection Zone. If none are found upon arrival, it performs a spiral search centered at that location with radius τ ; 4) Perform an undirected random search. Options (1) and (2) are chosen using probabilities from the Poisson cumula-tive distribution function. Option (3) is the complementary event, selected when the probabilities for (1) and (2) are not high enough. Selection operates on clusters of locations rather than individual robot loca-tions, reducing computational cost. The systems operational states and transition rules match those of the CPFA controller, with one key difference. In ARPC, when robots return to the nest and no pheromone trail or site-fidelity marker is available, they may initiate an informed search guided by repulsive pheromones instead of defaulting to random search. The nest generates up to 1000 random candidate locations and selects the first one outside all repulsive-pheromone clusters. The robot travels to this target and performs a spiral search of radius τ . If this search finds no resource, the robot switches to random search until it finds a resource or its memory is full. The nest-level algorithm was modified to include and process repulsive-pheromone data reported by all robots in the simulation. Upon receiving these data, the nest runs the clustering Algorithm 1 in four stages: (i) newly reported locations are incorporated into existing clusters, increasing their visit counts and reinforcing the inference that these regions have already been explored; (ii) DBSCAN [7] is applied to group locations within an ϵ-neighborhood, where ϵ is defined as α plus a small offset to prevent immediate clustering of locations from the same robot; (iii) clusters whose extents overlap within the previously defined ϵ + radius are merged only if Equation 1 holds, where Ai is the area of the i-th cluster and τ6 C. Pena-Caballero and Q. Lu 
+
+is a threshold set to 1% of the area of the current arena. This entire procedure is executed by the nest at fixed 5-second intervals. 
+
+∑
+
+i
+
+Ai − ∑
+
+i<j 
+
+Ai∩j < τ α ∑
+
+i
+
+vi (1) 
+
+Algorithm 1 Update Repulsive Pheromone Clusters 
+
+Require: RepulsiveP heromones (new), ExistingRepulsiveP heromones (memoized singletons), 
+
+V isitedClusters (memoized clusters) ϵ ← α + c, growthSlack ← ϵ▷ Step 1: Greedy absorption of singletons into existing clusters 
+
+1: for p ∈ RepulsiveP heromones ∪ ExistingRepulsiveP heromones do 
+
+2: if ∃c ∈ V isitedClusters such that Distance (p, c.center ) ≤ c.radius then 
+
+3: Merge (c, p )
+
+4: Remove p from its respective list 
+
+5: end if 
+
+6: end for 
+
+▷ Step 2: DBSCAN on remaining new locations 
+
+7: N ewClusters ← DBSCAN (RepulsiveP heromones, ϵ, minP ts = 2) 
+
+8: U nclusteredN ew ← RepulsiveP heromones \ { points in N ewClusters }
+
+▷ Step 3a: Merge new unclustered pheromones existing clusters 
+
+9: for p ∈ U nclusteredN ew do 
+
+10: if ∃ep ∈ ExistingRepulsiveP heromones within ϵ distance of p then 
+
+11: cnew ← CreateCluster (p, ep )
+
+12: Add cnew to V isitedClusters 
+
+13: Remove ep from ExistingRepulsiveP heromones 
+
+14: else 
+
+15: Add p to ExistingRepulsiveP heromones 
+
+16: end if 
+
+17: end for 
+
+▷ Step 3b: Merge new clusters with existing clusters 
+
+18: for nc ∈ N ewClusters do 
+
+19: if ∃c ∈ V isitedClusters such that nc overlaps with c then 
+
+20: Merge (c, nc )
+
+21: else 
+
+22: for ep ∈ ExistingRepulsiveP heromones do 
+
+23: if ep falls within nc.radius + growthSlack then 
+
+24: Add ep to nc 
+
+25: Remove ep from ExistingRepulsiveP heromones 
+
+26: end if 
+
+27: end for 
+
+28: Recompute nc.center and nc.radius 
+
+29: Add nc to V isitedClusters 
+
+30: end if 
+
+31: end for 
+
+Fig. 2 illustrates the visualization of repulsive pheromones (yellow) and clus-tered repulsive pheromones (magenta) within the simulation environment, green dots are used to represent the locations that were used to form the cluster, but do not contribute to the algorithm. Repulsive pheromones are deposited along the trajectory of each robot, and, as the simulation advances, the environment is progressively represented through these pheromone clusters. Based on this emerging pheromone map, the nest subsequently allocates robots to previously unvisited regions, as depicted in Fig. 2(b), note repulsive pheromones not in Adaptive Repulsive Pheromone Clustering 7      
+
+> (a)
+> (b) 0.25 min (c) 1.25 min (d) 2 min (e) 2.75 min
+> (f) 5.75 min (g) 6.25 min (h) 10 min (i) 16.25 min
+
+Fig. 2: Example ARGoS simulations conducted in a 10 ×10 m arena. Panel (a) shows the baseline setup, in which robots explore the environment and gather resources. The robots lay down repulsive pheromones (yellow dots), which later coalesce into clusters (magenta); green dots indicate the individual locations that contribute to each cluster. Panels (b - i) present an entire simulation run. a cluster will not be considered in the informed search selection to avoid long computation times. An additional video playlist is available on our YouTube 1.
+
+## 5 Experiments 
+
+We employed the ARGoS multi-robot simulator to assess the effectiveness of ARPC [23]. The experimental scenarios were originally proposed by Arturo et al.  
+
+> 1https://tinyurl.com/clusteringForaging
+
+8 C. Pena-Caballero and Q. Lu 
+
+[10] and are designed to evaluate the foraging performance of our method across a variety of unknown environments. Foraging performance is quantified as the time required to collect all available resources. The experimental design emphasizes repeatability and reliability. We performed three distinct experiments to evaluate foraging performance across different spatial distributions, runtime milestones, and arena sizes. The resource distributions (Clustered, Power-law, and Random) emulate canonical setups [13]. All experiments utilized 16 Foot-Bot robots [4] in arenas that differed either in size or in the number of resources, allowing us to evaluate the algorithm under progressively lower robot-to-resource densities. Each experimental setup was run 50 times to reduce statistical bias.The ARPC algorithm was parameterized using the baseline parameters α = 0 .75 m, ρ = 2 
+
+s, λ = 50 , and τ = AreaArena × 0.005 . A detailed summary of the experimental setups and associated independent variables for all three experiments is provided in Table 1. Table 1: Consolidated Experimental Configurations                
+
+> Experiments III III Arena Size (meter) 14 Œ 14 14 Œ 14 8 Œ 8, 10 Œ 10, 12 Œ 12 14 Œ 14, 16 Œ 16 # of Resources 16, 32, 48, 64, 80 48 48 # of Robots 16 16 16 # of Runs 50 50 50 Resource Distributions Clustered Powerlaw Random Clustered Powerlaw Random Random
+
+## 6 Results 
+
+The experimental outcomes are analyzed along three principal dimensions: (i) evaluation of the algorithms scalability as the available computational resources are increased; (ii) quantitative characterization of the efficiency gains achieved during the final collection phase; and (iii) assessment of the algorithms robust-ness across different arena sizes. The statistical significance of performance dif-ferences is assessed using the ‘ttest_ind‘ function from the ‘scipy.stats‘ library, which implements the independent-samples t-test. Statistical significance is in-dicated by asterisks in Figures 3, 4, and 5. The notch in each box plot denotes the 95% confidence interval of the median; non-overlapping notches between two boxes indicate a statistically significant difference between their medians. Signif-icance levels are encoded as follows: *** denotes a highly significant difference (p < 0.001), ** denotes a substantial difference (p < 0.01), * denotes a moder-ate difference (p < 0.05), and - indicates that the difference is not statistically significant. 
+
+6.1 Flexibility with Different Numbers of Resources 
+
+Figure 3 presents the results of Experiment I. The proposed method (green) con-sistently outperforms the original CPFA (blue) and GPFA (red) in 8 out of 15 Adaptive Repulsive Pheromone Clustering 9 
+
+> (a) Clustered distribution
+> (b) Powerlaw distribution (c) Random distribution
+
+Fig. 3: Experiment I: cumulative time (s) needed to collect 100% of the resources. All experiments are performed in a 14 ×14 m arena containing 16, 32, 48, 64, or 80 resources. configurations. For clustered resource distributions, our method either matches or exhibits statistically significant improvements over CPFA and GPFA across the range of resource quantities. In exploration-intensive scenarios (Random and Powerlaw distributions), the relative performance of our method varies. Under the Powerlaw distribution, for N = 64 and N = 80 , ARPC yields consider-able performance gains. For the Random distribution, GPFA and ARPC exhibit comparable performance for most values of N , but at N = 80 ARPC demon-strates an improvement, suggesting that the algorithm maintains a relatively stable foraging rate irrespective of the total number of resources present in the environment. 
+
+6.2 Analysis of the Final Collection Phase 
+
+As previously discussed, CPFA allocates approximately 50% of its total foraging time to collecting the final 12% of the available resources. Consequently, in Ex-periment II we focus on the early and late stages of the foraging process to assess performance differences between the algorithms. Figure 4 presents the temporal evolution of resource collection under both conditions. For the Clustered and Powerlaw distributions, beginning at the point where 60% of the resources have been collected, the proposed algorithm exhibits a substantial performance advantage that increases as the number of remaining resources decreases. Under the Random distribution, our algorithm begins to outperform the baseline once 80% of the resources have been collected. 10 C. Pena-Caballero and Q. Lu 
+
+(a) Clustered distribution (b) Powerlaw distribution 
+
+(c) Random distribution 
+
+Fig. 4: Experiment II: time (s) to reach each 10% resource-collection milestones (10%, 20%, . . . , 100%) in a 14 ×14 arena containing 48 resources, evaluated under three spatial resource distributions: (a) clustered, (b) power-law, and (c) random. To more systematically quantify the efficiency of our method during the final collection phase, we define and analyze two specific intervals: Interval A (80% → 90%): At this stage, resources are relatively scarce, and locating them becomes increasingly time-consuming. Interval B (90% → 100%): This final stage corresponds to the regime in which CPFA exhibits its greatest difficulty, expending the majority of its foraging time. Table 2 summarizes our results in comparison with GPFA, which was pre-viously reported in [10] to achieve 49% and 35% improvements over CPFA in these two final intervals, respectively. Table 2: Duration of the Final Collection Phases (Seconds)                         
+
+> Config GPFA (80% →90%) ARPC (80% →90%) GPFA (90% →100%) ARPC (90% →100%) Endgame Improvement Cluster 394.0 269.3 680.7 593.8 +12.78%
+> Powerlaw 313.7 276.9 774.8 1021.1 −31.79%
+> Random 298.6 284.0 900.8 703.7 +21.89%
+
+Cluster Distribution: In this distribution, most of the environment lacks re-sources, with only a few clustered regions. Rapidly locating these clusters is therefore crucial. Here, GPFA performed 15% worse than CPFA, whereas ARPC improved on GPFA by 13% but was 0.03% below CPFA. ARPC nonetheless out-Adaptive Repulsive Pheromone Clustering 11 
+
+performed both algorithms at all stages, likely due to its hybrid strategy: CPFA repeatedly revisits the same locations, while GPFA ignores locations once visited within a 3 × 3 grid. ARPC instead limits redundant revisits without overprior-itizing unvisited regions. 
+
+Powerlaw Distribution: In this distribution, many locations contain multiple resources scattered throughout the arena, making them easy to miss. ARPC performed 32% worse than GPFA, yet still 15% better than CPFA. ARPCs marked decline occurs early (10%40% completion; see Fig. 4), when it is primarily depositing repulsive pheromones. Isolated resources near dense clusters can fall inside repulsive zones, lowering their likelihood of collection. 
+
+Random Distribution: Here, all resources appear as isolated items across the environment, increasing the chance they are missed unless robots thoroughly survey the area. In the late stage, ARPC outperforms GPFA and CPFA by 22% and 60%, respectively. This suggests ARPC effectively removes unnecessary search regions and rapidly directs robots toward areas with higher expected resource density. 
+
+6.3 Robustness Across Arena Scales 
+
+Assessing the scalability of a robot swarm is essential, as real-world environments can span large spatial extents. In Experiment III, we therefore evaluate the per-formance of our algorithm across arenas of varying sizes. As illustrated in Fig. 5, all methods exhibit increasing completion times as the arena grows, reflecting the fundamental scaling challenge of distributed foraging: larger workspaces reduce encounter rates (lower robot density per unit area) and increase travel distances between the nest, search trajectories, and discovered resources. 
+
+Small vs. Large Arenas: In the smallest arena (8 × 8), the robot density relative to the environment size is high, making resource discovery comparatively easy and limiting the opportunity for any exploration policy to differentiate itself. As arena size increases, performance degrades for all three methods because robots must (i) spend more time in transit, (ii) cover a larger area before first contact with resources, and (iii) manage a growing fraction of the environment that has been visited but is not explicitly remembered. CPFA degrades most sharply because its exploration relies heavily on re-peated uninformed searches and local, short-horizon memory (site fidelity and pheromone attraction), which can lead to redundant revisits and delayed cover-age of distant, unvisited regions when the workspace expands. GPFA mitigates some redundancy by suppressing revisits within a coarse 3 ×3 grid, but this fixed discretization does not adapt to arena scale: as the arena grows, a larger number of grid cells must be touched before coverage is achieved, and the method can still allocate effort to uniformly exploring low-yield space. 12 C. Pena-Caballero and Q. Lu 
+
+In contrast, ARPC maintains a more consistent scaling trend by explicitly representing already-explored space via clustered repulsive pheromones and bias-ing informed search toward the complement (never-visited) regions. This mech-anism reduces redundant exploration as the arena expands and helps the swarm allocate limited search time to frontier areas rather than repeatedly re-sweeping the interior. Quantitatively, ARPC requires on average an additional 404 sec-onds for each 2 ×2 m increase in arena size, compared to 519 seconds for GPFA, indicating improved scaling efficiency. 
+
+Fig. 5: Experiment III: cumulative completion time (s) to collect 100% of re-sources across different square arena sizes (8 ×8 to 16 ×16). 
+
+## 7 Conclusion 
+
+In this work, we introduced ARPC, a cooperative foraging algorithm that en-hances swarm efficiency through the adaptive clustering of repulsive pheromones to prune previously explored regions. Evaluated against the standard CPFA and the recent GPFA baselines across diverse spatial distributions, resource densi-ties, and arena sizes, ARPC demonstrated robust and statistically significant improvements. Our experimental results establish that ARPC consistently achieves lower cu-mulative completion times than both baselines, particularly as resource density and environment size increase. Critically, the performance gains are not limited to the endgame phase; ARPC accelerates initial discovery and sustains efficient exploitation throughout intermediate collection milestones. Furthermore, the al-gorithm scales favorably with arena size, successfully mitigating the performance degradation characteristic of larger search spaces. Ultimately, ARPC presents a highly effective strategy for large-scale, heterogeneous foraging, motivating fu-ture extensions toward real-world deployments involving dynamic targets, com-munication limits, and energy constraints.  
+
+> Acknowledgments. The authors acknowledge the financial support provided by the NSF Expand AI program (No. 2434916), the NSF CREST Center for Multidisciplinary Research Excellence in Cyber-Physical Infrastructure Systems (MECIS) (No. 2112650), and the NSF MSI program (No. 2318682).
+
+Adaptive Repulsive Pheromone Clustering 13 
+
+## References 
+
+1. Arvin, F., Turgut, A.E., Bazyari, F., Arikan, K.B., Bellotto, N., Yue, S.: Cue-based aggregation with a mobile robot swarm: a novel fuzzy-based method. Adaptive Behavior 22 (3), 189–206 (2014) 2. Arvin, F., Turgut, A.E., Krajník, T., Yue, S.: Investigation of cue-based aggregation in static and dynamic environments with a mobile robot swarm. Adaptive Behavior 
+
+24 (2), 102–118 (2016) 3. Beverly, B.D., McLendon, H., Nacu, S., Holmes, S., Gordon, D.M.: How site fidelity leads to individual differences in the foraging activity of harvester ants. Behavioral Ecology 20 (3), 633 (2009). https://doi.org/10.1093/beheco/arp041 4. Bonani, M., Longchamp, V., Magnenat, S., Rétornaz, P., Burnier, D., Roulet, G., Vaussard, F., Bleuler, H., Mondada, F.: The marxbot, a miniature mobile robot opening new perspectives for the collective-robotic research. IEEE/RSJ 2010 In-ternational Conference on Intelligent Robots and Systems, IROS 2010 - Conference Proceedings pp. 4187–4193 (2010). https://doi.org/10.1109/IROS.2010.5649153 5. Campo, A., Gutiérrez, Á., Nouyan, S., Pinciroli, C., Longchamp, V., Garnier, S., Dorigo, M.: Artificial pheromone for path selection by a foraging swarm of robots. Biological Cybernetics 103 (5), 339–352 (2010) 6. Crist, T.O., MacMahon, J.A.: Individual foraging components of harvester ants: movement patterns and seed patch fidelity. Insectes Sociaux 38 (4), 379–396 (1991) 7. Ester, M., Kriegel, H., Sander, J., Xu, X.: A density-based algorithm for discovering clusters in large spatial databases with noise. In: Simoudis, E., Han, J., Fayyad, U.M. (eds.) Proceedings of the Second International Conference on Knowledge Discovery and Data Mining (KDD-96), Portland, Oregon, USA. pp. 226–231. AAAI Press (1996) 8. Fricke, G.M., Joshua, P.H., Antonio, D.G., Linh, T.T., Melanie, E.M.: A Dis-tributed Deterministic Spiral Search Algorithm for Swarms. In: 2016 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS). pp. 4430–4436 (2016) 9. Gauci, M., Chen, J., Li, W., Dodd, T.J., Groß, R.: Self-organized aggregation without computation. The International Journal of Robotics Research 33 (8), 1145– 1161 (2014) 10. Gonzalez, A., Lu, Q.: Grid-based complete resource foraging for robot swarms. In: 16th International Conference on Ambient Systems, Networks and Technologies (ANT-2025) (2025) 11. Gordon, D.M.: The development of an ant colony’s foraging range. Animal Be-haviour (1995) 12. Hecker, J.P., Carmichael, J.C., Moses, M.E.: Exploiting clusters for complete re-source collection in biologically-inspired robot swarms. In: 2015 IEEE/RSJ Interna-tional Conference on Intelligent Robots and Systems (IROS). pp. 434–440 (2015). https://doi.org/10.1109/IROS.2015.7353409 13. Hecker, J.P., Moses, M.E.: Beyond pheromones: evolving error-tolerant, flexi-ble, and scalable ant-inspired robot swarms. Swarm Intelligence 9, 43–70 (2015). https://doi.org/10.1007/s11721-015-0104-z 14. Jackson, D.E., Martin, S.J., Ratnieks, F.L.W., Holcombe, M.: Spatial and tempo-ral variation in pheromone composition of ant foraging trails. Behavioral Ecology 
+
+18 (2), 444–450 (2007) 15. Jin, B., Liang, Y., Han, Z., Ohkura, K.: Generating collective foraging behavior for robotic swarm using deep reinforcement learning. Artificial Life and Robotics 25 ,588–595 (11 2020). https://doi.org/10.1007/S10015-020-00642-2/FIGURES/16 14 C. Pena-Caballero and Q. Lu 16. Khaldi, B., Harrou, F., Cherif, F., Sun, Y.: Self-organization in aggregating robot swarms: A DW-KNN topological approach. Biosystems 165 , 106–121 (3 2018). https://doi.org/10.1016/J.BIOSYSTEMS.2018.01.005 17. Llenas, A.F., Talamali, M.S., Xu, X., Marshall, J.A., Reina, A.: Quality-sensitive foraging by a robot swarm through virtual pheromone trails. Lecture Notes in Computer Science (including subseries Lecture Notes in Artificial Intelli-gence and Lecture Notes in Bioinformatics) 11172 LNCS , 135–149 (2018). https://doi.org/10.1007/978-3-030-00533-7_11/FIGURES/6 18. Lu, Q.: An Efficient Multiple-place Foraging Algorithm for Scalable Robot Swarms. Ph.D. thesis, The University of New Mexico (2019) 19. Lu, Q., Hecker, J.P., Moses, M.E.: The MPFA: A multiple-place forag-ing algorithm for biologically-inspired robot swarms. In: 2016 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS). pp. 3815–3821. Institute of Electrical and Electronics Engineers Inc. (11 2016). https://doi.org/10.1109/IROS.2016.7759561 20. Luna, R., Lu, Q.: Adaptive multiple distributed bidirectional spiral path planning for foraging robot swarms. In: 20th Conference on Robots and Vision (CRV). pp. 225–232 (2023) 21. Navarro, I., Matía, F.: An introduction to swarm robotics. ISRN Robotics 2013 , 110 (Sept 2013). https://doi.org/10.5402/2013/608164, http://dx.doi.org/10.5402/2013/608164 22. Nayak, S., Yeotikar, S., Carrillo, E., Rudnick-Cohen, E., Jaffar, M.K.M., Pa-tel, R., Azarm, S., Herrmann, J.W., Xu, H., Otte, M.: Experimental com-parison of decentralized task allocation algorithms under imperfect com-munication. IEEE Robotics and Automation Letters 5(2), 572–579 (2020). https://doi.org/10.1109/LRA.2019.2963646 23. Pinciroli, C., Trianni, V., OGrady, R., Pini, G., Brutschy, A., Brambilla, M., Math-ews, N., Ferrante, E., Di Caro, G., Ducatelle, F.: ARGoS: a modular, parallel, multi-engine simulator for multi-robot systems. Swarm intelligence 6(4), 271–295 (2012) 24. Qi, L., Hecker, J.P., Moses, M.E.: Multiple-place swarm foraging with dynamic depots. Autonomous Robots 42 , 909–926 (2018) 25. Sumpter, D.J., Beekman, M.: From nonlinearity to optimality: pheromone trail foraging by ants. Animal behaviour 66 (2), 273–280 (2003) 26. Vardy, A.: Accelerated patch sorting by a robotic swarm. 9th Conf. on Computer and Robot Vision, CRV 2012 pp. 314–321 (2012). https://doi.org/10.1109/CRV.2012.48 27. Vardy, A., Vorobyev, G., Banzhaf, W.: Cache consensus: Rapid ob-ject sorting by a robotic swarm. Swarm Intelligence 8, 61–87 (3 2014). https://doi.org/10.1007/S11721-014-0091-5/FIGURES/15

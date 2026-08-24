@@ -1,0 +1,838 @@
+Title: FlexWorm: Primitive-augmented Hybrid Contact-motion Planning for Suction-based Multi-segment Deformable Robots
+
+URL Source: https://arxiv.org/pdf/2608.16853v2
+
+Published Time: Fri, 21 Aug 2026 01:14:50 GMT
+
+Number of Pages: 13
+
+Markdown Content:
+1
+
+# FlexWorm: Primitive-augmented Hybrid Contact-motion Planning for Suction-based Multi-segment Deformable Robots 
+
+Zili Tang, Tiecheng Guo, Qinyue Zhang, and Meng Guo 
+
+Abstract —Multi-segment suction-based soft robots are promis-ing for inspection and maintenance in confined or fragile environ-ments, but existing approaches still depend heavily on manually designed gaits and environment-specific motion scripts. This work presents a planning framework for serial multi-segment soft robots with deformable body segments and boundary suction pads. The formulation targets full 3D navigation on complex surfaces and explicitly handles discrete adhesion switching and continuous body deformation under geometric, collision, and quasi-static feasibility constraints, while remaining agnostic to the specific actuation realization used to produce segment defor-mation. Its core, block-wise IK hybrid search (IKHS), performs best-first search over feasible adhesion transitions while solving inverse kinematics only on induced free blocks. On top of IKHS, primitive-augmented hybrid search (PaHS) uses a learned observation–primitive embedding to retrieve short validated mo-tion segments for fast local proposal, with fallback to standard IKHS branching when retrieval fails. In simulation, the frame-work consistently outperforms controlled baselines in planning success, transition quality, and efficiency across diverse terrains. PaHS matches IKHS in success rate while substantially reducing planning time. Repeated hardware experiments on a pneumatic multi-segment soft robot further demonstrate executability and online recovery under actuation and adhesion uncertainty. 
+
+Index Terms —Constrained Motion Planning; Motion and Path Planning; Modeling, Control, and Learning for Soft Robots 
+
+I. I NTRODUCTION 
+
+# MULTI-SEGMENT suction-based soft robots combine geometric adaptability, compliance, and safe contact, making them attractive for inspection and maintenance in confined or fragile environments such as aircraft cavities, pipelines, and other cluttered structures [1], [2]. Compared with rigid or modular systems, they can conform to irregu-lar surfaces, distribute contact loads, and maintain adhesion while traversing walls, ceilings, holes, and transitions among them [3], [4]. Autonomous locomotion on such surfaces re-mains difficult. Existing systems still rely largely on hand-designed gaits or pre-scripted motion sequences tied to specific setups [5], [6]. For suction-based multi-segment soft robots, discrete adhesion transitions and continuous segment deforma-tions are tightly coupled: small changes in segment curvature 
+
+The authors are with the School of Advanced Manufacturing and Robotics, Peking University, Beijing 100871, China. Corresponding author: Meng Guo (meng.guo@pku.edu.cn ). This work was supported by the National Key Research and Development Program of China under grant 2023YFB4706500; the National Natural Science Foundation of China under grants U2241214 and T2121002. Accepted for publication in IEEE Robotics and Automation Letters (RA-L). 
+
+Fig. 1. PaHS plans over discrete adhesion modes and continuous body deformation for multi-segment soft robots on diverse 3D terrain transitions. 
+
+or elongation can invalidate a feasible contact transition. The planning problem is challenging because it must jointly reason about high-dimensional body deformation, discrete adhesion switching, and online adaptation under uncertainty during physical execution [7], [8], [9]. 
+
+A. Related Work 
+
+(I) Motion planning via gait generation. A large body of work on soft-robot locomotion focuses on generating motion through deformation patterns, predefined gaits, or morphology-specific controllers [1], [7]. Representative ap-proaches tune gait parameters by offline calibration or search [4], execute hand-crafted sequences through discrete switching logic [5], or optimize bio-inspired oscillatory con-trollers with learning-based methods [10]. These methods have shown effective locomotion on particular platforms and terrains, but they largely treat planning as gait selection or tuning, rather than explicit long-horizon contact–motion planning under changing 3D geometry and contact constraints. (II) Explicit modeling and optimization. Another line of work incorporates explicit robot models into planning. Reduced-order kinematic approximations, such as constant-
+
+© 2026 IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted component of this work in other works. arXiv:2608.16853v2 [cs.RO] 20 Aug 2026 2
+
+curvature or multi-rigid-body models, make search-based mo-tion planning tractable [11], while higher-fidelity optimization with continuum or finite-element models improves physical consistency at substantially higher computational cost [12]. Although these approaches improve modeling accuracy, they are often expensive and morphology-dependent, which limits their suitability for long-horizon planning problems that re-quire repeated feasibility checks during online search. (III) Hybrid contact and motion reasoning. Compared with gait generation or pure motion synthesis, much less work explicitly addresses the hybrid nature of suction-based locomo-tion, where one must jointly decide where and when contacts are established and how the body deforms between them. Rigid multi-contact planners likewise account for contact-dependent kinematics and stability, either by constructing whole-body contacts along a planned root trajectory, as for ANYmal, or by jointly optimizing contacts, gait, and body motion [13], [14]. Here, each suction mode repartitions a serial deformable backbone, changing the boundary and load-feasibility condi-tions of its continuous deformation problem. Adhesion-based robots such as MultiTrack and Limpet-II demonstrate the value of suction-assisted multi-segment mobility [15], [16], but their planners are often tied to specific mechanisms and transition patterns. This challenge is amplified in pneumatic soft robots, where delayed nonlinear deformation and surface-dependent suction introduce substantial uncertainty [17], [18]. Thus, long-horizon 3D surface-constrained navigation remains underexplored for suction-based multi-segment soft robots that must jointly reason over adhesion switching and body deformation. 
+
+B. Our Method 
+
+This work proposes a hierarchical hybrid planner for suction-based soft robots on complex 3D surfaces. The key idea is to combine global near-surface guidance with contact-aware local planning, so that long-horizon navigation is di-rected by surface progress while adhesion, deformation, col-lision, and suction feasibility are enforced locally. The core block-wise IK hybrid search (IKHS) exploits anchors induced by adhesion modes to reduce whole-body hybrid planning to localized IK over free body blocks. Primitive-augmented hybrid search (PaHS) accelerates IKHS by retrieving reusable local motion patterns from validated rollouts, while IK re-finement and IKHS fallback preserve feasibility and search coverage. The resulting framework combines structured hybrid search, data-driven proposals, and physics-aware validation for simulation and hardware surface-navigation tasks. The contributions are twofold: (I) IKHS, a block-wise hybrid planner for long-horizon contact–motion planning of suction-based multi-segment soft robots on complex 3D sur-faces; and (II) PaHS, which augments IKHS with a primitive library, learned retrieval, IK refinement, and fallback branching to improve planning efficiency on recurring local maneuvers. II. P ROBLEM DESCRIPTION 
+
+A. Robot State, Contacts, and Kinematics 1) Hybrid state: As shown in Fig. 2, the robot has nl ě 2
+
+rigid links and ns fi nl ´ 1 deformable segments. Link i has     
+
+> Fig. 2. Multi-segment soft robot with rigid links, four-chamber deformable segments, and independently switched suction pads, composed into the hybrid state pXh,Uh,Zhq. Links are indexed from tail to head.
+
+pose xi fi ppi, q iq P R3 ˆ S3 and adhesion state zi P t 0, 1u,where zi “ 1 means the suction pad is attached. Segment i
+
+is parameterized by a body twist ui fi pvi, ω iq P R6,where vi, ω i are translational and angular terms. At step h, the hybrid robot state is pXh, Uh, Zhq with Xh fi pxh 
+
+> 1
+
+, ¨ ¨ ¨ , x hnl q,
+
+Uh fi puh 
+
+> 1
+
+, ¨ ¨ ¨ , u hns q, and Zh fi pzh 
+
+> 1
+
+, ¨ ¨ ¨ , z hnl q.
+
+2) Surface and adhesion constraints: The environment is represented by a signed distance field (SDF) D : R3 Ñ R with zero-level surface S fi tp P R3 | Dppq “ 0u. Each suction pad has fixed body offset ri and body-frame normal ¯ni, and its world-frame position and normal are given by: 
+
+pphi fi phi ` Rpqhi qri, pnhi fi Rpqhi q¯ni,
+
+where Rpqhi q is the rotation induced by the link orientation qhi ,
+
+pphi is the world-frame pad position, and pnhi is the correspond-ing world-frame pad normal. For an attached pad, the current pose must satisfy surface proximity and normal alignment, i.e., 
+
+pzhi “ 1q ñ 
+
+#Dppphi q ď ϵd,
+
+}pnhi ˆ nppphi q} ď ϵa, @h, i ; (1) where nppphi q is the SDF normal evaluated at pphi , ϵd is the distance threshold, and ϵa is the normal-alignment threshold. If a pad remains attached across two consecutive steps, its world pose should vary only slightly, i.e., 
+
+pzhi “ zh`1 
+
+> i
+
+“ 1q ñ p} pxh`1 
+
+> i
+
+´ pxhi } ď ϵfq, @h, i ; (2) where pxhi denotes the world-frame pose representation of pad i; and ϵf bounds the allowable inter-step pose variation un-der persistent adhesion. Besides adhesion feasibility, the robot must remain collision-free with respect to the environment, except for intended suction contact, i.e., 
+
+Dppq ě ϵc, @p P RpXh, Uhqz PpZhq, @h; (3) where RpXh, Uhq denotes the occupied robot geometry and PpZhq denotes the suction-contact patches. 
+
+3) Segment kinematics via screw theory: Let Ti P SE p3q be the homogeneous transform of link i. Each segment is modeled by the matrix exponential below: 
+
+Ti`1 “ Ti Φpuiq “ Ti exp 
+
+˜ „rωisˆ vi
+
+0 0
+
+ȷ ¸
+
+,
+
+where ui fi pvi, ω iq P R6 is the body twist of segment i.Conversely, the adjacent-link twist is recovered by: 
+
+xhi`1 fi Scr pxhi , u hi q, uhi fi ScrInv pxhi`1, x hi q; (4) where Scr p¨q and ScrInv p¨q denote screw-theoretic forward propagation and inverse recovery, respectively. The body-fixed local z-axis follows the robot tangent, while the local x-axis aligns with the suction axis. For the pneumatic platform, tangential extension and bend-ing about the transverse axes dominate with negligible torsion. 3
+
+Thus, the reduced prior is given by: 
+
+ui « r 0, 0, v z,i , ω x,i , ω y,i , 0sJ, (5) by which Li fi vz,i and κi fi rωx,i , ω y,i sJ{Li define the segment length and curvature. Thus, Li}κi} yields the bending angle of the circular-arc approximation. For the four-chamber prototype, this reduced prior matches the dominant actuation modes, while other suction robots may have different priors. 
+
+4) Load–deformation feasibility: For a segment deforma-tion to be physically realizable, a gravity-conditioned quasi-static feasibility constraint is enforced by: 
+
+pM hi , L hi , κhi q P SDpγhi q, (6) where Lhi and κhi are induced by (5), M hi is the equivalent load moment, and γhi is the gravity angle in the fixed-end frame. Since the dominant free-chain load is gravity, the force direction is determined by γhi and is represented through M hi ,rather than treated as an independent coordinate. The family 
+
+SDp¨q is identified offline with on-hardware measurements, as described in the sequel. 
+
+B. Long-horizon Hybrid Optimization Problem 
+
+Let the system start from state pX0, U0, Z0q. The complete sequence pX1: H , U1: H , Z1: H q is optimized to reach the goal region, and minimize deformation and unsafe contact, i.e., 
+
+min   
+
+> X1: H,U1: H,Z1: H
+> H
+
+ÿ
+
+> h“1
+
+`LdpUhq ` LcpXh, Zhq˘
+
+s.t. }phead pXH q ´ pgoal } ď rg,
+
+(1) , (2) , (3) , (4) , (6) ;
+
+(7) where H is the planning horizon; LdpUhq regularizes de-formation effort by favoring lower-curvature and lower-extension solutions among contact transitions with simi-lar guide progress; LcpXh, Zhq penalizes unsafe contact; 
+
+phead pXH q is the terminal head position; and ppgoal , r gq
+
+define the goal region. This formulation captures long-horizon hybrid planning for both contact and motion, under the cou-pled adhesion, kinematic, and load–deformation constraints. 
+
+Remark 1. At each step, the planner must choose both a binary contact Zh P t 0, 1unl and a continuous deformation 
+
+Uh P R6ns . Over a horizon H, this yields a hybrid decision space `t0, 1unl ˆ R6ns
+
+˘H . In addition, the collision, adhesion, and load constraints are nonconvex and coupled across steps, so local feasibility depends on future configurations. Thus, exact planning for (7) is intractable in general. ■
+
+III. P ROPOSED SOLUTION 
+
+The proposed framework has three components. Sec. III-A introduces IKHS, which exploits the anchor structure induced by adhesion to reduce full-chain hybrid expansion to validated block-wise updates. Sec. III-B then explains how short val-idated motion primitives are stored and reused in PaHS as a retrieval-based acceleration for IKHS. The overall analyses including online execution are provided in Sec. III-C.  
+
+> Fig. 3. Examples of the guiding surface paths in three test scenarios.
+
+A. Core Planner: Block-wise IK Hybrid Search (IKHS) 
+
+This subsection presents IKHS, the core hybrid planner in the proposed framework. It uses a guiding surface path for progress and local target proposals, while exploiting the free-block structure induced by the current adhesion mode. The resulting best-first procedure, summarized in Alg. 1 and Fig. 4, also serves as the fallback expansion in PaHS. 
+
+1) Guiding surface path: The guide is computed on an augmented SDF-derived graph ¯Gs, whose locations ˆp are lattice points in the near-surface band tˆp P R3 | dmin ď
+
+Dpˆpq ď dmax u, with dmin “ 0.005 m and dmax “ 0.025 m ,allowing small gaps rather than restricting search to the zero-level surface S. Since some guide penalties depend on local approach geometry, the same near-surface location may incur different downstream costs when reached from different directions. Each node ¯v “ p ˆp, δ q therefore includes a discretized incoming direction, while a short ancestor history distinguishes penalties on recent tangents, turns, and surface switches. From ¯vs “ p ˆp0, δ 0q, where ˆp0 fi phead pX0q and 
+
+δ0 is the initial heading, search proceeds to pgoal and returns 
+
+P fi pˆp0, ¨ ¨ ¨ , ˆpT q for progress measurement and local target proposals. The path is generated by A ‹ search with the edge cost defined below: 
+
+ctÑt`1 fi wℓdtÑt`1 ` wlift ϕlift ` wsharp ϕsharp 
+
+` wnϕnormal ` wbϕbend ` wnc ϕnc , (8) where dtÑt`1 is the edge length, ϕlift penalizes loss of sur-face support, ϕsharp measures local surface irregularity, ϕnormal 
+
+penalizes surface-normal change, ϕbend is the in-plane turning angle over a short history, and ϕnc penalizes non-coplanar tran-sitions between path direction and adjacent surface normals. These terms bias the guide toward contact-compatible routes near ridges, wall–ceiling transitions, and obstacle boundaries, as shown in Fig. 3. The guide planner is implemented in C++ on a 26-neighbor voxel graph. 
+
+2) Adhesion-induced block decomposition: Given the adhe-sion mode Z, the chain is partitioned into consecutive blocks: 
+
+␣Bm
+
+(Mm“1 fi BlockDecomp pZq, (9) where Bm fi rsm, e ms and attached links serve as kinematic anchors. As summarized in Fig. 4, a free block may be head-fixed, tail-fixed, or bilateral-fixed, and each type follows a different propagation rule under the screw model in (4). Thus, given the current chain pose X and a candidate segment-twist vector U1, the corresponding block update is denoted by: 
+
+X1 
+
+> m
+
+fi BlockProp pX, U1, Bmq, m “ 1, ¨ ¨ ¨ , M ; (10) The updated block states are merged into the full chain pose X1 given the attached links. This anchor-induced decom-position is the key planning reduction: it converts full-chain hybrid expansion into local block updates while preserving 4 
+
+> Fig. 4. Schematic of the block-wise IK hybrid search (IKHS), including five main steps ( top ); the block decomposition and propagation ( bottom ).
+
+downstream feasibility. 
+
+3) Identify Load-deformation Feasibility Manifold SDp¨q :
+
+The load-deformation feasibility manifold SDp¨q in (6) is essential for the hybrid search and is identified offline. Ap-proximately 10 3 hardware measurements are used to calibrate a finite-element segment model, which then generates about 
+
+5 ˆ 10 5 quasi-static samples. The gravity angle is discretized into 15 ˝ intervals, and approximately 6 ˆ 10 4 uncertain near-boundary samples are discarded before fitting one conserva-tive convex polytope in pM , L, κq for each interval. During planning, each segment selects the polytope corresponding to its current gravity angle. The same family is used for all nominally identical four-chamber segments, while multi-segment coupling is checked through full-chain propagation, closure, adhesion, and collision constraints. 
+
+4) Block-wise IK hybrid search (IKHS): IKHS performs best-first search over hybrid states tνh “ pXh, Uh, Zhqu .Given start node ν0, goal pg, and guide P, it backtracks the best goal-reaching node to obtain τ ‹ “ p X1: H , U1: H , Z1: H q
+
+(Alg. 1). Frontier nodes F are scored by: 
+
+ψpνhq fi Jprg pνhq ´ wh 
+
+> d
+
+Jdef pνhq ` weJexp pZhq, (11) where Jprg fi ∆sP ´ wlat ∆dP ; ∆sP and ∆dP denote the cumulative changes from the start node to νh in link arc-length progress along P and lateral guide deviation, respectively; 
+
+Jdef accumulates normalized extension and squared bending, with adaptive weight wh 
+
+> d
+
+reduced when recent progress stalls; and Jexp is a bounded sibling-level bonus for under-expanded adhesion modes. Numerical values are reported in Table I. Thus the node within F is selected by: 
+
+ν fi argmax ˜νPF
+
+␣ψp˜νq(, (12) For a selected node ν “ pX, U, Zq, the current adhesion mode first induces a free-block decomposition tBmuMm“1 fi 
+
+BlockDecomp pZq, which defines the local structure for ex-pansion. Function ZCand pνq then enumerates the admissible successor adhesion modes Zcand . Each candidate mode Znew P
+
+Zcand remains feasible for the current pose and introduces at most one new attachment within each free block. Given Znew 
+
+Algorithm 1: Hybrid planner for IKHS and PaHS 
+
+Input: Start node ν0, goal pg, guiding path P,flag useRet , and library M (optional). 
+
+Output: Plan τ ‹ “ p X1: H , U1: H , Z1: H q. 
+
+> 1
+
+Initialize frontier F Ð t ν0u; 
+
+> 2
+
+Set PrimExpanded pν0q Ð False ; 
+
+> 3
+
+while F ‰ H and budget not exhausted do  
+
+> 4
+
+ν Ð arg max ˜νPF ψp˜νq; 
+
+> 5
+
+if GoalReached pν, p gq then  
+
+> 6
+
+break  
+
+> 7
+
+if useRet and p␣ PrimExpanded pνq) then  
+
+> 8
+
+Vprim Ð PrimExpand pν, M, Pq; 
+
+> 9
+
+Insert valid children Vprim into F; 
+
+> 10
+
+PrimExpanded pνq Ð True ; 
+
+> 11
+
+Continue ; 
+
+> 12
+
+Zcand Ð ZCand pνq; 
+
+> 13
+
+tBmuMm“1 Ð BlockDecomp pZν q; 
+
+> 14
+
+foreach Znew P Zcand do  
+
+> 15
+
+Vik Ð IKExpand pν, Znew , tBmuMm“1, Pq; 
+
+> 16
+
+Insert valid children Vik into F; 
+
+> 17
+
+Remove ν from F; 
+
+> 18
+
+Backtrack to compute τ ‹;and tBmuMm“1, the IK-based expansion generates children by: 
+
+Vik fi IKExpand `ν, Znew , tBmuMm“1, P˘. (13) where IKExpand p¨q operates block-wise: for each affected free block Bm, it samples target poses for the designated new attachment pad from a short forward window on the guiding path P and solves reduced IK only for that block. Specifically, the block deformation variables U1 
+
+> m
+
+are obtained by 
+
+min 
+
+> U1
+> m
+
+Ltar px1 
+
+> j‹
+
+, x‹q ` wd Ldef pU1
+
+> m
+
+q
+
+s.t. X1 
+
+> m
+
+“ BlockProp pX, U1
+
+> m
+
+, Bmq,
+
+pM 1
+
+> i
+
+, L 1
+
+> i
+
+, κ1
+
+> i
+
+q P SDpγ1
+
+> i
+
+q, @i P Bm,
+
+(14) where x‹ is the sampled target pose and x1 
+
+> j‹
+
+is the resulting pose of the designated new attachment pad; Ltar is the sum of four weighted error terms: the normal-distance term wnd Lnd ,the tangential-distance term wtd Ltd , the surface-normal orien-tation term wno Lno , and the full-orientation term woLo; and the deformation loss Ldef regularizes excessive segment defor-mation. The reduced IK variables follow (5). Condition (14) is implemented using a load-conditioned convex section of 
+
+SDpγq at the parent state. The fused child is accepted only after passing the IK-loss, suction-pose, collision, and load– deformation checks, with the relevant quantities recomputed at the child state. Implementation parameters and weights are summarized in Table I. Finally, the search terminates when the frontier becomes empty, or when the iteration budget is exhausted, or when function GoalReached pν, p gq returns true, i.e., when the cur-rent state satisfies the prescribed goal tolerance with respect to the goal position pg. Under finite search budget, beam width, and per-block candidate bounds, IKHS terminates in finite time and returns only plans that satisfy the modeled kinematic, adhesion, collision and load–deformation constraints. 5 
+
+> Fig. 5. Unified overview of IKHS and PaHS. Offline IKHS rollouts generate validated short-horizon primitives. Online, IKHS performs best-first hybrid search with block-wise IK, while PaHS first attempts primitive-based expansion and falls back to IKHS when needed.
+> Fig. 6. Different embeddings for primitives: random (left) and learned (right), compared by their alignment with primitive distances.
+
+B. Primitive-augmented hybrid search (PaHS) 
+
+As summarized in Fig. 5, PaHS retains the IKHS search tree, node score (11), guide P, and stopping rule, while augmenting node expansion with short feasible contact–motion continua-tions. The key idea is to reuse local motion patterns already validated by IKHS while preserving the same downstream feasibility checks. 
+
+1) Primitive library: The primitive library is constructed offline from successful IKHS rollouts. As shown in Fig. 5, given a rollout τ ‹, the fixed-horizon segments are extracted as short contact–motion primitives, i.e., 
+
+πh fi pXh:h`Hp , Uh:h`Hp´1, Zh:h`Hp q, 0 ď h ď H ´ Hp;
+
+where Hp is the primitive horizon. Each primitive therefore records a verified local continuation of body deformation and adhesion switching over a short horizon. It is expressed in the head frame of its first step, suppressing absolute pose variation so retrieval depends mainly on the local contact– motion pattern. The resulting library is: 
+
+M fi ␣pej
+
+> act
+
+, π j q(NM 
+
+> j“1
+
+, (15) where πj is a stored primitive; ej 
+
+> act
+
+P Rd is its retrieval key; and NM is the number of stored primitives. Each sample contains a head-frame observation, including a local depth image, proprioception, adhesion states, gravity directions, and a guide look-ahead window. The associated primitive stores the next Hp “ 4 hybrid states as relative link poses, segment twists, and adhesion modes. 
+
+2) Retrieval embedding: Retrieval is performed by com-paring the current planning context with stored primitives in a shared latent space. A dual-tower embedding is learned, where the action tower Eact p¨q encodes each primitive πj P M
+
+from its canonicalized local rollout descriptor rpπq, and the observation tower Eobs p¨q encodes the current search con-text opν, Pq from node ν and a short look-ahead window on the guiding path P. The two encoders map them into a common normalized d-dimensional space: 
+
+eobs fi Eobs popν, Pqq }Eobs popν, Pqq} 2
+
+, eact fi Eact prpπqq }Eact prpπqq} 2
+
+;
+
+where the ℓ2-norm makes similarity comparison scale-invariant; output eobs is the online query used during planning; and eact is the stored retrieval key in (15). The training combines a metric loss Lmetric to encourage primitives with similar pose sequences to have nearby embeddings, and an alignment loss Lalign to align each observation embedding with the primitive corresponding to the same local continua-tion. Thus, the training loss is given by: 
+
+L fi Lmetric ` λalign Lalign ,
+
+where λalign ą 0 is a weight parameter. The observation tower combines a 56 ˆ56 depth backbone, MLP proprioception encoders, and a two-layer four-head transformer fusion module. The action tower is a two-layer 256-hidden MLP, and both towers output ℓ2-normalized 16-D embeddings. Training uses metric and cosine alignment losses with hard-pair sampling; rollout episodes are split before sliding primitive windows are extracted to avoid data leakage. Fig. 6 shows that the learned embedding aligns latent distances with primitive similarity better than random features. 
+
+3) Primitive-augmented expansion: As shown in Fig. 5, given the learned library M, for a selected node ν, PaHS first attempts the primitive-based expansion by: 
+
+Vprim fi PrimExpand pν, M, Pq, (16) where the operator encodes eobs , retrieves the top-K nearest primitives from M by KD-tree, rolls them out for Hp steps, re-jects fast geometric or adhesion failures, and refines survivors by step-wise block IK under the current SDF and guide. If 6
+
+> Fig. 7. Representative simulation scenarios and planned trajectories. The benchmark covers cluttered terrain, strong curvature, and multiple surface transitions.
+
+no refined primitive is valid, PrimIKHS falls back to IKHS. Otherwise, the returned children are inserted and standard IK expansion is skipped for that iteration. Primitive expansion is attempted at most once per node; if the node is selected again later, expansion proceeds with standard IKHS branching. This design keeps retrieval lightweight while preserving the same collision, adhesion, and load–deformation validation used in IKHS. 
+
+C. Overall Analyses 1) Online execution and adaptation: Execution follows the returned plan in a receding-horizon manner. For each transition, a short deformation schedule rUh, 0: Th is constructed under fixed adhesion mode Zh, and the rollout rXh, 0: Th is checked against persistent adhesion (2), collision safety (3), load–deformation feasibility (6), and the same geometric checks used in IKHS/PaHS. Segment-level tracking uses the clipped integral pressure commands below: 
+
+∆ph,t i “ clip 
+
+´
+
+Klen  
+
+> i
+
+Ih,t  
+
+> len ,i
+
+` Krot  
+
+> i
+
+Ih,t 
+
+> rot ,i
+
+¯
+
+, (17) where Ih,t  
+
+> len ,i
+
+and Ih,t  
+
+> rot ,i
+
+accumulate extension and bending errors. The switch Zh Ñ Zh`1 is issued only after the terminal tracking tolerances are met. If interpolation or tracking violates safety checks, the rollout is rebuilt with tighter margins. If mismatch persists, a nearby validated primitive is replayed or a short-horizon PaHS subproblem is solved from this state. 
+
+2) Correctness and completeness: IKHS is correct with respect to the modeled constraints: every accepted child is generated by block-wise kinematic propagation and inserted only after adhesion, geometric, and load–deformation valida-tion. PaHS retains this property because retrieved candidates are accepted only after the same IK refinement and feasibility checks, otherwise falling back to IKHS. Thus, any returned plan satisfies (1)–(3) and (6), although no guarantee is claimed for unmodeled effects. Completeness is limited by finite con-tact candidates, sampled guide targets, bounded IK iterations, beam width, and finite planning budget. 
+
+3) Overall complexity: The A ‹ guide computation costs 
+
+Op| Es| log |Vs|q . For IKHS, per-node runtime is dominated by Zcand pνq enumeration and block-wise IK over affected                                                               
+
+> TABLE I MAIN IMPLEMENTATION PARAMETERS .
+> Module Parameters
+> Guide pwℓ, w lift , w sharp , w n, w b, w nc q “ p 1,1,10 ,1,2,30 q
+> IK Target weights pwnd , w td , w no , w oq “ p 10 4,10 2,10 2,10 ´1q;deformation weight wd“10 ´2; max. 40 iter./target Expansion ď32 targets/free block; top-Kpruning, K“3; beam 3
+> IKHS score wlat “0.4;wh
+> d“0.1αp,αpP r 0.1,1.0s;we“0.05 ; ext./bend
+> p0.2,1.0q
+> PaHS Hp“4; retrieval K“50 ;d“16
+> Training batch 256 ; lr 10 ´3; decay 10 ´5;200 epochs; hard-pair sampling Feasibility ∆γ“15 ˝for SDpγq;pϵd, ϵ aq “ p 0.5 cm , π {10 q;ϵc“0.5 cm
+
+free blocks, scaling with candidate modes and block sizes rather than full-chain IK. PaHS adds Opd log NM q retrieval, top-K rollout/checking over Hp steps, and local refinement, with fallback to IKHS. Memory is Op| T| ` NM dq.IV. N UMERICAL EXPERIMENTS 
+
+Numerical experiments evaluate planning efficiency, re-trieval quality, and hardware transfer on a laptop with an Intel Core i9-13900HX CPU and NVIDIA RTX 4070 GPU. The Python3 implementation uses IPOPT /CasADi for IK, 
+
+PyBullet for visualization and simulated depth, and GPU-accelerated Open3D for SDF updates. Simulation and hard-ware videos are available online. 
+
+A. Simulation Setup 
+
+Planning and execution simulation use a custom transition model for the robot-environment interaction and contact-state evolution. Main implementation parameters are summarized in Table I. Unless otherwise noted, they are fixed across all simulation tasks. As shown in Fig. 7, the benchmark scenarios have complementary difficulties: S1 tests feasibility under floor-wall-ceiling transitions; S2 tests the reuse of recurring local transition patterns in clutter; and S3 tests guide quality and search coverage under large surface-normal variation. In each scenario, 20 navigation tasks are evaluated. 
+
+B. Results and Analysis 
+
+(I) Offline primitive library : The success-data library for PaHS is constructed offline from IKHS rollouts in the three benchmark scenarios. A total of 500 episodes are collected per 7
+
+Fig. 8. Effect of library size and expansion budget on the retrieval hit rate and planning acceleration, within three different scenarios. TABLE II METRIC -LEARNING ABLATION FOR PRIMITIVE RETRIEVAL .Seen (avg. 3 scen.) Unseen Encoder PT (s) Hit (%) PT (s) Hit (%) Metric ( ours ) 2.64 87.9 2.88 80.5 Random 3.25 77.5 4.09 64.3 Pooled PCA 5.17 62.1 4.29 58.6 
+
+scenario, for 1500 episodes overall, yielding more than 4ˆ10 4
+
+primitive segments. After embedding, indexing, and duplicate removal, the final library contains about 6000 entries. Episodes are split before fixed-horizon windows are extracted and final evaluation tasks use independent seeds. (II) Overall planning performance : Across 60 benchmark tasks, IKHS and PaHS both achieve 20/20 success in S1– S3, covering clutter, strong curvature, and multiple surface transitions (Fig. 7). The metrics are gait-planning time (PT), execution steps (ES), and deformation cost (DC); guide-search times, excluded from PT, are 1.42 , 2.35 , and 1.59 s. PaHS reduces IKHS PT from 20 .4, 11 .9, and 15 .6 s to 1.7, 1.0, and 
+
+1.8 s, i.e., 12 .0ˆ, 11 .9ˆ, and 8.7ˆ speedups (Table III), with hit rates of 92% , 99% , and 93% .(III) Scaling with library size and retrieval budget : The retrieval hit rate and planning acceleration improve with library size and retrieval budget. Under top-100 retrieval, increasing the library from 1000 to 10 ,000 entries raises the hit rate from 
+
+48% to 95% in S1 and from 83% to 93% in S3, while S2 remains near 97% . The gain saturates beyond about 10 4 entries or K “ 50 . As shown in Fig. 8, S3 remains the most difficult but improves consistently with larger libraries and budgets. (IV) Effect of guide-path geometry : Guide geometry changes the downstream IK-feasible region. At the wall corner, changing the guide from a vertical path to an oblique path reduces the IK-feasible count from 240 {1600 to 14 {1600 . On the curved ridge, changing the guide from a hoop-like path to an oblique helical path reduces the count from 500 {1600 to 
+
+120 {1600 . In both pairs, the guide with the large path offset at 
+
+0.08 m yields a nearly empty feasible target set. As shown in Fig. 9, this is consistent with (8): keeping the guide closer to feasible contact configurations improves both IKHS and PaHS. (V) Embedding ablation : The learned embedding im-proves hit rate/PT over random and pooled PCA features: 
+
+87 .9% {2.64 s versus 77 .5% {3.25 s and 62 .1% {5.17 s in seen environments, and 80 .5% {2.88 s versus 64 .3% {4.09 s and 
+
+58 .6% {4.29 s in unseen environments (Table II); final feasi-IK feasible 240/1600 Median Loss: 0.54 IK feasible 14/1600 Median Loss: 0.54 Path Offset: 0.08 m IK feasible 500/1600 Median Loss: 0.48 
+
+> IK feasible 120/1600 Median Loss: 0.48 Path Offset: 0.08 m
+> Infeasible IK Targets
+> Feasible IK Targets
+
+Fig. 9. Illustration of how the IK-feasible (in blue) and infeasible (in red) regions change drastically under different guiding paths (black line). TABLE III COMPARISON WITH BASELINES .Method Succ. (/20) PT (s) ES DC S1 S2 S3 S1 S2 S3 S1 S2 S3 S1 S2 S3 
+
+PaHS 20 20 20 1.7 1.0 1.8 51 35 45 68 42 84 IKHS 20 20 20 20.4 11.9 15.6 64 47 56 71 43 80 
+
+PaHS-NF 10 18 11 100.6 20.8 90.6 125 51 112 130 56 128 PWTO 9 12 10 129.2 98.6 117.7 148 118 137 180 139 178 RPR 12 15 3 80.6 50.6 170.1 109 76 174 126 83 174 DBS 8 14 3 161.3 146.7 180.7 92 105 176 192 189 184 
+
+Fig. 10. Failure cases for the baseline RPR : without IK refinement, small perturbations can turn a feasible wall-transition plan (green) into an infeasible one (red) that violates the suction constraint. 
+
+bility remains enforced by IK refinement. 
+
+C. Baseline Comparison 
+
+PaHS is compared with three controlled baselines and one ablation. Retrieved primitive replay ( RPR ) directly replays retrieved motions without online adaptation or refinement [19]; primitive-warmstarted trajectory optimization ( PWTO ) uses them as warm starts for long-horizon optimization over ad-hesion and deformation [12]; discrete beam search ( DBS )searches discretized deformation/adhesion candidates; and 
+
+PaHS-NF disables IKHS fallback. Retrieval-based methods use the same top-50 library candidates unless noted. As summarized in Table III, PaHS provides the best overall trade-off: it solves all 60 {60 trials, matching IKHS while reducing mean PT from 16 .0 to 1.5 s and achieving the lowest ES in all scenarios, with mean ES reduced from 55 .7
+
+to 43 .7 without increasing mean DC. PaHS-NF and RPR succeed in only 39 {60 and 30 {60 trials, showing that retrieval or direct replay alone is insufficient (Fig. 10). PWTO and DBS achieve 31 {60 and 25 {60 successes with mean PTs of 115 .2 and 162 .9 s . Together with their larger ES/DC and 8
+
+Fig. 11. Resulting trajectories under baselines PaHS , PWTO , and DBS .
+
+Fig. 12. Snapshots during the planar navigation and the 45 ˝-slope transition, together with the corresponding closed-loop tracking and pressure commands. 
+
+the trajectories in Fig. 11, these results support combining retrieval, IK refinement, and IKHS fallback. 
+
+D. Hardware Experiments 
+
+Hardware experiments use a 60 cm ˆ 40 cm workspace and a pneumatic robot with two soft segments, three suction pads, and four chambers per segment. Nine motion-capture markers provide state feedback to PyBullet and the online planner; clipped integral pressure control uses Krot  
+
+> i
+
+“ 2.0,
+
+Klen  
+
+> i
+
+“ 5.0, with saturation at 100 units. Two tasks are evaluated (Fig. 12): randomized planar obstacle avoidance and a plane-to-slope transition onto a 45 ˝ incline. The robot succeeds in 9{10 planar trials while correcting execution mismatch through online replanning (mean PT 2.35 s; ET 
+
+98 .2 s). In the climbing task, it succeeds in 8{10 trials and completes the transition with contact-aware gaits (mean PT 
+
+1.9 s; ET 32 .5 s). Cross-plane motions are more sensitive to imperfect adhesion sealing, state-estimation error, pneumatic delay, and path-dependent deformation. Moderate deviations can be recovered through feedback and online replanning, whereas larger accumulated errors may drive the realized state away from SD, causing oscillation and preventing recovery. V. C ONCLUSION 
+
+This paper presented a planning and control framework for multi-segment suction-based soft robots on complex 3D surfaces. The central idea is an adhesion-induced block-wise planning abstraction, implemented through IKHS and further accelerated by primitive proposals in PaHS. Future work will focus on broader hardware validation and extended application settings. REFERENCES [1] Y. Sun, A. Abudula, H. Yang, S.-S. Chiang, Z. Wan, S. Ozel, R. Hall, E. Skorina, M. Luo, and C. D. Onal, “Soft mobile robots: A review of soft robotic locomotion modes,” Current Robotics Reports , vol. 2, no. 4, pp. 371–397, 2021. [2] J. Qu, Y. Xu, Z. Li, Z. Yu, B. Mao, Y. Wang, Z. Wang, Q. Fan, X. Qian, M. Zhang, M. Xu, B. Liang, H. Liu, X. Wang, X. Wang, and T. Li, “Recent advances on underwater soft robots,” Advanced Intelligent Systems , vol. 6, no. 2, p. 2300299, 2024. [3] Z. Wan, Y. Sun, Y. Qin, E. H. Skorina, R. Gasoto, M. Luo, J. Fu, and C. D. Onal, “Design, analysis, and real-time simulation of a 3D soft robotic snake,” Soft Robotics , vol. 10, no. 2, pp. 258–268, 2023. [4] D. Mei, X. Yu, G. Tang, W. Kong, X. Zhao, C. Zhao, B. Li, and Y. Wang, “A soft crawling robot with multi-modal locomotion inspired by the movement mechanism of snake scales,” IEEE Robotics and Automation Letters , vol. 9, no. 9, pp. 7589–7596, 2024. [5] S. Even and Y. Ozkan-Aydin, “Locomotion and obstacle avoidance of a worm-like soft robot,” in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2023, pp. 6491–6496. [6] J. Ketchum, S. Schiffer, M. Sun, P. Kaarthik, R. Truby, and T. D. Mur-phey, “Automated gait generation for walking, soft robotic quadrupeds,” in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2023, pp. 10 245–10 251. [7] M. Calisti, G. Picardi, and C. Laschi, “Fundamentals of soft robot locomotion,” Journal of the Royal Society Interface , vol. 14, no. 130, p. 20170101, 2017. [8] D. S. Shah, J. P. Powers, L. G. Tilton, S. Kriegman, J. Bongard, and R. Kramer-Bottiglio, “A soft robot that adapts to environments through shape change,” Nature Machine Intelligence , vol. 3, no. 1, pp. 51–59, 2020. [9] J. Marquez, C. Sullivan, R. M. Price, and R. C. Roberts, “Hardware-in-the-loop soft robotic testing framework using an actor-critic deep rein-forcement learning algorithm,” IEEE Robotics and Automation Letters ,vol. 8, no. 9, pp. 6076–6082, 2023. [10] W. Xin, W. Y. Ng, F. T. Pan, Y. Li, P. W. Yan Chiu, and Z. Li, “Reinforcement learning based CPG controller for a soft gastropod robot and its gaits comparison study,” in IEEE RAS/EMBS International Conference on Biomedical Robotics and Biomechatronics (BioRob) ,2022, pp. 1–8. [11] M. Luo, Z. Wan, Y. Sun, E. H. Skorina, W. Tao, F. Chen, L. Gopalka, H. Yang, and C. D. Onal, “Motion planning and iterative learning control of a modular soft robotic snake,” Frontiers in Robotics and AI , vol. 7, p. 599242, 2020. [12] J. Bern, P. Banzet, R. Poranne, and S. Coros, “Trajectory optimization for cable-driven soft robot locomotion,” in Proceedings of Robotics: Science and Systems , 2019. [13] M. Geisert, T. Yates, A. Orgen, P. Fernbach, and I. Havoutis, “Contact planning for the ANYmal quadruped robot using an acyclic reachability-based planner,” in Towards Autonomous Robotic Systems (TAROS) , 2019, pp. 275–287. [14] B. Aceituno-Cabezas, C. Mastalli, H. Dai, M. Focchi, A. Radulescu, D. G. Caldwell, J. Cappelletto, J. C. Grieco, G. Fernández-López, and C. Semini, “Simultaneous contact, gait, and motion planning for robust multilegged locomotion via mixed-integer convex optimization,” IEEE Robotics and Automation Letters , vol. 3, no. 3, pp. 2531–2538, 2018. [15] G. Lee, H. Kim, K. Seo, J. Kim, and H. S. Kim, “Multitrack: A multi-linked track robot with suction adhesion for climbing and transition,” 
+
+Robotics and Autonomous Systems , vol. 72, pp. 207–216, 2015. [16] M. E. Sayed, J. O. Roberts, R. M. McKenzie, S. N. Monk, and A. A. Stokes, “Limpet ii: A modular, untethered soft robot,” Soft Robotics ,vol. 8, no. 4, 2021. [17] M. A. Robertson and J. Paik, “New soft robots really suck: Vacuum-powered systems,” Science Robotics , vol. 2, no. 9, p. eaan6357, 2017. [18] Z. Liu, L. Xu, X. Liang, and J. Liu, “Design of under-actuated soft adhesion actuators for climbing robots,” Sensors , vol. 22, no. 15, p. 5639, 2022. [19] M. Phillips, B. J. Cohen, S. Chitta, and M. Likhachev, “E-graphs: Bootstrapping planning with experience graphs,” in Proceedings of Robotics: Science and Systems , 2012. 9
+
+# Supplementary Material for 
+
+FlexWorm: Primitive-augmented Hybrid Contact-motion Planning for Suction-based Multi-segment Deformable Robots 
+
+Zili Tang, Tiecheng Guo, Qinyue Zhang, and Meng Guo The following supplementary material expands the imple-mentation details summarized in the main paper and provides additional validation. Sections A–D specify the guiding-path cost, block-wise IK objective, load–deformation feasibility model, and primitive-retrieval training pipeline, respectively; Sec. E provides additional deformation and hardware analyses. Shared numerical parameters follow Table I and are not repeated unless needed for clarity. 
+
+A. Guiding Surface Path Cost 1) Augmented Near-surface Graph: Section III-A1 summa-rizes the guide construction and its role in IKHS. This section gives the exact implementation of the augmented near-surface graph and the individual penalty terms in the edge cost. The guide is computed on ¯Gs, whose locations ˆp are lattice points in the near-surface band, i.e., 
+
+Vs “ t ˆp : dmin ď Dpˆpq ď dmax u, (S1) where Dp¨q is the signed-distance field, dmin “ 0.005 m ,and dmax “ 0.025 m . Because edge costs depend on the local approach direction, the search state is augmented as 
+
+v “ p ˆp, δ q, where δ is a quantized tangent direction. A short ancestor history is also retained to evaluate recent turning and surface-transition geometry. For an edge from step t to step t ` 1, the guide cost is given by: 
+
+ctÑt`1 “ wℓdtÑt`1 ` wlift ϕlift ` wsharp ϕsharp 
+
+` wnϕnormal ` wbϕbend ` wnc ϕnc , (S2) where the weights are given in Table I. Overall scales are ab-sorbed into these external weights, and the internal coefficients are normalized by their largest value. 
+
+2) Length, Lift, and Surface-normal Change: The geo-metric term is the metric length of the 26-neighbor step, 
+
+dtÑt`1 “ } ˆpt`1 ´ ˆpt}2. The lift term is ϕlift pˆpt`1q “ rDpˆpt`1q ´ dmin s`, which discourages unnecessary lift within the near-surface band. Let nt “ npˆptq and ∆θn “
+
+cos ´1pclip pnJ 
+
+> t
+
+nt`1, ´1, 1qq . The normal-change penalty is 
+
+ϕnormal “ ∆θn ` p ∆θnq2, which discourages rapid surface-normal variation and repeated floor–wall–ceiling transitions. 
+
+3) Local Sharpness: Let tt`1 be the unit-normalized expo-nential moving average of guide steps with update coefficient 
+
+0.2, and let st`1 be the transverse direction obtained by normalizing nt`1 ˆ tt`1. Degenerate cases with a near-zero denominator are skipped in this local sharpness test. The SDF is probed on both transverse sides of the guide at five voxel cells, i.e., 5∆ “ 0.05 m by: 
+
+ϕsharp “ ÿ
+
+> σPt´ 1,`1u
+
+1
+
+´ˇˇDpˆpt`1 ` 5∆ σst`1q´ Dpˆpt`1qˇˇ ą τD
+
+¯
+
+,
+
+(S3) where ∆ is the voxel resolution and τD “ dmax {2. This term penalizes abrupt transverse SDF variation around the guide. 
+
+4) Accumulated In-plane Bending: The previous and cur-rent step directions are projected into the tangent plane at 
+
+ˆpt`1. Let the angle between the projected directions be ∆θt.Small direction changes below θ0 “ π{20 are ignored. With discount factor βa “ 0.9, the accumulated turning history is updated as at`1 “ βaat ` r ∆θt ´ θ0s` with a0 “ 0. The bending penalty is ϕbend “ 0.005 at`1 `r at`1 ´ π{4s2
+
+> `
+
+, which prevents a sequence of individually small turns from hiding a large accumulated bend. 
+
+5) Non-coplanar Transition Penalty: For a recent ances-tor k, let nk “ npˆpkq, dk “ p ˆpt`1 ´ ˆpkq{} ˆpt`1 ´ ˆpk}2, and let ck be the normalized vector dk ˆnk. Ancestors that lead to near-zero denominators are skipped. If the new surface normal is coplanar with the travel direction and the previous normal, then |cJ 
+
+> k
+
+nt`1| is small. The normalized history penalty is given by: 
+
+ϕnc “ 1
+
+Knc 
+
+ÿ
+
+> kPHKnc
+
+1p| cJ 
+
+> k
+
+nt`1| ą 0.1q| cJ 
+
+> k
+
+nt`1|, (S4) where HKnc contains up to Knc “ 15 recent ancestors and is evaluated only near a surface switch. With the external weight 
+
+wnc “ 30 , this term penalizes recent non-coplanar surface transitions in the guide. 
+
+B. Block-wise IK Target-pose Objective 1) Target Error Terms: The compact target-pose objective in Eq. (14) of the main paper is expanded here into its position and orientation residuals. For a sampled suction target x‹ “pp‹, q‹q, the desired suction normal is defined as: 
+
+n‹ “ Rpq‹qex, (S5) where Rpqq is the rotation matrix associated with quaternion 
+
+q, and ex “ p 1, 0, 0qJ is the local suction-axis unit vector. For the reached target-link state x “ p p, qq, the target quaternion is sign-aligned as: 
+
+rq‹ “
+
+#
+
+q‹, qJq‹ ě 0,
+
+´q‹, qJq‹ ă 0, (S6) where the sign alignment removes the double-cover ambiguity of unit quaternions before evaluating the residual. The normal-distance, tangential-distance, normal-orientation, and residual-orientation errors are computed as follows: 
+
+en “ p p ´ p‹qJn‹,
+
+et “ p p ´ p‹q ´ enn‹,
+
+eno “ Rpqqex ´ n‹,
+
+eo “ q ´ rq‹,
+
+(S7) where en and et decompose the position error into normal and tangential components, eno measures suction-axis misalign-ment, and eo penalizes the remaining quaternion mismatch. 10 
+
+2) Weighted Target-pose Loss: The target-pose loss used in block-wise IK is defined as: 
+
+Ltar “ wnd e2n ` wtd }et}22 ` wno }eno }22 ` wo}eo}22, (S8) where the numerical weights are given in Table I. The larger normal-distance and normal-orientation weights prioritize seal formation. Tangential position and residual rotation are as-signed smaller weights because a short free block cannot generally satisfy an arbitrary six-DOF target exactly. 
+
+C. Load–deformation Feasible Set 1) Offline Gravity-conditioned Construction: Section III-A3 summarizes the gravity-conditioned feasible family SDpγq.This section gives its calibrated construction, the load compu-tation used for full-chain validation, and the convex slice used inside block-wise IK. Approximately 10 3 hardware measure-ments calibrate a finite-element segment model, which gener-ates about 5 ˆ 10 5 quasi-static samples over segment length, the two-dimensional bending-curvature vector κ P R2, distal load moment, and proximal-frame gravity angle. The gravity angle γ is discretized into 15 ˝ intervals. For each interval, approximately 6 ˆ 10 4 uncertain near-boundary samples are discarded before fitting a conservative inner convex polytope in pM , L, κq space. Thus, for segment i at hybrid step h, the planning constraint is given by: 
+
+pM hi , L hi , κhi q P SDpγhi q, (S9) where Lhi and κhi are the segment deformation parameters, 
+
+M hi is the equivalent distal load moment, and γhi is the gravity angle in the proximal fixed-end frame. 
+
+2) Full-chain Load Validation: The equivalent load mo-ment is evaluated from the current full-chain configuration. For an attached segment anchor a, the dominant gravity-induced moment is approximated by: 
+
+Ma fi ÿ
+
+> jPDpaq
+
+ppj ´ paq ˆ mj g, M a fi }Ma}2, (S10) where Dpaq denotes the distal links supported by anchor a,
+
+mj is the lumped mass of link j, and g is gravitational acceleration. The same feasible family is used for all nominally identical segments. Multi-segment coupling is still checked at the full-chain level: after each candidate transition, the complete chain state is recomputed, the relevant load moments and gravity angles are updated, and all affected or load-supporting segments are checked against (S9), together with closure, suction-pose, and collision constraints. 
+
+3) Frozen Convex Section for Block-wise IK: During block-wise numerical IK, directly updating M i and γi inside every nonlinear iteration would make the inner problem less stable. Therefore, the implementation uses a load-conditioned convex section frozen at the parent state. For an affected segment i in a free block, the parent load moment and gravity angle yield the deformation slice below: 
+
+C0 
+
+> i
+
+fi 
+
+!
+
+pL, κq
+
+ˇˇˇ pM 0 
+
+> i
+
+, L, κq P SDpγ0 
+
+> i
+
+q
+
+)
+
+, (S11) where C0 
+
+> i
+
+is the feasible deformation slice used only inside the local IK optimization. Because SDpγ0 
+
+> i
+
+q is represented by a convex inner polytope, C0 
+
+> i
+
+is convex and can be imposed                                  
+
+> Fig. S1. Projected quasi-static samples used to construct SDpγqfor γ“0˝
+> and γ“120 ˝. For visualization, the two-dimensional curvature vector is projected to its magnitude κfi }κ}2; the planner retains the full vector
+> κPR2. The panels show the pL, κ q,pL, M q, and pκ, M qprojections. The red curves indicate projected conservative bounds where shown.
+> Fig. S2. Three-dimensional magnitude projections of the fitted gravity-conditioned feasible sets for γ“0˝and γ“120 ˝, using κ“ } κ}2for visualization. The planner-side feasible set itself is represented in pM , L, κq
+> space.
+
+efficiently in the block IK solve. Once the block solutions are fused into a full child state, the child is retained only if the recomputed quantities satisfy the following condition: 
+
+pM 1
+
+> i
+
+, L 1
+
+> i
+
+, κ1
+
+> i
+
+q P SDpγ1
+
+> i
+
+q, @i P Iaff , (S12) where Iaff includes the optimized segments and any support-ing segments whose distal load changes. 
+
+4) Conservativeness and Interpretation: The fitted feasible sets for two representative gravity angles are visualized in Fig. S1. The fitted polytopes are conservative inner approx-imations, so they may reject some quasi-statically feasible states near the boundary. Conversely, membership in SDpγq
+
+should be interpreted as calibrated quasi-static feasibility, not guaranteed closed-loop trackability under pneumatic delay, sealing uncertainty, hysteresis, or state-estimation error. The same fitted sets are also shown through three-dimensional magnitude projections in Fig. S2. These views make the conservativeness of the inner approximation clearer, while the planner retains the full two-dimensional curvature vector rather than the scalar magnitude used for visualization. 
+
+D. Primitive Retrieval Model and Training Protocol 1) Primitive Records: Section III-B describes PaHS as a retrieval-augmented proposal mechanism inside the same IKHS search and validation loop. The learned module only accelerates proposal generation: every retrieved continuation 11  
+
+> Fig. S3. PaHS primitive-retrieval model and training protocol. The observation tower embeds the local depth, proprioception, gravity, and guide-window inputs, while the action tower embeds validated IKHS primitive continuations. Retrieved primitives are replayed, refined, and accepted after validation.
+
+is still refined and checked for suction pose, collision, IK loss, and load–deformation feasibility, with standard IKHS fallback retained. This section specifies the exact primitive records, encoder inputs, metric target, hard-pair mining, and episode-level training split used in the reported implementation. The primitive library is generated from successful IKHS rollouts. A sample at hybrid step h pairs the local observation 
+
+oh “ p Idepth  
+
+> h
+
+, Uh, Zh, gh, Ghq, (S13) with the subsequent validated primitive of horizon Hp “ 4,
+
+πh “ p Xh:h`Hp , Uh:h`Hp´1, Zh:h`Hp q, (S14) where Idepth  
+
+> h
+
+is a local depth image, Uh and Zh are the current deformation and adhesion-mode variables, gh contains the link-wise gravity directions, and Gh is a short guide look-ahead window. Guide points and primitive poses are represented in the current head frame. Each primitive record also stores the corresponding segment twists, adhesion modes, and IK targets, so that the retrieved primitive can be replayed and refined rather than directly accepted. 
+
+2) Dual-tower Embedding Model: Retrieval uses the dual-tower model summarized in Sec. III-B2 and Fig. 6 of the main paper. For completeness, the exact encoder inputs are specified here. The observation tower Eobs maps oh to a normalized query embedding eobs P R16 and combines a 56 ˆ56 depth-image backbone, MLP encoders for proprioception and grav-ity, a guide-window encoder with Kg “ 50 guide points, and a two-layer four-head Transformer fusion module. The action tower Eact maps each validated continuation to a normalized primitive key eact P R16 through a two-layer MLP applied to the normalized link-position descriptor below: 
+
+rpπhq “ norm `vec pXh:h`Hp 
+
+> xyz
+
+q˘ , (S15) where only link-position geometry is used to define the metric target. Adhesion modes, segment twists, and IK targets remain in the primitive payload and are revalidated during online use. The resulting dual-tower retrieval model and training pipeline are summarized in Fig. S3. The figure also clarifies that the learned embedding is used only for primitive retrieval, while feasibility is still enforced by the same IK refinement and validation checks as IKHS. 
+
+3) Training Objective and Data Split: The training ob-jective aligns observations with their paired primitives while preserving geometric similarity among primitive trajectories: 
+
+L “ λact Lmetric  
+
+> act
+
+` λalign Lalign ` λobs Lmetric  
+
+> obs
+
+, (S16) where pλact , λ align , λ obs q “ p 1, 1, 0q in the reported model. The action-tower metric loss matches primitive-embedding distances to the teacher distances induced by (S15), while the alignment loss pulls each observation query toward the key of its paired primitive. Dynamic hard-pair sampling is used during training: hard positives are geometrically similar primitive pairs that remain far in the learned space, and hard negatives are geometrically different pairs that appear too close in the learned space. The model is trained with batch size 256 ,learning rate 10 ´3, weight decay 10 ´5, and 200 epochs. The data split is performed at the episode level before fixed-horizon primitive windows are extracted. Specifically, 
+
+500 successful IKHS episodes are collected in each of three training scenarios, giving 1500 episodes and more than 4ˆ10 412 
+
+Fig. S4. Effect of deformation regularization in numerical IK. The upper panels show representative full-robot solutions and per-segment deformation contributions ηi; the middle panels show paired multi-target solution families; the lower panels show per-target deformation contributions. 
+
+primitive windows. Episodes are split 90 {10 into training and validation sets before window extraction, preventing overlap-ping windows from the same rollout from appearing in both sets. After embedding, indexing, and duplicate removal, the deployed primitive library contains about 6000 entries. The final planning evaluations use independent random seeds and are not drawn from the training or validation episodes. 
+
+E. Additional Evidence for Deformation Regularization and Hardware Execution 1) IK-level Deformation Regularization: The deformation cost is used only as a soft preference among feasible solutions; it does not replace the hard suction-pose, collision, closure, or load–deformation constraints. The same normalized extension and bending quantities enter at two levels: Ldef in Eq. (14) biases each local IK solve, while Jdef in Eq. (11) accumulates deformation along the search trajectory. For segment i, let Li
+
+be the segment length, Lmin and Lmax its length limits, and 
+
+θi fi Liκi the bending-angle vector induced by the curvature 
+
+κi. The normalized extension and per-segment deformation measure are given by: 
+
+ρi “ Li ´ Lmin 
+
+Lmax ´ Lmin 
+
+, ηi “ p 1 ` ρiq} θi}22, (S17) where ρi measures normalized extension and ηi summarizes the local bending contribution used by the deformation regu-larizer. In block-wise IK, Ldef uses these quantities to select lower-deformation solutions among contact-compatible target candidates. The search-level Jdef accumulates the correspond-ing normalized extension and squared-bending penalties across transitions, so the planner prefers lower-strain routes without relaxing any feasibility constraint. (a) Without deformation regularization ( wd = 0) (b) With deformation regularization ( wd = 0.1)              
+
+> 0.2 0.4 0.6 0.8 1.0
+> Normalized guiding-path progress
+> 0246810
+> Raw regularizer
+> 11223344
+> (c) Unweighted deformation regularizer
+> wd= 0
+> wd= 0.1 0.2 0.4 0.6 0.8 1.0
+> Normalized guiding-path progress
+> 0.0 0.5 1.0 1.5 2.0
+> Curvature (rad m −1 )
+> (d) Maximum segment curvature
+> wd= 0
+> wd= 0.1
+> 1: s=0.46 R=4.71, κ=0.74
+> 2: s=0.61 R=8.42, κ=0.93
+> 3: s=0.74 R=5.19, κ=0.90
+> 4: s=0.93 R=11.41, κ=2.08
+> 1: s=0.47 R=1.67, κ=0.40
+> 2: s=0.60 R=0.45, κ=0.10
+> 3: s=0.78 R=2.15, κ=0.41
+> 4: s=0.92 R=6.27, κ=1.17
+> Matched follow-view snapshots Matched follow-view snapshots
+> Paired episode result: success / success; terminal path progress: 0.98 / 0.96; start/goal gaps: 0.00/0.00 m.
+> Effect of deformation regularization in IKHS (curve scenario, episode seed 500)
+> For this paired episode, deformation regularization reduced the mean raw regularizer by 47.2% and reduced the peak curvature by 34.5%.
+
+Fig. S5. Planning-level deformation ablation in the curve scenario. Global ghost trajectories and matched follow-view frames are shown above the raw deformation and maximum-curvature traces. 
+
+A paired numerical-IK ablation over 20 target poses is shown in Fig. S4. The peak deformation share is defined as: 
+
+Rconc “ max itηiu
+
+ř
+
+i ηi
+
+, (S18) where Rconc measures whether the deformation is concen-trated in one segment. In the representative case, enabling the regularizer decreases Rconc from 0.80 to 0.63 . Across the paired targets, the mean coefficient of variation decreases from 0.59 to 0.51 , and the mean raw deformation decreases by 
+
+56 .9% , while the normal-distance and surface-normal orienta-tion errors remain negligible. This indicates that the regularizer uses IK redundancy to distribute deformation, rather than relaxing the suction target. 
+
+2) Planning-level Deformation Regularization: The curve-scenario planning runs with the search-level deformation pref-erence disabled and enabled are compared in Fig. S5. To distinguish this ablation from the IK weight wd “ 10 ´2 in Eq. (14), define the base search weight wd fi 0.1, so that the adaptive score weight in Eq. (11) is wh
+
+d “ αpwd. The figure labels this base search-level ablation parameter as wd
+
+for compactness. Both runs reach nearly identical terminal progress, but the regularized trajectory avoids highly curved states. Enabling wd “ 0.1 decreases the mean raw deformation by 47 .2% and the peak segment curvature by 34 .5% . Thus, the search-level deformation preference improves trajectory quality within the same feasible-transition set rather than changing the task definition or removing hard constraints. 
+
+3) Hardware Execution Margin: The hardware result on the 45 ˝ slope should be interpreted in terms of closed-loop execution margin, not incline angle alone. With a lower fixed suction anchor, the plane-to-slope transition can create a long distal moment arm, so the supporting segment may operate close to the boundary of SDpγq. Moreover, SDpγq is calibrated for quasi-static load–deformation feasibility and does not in-clude pneumatic delay, pressure hysteresis, sealing uncertainty, adhesion-dependent boundary variation, or motion-capture la-tency. Therefore, a planned state may satisfy the quasi-static feasibility check but still be difficult to track on hardware when the realized state drifts toward a low-margin region. This distinction is summarized in Fig. S6. The planner-side model 13     
+
+> Fig. S6. Illustration of the hardware execution difficulty in the 45 ˝slope transition. The figure summarizes the posture-dependent load moment, limited execution margin near SDpγq, and delay and uncertainty sources in the hardware feedback loop.
+
+captures gravity-conditioned quasi-static feasibility, whereas the hardware loop introduces additional delay and uncertainty between the desired deformation, pressure command, suction boundary condition, and measured robot state. The observed difficulty in the 45 ˝ transition therefore does not by itself indicate a mismatch in the construction of SDpγq; it mainly reflects the gap between quasi-static feasibility and robust closed-loop trackability on the current prototype. A natural extension is to incorporate feedback-trackability margins or to learn a closed-loop feasible family from hardware executions.
