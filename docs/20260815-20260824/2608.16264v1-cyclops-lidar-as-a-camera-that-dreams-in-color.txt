@@ -1,0 +1,513 @@
+Title: Cyclops: LiDAR as a Camera That Dreams in Color
+
+URL Source: https://arxiv.org/pdf/2608.16264v1
+
+Published Time: Tue, 18 Aug 2026 01:47:05 GMT
+
+Number of Pages: 22
+
+Markdown Content:
+# Cyclops: LiDAR as a Camera That Dreams in Color 
+
+Wei Gao 1, Jian Shu 2, Mingle Zhao 1, Maani Ghaffari 3, David Kong 4,Chengzhong Xu 1, and Hui Kong 1,∗
+
+> 1
+
+State Key Laboratory of Internet of Things for Smart City, Faculty of Science and Technology, University of Macau, Macau, China 
+
+> 2
+
+The Hong Kong University of Science and Technology (Guangzhou), China 
+
+> 3
+
+Department of Naval Architecture and Marine Engineering and Department of Robotics, University of Michigan, Ann Arbor, MI, USA 
+
+> 4
+
+Independent Researcher, Pittsburgh, PA, USA 
+
+> ∗
+
+Corresponding author 
+
+Abstract: Conventionally, robotic perception relies heavily on cameras due to the rich semantic texture they provide. However, their performance degrades signifi-cantly in low-light or high-dynamic-range environments. Conversely, while Light Detection and Ranging (LiDAR) captures illumination-invariant geometric and in-tensity properties, the resulting data are typically single-channel and sparse, cre-ating a significant modality gap when applying vision models pre-trained on RGB datasets. In this paper, we propose Cyclops , a framework that translates sparse Non-Repetitive Scanning LiDAR (NRS-LiDAR) intensity into RGB video, en-abling camera-free inference for all-day perception tasks. Our approach first con-verts sparse LiDAR intensity projections into dense representations via a frozen pre-trained densification module, serving as a geometrically rich source condition. The dense intensity latent is then transported toward the target RGB distribution through Latent Bridge Matching (LBM) with a learned velocity field in a few ODE integration steps. To mitigate inter-frame flickering, we inject prior-frame context via temporal attention layers and further formulate the velocity field as a policy optimized by a differentiable terminal reward that encourages terminal fi-delity through backpropagation along the ODE trajectory. Extensive experiments demonstrate that the synthesized RGB, including those generated under near-dark conditions, enable standard RGB-based perception models to substantially outper-form both LiDAR baselines and conventional cameras on semantic segmentation, lane detection, and point cloud colorization across diverse lighting conditions. 
+
+Keywords: LiDAR Intensity, flow matching, LiDAR as a Camera 
+
+# 1 Introduction 
+
+Robust environmental perception is a fundamental prerequisite for autonomous mobile robots. Among onboard sensors, cameras provide dense, high-resolution imagery rich in color and semantic cues, but are inherently sensitive to illumination variations that compromise perception reliabil-ity. In contrast, LiDAR actively captures precise 3D geometry along with intensity, which encodes illumination-invariant reflectance information with minimal dependence on ambient lighting. Recent studies have demonstrated the value of LiDAR intensity in tasks such as loop closure de-tection [1, 2], odometry [3, 4], and segmentation [5, 6]. However, these methods typically rely on expensive high-resolution LiDAR, and the single-channel nature of intensity fundamentally lim-its its perceptual capacity compared to RGB imagery. Existing approaches that attempt to bridge this gap—including GAN-based LiDAR-to-camera translation [7, 8], neural rendering [9, 10], and diffusion-based synthesis [11, 12]—either require dense inputs, per-scene optimization with RGB supervision, or auxiliary annotations with slow iterative inference, limiting practical applicability. 
+
+10th Conference on Robot Learning (CoRL 2026), Austin TX, USA. arXiv:2608.16264v1 [cs.RO] 17 Aug 2026 Figure 1: Our proposed Cyclops converts sparse NRS-LiDAR intensity into RGB imagery through a two-stage pipeline: densification (Stage I) followed by colorization (Stage II). Bottom-left: Gener-ated images maintain consistent visual quality across Bright, Low-light, and Near-dark conditions, whereas camera images degrade severely. Bottom-right: The synthesized RGB directly enables downstream tasks, including semantic segmentation, lane detection, and point cloud colorization. In this work, we aim to achieve image-level scene perception using only a low-cost NRS-LiDAR, with no camera input or auxiliary annotations required at inference. This goal poses three main challenges: (i) Data Sparsity: NRS-LiDAR yields sparse, non-uniformly sampled projections with large missing regions; (ii) Structural Fidelity under Modality Gap: the single-channel inten-sity differs significantly from RGB in distribution, requiring cross-modal translation that preserves structural consistency; (iii) Temporal Stability and Deployment Efficiency: the method should mitigate inter-frame flickering and support efficient inference with few network evaluations. To address these challenges, we present Cyclops , a unified framework that transforms sparse NRS-LiDAR scans into RGB video suitable for robotic perception (see Fig. 1). For (i), we adopt the den-sification approach from [13] as a frozen geometric prior (Stage I). For (ii), we formulate intensity-image-to-RGB translation as a latent-space transport problem within the LBM [14] (Stage II); since both modalities share scene geometry, the latent displacement primarily encodes appearance, en-abling accurate generation in only a few Euler steps. For (iii), we augment the velocity field with temporal attention for inter-frame context and further treat it as a policy optimized by a differentiable terminal reward backpropagated through the ODE trajectory using Backpropagation Through Time. The main contributions are: (1) To our knowledge, this is the first work to synthesize RGB imagery from sparse NRS-LiDAR observations alone, effectively converting a low-cost NRS-LiDAR into an illumination-invariant “All-Day Camera.” (2) We propose an end-to-end pipeline combining frozen LiDAR intensity densification with latent bridge matching and reward-guided trajectory optimiza-tion, balancing generation quality and inference efficiency. (3) We validate the synthesized RGB on semantic segmentation, lane detection, and point cloud colorization, demonstrating substantial improvements over both LiDAR baselines and cameras under diverse lighting conditions. 
+
+# 2 Related Works 
+
+2.1 LiDAR Intensity in Robotic Perception 
+
+LiDAR intensity, representing the surface reflectivity of objects, provides crucial textural informa-tion that complements pure geometric sensing. Intensity data has been combined with geometric cues to enhance loop closure detection, yielding more robust place recognition in large-scale en-vironments [1, 15, 2] as well as reliable terrain and material classification [5, 6]. Furthermore, intensity-enhanced odometry frameworks have integrated intensity images with point cloud regis-tration to maintain localization where geometry alone is insufficient [3, 4, 16]. Despite the demonstrated utility of intensity as a stable texture source, existing methods face two fundamental limitations: dependence on expensive, high-resolution LiDAR for sufficiently dense 2measurements, and the inherently restricted perceptual capacity of single-channel data relative to RGB. These limitations motivate our approach of first densifying sparse intensity into high-resolution images and then translating them into RGB, bridging the gap between low-cost LiDAR and camera-level perception within a unified framework. 
+
+2.2 Cross-Modal Generation for Robotic Perception 
+
+Converting LiDAR intensity images into RGB can be formulated as cross-modal image-to-image translation, requiring faithful preservation of structural layout while synthesizing realistic col-ors and textures. Early efforts predominantly adopted Generative Adversarial Networks (GANs). Pix2Pix [17] established paired conditional translation, while CycleGAN [18] relaxed this to un-paired settings via cycle-consistency. These were extended to LiDAR-to-camera tasks: Cortinhal et al. [7, 19] translated LiDAR scans into panoramic RGB-D images, LiGenCam [8] reconstructed camera views from multimodal LiDAR inputs, and Ha et al. [20] applied colorization and super-resolution to LiDAR imagery for odometry. Despite offering fast inference, GAN-based methods generally suffer from texture hallucinations that undermine physical plausibility [21, 22]. Denoising Diffusion Probabilistic Models (DDPMs) [23, 24] surpass GANs in sample quality and mode coverage through iterative denoising. LDM [25] reduces cost by operating in latent space, while ControlNet [26] and T2I-Adapter [27] enable spatially guided generation from structural in-puts. For cross-modal translation, DCLTV [28] converts active laser images to visible light, and Veila [29] synthesizes LiDAR scenes from monocular RGB. However, iterative sampling poses a critical latency bottleneck. Acceleration methods such as DDIM [30], Consistency Models [31], and LCM [32] reduce step counts but often at the cost of blurred details and structural coherence. Video-to-video synthesis methods offer an alternative paradigm for temporally consistent genera-tion [33, 34, 35]. However, these approaches are ill-suited to robotic deployment: most architectures are non-causal, requiring future frames for coherent generation and thus violating online streaming constraints, while temporal 3D attention combined with multi-step denoising yields per-frame la-tency on the order of seconds [36], far exceeding real-time requirements. To reconcile fidelity with efficiency, Rectified Flow [37] and Schr¨ odinger Bridges [38, 39] learn direct trajectories between source and target distributions rather than mapping from Gaussian noise. Building on this paradigm, our method adopts LBM to establish a deterministic intensity-image-to-RGB mapping. We further integrate temporal attention for inter-frame context and a differentiable reward-guided trajectory op-timization to encourage temporal stability and semantic fidelity—properties that are important for robotic perception but are not explicitly addressed in most prior generative approaches. 
+
+# 3 Methodology 
+
+3.1 Problem Formulation and Pipeline Overview 
+
+Given a temporal sequence of sparse LiDAR intensity scans {xsparse  
+
+> t
+
+}Tt=1 , our goal is to synthesize a corresponding sequence of RGB images {ˆyt}Tt=1 that are structurally aligned with the 3D scene geometry, semantically faithful to the ground-truth appearance, and temporally coherent across con-secutive frames. As illustrated in Fig. 2, the pipeline consists of two stages. In Stage I (Sec. 3.2), a frozen pre-trained densification network Fdense converts each sparse input xsparse  
+
+> t
+
+into a dense intensity image Idense  
+
+> t
+
+.In Stage II (Sec. 3.3), Idense  
+
+> t
+
+is encoded into a source latent zsrc  
+
+> t
+
+= E(Idense  
+
+> t
+
+) via a pre-trained VAE encoder, and the temporal latent bridge module learns a transport trajectory from zsrc  
+
+> t
+
+toward the ground-truth RGB latent zgt  
+
+> t
+
+= E(yt). The final RGB image is decoded as ˆyt = D(ˆ ztgt  
+
+> t
+
+).Throughout this paper, subscript t denotes the frame index and τ ∈ [0 , 1] denotes the continuous time within the ODE-based generative process of a single frame. 
+
+Supervision and Data Pairing. Our dataset combines self-collected sequences and the public dataset M3DGR [40]. Raw LiDAR intensities are projected onto the camera plane via pre-calibrated 3Figure 2: Overview of our proposed framework. (a) Stage I densifies LiDAR intensity image via densification network with AFM and DCM. (b) Stage II transports the dense intensity image latent toward an RGB latent via a 4-step ODE governed by velocity policy vθ , with temporal attention for inter-frame conditioning and a differentiable reward R for end-to-end trajectory optimization. extrinsics, yielding sparse intensity images pixel-aligned and time-synchronized with RGB targets. For training, we curate sequences with minimal dynamic objects to ensure clean supervision; for testing, the moving-object filter of [41] is applied prior to multi-scan fusion to remove motion arti-facts. The train/validation/test sets are split by scene, with no geographic overlap. All training data are captured during the daytime under stable illumination. 
+
+3.2 Stage I: Intensity Image Densification 
+
+As shown in Fig. 3, directly projecting short-duration LiDAR scans yields severe sparsity that makes direct intensity-to-RGB translation ill-posed. Fortunately, NRS-LiDARs steer the beam along non-repeating trajectories, enabling progressive coverage over time [13]. This property allows construct-ing paired sparse–dense training data from stationary accumulation. (A discussion on generalizing densification to other LiDAR types is provided in Appendix A.1.1. ) 
+
+Figure 3: NRS-LiDAR scan accumulation and sparsity challenge. (a) Point cloud progressively accumulates. (b) Accumulated intensity map pro-jected onto the camera viewpoint. (c) LiDAR points projected onto the image plane and col-orized with corresponding camera RGB values. (d) Reference camera image. Comparing (c) and (d) reveals significant texture loss and large spa-tial gaps in short-duration observations. We leverage the densification framework from [13], which adopts a U-shaped encoder-decoder architecture augmented with two task-specific modules: (i) an Adaptive Fusion Mod-ule (AFM) that employs parallel dilated and de-formable convolutions to aggregate multi-scale context, recovering structure in large void re-gions while preserving edges; and (ii) a Dy-namic Compensation Module (DCM) that cal-ibrates the decoder output using geometric cues such as range and incidence angle to produce physically consistent intensity values (details in Appendix A.1.2). The network is supervised by MSE reconstruction loss and trained on the 
+
+Super LiDAR Intensity dataset [13], which pro-vides paired sparse–dense intensity images. In this work, the pre-trained Fdense is used as a frozen module. Given N =5 consec-utive LiDAR scans fused via odometry [42] and projected onto a 2D image plane, it produces a dense intensity image Idense  
+
+> t
+
+=
+
+Fdense (Xsparse ,t ) that captures geometry-consistent texture information. This dense image is then encoded as zsrc  
+
+> t
+
+= E(Idense  
+
+> t
+
+) to initialize Stage II. 43.3 Stage II: Temporal Latent Bridge RGB Synthesis 3.3.1 Preliminaries: Latent Bridge Matching 
+
+Our generative backbone builds upon LBM [14], which learns a direct transport map between two distributions in latent space. Given the source latent zsrc ∼ π0 and the ground-truth RGB latent 
+
+zgt ∼ π1, an intermediate bridge sample is constructed as zτ = (1 −τ ) zsrc + τ z gt + σpτ (1 −τ ) ϵ
+
+with ϵ ∼ N (0 , I ) and σ ≥ 0 controlling stochasticity. A velocity field vθ (zτ , τ, c ) is trained to regress the conditional drift of the bridge process: 
+
+LLBM = Ezsrc , z gt , τ 
+
+"
+
+vθ (zτ , τ, c ) − zgt − zτ
+
+1 − τ
+
+> 22
+
+#
+
+, (1) where τ ∈ [0 , 1] denotes the bridge time. Following [14], we restrict τ during training to only M =4 
+
+equally spaced values that coincide with the inference discretization, acting as implicit distillation and enabling high-quality generation with only 4 Euler steps at test time. 
+
+3.3.2 Temporal Conditioning Mechanism 
+
+Independently generating each frame leads to inter-frame flickering and geometric inconsistency, which degrades sequential robotic perception. We address this by conditioning the velocity field on a generation state st,m = ( zt,m , z src  
+
+> t
+
+, z prev ) at frame t and ODE step m, where zprev is the previous-frame target latent ( zgt  
+
+> t−1
+
+under teacher forcing; ˆztgt  
+
+> t−1
+
+otherwise). For the initial frame, zprev 
+
+is replaced by a learnable null token z∅. This state is injected via two attention mechanisms: (1) Source Cross-Attention injects zsrc  
+
+> t
+
+as key/value into each resolution level of the U-Net, with the current intermediate feature as query, ensuring structural alignment with the input intensity geome-try. (2) Temporal Attention similarly injects zprev as key/value into the cross-attention-enhanced features, promoting color persistence in static regions and smooth transitions in dynamic areas. For-mal definitions of both attention operations are provided in Appendix A.2. 
+
+3.3.3 Differentiable Reward-Guided Trajectory Optimization 
+
+The bridge matching loss (Eq. 1) trains the velocity at arbitrary intermediate states but does not explicitly optimize the terminal output of the multi-step ODE for task-specific objectives. We ad-dress this by treating the velocity field as a velocity policy and introducing a differentiable terminal reward backpropagated through the ODE trajectory. 
+
+Velocity Policy. At the m-th Euler step, the policy predicts: 
+
+zt,m +1 = zt,m + vθ
+
+ zt,m , mM , c t
+
+ ∆τ, m = 0 , . . . , M −1, (2) where ∆τ = 1 /M and ct encodes both source and temporal conditioning. The terminal latent 
+
+ˆztgt  
+
+> t
+
+= zt,M is decoded to produce ˆyt.
+
+Reward Design. The terminal reward combines spatial fidelity with temporal coherence: 
+
+R(t) = ω1Rfid (t) + ω2Rtemp (t), (3) where Rfid (t) = −∥ ˆztgt  
+
+> t
+
+− zgt  
+
+> t
+
+∥22 encourages fidelity, and the temporal continuity reward penalizes abnormal temporal displacement: 
+
+Rtemp (t) = −  ˆztgt  
+
+> t
+
+− zprev 
+
+ −  zgt  
+
+> t
+
+− zgt 
+
+> t−1
+
+ 
+
+> 1
+
+. (4) This formulation preserves real scene motion while suppressing flickering, by matching generated temporal displacement to the ground-truth displacement rather than directly minimizing inter-frame differences (further discussion in Appendix A.3). 
+
+Optimization via Backpropagation Through Time (BPTT). Since the Euler integration (Eq. 2) is fully differentiable, the terminal reward gradient with respect to θ is computed by backpropagation through the M =4 steps, propagating the reward signal to every intermediate velocity prediction. This avoids the high variance of stochastic policy gradient estimators and enables stable optimization of task-level objectives through the generation dynamics. 5Table 1: Quantitative comparison of image translation quality and temporal consistency. The upper block lists baseline methods; the lower block presents our ablation study.                                                                          
+
+> Method Image Translation Quality Temporal Consistency Time (s) ↓
+> PSNR ↑SSIM ↑LPIPS ↓FID ↓MFD ↓FC-MSE ↓FV ↓
+> CycleGAN [18] 14.25 0.452 0.385 138.5 38.56 0.0478 22.35 0.028 Pix2Pix [17] 16.34 0.526 0.318 102.3 31.82 0.0385 17.62 0.022 BBDM [45] 20.12 0.625 0.238 68.5 26.48 0.0312 14.56 2.75 LDM [25] 19.58 0.608 0.252 74.2 33.25 0.0415 18.92 3.28 Ours w/o Densification 11.23 0.312 0.528 185.6 46.72 0.0685 30.15 0.235 Ours w/o Reward Opt. 21.85 0.662 0.205 53.8 15.38 0.0162 7.85 0.212 Ours w/o TC 22.12 0.675 0.192 48.6 22.65 0.0272 12.48 0.193
+> Full (Ours) 22.48 0.692 0.178 43.5 14.25 0.0148 7.12 0.238
+
+3.4 Training Strategy 
+
+Training proceeds in two phases. In Phase 1 , the velocity field is trained with teacher-forced tem-poral conditioning ( zprev = zgt 
+
+> t−1
+
+) using a composite objective: LPhase1 = LLBM + λ1Llpips +
+
+λ2Lgrad + λ3Lcolor , where Llpips is the LPIPS perceptual distance [43], Lgrad enforces edge sharp-ness via Sobel gradient matching, and Lcolor constrains channel-wise color statistics (detailed def-initions in Appendix A.4). In Phase 2 , we augment the objective with the differentiable terminal reward and adopt scheduled sampling, linearly annealing teacher-forcing probability from 1.0 to 0.2 to mitigate exposure bias: 
+
+LPhase2 = LPhase1 − λ4 R(t). (5) The learning rate is reduced by 10 × to preserve the generative prior learned in Phase 1. All hyper-parameters are detailed in Appendix A.4. 
+
+# 4 Experiments 
+
+We evaluate the proposed method from two perspectives: the intrinsic quality of LiDAR intensity image colorization (§4.1), and its practical value in three downstream perception tasks—semantic segmentation (§4.2), traffic lane detection (§4.3), and point cloud colorization (§4.4). All data are collected using a Livox MID-360 mounted on a Giraffe ground robot equipped with an NVIDIA RTX 3090 GPU and an Intel i7-1165G7 CPU. Our dataset contains over 40 sequences totaling more than 30,000 synchronized sparse intensity image–RGB pairs, all at 256 ×455 resolution, split into training/validation/testing at a 6:1:1 ratio (Dataset detail in Appendix B.1). Following LBM [14], we use the frozen pre-trained VAE from SDXL [44] and train Stage II on 2 H800 GPUs. Experiments are conducted under three lighting conditions: Bright (sufficient natural illumination), Low Light (insufficient natural light with artificial sources), and Near Dark (near-total absence of illumination). 
+
+4.1 Evaluation of Temporal Latent Bridge RGB Synthesis 4.1.1 Comparison with Baselines 
+
+We compare against GAN-based methods (CycleGAN [18], Pix2Pix [17]) and diffusion/bridge-based methods (BBDM [45], LDM [25]). All baselines and ablation variants receive the same Stage I densified intensity images as input, ensuring fair comparison. The runtime reported in Table 1 measures Stage II only, while Stage I adds 0.043–0.055s per frame (measured on an NVIDIA RTX 3090 GPU). We evaluate image translation quality via PSNR, SSIM, LPIPS [43], and FID [46], and temporal consistency via Mean Frame Difference (MFD), Flow-Consistency MSE (FC-MSE), and Flicker Variance (FV). As shown in Table 1 and Fig. 4, GAN-based methods yield the lowest quality and worst temporal stability. CycleGAN produces color distortion, while Pix2Pix generates overly blurry outputs. Diffusion-based methods improve perceptual quality but suffer from poor temporal consistency and require multi-step denoising (Detailed in Appendix B.2). 6Figure 4: Qualitative comparison. The top row shows baseline results; the bottom row presents ablation variants. Each group includes the full image at frame N and zoomed-in patches from frames N −2 to N +2 to visualize temporal consistency. Our full model produces the most realistic colors with faithful geometry and strong temporal coherence. 
+
+4.1.2 Ablation Study 
+
+The lower block of Table 1 isolates the contribution of each component. Removing Stage I densifi-cation causes the most severe degradation, confirming it as a fundamental prerequisite for tractable dense-to-dense translation. Removing reward-guided mainly impacts perceptual quality while tem-poral consistency remains largely intact, indicating that the reconstruction-only objective lacks the structural precision provided by reward-driven optimization. Removing the temporal consistency module preserves per-frame quality but nearly doubles MFD, confirming that high single-frame fidelity alone does not guarantee stable sequential outputs. The full model achieves the best perfor-mance across all metrics, confirming the three components are complementary. 
+
+4.2 Semantic Segmentation 
+
+We adopt SAM 2 [47] as the segmentation backbone for all image-based inputs, applied in zero-shot mode with identical manually annotated point prompts per semantic class across all modalities. We additionally include two LiDAR-specific binary ground segmentation methods—Patchwork++ [48] and GroundGrid [49]—whose predictions are mapped to a five-class scheme (Road, Sidewalk, Veg-etation, Building, Lawn). Ground-truth semantic masks are obtained via manual pixel-level anno-tation on co-captured camera images, and the detailed experimental setup and quantitative results are provided in Appendix B.4. As shown in Fig. 5(a), two key findings emerge. First, our colorized images enable SAM 2 to achieve fine-grained multi-class segmentation fundamentally unattainable by LiDAR-only geometric methods—exceeding 64 mIoU across all conditions versus below 48 for point cloud baselines. Applying SAM 2 directly to densified intensity images yields only 35.2 mIoU, indicating that foundation vision models pre-trained on natural RGB imagery generalize poorly to single-channel intensity distributions. Second, our method exhibits strong illumination invariance: camera-based segmentation drops by 59% under Near Dark (from 76.8 to 31.2 mIoU), while ours maintains near-constant performance (mIoU variation <2%). 
+
+4.3 Traffic Lane Detection 
+
+We adopt LaneATT [50] with a ResNet-34 backbone [51], pre-trained on TuSimple [52] and fine-tuned on our domain ( ∼1,300 training images). Three copies of the same pre-trained model are fine-tuned identically: one on camera images, one on densified intensity images, and one on our colorized images. Full experimental setup and quantitative results are provided in Appendix B.5. The intensity-only model achieves reasonable accuracy (93.3%–96.1%) across all lighting condi-tions, confirming that lane markings inherently produce strong reflectance contrast regardless of illu-7Figure 5: Qualitative results of downstream tasks. (a) Left: ground segmentation from Patch-work++ and GroundGrid projected onto the image plane. Right: segmentation across different inputs—camera images degrade under poor lighting, whereas our colorized images maintain consis-tent quality. (b) Reliable lane detection under varying lighting without camera input. (c) Compared to grayscale point clouds, our colorized point clouds exhibit richer texture details. mination. Cyclops further improves performance (accuracy 95.2%–95.8%), as RGB texture features help resolve ambiguous cases such as worn markings or shadow boundaries. Under Bright condi-tions, the camera-based model achieves the highest accuracy (96.5%); however, it degrades severely under Near Dark (accuracy 71.2%), whereas both intensity-only and colorized models maintain sta-ble performance (accuracy >95%). This confirms that material reflectance is the dominant cue and that colorization provides complementary texture features for borderline cases (see Fig. 5.) 
+
+4.4 Point Cloud Colorization 
+
+Since each pixel in the colorized image corresponds to a known 3D LiDAR point via the projec-tion mapping, predicted RGB values can be directly assigned to the original point cloud without additional registration. As shown in Fig. 5(c), our colorized point clouds exhibit significantly richer visual information—object boundaries are sharper, and surface textures become clearly discernible. The pipeline operates solely within the LiDAR coordinate frame, requiring no camera input or LiDAR–camera extrinsic calibration. 
+
+# 5 Conclusion 
+
+We present Cyclops , a framework that synthesizes RGB video from sparse NRS-LiDAR intensity alone, enabling illumination-invariant visual perception. Our two-stage pipeline—intensity image densification followed by LBM with temporal conditioning and differentiable reward-guided trajec-tory optimization—achieves high-fidelity generation, suitable for near-real-time robotic deployment. Experiments demonstrate that the synthesized RGB streams enable standard vision models to sig-nificantly outperform both LiDAR baselines in semantic expressiveness and conventional cameras under adverse lighting, effectively converting a low-cost NRS-LiDAR into an all-day “camera”. 
+
+# 6 Limitations 
+
+Despite the promising results, several limitations remain. The mapping from single-channel inten-sity to three-channel RGB is inherently one-to-many, meaning the model may hallucinate incorrect colors when distinct materials share similar reflectance profiles. This one-to-many ambiguity is a widely recognized challenge faced by most cross-modal generation frameworks. Additionally, in-tensity observations of distant objects remain extremely sparse due to signal decay, causing degraded 8performance in far-field regions. Furthermore, highly dynamic scenes with fast-moving objects or significant ego-motion can lead to degraded colorization quality. We provide a comprehensive dis-cussion of failure cases and dynamic object impact in Appendix B.6. Future work may address these issues by incorporating per-pixel uncertainty quantification, fusing complementary sensor modali-ties, or exploiting auxiliary LiDAR outputs to reinforce generation fidelity. 9References 
+
+[1] T. Shan et al. Robust place recognition using an imaging lidar. In ICRA , pages 5469–5475, 2021. [2] L. Di Giammarino et al. Visual place recognition using lidar intensity. In IROS , pages 4382– 4389, 2021. [3] P. Pfreundschuh et al. Coin-lio: Complementary intensity-augmented lidar inertial odometry. In ICRA , pages 1730–1737, 2024. [4] Y. Zhang et al. Ri-lio: Reflectivity image assisted tightly-coupled lidar-inertial odometry. IEEE RA-L , 8(3):1802–1809, 2023. [5] W. Gao et al. Active loop closure for osm-guided robotic mapping in large-scale urban envi-ronments. In IROS , pages 12302–12309, 2024. [6] K. Viswanath et al. Reflectivity is all you need!: Advancing lidar segmentation. arXiv preprint ,2024. [7] T. Cortinhal, F. Kurnaz, and E. E. Aksoy. Semantics-aware multi-modal domain translation: From lidar point clouds to panoramic color images. In Proceedings of the IEEE/CVF Interna-tional Conference on computer vision , pages 3032–3048, 2021. [8] M. Xu, Y. Gu, I. Goncharenko, and S. Kamijo. Ligencam: Reconstruction of color camera images from multimodal lidar data for autonomous driving. Sensors , 25(14):4295, 2025. [9] Q. Xu, Z. Xu, J. Philip, S. Bi, Z. Shu, K. Sunkavalli, and U. Neumann. Point-nerf: Point-based neural radiance fields. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , pages 5438–5448, 2022. [10] S. Huang, Z. Gojcic, Z. Wang, F. Williams, Y. Kasten, S. Fidler, K. Schindler, and O. Litany. Neural lidar fields for novel view synthesis. In Proceedings of the IEEE/CVF International Conference on Computer Vision , pages 18236–18246, 2023. [11] R. Gao, K. Chen, E. Xie, L. Hong, Z. Li, D.-Y. Yeung, and Q. Xu. Magicdrive: Street view generation with diverse 3d geometry control. arXiv preprint arXiv:2310.02601 , 2023. [12] Y. Wen, Y. Zhao, Y. Liu, F. Jia, Y. Wang, C. Luo, C. Zhang, T. Wang, X. Sun, and X. Zhang. Panacea: Panoramic and controllable video generation for autonomous driving. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 6902–6912, 2024. [13] W. Gao, J. Zhang, M. Zhao, Z. Zhang, S. Kong, M. Ghaffari, D. Song, C. Xu, and H. Kong. Super lidar intensity for robotic perception. IEEE Robotics and Automation Letters , 2026. [14] C. Chadebec, O. Tasar, S. Sreetharan, and B. Aubin. Lbm: Latent bridge matching for fast image-to-image translation. In Proceedings of the IEEE/CVF International Conference on Computer Vision , pages 29086–29098, 2025. [15] Y. Wang et al. Lidar iris for loop-closure detection. In IROS , pages 5769–5775, 2020. [16] W. Du and G. Beltrame. Real-time simultaneous localization and mapping with lidar intensity. 
+
+arXiv preprint arXiv:2301.09257 , 2023. [17] P. Isola, J.-Y. Zhu, T. Zhou, and A. A. Efros. Image-to-image translation with conditional adversarial networks. In Proceedings of the IEEE conference on computer vision and pattern recognition , pages 1125–1134, 2017. 10 [18] J.-Y. Zhu, T. Park, P. Isola, and A. A. Efros. Unpaired image-to-image translation using cycle-consistent adversarial networks. In Proceedings of the IEEE international conference on com-puter vision , pages 2223–2232, 2017. [19] T. Cortinhal and E. E. Aksoy. Depth-and semantics-aware multi-modal domain translation: Generating 3d panoramic color images from lidar point clouds. Robotics and Autonomous Systems , 171:104583, 2024. [20] S. Ha, H. Du, X. Yu, and T. Westerlund. Enhancing lidar point cloud sampling via coloriza-tion and super-resolution of lidar imagery. In 2025 European Conference on Mobile Robots (ECMR) , pages 1–7. IEEE, 2025. [21] T. Park, M.-Y. Liu, T.-C. Wang, and J.-Y. Zhu. Semantic image synthesis with spatially-adaptive normalization. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , pages 2337–2346, 2019. [22] T.-C. Wang, M.-Y. Liu, J.-Y. Zhu, A. Tao, J. Kautz, and B. Catanzaro. High-resolution im-age synthesis and semantic manipulation with conditional gans. In Proceedings of the IEEE conference on computer vision and pattern recognition , pages 8798–8807, 2018. [23] J. Ho, A. Jain, and P. Abbeel. Denoising diffusion probabilistic models. In Advances in Neural Information Processing Systems , volume 33, pages 6840–6851, 2020. [24] J. Sohl-Dickstein, E. Weiss, N. Maheswaranathan, and S. Ganguli. Deep unsupervised learning using nonequilibrium thermodynamics. In International Conference on Machine Learning ,pages 2256–2265, 2015. [25] R. Rombach, A. Blattmann, D. Lorenz, P. Esser, and B. Ommer. High-resolution image syn-thesis with latent diffusion models. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , pages 10684–10695, 2022. [26] L. Zhang, A. Rao, and M. Agrawala. Adding conditional control to text-to-image diffusion models. In Proceedings of the IEEE/CVF International Conference on Computer Vision , pages 3836–3847, 2023. [27] C. Mou, X. Wang, L. Xie, Y. Wu, J. Zhang, Y. Shan, and Y. Li. T2i-adapter: Learning adapters to dig out more controllable ability for text-to-image diffusion models. AAAI Conference on Artificial Intelligence , 2024. [28] X. Zhang, L. Zhang, H. Guo, H. Zheng, H. Sun, Y. Li, R. Li, C. Luan, and X. Tong. Dcltv: An improved dual-condition diffusion model for laser-visible image translation. Sensors , 25(3): 697, 2025. [29] Y. Liu, L. Kong, W. Yang, A. Liang, J. Gao, Y. Wu, X. Xu, X. Li, L. Li, R. Chen, et al. Veila: Panoramic lidar generation from a monocular rgb image. arXiv preprint arXiv:2508.03690 ,2025. [30] J. Song, C. Meng, and S. Ermon. Denoising diffusion implicit models. In International Con-ference on Learning Representations , 2020. [31] Y. Song, P. Dhariwal, M. Chen, and I. Sutskever. Consistency models. In International Con-ference on Machine Learning , pages 32211–32252, 2023. [32] S. Luo, Y. Tan, L. Patil, D. Gu, P. von Platen, A. Passos, L. Huang, J. Li, and H. Zhao. La-tent consistency models: Synthesizing high-resolution images with few-step inference. arXiv preprint arXiv:2310.04378 , 2023. [33] T.-C. Wang, M.-Y. Liu, J.-Y. Zhu, G. Liu, A. Tao, J. Kautz, and B. Catanzaro. Video-to-video synthesis. arXiv preprint arXiv:1808.06601 , 2018. 11 [34] A. Blattmann, R. Rombach, H. Ling, T. Dockhorn, S. W. Kim, S. Fidler, and K. Kreis. Align your latents: High-resolution video synthesis with latent diffusion models. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , pages 22563–22575, 2023. [35] Z. Yang, J. Teng, W. Zheng, M. Ding, S. Huang, J. Xu, Y. Yang, W. Hong, X. Zhang, G. Feng, et al. Cogvideox: Text-to-video diffusion models with an expert transformer. In International Conference on Learning Representations , volume 2025, pages 83048–83077, 2025. [36] J. Ho, T. Salimans, A. Gritsenko, W. Chan, M. Norouzi, and D. J. Fleet. Video diffusion models. Advances in neural information processing systems , 35:8633–8646, 2022. [37] X. Liu, C. Gong, and Q. Liu. Flow straight and fast: Learning to generate and transfer data with rectified flow. arXiv preprint arXiv:2209.03003 , 2022. [38] G.-H. Liu, A. Vahdat, D.-A. Huang, E. A. Theodorou, W. Nie, and A. Anandkumar. I2SB: Image-to-image schr¨ odinger bridge. arXiv preprint arXiv:2302.05872 , 2023. [39] A. Graikos, N. Malkin, N. Jojic, and D. Samaras. Diffusion models as plug-and-play priors. 
+
+Advances in Neural Information Processing Systems , 35:14715–14728, 2022. [40] D. Zhang, J. Zhang, Y. Sun, T. Li, H. Yin, H. Xie, and J. Yin. Towards robust sensor-fusion ground slam: A comprehensive benchmark and a resilient framework. In 2025 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , pages 8894–8901. IEEE, 2025. [41] H. Wu, Y. Li, W. Xu, F. Kong, and F. Zhang. Moving event detection from lidar point streams. 
+
+nature communications , 15(1):345, 2024. [42] W. Xu, Y. Cai, D. He, J. Lin, and F. Zhang. Fast-lio2: Fast direct lidar-inertial odometry. IEEE Transactions on Robotics , 38(4):2053–2073, 2022. [43] R. Zhang, P. Isola, A. A. Efros, E. Shechtman, and O. Wang. The unreasonable effectiveness of deep features as a perceptual metric. In Proceedings of the IEEE conference on computer vision and pattern recognition , pages 586–595, 2018. [44] D. Podell, Z. English, K. Lacey, A. Blattmann, T. Dockhorn, J. M¨ uller, J. Penna, and R. Rom-bach. Sdxl: Improving latent diffusion models for high-resolution image synthesis. In Inter-national Conference on Learning Representations , volume 2024, pages 1862–1874, 2024. [45] B. Li, K. Xue, B. Liu, and Y.-K. Lai. Bbdm: Image-to-image translation with brownian bridge diffusion models. In Proceedings of the IEEE/CVF conference on computer vision and pattern Recognition , pages 1952–1961, 2023. [46] M. Heusel, H. Ramsauer, T. Unterthiner, B. Nessler, and S. Hochreiter. Gans trained by a two time-scale update rule converge to a local nash equilibrium. Advances in neural information processing systems , 30, 2017. [47] N. Ravi, V. Gabeur, Y.-T. Hu, R. Hu, C. Ryali, T. Ma, H. Khedr, R. R¨ adle, C. Rolland, L. Gustafson, et al. Sam 2: Segment anything in images and videos. In International Confer-ence on Learning Representations , volume 2025, pages 28085–28128, 2025. [48] S. Lee, H. Lim, and H. Myung. Patchwork++: Fast and robust ground segmentation solving partial under-segmentation using 3d point cloud. In 2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , pages 13276–13283. IEEE, 2022. [49] N. Steinke, D. Goehring, and R. Rojas. Groundgrid: Lidar point cloud ground segmentation and terrain estimation. IEEE Robotics and Automation Letters , 9(1):420–426, 2023. 12 [50] L. Tabelini, R. Berriel, T. M. Paixao, C. Badue, A. F. De Souza, and T. Oliveira-Santos. Keep your eyes on the lane: Real-time attention-guided lane detection. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , pages 294–302, 2021. [51] K. He, X. Zhang, S. Ren, and J. Sun. Deep residual learning for image recognition. In Pro-ceedings of the IEEE conference on computer vision and pattern recognition , pages 770–778, 2016. [52] TuSimple. Tusimple lane detection challenge. https://github.com/TuSimple/ tusimple-benchmark , 2017. [53] R. Zhang, P. Isola, and A. A. Efros. Colorful image colorization. In European conference on computer vision , pages 649–666. Springer, 2016. [54] Y. Shen, J. Kang, S. Li, Z. Yu, and S. Wang. Style transfer meets super-resolution: Advancing unpaired infrared-to-visible image translation with detail enhancement. In Proceedings of the 31st ACM International Conference on Multimedia , pages 4340–4348, 2023. [55] A. Berg, J. Ahlberg, and M. Felsberg. Generating visible spectrum images from thermal in-frared. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition Workshops , pages 1143–1152, 2018. 13 Appendix Overview This supplementary material is organized into three parts. Appendix A pro-vides additional details on the densification architecture, temporal conditioning, reward-guided op-timization, and training configurations. Appendix B presents dataset details, annotation protocols, baseline analysis, full quantitative results, and limitation discussion. Appendix C includes an ab-lation on inference steps, qualitative results on a public dataset, and visualizations of illumination-invariant colorization under varying lighting conditions. 
+
+# A Supplementary Material: Method Details 
+
+This section supplements the methodology in Section 3, providing extended discussions on Stage I generalization and architecture (Appendix A.1), temporal conditioning formulations (Appendix A.2), reward-guided optimization design (Appendix A.3), and training details (Ap-pendix A.4). 
+
+A.1 Stage I: Intensity Image Densification A.1.1 Generalization to Other LiDAR Types 
+
+Our pipeline is developed and validated on data from a Livox MID-360, a representative non-repetitive scanning (NRS) LiDAR. We select this low-cost NRS sensor primarily because its non-repeating scan trajectory allows dense, high-resolution ground-truth data to be collected effortlessly—the sensor only needs to remain stationary for a short period to accumulate suffi-cient spatial coverage, eliminating the need for expensive terrestrial laser scanners or labor-intensive manual annotation. A natural question is whether the proposed framework can generalize to other LiDAR types, such as conventional spinning LiDARs (e.g., Velodyne, Ouster). 
+
+Densification Stage. For spinning LiDARs, repeated scans from a stationary platform produce nearly identical scan lines due to the fixed repetitive pattern, limiting coverage diversity. However, dense supervision can still be constructed through alternative strategies: (i) leveraging ego-motion during slow driving to obtain parallax-induced coverage augmentation, (ii) fusing multi-beam re-turns across slightly different sensor poses via SLAM-based registration, or (iii) synthesizing dense ground truth from high-resolution terrestrial laser scanning (TLS) co-registered to the spinning Li-DAR frame. Thus, the densification network architecture (U-Net with AFM and DCM) remains applicable; only the training data construction protocol requires adaptation to each sensor’s scan geometry. 
+
+Colorization Stage. The Stage II flow-matching colorization network operates on 2D projected dense intensity images and is independent of the upstream LiDAR type, provided that the densifica-tion stage produces a sufficiently complete intensity image. 
+
+A.1.2 Densification Network Architecture 
+
+The densification network Fdense from [13] adopts a U-shaped encoder–decoder architecture aug-mented with two task-specific modules (as illustrated in Section III.C of [13]): 
+
+Adaptive Fusion Module (AFM). The AFM employs parallel dilated convolutions at varying dilation rates together with deformable convolutions to expand the receptive field and adaptively aggregate multi-scale context. This enables the network to recover structural details in large void regions while preserving high-frequency edges. 
+
+Dynamic Compensation Module (DCM). The DCM takes the decoder prediction together with geometric cues such as range and incidence angle, and produces a physically calibrated dense inten-sity image. This compensates for intensity variations caused by distance-dependent attenuation and surface orientation effects. 14 The network is supervised by an MSE reconstruction loss and trained on the Super LiDAR Intensity 
+
+dataset [13], which provides paired sparse–dense intensity images collected by a stationary Livox MID-360 across 20 urban scenes. 
+
+A.2 Temporal Conditioning: Detailed Formulations Cross Attention (Source Conditioning). At each spatial resolution level of the U-Net, the current intermediate feature h serves as the query, while the source latent zsrc  
+
+> t
+
+provides the key and value: 
+
+h′ = h + CrossAttn( Q = Wq h, K = Wkzsrc  
+
+> t
+
+, V = Wv zsrc  
+
+> t
+
+) , (6) where Wq , Wk, and Wv are learnable projection matrices. Before attention, the feature maps and latent maps are projected into token sequences with matched channel dimensions. This mechanism enables the velocity field to attend to the fine-grained spatial structure of the source intensity at every resolution scale, ensuring that the predicted velocity respects the underlying scene geometry. 
+
+Temporal Attention (History Conditioning). At each resolution level, the cross-attention-enhanced feature h′ serves as the query, while zprev provides the key and value: 
+
+h′′ = h′ + TempAttn  Q = W ′ 
+
+> q
+
+h′, K = W ′
+
+> k
+
+zprev , V = W ′ 
+
+> v
+
+zprev 
+
+ , (7) where W ′ 
+
+> q
+
+, W ′
+
+> k
+
+, and W ′ 
+
+> v
+
+are learnable projection matrices independent of the cross-attention layers. During teacher-forced training, zprev = zgt 
+
+> t−1
+
+; during model-conditioned training and inference, 
+
+zprev = ˆ ztgt 
+
+> t−1
+
+. For the first frame, the temporal attention branch is replaced by the learnable null token z∅, providing neutral temporal context without imposing artificial previous-frame appearance. At test time, no ground-truth RGB frame is used, and the temporal memory is updated autoregres-sively using the previously generated latent. Importantly, the temporal branch acts as an appearance-memory module rather than a pixel-wise fusion module. Since temporal information is injected through attention instead of direct addition or concatenation, the model does not assume exact spa-tial alignment between consecutive frames. The source cross-attention remains responsible for an-choring the generation to the current-frame LiDAR intensity geometry, while temporal attention promotes color persistence and reduces flickering by retrieving relevant appearance cues from the previous target latent. 
+
+A.3 Reward-Guided Trajectory Optimization: Extended Discussion Sequential Decision Process Interpretation. To motivate our reward design, we interpret the intra-frame ODE generation as a sequential decision process: • State : st,m = ( zt,m , z src  
+
+> t
+
+, z prev ), containing the current intermediate latent, the source intensity latent, and the previous-frame target latent at step m.• Action : The velocity prediction at,m = vθ (zt,m , m/M, c t), which determines the latent transition direction and magnitude. • Transition : The deterministic Euler update zt,m +1 = zt,m + at,m ∆τ .• Reward : A terminal reward R(t) evaluated at the final step m = M , assessing the quality of the generated terminal latent ˆztgt  
+
+> t
+
+.Unlike conventional reinforcement learning, which typically relies on stochastic policy gradient estimators to handle non-differentiable dynamics or exploration requirements, our pipeline is fully differentiable. Therefore, the terminal reward can be optimized by direct backpropagation through the deterministic ODE solver, making our approach an instance of differentiable reward-guided trajectory optimization rather than a stochastic RL algorithm. As illustrated in Fig. 2(b), the BPTT signal flows from the terminal reward function back through the entire ODE solver chain (i.e., through all intermediate latent states zt, 0 → zt, 1 → · · · → zt,M ), al-lowing the velocity policy to account for the long-term consequences of its intermediate predictions and to correct trajectory deviations that would otherwise accumulate over multiple integration steps. 15 Importantly, zprev is treated as a fixed conditioning input during backpropagation (i.e., its gradient is detached), so that the BPTT remains confined to the current frame’s M integration steps and does not propagate into the previous frame’s generation chain, thereby avoiding prohibitive memory cost and training instability. 
+
+Temporal Reward Design Discussion. A natural alternative to our temporal reward (Eq. 4 in the main paper) would be to directly minimize ∥ˆztgt  
+
+> t
+
+− ˆztgt 
+
+> t−1
+
+∥, which penalizes all inter-frame changes indiscriminately. However, this would suppress legitimate motion and scene changes, producing overly static outputs. Our formulation instead matches the generated temporal displacement (ˆ ztgt  
+
+> t
+
+− zprev ) to the ground-truth temporal displacement (zgt  
+
+> t
+
+− zgt 
+
+> t−1
+
+). This preserves real scene dynamics while penalizing abnormal flickering or appearance drift that deviates from the true temporal evolution. The zprev term follows the same scheduled-sampling protocol as the temporal attention input: un-der teacher forcing, zprev = zgt 
+
+> t−1
+
+; under model-conditioned training, zprev = ˆ ztgt 
+
+> t−1
+
+. For the first frame of a sequence, the temporal reward is omitted since no valid previous-frame displacement is available. We note that under teacher forcing ( zprev = zgt 
+
+> t−1
+
+), the temporal reward simplifies to Rtemp (t) = 
+
+−∥ ˆztgt  
+
+> t
+
+− zgt  
+
+> t
+
+∥1, which is effectively an L1 fidelity term complementary to the L2-based Rfid . The temporal consistency role of Rtemp is fully realized during model-conditioned training, where 
+
+zprev = ˆztgt  
+
+> t−1
+
+introduces the model’s own prediction errors into the displacement computation, thereby explicitly encouraging the velocity policy to produce temporally coherent trajectories. 
+
+A.4 Training Details Phase 1: Supervised Pre-training. The composite objective is: 
+
+LPhase1 = LLBM + λ1Llpips + λ2Lgrad + λ3Lcolor , (8) where Llpips is the LPIPS perceptual distance [43] computed on decoded outputs. The spatial gra-dient loss is defined as: 
+
+Lgrad = ∥∇ x ˆyt − ∇ xyt∥1 + ∥∇ y ˆyt − ∇ y yt∥1, (9) where ∇x and ∇y denote horizontal and vertical Sobel operators applied to the decoded prediction 
+
+ˆyt and ground truth yt, respectively. The color statistics loss is: 
+
+Lcolor = X
+
+> c∈{ R,G,B }
+
+(|μc(ˆ yt) − μc(yt)| + |σc(ˆ yt) − σc(yt)|) , (10) where μc(·) and σc(·) denote the spatial mean and standard deviation of channel c, preventing global color drift. During this phase, temporal attention uses teacher forcing ( zprev = zgt 
+
+> t−1
+
+). For the first frame of a sequence, the temporal attention branch is replaced by the learnable null token z∅.
+
+Phase 2: Reward-Driven Fine-tuning. After Phase 1 converges, we introduce the terminal re-ward and switch to scheduled sampling. With probability ptf , the temporal attention module receives 
+
+zgt 
+
+> t−1
+
+; with probability 1−ptf , it receives the model’s own prediction ˆztgt 
+
+> t−1
+
+. The teacher-forcing prob-ability is linearly annealed from ptf = 1 .0 to ptf = 0 .2 over the course of Phase 2. The Phase 2 objective is: 
+
+LPhase2 = LPhase1 − λ4R(t), (11) where R(t) = ω1Rfid (t) + ω2Rtemp (t). Since R(t) is defined as a weighted sum of negative distances, minimizing this loss is equivalent to minimizing the terminal fidelity and temporal con-sistency penalties. The learning rate of vθ is reduced by 10 × relative to Phase 1 to preserve the generative prior. Loss weights are set to λ1 = 1 .0, λ2 = 0 .1, λ3 = 0 .05 , λ4 = 0 .8, and reward coefficients to ω1 = 1 .0, ω2 = 0 .5 (tuned on a held-out validation set). 16 Figure 6: Data collection platform. A Giraffe ground robot equipped with a Livox MID-360 LiDAR and a RealSense D435i RGB-D camera. The two sensors are rigidly mounted and extrinsically calibrated. Table 2: Dataset composition by lighting condition and split. Training and validation use only Bright-condition data; Low Light and Near Dark data appear exclusively in the test set. 
+
+Condition Sequences Frames Train / Val / Test 
+
+Bright 34 24,983 18,721 / 3,308 / 2,954 Low Light 4 1,504 — / — / 1,504 Near Dark 5 2,008 — / — / 2,008 
+
+Total 43 28,495 18,721 / 3,308 / 6,466 
+
+# B Supplementary Material: Experimental Details 
+
+This section supplements the experimental evaluation in Section 4 with dataset information, metric definitions, baseline analysis, and full quantitative results. 
+
+B.1 Dataset Details Data Collection. All data are collected using a Livox MID-360 LiDAR and a RealSense D435i camera mounted on a Giraffe ground robot (as shown in Fig. 6). The LiDAR-to-camera extrinsic calibration is obtained via a target-based procedure with sub-pixel reprojection error. The robot traverses environments at walking speed ( ∼0.5–1.5 m/s), covering diverse urban scenes including gardens, libraries, plazas, etc. 
+
+Dataset Component. Table 2 summarizes the dataset composition. Our dataset comprises a total of 43 sequences (28,495 synchronized frame pairs) with three lighting conditions. Bright sequences (34 sequences, including 4 from the public M3DGR dataset [40] captured with the same Livox MID-360 sensor) are captured under clear daytime conditions and are split into training, validation, and test subsets at an approximate 6:1:1 ratio. Night sequences (9 sequences) are further divided into 
+
+Low Light (4 sequences, captured during dusk/dawn or under heavy overcast with artificial street lighting) and Near Dark (5 sequences, captured at night with minimal ambient illumination). The train/val/test split is performed at the sequence level with no geographic overlap: training and test sequences are collected from non-overlapping urban scenes, preventing data leakage through shared scene content. 
+
+Segmentation Annotation Protocol. Ground-truth semantic masks for the segmentation evalua-tion (§4.2) are manually annotated on 1000+ test images using the LabelMe tool. Each image is labeled into five semantic categories: Road , Sidewalk , Vegetation , Building , and Lawn . Annotations are performed at full camera resolution and downsampled to the evaluation resolution ( 256 × 455 )to preserve label boundaries. For the near-dark and low-light conditions, where camera images 17 are severely degraded, annotators additionally refer to co-registered daytime imagery and LiDAR intensity projections to ensure annotation quality. 
+
+Lane Detection Annotation. Lane annotations follow the TuSimple format. A maximum of four lanes per image are annotated. We annotate 1,800 images total (1,300 train / 300 val / 200 test). Since the camera RGB, densified LiDAR intensity image, and predicted RGB are pixel-aligned by construction, a single set of lane annotations suffices for all three modalities, enabling a fair comparison when fine-tuning the lane detection model on each input type independently. 
+
+B.2 Detailed Baseline Analysis 
+
+We provide additional details on each baseline method compared in §4.1. CycleGAN [18] learns unpaired image translation via cycle-consistency loss; the lack of direct supervision leads to color distortion and hallucinated textures, and adversarial training introduces stochastic inter-frame vari-ations. Pix2Pix [17] benefits from paired supervision, which improves structural alignment, but the L1 loss combined with a patch-based discriminator produces overly blurry outputs that lose fine structural details. BBDM [45] formulates translation as a Brownian Bridge diffusion process, achieving the best perceptual quality among baselines; however, stochastic denoising still introduces inter-frame variation. LDM [25] is adapted by concatenating the source latent with the noise input; while outputs are perceptually detailed, independent stochastic sampling per frame yields the worst temporal consistency. 
+
+B.3 Semantic Segmentation B.4 Semantic Segmentation: Detailed Setup and Results 
+
+For image-based methods (SAM 2 with camera, densified intensity, or colorized inputs), predictions are directly compared against the ground-truth masks in image space. For 3D point cloud methods (Patchwork++, GroundGrid), we project their per-point classification results onto the camera im-age plane using the known LiDAR-to-camera extrinsic calibration. Since the projected predictions are inherently sparse, we apply morphological closing followed by largest connected component extraction per class to form dense predicted regions, which are then evaluated against the same ground-truth masks. Pixels that remain unlabeled after this process are excluded from metric com-putation for point cloud methods, ensuring that these methods are not penalized for regions outside their effective sensing coverage. 
+
+Video Point-Prompt Protocol. SAM 2 [47] is evaluated in video-predictor mode rather than in-dependently on each frame. Identical manually annotated point prompts are provided across all modalities only every five frames. For each semantic category present in a prompted keyframe, we annotate 3–8 representative points within the target region. Masks for the intervening unprompted frames are propagated through SAM 2’s temporal memory, and predictions on all frames are evalu-ated against the ground-truth masks. 
+
+LiDAR Method Mapping. Patchwork++ [48] and GroundGrid [49] perform binary ground/non-ground segmentation on 3D point clouds. To incorporate them into our five-class evaluation, we map their outputs as follows: ground predictions are mapped to the union of {Road, Sidewalk, Lawn },and non-ground predictions are mapped to {Vegetation, Building }, since these methods inherently cannot distinguish subclasses within each group (e.g., they cannot differentiate Road from Sidewalk, or Vegetation from Building). 
+
+Full Results. Table 3 presents quantitative segmentation results under three lighting conditions. 18 Table 3: Semantic segmentation results under varying lighting conditions. †Binary ground seg-mentation methods; results mapped to five-class labels (see text above). All methods are evaluated against the same manually annotated pixel-level ground-truth masks.                                                                 
+
+> Method Input Bright Low Light Near Dark
+> mIoU mAcc aAcc mIoU mAcc aAcc mIoU mAcc aAcc Patchwork++ †[48] Point Cloud 44.2 53.5 73.6 44.0 53.2 73.4 43.6 52.8 73.1 GroundGrid †[49] Point Cloud 47.5 56.8 75.8 47.2 56.5 75.5 46.8 56.1 75.2 SAM 2 [47] Densified Intensity Image 35.2 43.8 67.2 35.0 43.5 67.0 34.7 43.2 66.7 SAM 2 [47] Camera 76.8 84.5 92.8 63.5 72.2 86.8 31.2 39.8 63.2 SAM 2 [47] Ours (colorized) 65.8 75.2 86.2 65.2 74.5 85.6 64.5 73.8 85.1
+
+B.5 Traffic Lane Detection: Full Setup and Quantitative Results Model and Training. We adopt LaneATT [50] with a ResNet-34 backbone [51] as the detection model. The model is first pre-trained on the TuSimple benchmark [52], and then fine-tuned on a small set of annotated images from our domain ( ∼1,300 training images, 300 validation images, and 200 test images). To isolate the effect of input modality, we fine-tune three copies of the same pre-trained model: one on camera images, one on densified intensity images, and one on our colorized LiDAR intensity images, using the same annotations and training schedule. 
+
+Evaluation Metrics. Detection performance is evaluated using standard TuSimple metrics: Ac-curacy (the proportion of correctly predicted lane points within a threshold distance), F1 score (har-monic mean of precision and recall at the lane level), False Positive Rate (FPR, proportion of pre-dicted lanes not matching any ground-truth lane), and False Negative Rate (FNR, proportion of ground-truth lanes not detected). Table 4: Traffic lane detection results under different lighting conditions.                                          
+
+> Condition Input Acc.(%) ↑F1(%) ↑FPR(%) ↓FNR(%) ↓
+> Bright Camera 96.5 96.2 3.1 3.5
+> Densified Intensity Image 96.1 95.2 5.2 5.5 Ours (colorized) 95.8 95.4 3.8 4.2 Near Dark Camera 71.2 68.5 16.3 19.8 Densified Intensity Image 93.3 92.5 6.9 6.9 Ours (colorized) 95.2 94.7 4.2 4.8
+> Average Camera 83.9 82.4 9.7 11.7 Densified Intensity Image 94.7 93.9 6.1 6.2 Ours (colorized) 95.5 95.1 4.0 4.5
+
+Full Results. Table 4 presents quantitative traffic lane detection results under three lighting con-ditions with different image types as input. 
+
+B.6 Limitation: Failure Case Analysis 
+
+We identify and analyze the primary failure modes of our pipeline. 
+
+Color Ambiguity from Reflectance Degeneracy. The most fundamental limitation arises from the one-to-many nature of the intensity-to-RGB mapping: physically distinct materials may exhibit nearly identical LiDAR reflectance yet possess different visual appearances. In such cases, the model tends to regress toward the dataset’s modal color for that reflectance range, producing plausible but potentially incorrect colorizations. This ambiguity is a widely recognized challenge shared by cross-modal generation frameworks that synthesize RGB from reduced-channel inputs, including grayscale colorization [53] and infrared-to-visible translation [54, 55]. 19 Figure 7: Qualitative comparison under different numbers of function evaluations (NFE). The model is trained exclusively with M = 4 . From left to right: the ground-truth camera image and outputs with M ∈ { 1, 2, 4}.
+
+Far-Field Degradation. Distant objects suffer from the compounding effects of reduced inten-sity signal and sparser point coverage, leaving residual spatial gaps even after densification. The colorization network consequently produces blurred textures and occasional hallucinated structures, particularly for thin structures (e.g., poles, wires) and small objects (e.g., distant pedestrians). 
+
+Temporal Consistency Breakdown. Despite the temporal attention mechanism and reward-guided optimization, temporal artifacts may still occur under rapid viewpoint changes, rapid ego-motion, or in open scenes with sparse structural context, where the inter-frame correspondence becomes unreliable, and the temporal prior fails to provide effective regularization. 
+
+Downstream Impact and Mitigation. Color ambiguity has limited impact on tasks that rely pri-marily on spatial structure, such as segmentation, but may directly affect tasks that require fine-grained color discrimination (e.g., traffic light recognition). Far-field degradation reduces the ef-fective detection range for tasks like lane detection, though the high reflectance of lane markings partially offsets this effect. We believe that incorporating per-pixel uncertainty estimation, fusing complementary modalities (e.g., thermal cameras), leveraging auxiliary LiDAR channels, and ex-tending the temporal context window may help alleviate these limitations. 
+
+# C Supplementary Experiments Results 
+
+C.1 Ablation on Inference Steps 
+
+Our velocity field is trained with M = 4 equally spaced bridge time steps, which serve as implicit distillation targets (cf. §3.3.1). To examine the model’s sensitivity to inference-time step count, we fix the trained model and vary the number of Euler steps at inference among M ∈ { 1, 2, 4}. As shown in Fig. 7, M = 4 produces the most visually coherent results, while fewer steps lead to progressive degradation in color accuracy and texture sharpness. 
+
+C.2 Performance on Public Dataset Sequence 
+
+To evaluate the generalization ability of our method, we qualitatively test on the GNSS-denial01 and GNSS-denial02 sequences from the public M3DGR dataset [40]. Both sequences are captured in open outdoor environments where LiDAR returns are notably sparser, especially at long range, due to the lack of nearby structures. As a result, the generated images exhibit some degradation in texture detail compared to our self-collected scenes. Nevertheless, as shown in Fig. 8, our method still pre-serves plausible geometric structure and overall scene layout, demonstrating reasonable robustness under challenging sparse-input conditions. 20 Figure 8: An example of consecutive frames generated by our method on the GNSS-denial02 se-quence from the public M3DGR dataset [40]. 
+
+Figure 9: Examples of predicted RGB generated by our method on a low-light sequence. 21 Figure 10: Examples demonstrating that Cyclops generates illumination-invariant RGB images across varying lighting conditions, enabling robust all-day visual perception. 22

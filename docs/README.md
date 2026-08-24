@@ -41,17 +41,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-08-23</span>
+      <span class="dpr-home-dashboard-kicker">2026-08-15 ~ 2026-08-24</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 5 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 26 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
     <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>0</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>5</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>13</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>13</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-08-23 19:33:32 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-08-24 09:59:55 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,7 +62,7 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日共速读5篇论文，无精读；其中《Hydra-0》评分最高（7.0/10），聚焦通用世界建模与控制，值得关注。另两篇分别涉及学习型观测器的稳定性与点云补全任务，可作为扩展阅读。若时间有限，建议优先浏览Hydra-0的动作流方法，并留意其与机器人控制的潜在关联。</p>
+<p>今日聚焦四足机器人跳跃与具身智能动作空间探索，精读两篇高分论文。最值得关注的是《Learning Highly Dynamic Skills Transition》的10.0满分方法及《StructRL》的结构化探索框架。建议优先复现跳跃技能迁移，并关注VLA探索在仿真中的落地验证。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -71,12 +71,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">0 篇</strong>
+    <strong class="dpr-home-dashboard-count">13 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p class="dpr-home-dashboard-empty">今日暂无推荐。</p>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Learning Highly Dynamic Skills Transition for Quadruped Jumping Through Constrained Space">Learning Highly Dynamic Skills Transition for Quadruped Jumping Through Constrained Space</span></li><li><span class="dpr-home-dashboard-paper-title" title="StructRL: Structured Action-Space Exploration for Flow-Based VLAs">StructRL: Structured Action-Space Exploration for Flow-Based VLAs</span></li><li><span class="dpr-home-dashboard-paper-title" title="Accelerating Mixed Discrete-Continuous Motion Planning via Neural Graphs of Convex Sets">Accelerating Mixed Discrete-Continuous Motion Planning via Neural Graphs of Convex Sets</span></li></ul>
   </div>
-
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">rl-motion <strong>8</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>5</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -84,12 +84,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">速读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">5 篇</strong>
+    <strong class="dpr-home-dashboard-count">13 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Hydra-0: Action Flow for Generalist World Modeling and Control">Hydra-0: Action Flow for Generalist World Modeling and Control</span></li><li><span class="dpr-home-dashboard-paper-title" title="Geometry Induced Contraction Degradation and Stabilization of Learning Enabled Observers">Geometry Induced Contraction Degradation and Stabilization of Learning Enabled Observers</span></li><li><span class="dpr-home-dashboard-paper-title" title="ProjFormer: Point Cloud Completion via Geometric-Projective Transformer and Cross-Modal Semantic Constraints">ProjFormer: Point Cloud Completion via Geometric-Projective Transformer and Cross-Modal Semantic Constraints</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="LAPF: LLM-Agent-Based Path Finder Using the UAVScenes Dataset">LAPF: LLM-Agent-Based Path Finder Using the UAVScenes Dataset</span></li><li><span class="dpr-home-dashboard-paper-title" title="Robo-Dopamine 2.0: History-Conditioned and OOD-Aware Process Reward Modeling for Robotic Manipulation">Robo-Dopamine 2.0: History-Conditioned and OOD-Aware Process Reward Modeling for Robotic Manipulation</span></li><li><span class="dpr-home-dashboard-paper-title" title="Some Modifications to Our End-to-End UAV Planner">Some Modifications to Our End-to-End UAV Planner</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">rl-motion <strong>3</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>2</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">rl-motion <strong>8</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>5</strong></span></div>
 </section>
 </div>
 

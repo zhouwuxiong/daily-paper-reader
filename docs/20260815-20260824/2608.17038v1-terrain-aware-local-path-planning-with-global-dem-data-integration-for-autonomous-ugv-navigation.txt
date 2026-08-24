@@ -1,0 +1,377 @@
+Title: Terrain-Aware Local Path Planning with Global DEM Data Integration for Autonomous UGV Navigation
+
+URL Source: https://arxiv.org/pdf/2608.17038v1
+
+Published Time: Wed, 19 Aug 2026 00:08:35 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Terrain-Aware Local Path Planning with Global DEM Data Integration for Autonomous UGV Navigation 
+
+Devender Singh 1, Issah Nazif Suleiman 1, Paul Mitten 2, Glenn Cutler 2, Vinicius Prado da Fonseca 1
+
+and Matthew Hamilton 1
+
+Abstract — Autonomous navigation in complex outdoor ter-rains presents critical challenges for unmanned ground vehicles (UGVs) due to the inherent disconnect between global mapping and real-time sensor feedback. This work proposes a hybrid framework that integrates low-resolution Digital Elevation Model (DEM) data with real-time LiDAR-based obstacle detec-tion and terrain analysis for efficient path planning. A global path is initially computed using a preprocessed DEM-based A* algorithm. Subsequently, local sensor data drives adaptive path correction, enabling the UGV to negotiate sudden environmen-tal changes while maintaining safety and efficiency. Simulation results in Gazebo demonstrate significant improvements over a baseline approach, achieving a 95% obstacle avoidance rate and reducing the average encountered slope from 8◦ to 2.7◦ in custom terrain. This integration enhances path efficiency and terrain traversability and supports robust real-time adaptation, paving the way for more reliable autonomous navigation in dynamic outdoor environments. 
+
+I. I NTRODUCTION 
+
+Path planning and navigation are critical in developing au-tonomous systems, particularly for Autonomous Unmanned Ground Vehicles (UGVs). Improving such systems has a potential impact across various applications, including mil-itary reconnaissance [1], search and rescue operations [2], infrastructure inspection [3], and agricultural monitoring [4]. However, the dynamic nature of outdoor terrains and the complexities of real-world settings demand continuous re-search into robust algorithms that integrate local sensor data with global map information. Recent advancements in navigation algorithms, such as ground segmentation [5], [6] and slope estimation [7], [8], have significantly contributed to the field of autonomous navigation. Combining these techniques can develop a more comprehensive path-planning strategy, incorporating envi-ronmental awareness to evaluate slopes, determine optimal turning angles, and assess terrain characteristics within a robot’s field of view. This integration enhances the decision-making process in dynamic environments, improving the adaptability and intelligence of autonomous systems. Despite these advancements, several challenges persist. Many existing systems cannot adapt to sudden environmen-tal changes, such as moving obstacles, in real-time [1]. Additionally, there remains a trade-off between safety and efficiency, with current frameworks often prioritizing one at the expense of the other. Furthermore, the scarcity of hybrid approaches that combine automated path planning  
+
+> 1Department of Computer Science, Memorial University of Newfound-land, St. John’s, NL, Canada
+
+vpradodafons@mun.ca  
+
+> 2Compusult Ltd., St. John’s, NL, Canada
+> Fig. 1. Local path planning with global DEM data integration. (a) The global cost map path generated from SRTM-based elevation data. (b) Local Path Planning Region (30m) extracted from the global map for finer trajectory adjustments. (c) Rviz visualization of real-time LiDAR-based obstacle detection and path correction. (d) Gazebo simulation demonstrating the UGV avoiding obstacles in a dynamic environment (right) compared to the baseline where UGV gets stuck (left)
+
+with comprehensive terrain analysis limits the effectiveness of robotic navigation in complex terrains. Fig. 1 provides an overview of this study, which tackles these challenges by introducing a hybrid framework that seamlessly integrates global satellite-derived Digital Eleva-tion Model (DEM) data with real-time sensor information. Specifically, the present work explores two critical research questions: (1) How can local sensor data seamlessly integrate with global DEM maps to improve navigation through con-tinuous cost map updates? (2) How does this automated path planning compare to other navigation approaches regarding efficiency, safety, and accuracy? By addressing these ques-tions, this research aims to enhance theoretical frameworks for autonomous systems, bridging the gap between global planning and local execution to enable robust and efficient navigation in challenging outdoor environments. The main aspects of our proposed pipeline are described in Fig. 2. The pipeline begins with global processing (Fig. 2a), where DEM data is preprocessed to generate a global cost map representing large-scale terrain features. Using this cost map, an optimal trajectory is computed via A* path planning (Fig. 2b). A selected region from this trajectory is then zoomed in for further refinement (Fig. 2c), enabling detailed arXiv:2608.17038v1 [cs.RO] 17 Aug 2026 Fig. 2. (a) Global Processing: Acquisition of DEM data, preprocessing, and generation of the global cost map; (b) Global Path Planning: Optimal trajectory determination using A*; (c) Zoomed-in view of the global cost map, highlighting a selected region for local path refinement; (d) Local Path Correction: Integration of real-time sensor (LiDAR) data for ground segmentation, obstacle detection, and dynamic trajectory adjustment within the selected region. 
+
+analysis at a finer resolution. Finally, real-time sensor data is integrated to perform local path corrections through ground segmentation, obstacle detection, and dynamic trajectory adjustments (Fig. 2d). In summary, the main contributions of this work are:  
+
+> •
+
+We introduce a hybrid framework that integrates low-resolution DEM data with real-time local sensor in-formation for robust UGV navigation in challenging outdoor terrains.  
+
+> •
+
+We develop a cost map generation scheme that balances slope and elevation, augmented by penalties for extreme elevations, ensuring safer route selection.  
+
+> •
+
+We present a local path correction mechanism using LiDAR-based ground segmentation, slope estimation, and adaptive obstacle avoidance.  
+
+> •
+
+We validate our approach in simulation, demonstrating improved obstacle avoidance (95% detection rate) and lower average slopes (2.7 ◦ vs. 8◦) compared to abaseline. The next section reviews existing literature and identifies research gaps. Section III presents the details of our hybrid framework, including global path planning and local correc-tions. Section IV describes the simulation environment, ex-perimental setup, and evaluation metrics. Section V discusses the results and compares our method to a baseline approach. Finally, Section VI concludes the paper by summarizing the key findings and outlining future research directions. II. R ELATED WORKS 
+
+Autonomous navigation for UGVs has been a subject of extensive research, focusing on enhancing path planning, ob-stacle avoidance, and terrain adaptability. Significant strides have been made in global path planning, local refinement, and segmentation techniques; however, challenges remain in seamlessly integrating these components into a unified, robust framework. Classical path-planning algorithms, such as A* and Dijk-stra’s, have long been the foundation of global navigation systems due to their efficiency and optimality in structured environments [9]. Although these methods excel in well-defined settings, they struggle in unstructured terrains with dynamic obstacles and environmental variability. More recent approaches, such as Rapidly-Exploring Random Trees (RRT) and Hybrid Potential-Based Probabilistic Roadmaps (HP-PRM), offer improved flexibility for dynamic path planning but often face computational inefficiencies and heuristic reliance in large-scale environments [10]. Although heuristics help reduce complexity, they can lead to suboptimal solutions in complex or noisy environments, especially when real-time sensor data and environmental nuances are not adequately captured [11]. Moreover, these methods typically require extensive parameter tuning and domain expertise, limiting their robustness in novel sce-narios. Despite these advancements, there is limited focus on integrating real-time local sensor data to refine paths generated from global maps. Obstacle avoidance has been extensively studied, with LiDAR-based segmentation [12] and visual-based detection methods such as YOLO [13] being widely adopted. These methods demonstrate high accuracy in identifying static and dynamic obstacles but often fail to adapt to terrain-specific challenges such as negative obstacles, including pits and ditches. Recent work on traversability estimation, such as the G-VOM system, combines voxel-based mapping with obstacle detection and slope analysis, enabling off-road navigation [14]. However, these approaches frequently lack integration with global path-planning strategies, leaving room for improvement in balancing local adaptability with global efficiency. Slope estimation is another crucial aspect of autonomous navigation, particularly in off-road conditions. Traditional methods typically rely on gradient-based calculations over static grids, which often fail to capture the complexities of rugged and sloped terrains [8]. Advanced approaches employing plane fitting and historical slope data analysis [15] provide better accuracy, but their real-time applicability in dynamic environments remains limited. Furthermore, the ab-sence of adaptive thresholding mechanisms in these systems restricts their ability to generalize across varying terrains. Local path refinement techniques, such as Simultaneous Localization and Mapping (SLAM) with cost map updates, have shown promise for dynamically adjusting paths based on real-time sensor data [16]. However, most SLAM-based methods prioritize local consistency at the expense of main-taining global path alignment, resulting in suboptimal navi-gation outcomes in larger, complex environments. This gap highlights the need for a hybrid approach that combines global optimization with local refinement. Despite significant advancements in individual aspects of navigation, few studies provide a unified framework that integrates global path optimization, real-time segmentation, obstacle avoidance, slope estimation, and dynamic local refinement. As shown in Table I, our approach bridges these gaps by seamlessly combining global and local components, enabling robust navigation across diverse terrains and dy-namic conditions. In summary, while existing approaches have made sub-stantial contributions to individual aspects of autonomous navigation, the integration of these components into a co-hesive system remains underexplored. Our work addresses this limitation by introducing a framework that combines the strengths of global optimization, real-time terrain analysis, and adaptive local path refinement to enable efficient and safe navigation in complex environments.                          
+
+> TABLE I COMPARISON OF OUR APPROACH WITH RELATED WORKS
+> Reference OA SE RTS GPO LPR
+> [1] ✓
+> [14] ✓✓
+> [8] ✓
+> [15] ✓
+> [5] ✓✓
+> [6] ✓
+> [9] ✓✓
+> [10] ✓
+> Our Approach ✓✓✓✓✓
+
+III. M ETHODOLOGY 
+
+This section describes our hybrid framework for UGV navigation that integrates global path planning using low-resolution DEM data with real-time local path corrections. The methodology comprises three main components: global path planning, local path correction and planning, and dy-namic adjustments for integration of global and local paths. 
+
+A. Global Path Planning 
+
+The global path planning module uses preprocessed Shut-tle Radar Topography Mission (SRTM) 1 Arc-Second Global DEM data (GeoTIFF format from USGS Earth Explorer) to generate an initial trajectory over a large-scale terrain centered on St. John’s, Newfoundland and Labrador, Canada. While SRTM’s 30 m resolution provides broad terrain trends, it cannot capture fine-grained obstacles (e.g., rocks, ditches, pits) or rapid elevation changes—a limitation addressed through our local correction framework. In this study, the area of interest (AOI) is defined as a circular region with radius rm = 1000 m . The processing pipeline consists of the following steps: 
+
+1) DEM Preprocessing: To define the region of inter-est (ROI), we use the center coordinates ϕc = 47 .4870 ◦
+
+(latitude) and λc = −52 .8629 ◦ (longitude). The metric conversion factors for latitude and longitude are given by 
+
+mϕ = 111320 m/deg and mλ = 111320 cos ϕc m/deg. Using these, the angular extents of the ROI are computed as ∆ϕ = rm/m ϕ and ∆λ = rm/m λ.From these values, the latitude and longitude limits are determined as ϕmin = ϕc − ∆ϕ, ϕmax = ϕc + ∆ ϕ, λmin =
+
+λc − ∆λ, and λmax = λc + ∆ λ. The DEM data within these bounds is cropped, interpolated to a finer resolution, and normalized to produce a 3D surface representation, z(x, y ),which serves as the basis for subsequent cost calculations. 
+
+2) Cost Map Generation: Using the normalized elevation function z(x, y ), the local slope magnitude is computed as 
+
+s(x, y ) = 
+
+s ∂z (x, y )
+
+∂x 
+
+2
+
++
+
+ ∂z (x, y )
+
+∂y 
+
+2
+
+. (1) The cost function is defined by 
+
+C(x, y ) = ws s(x, y ) + wz z(x, y ), (2) where the weights ws = 1.0 and wz = 0.5 have been chosen empirically to balance the influence of slope and elevation. An adaptive penalty P = 10 is applied to elevation extremes to incorporate a slight cost bias against extreme low-lying areas to avoid potential flood-prone or unsafe regions. This ensures the UGV avoids areas where elevation extremes may indirectly compromise safety, even if slopes are manageable [17]. Finally C(x, y ) is normalized to [0 , 1] 
+
+standardizing cost aggregation for path planning step. The 30 m DEM resolution inherently limits cost map fidelity, as seen in Figure 2(c), where elevation thresholds ( zH , zL)smooth over sub-resolution terrain variations. This necessi-tates local sensor-driven refinements during navigation. 
+
+3) Path Generation: The A* algorithm computes the optimal path by minimizing cumulative costs derived from the DEM. The trajectory prioritizes safety-critical factors encoded in the cost map, such as steep slopes and elevation-linked hazards, ensuring adherence to the UGV’s mechanical and operational limits. 
+
+B. Local Path Correction and Planning 
+
+To refine the global path for small-scale, uncertain ter-rains, a local correction module is employed. This module uses real-time sensor data to dynamically adapt the path to ensure stable traversal across varying surface conditions. The process involves: 1) Real-time LiDAR Data Processing : Segmentation of terrain features using Ground Plane Fitting (GPF) and RANSAC. 2) Slope Estimation and Adaptive Traversability Anal-ysis : Evaluation of terrain slopes with dynamic thresh-olding. 3) Obstacle Avoidance and Adaptive Steering : De-tection of pits, bumps, and obstacles with turning decisions guided by distribution-based analysis. This approach ensures that the UGV navigates diverse terrains effectively, avoiding hazards while maintaining an optimized local path. 
+
+1) Real-Time LiDAR Data Processing: Real-time LiDAR point cloud data is segmented into ground and non-ground points using a hybrid Ground Plane Fitting (GPF) approach combined with iterative RANSAC. The process is as follows: Fig. 3. Visualization of ground (blue points) and non-ground (red points) segmentation from LiDAR data, along with the final path direction (green marker) as visualized in RViz. This image illustrates the result of our local path correction approach, where the UGV dynamically adjusts its trajectory to avoid nearby obstacles and maintain safe navigation through complex terrains.  
+
+> •
+
+Initial Ground Seed Extraction: The lowest NLPR =250 points in the cloud (sorted by elevation) form the low point reference (LPR). Points within τseed = 0 .8 mabove the LPR are selected as initial ground seeds.  
+
+> •
+
+Iterative Plane Fitting: A plane is fitted to the current ground seeds using RANSAC. In each iteration, the estimated plane is defined as 
+
+n · x + d = 0 (3) where n is the estimated normal vector and d is the offset. The absolute distance from every point in the cloud to the plane is calculated. Points with a distance less than the threshold τdist = 0 .1 m are classified as ground. These points form a refined seed set for the next iteration. This iterative procedure is typically repeated for 3 iterations to improve robustness.  
+
+> •
+
+Ground and Non-Ground Classification: After refine-ment, points consistently within τdist of the plane are classified as ground, while the rest are labeled as non-ground (obstacles). These thresholds were empirically selected for robustness against noise and terrain varia-tions. 
+
+2) Slope Estimation and Adaptive Traversability Analysis: 
+
+The UGV estimates the current slope, denoted as θcurrent ,using the ground plane normal ⃗n and the vertical axis ⃗z =[0 , 0, 1] T :
+
+θcurrent = arccos 
+
+⃗ n ·⃗z
+
+∥⃗n∥∥ ⃗z∥
+
+
+
+. (4) We maintain a sliding window s of the most recent N = 40 
+
+slope measurements to capture typical variations in terrain over time. After inserting θcurrent into s (and removing the oldest slope if |s| > N ), we compute the mean and standard deviation: 
+
+μθ = mean( s), σθ = std( s). (5) 
+
+Dynamic Thresholds. We define two slope thresholds based on the distribution of recent slopes: 
+
+τwarn = μθ + σθ , τcrit = μθ + 3 σθ . (6)  
+
+> •
+
+τwarn flags when θcurrent exceeds one standard deviation above the mean, indicating steeper terrain than usual.  
+
+> •
+
+τcrit (three standard deviations above the mean) covers roughly the top 0.15% of expected slopes in a normal distribution, signaling extremely steep terrain. Algorithm 1 summarizes this procedure, showing how slope history is tracked and how the UGV’s response es-calates with increasingly steep terrain. 
+
+Algorithm 1 Slope Estimation and Adaptive Traversability Analysis 
+
+Require: Ground plane normal ⃗ n, vertical axis ⃗ z =[0 , 0, 1] T , sliding window of slopes s (size N = 40 ) 
+
+> 1:
+
+Compute current slope: 
+
+θcurrent ← arccos 
+
+⃗n·⃗z
+
+> ∥⃗n∥∥ ⃗z∥
+
+ 
+
+> 2:
+
+Append θcurrent to s. If |s| > N , remove the oldest measurement.  
+
+> 3:
+
+Compute mean and std: 
+
+μθ ← mean( s), σθ ← std( s) 
+
+> 4:
+
+Set dynamic thresholds: 
+
+τwarn ← μθ + σθ , τcrit ← μθ + 3 σθ 
+
+> 5:
+
+if θcurrent > τ crit then  
+
+> 6:
+
+Emergency maneuver (halt + high-turn escape or halt then back up)  
+
+> 7:
+
+else if θcurrent > τ warn then  
+
+> 8:
+
+Obstacle avoidance (Section III.B.3)  
+
+> 9:
+
+else  
+
+> 10:
+
+Continue nominal motion  
+
+> 11:
+
+end if 
+
+3) Obstacle Avoidance and Adaptive Steering: To ro-bustly avoid obstacles, the UGV leverages non-ground points (obtained from LiDAR segmentation) to model terrain irreg-ularities—such as pits and bumps—as bump distributions. In our UGV coordinate frame, let x denote the forward distance and y the lateral displacement. The obstacle width is defined as: 
+
+Wpit = ymax − ymin , (7) where ymax and ymin are the maximum and minimum lateral positions of the detected non-ground points. The closest approach is quantified by: 
+
+Dpit = min {x}, (8) Fig. 4. Height distribution from terrain in Figure 4(c) as observed by the UGV. The blue histogram shows that most obstacle heights cluster near –0.50 m, with a right tail extending into positive values. The green dashed line indicates the median (–0.45 m) and the red dashed line shows the mean (–0.30 m), confirming a right-skewed distribution ( S > 0). 
+
+with x measured in meters. We model the height profile of the obstacle as a probability density function (PDF) h(x), where h(x) represents the height (positive for bumps, negative for pits) at a given forward position x. The statistical properties of h(x)—its mean μh, median, and standard deviation σh—are computed from the detected points. Pearson’s skewness coefficient is then defined as: 
+
+S = 3( μh − median (h)) 
+
+σh
+
+. (9) An empirically determined threshold τ = 0 .2 is used to classify the distribution: if |S| ≥ τ , the distribution is considered skewed; otherwise, it is assumed to be symmetric (normal). 
+
+Turning Decision:  
+
+> •
+
+Case 1: Skewed Distribution (|S| ≥ τ ): Turn =
+
+(Left , if S > 0,
+
+Right , if S < 0. 
+
+> •
+
+Case 2: Normal Distribution (|S| < τ ): The obstacle is sampled on both sides. Let hL and hR denote the median heights of the obstacle points on the left and right sides, respectively. Then, Turn =
+
+(Right , if hL > h R,
+
+Left , if hL < h R.
+
+Trajectory Correction and Command Adjustment: Af-ter the turning direction is determined, the UGV computes the required turning angle as 
+
+θturn = arctan 
+
+ Wpit 
+
+Dpit 
+
+
+
+(10) The angular velocity command is then given by 
+
+ω = sgn (S) · min 
+
+
+
+ωmax , ω base · θturn 
+
+
+
+, (11) where ωbase and ωmax denote the nominal and maximum turn rates, respectively. Concurrently, the UGV dynamically adjusts its linear velocity to maintain stability. If Dpit falls below a critical threshold (e.g., 0.5 m ), an emergency escape maneuver is triggered: 
+
+v = vmax , ω = 5 ωbase . (12) This framework enables the UGV to make rigorous, data-driven decisions for obstacle avoidance and adaptive steering in complex, dynamic terrains. Figure 3 illustrates the result of our local path correction module. The visualization shows segmented ground points (blue), non-ground points (red), and the final path direction (green marker) as determined by in-tegrating real-time LiDAR data processing, slope estimation, and obstacle avoidance. 
+
+C. Dynamic Path Adjustment 
+
+While the local path planning module ensures obstacle avoidance and traversability, the UGV must also maintain alignment with its desired trajectory. Dynamic path adjust-ment is implemented as a corrective control mechanism that continuously refines the UGV’s movement, ensuring it returns to the intended path after deviations. The system monitors the vehicle’s lateral displacement relative to the desired trajectory (assumed to be along y = 0 )and applies proportional angular corrections based on the computed error. This correction is governed by: 
+
+ωcorr = kp · tan −1(yerror ) (13) where ωcorr is the angular correction, kp is a proportional gain, and yerror represents the lateral deviation from the target path. To prevent excessive oscillations, the angular correction is constrained within a maximum bound: 
+
+ω = max( −ωmax , min( ωmax , ω corr )) (14) The UGV continues moving forward at a predefined linear velocity while applying steering corrections. If the lateral deviation is within a predefined threshold, no correction is applied. This ensures that the vehicle follows the smoothest possible trajectory with minimal deviations. Additionally, an override mechanism is incorporated to al-low external modules to disable path correction when higher-priority navigation commands, such as obstacle avoidance, take precedence. This prevents conflicts between multiple navigation strategies and maintains a balance between path adherence and obstacle responsiveness. IV. S IMULATION AND EXPERIMENTAL SETUP 
+
+A. Simulation Environment 
+
+Our experiments were conducted in a simulated environ-ment generated using Blender. The terrains were either pro-cedurally generated or handcrafted to include a wide variety of challenging features, such as deep pits, steep slopes, and non-rough, uneven surfaces. Specific test scenarios included: Fig. 5. (a) UGV navigating a flat terrain while detecting and avoiding an obstacle (here a pit). The trajectory taken by the UGV is indicated with the blue arrow avoiding the obstacle in its view. (b) UGV traversing a rugged landscape with visible obstacles (pits). The illustration highlights adaptive path planning and obstacle avoidance using our algorithm in action on rough terrain. (c) UGV navigating over a slope, illustrating its capability to handle inclines. The figure depicts how using our algorithm, UGV detects the bump and the adjustments made to avoid and maintain stability.   
+
+> Fig. 6. Side-by-side comparison of the real Compusult Ltd.’s Nanuk UGV (left) and its ROS model derived from the URDF file (right). This comparison demonstrates the fidelity of our simulation model for sensor integration and navigation evaluation.
+> •
+
+Pits and Negative Obstacles : Terrains with abrupt depressions and holes to evaluate the UGV’s ability to detect and avoid pitfalls.  
+
+> •
+
+Steep Slopes and Hills : Gradual and extreme inclines were incorporated to test slope estimation, traversability analysis, and emergency maneuvers.  
+
+> •
+
+Non-Rough Terrain : Planar regions with no obstacles. 
+
+B. Evaluation Metrics 
+
+We evaluate our approach using three key metrics: 
+
+1) Path Efficiency:  
+
+> •
+
+Total Path Length : Measures the distance traveled relative to the optimal global path, where longer paths imply detours for obstacle avoidance.  
+
+> •
+
+Execution Time : Captures the total navigation duration, highlighting the balance between safety and efficiency. 
+
+2) Safety:  
+
+> •
+
+Obstacle Clearance : The minimum distance from ob-stacles during navigation, with higher clearances indi-cating safer paths.  
+
+> •
+
+Slope Traversability : Assessed by the average slope encountered; lower slopes suggest better hazard avoid-ance. 
+
+3) Accuracy:  
+
+> •
+
+Path Deviation : The lateral error from the planned global trajectory, where smaller deviations reflect more accurate navigation.  
+
+> •
+
+Success Rate : The fraction of trials in which the UGV reaches its destination without collisions. 
+
+C. Implementation Details 
+
+Our implementation is built upon the Robot Operating System (ROS) framework. The system comprises two pri-mary modules:  
+
+> •
+
+Local Path Correction and Obstacle Avoidance: AROS node processes real-time LiDAR data to segment ground from non-ground points using a hybrid Ground Plane Fitting (GPF) with iterative RANSAC. It esti-mates terrain slopes, detects hazards (e.g., pits, steep slopes), and computes turning commands. Emergency maneuvers are triggered when slopes exceed critical thresholds.  
+
+> •
+
+Dynamic Path Adjustment: A separate ROS node monitors the UGV’s odometry to compute lateral devi-ation from the desired trajectory (assumed along y = 0 )and applies a proportional controll steering.An override signal is used to disable path correction during active obstacle avoidance. The system was validated in Gazebo, where the UGV model was spawned with Blender-generated terrains. Sen-sor integration, including LiDAR for local perception and odometry for state estimation, was managed via ROS topics. Custom Python scripts enabled safe navigation while fol-lowing the global path. The simulation includes Compusult Ltd.’s Nanuk UGV URDF for realism. Figure 6 compares the actual Nanuk UGV with its ROS model. V. R ESULTS AND DISCUSSION 
+
+A. Performance Metrics 
+
+We evaluate our approach using efficiency, safety, and accuracy metrics. Experiments were conducted on two terrain types: (i) non-rough, obstacle-free terrain and (ii) challenging terrain with steep slopes and pits. Table II summarizes the performance of our method versus a baseline straight trajectory. 
+
+TABLE II PERFORMANCE COMPARISON OF OUR APPROACH VERSUS THE BASELINE UNDER VARYING TERRAIN CONDITIONS . NB:* — N OT APPLICABLE                      
+
+> Metric Our Approach Baseline
+> Non-Rough Obstacle Non-Rough Obstacle Avoidance Rate (%) *95 *0Average Slope (°) 0.7 2.7 0.7 8Time to Goal (s) 43 77 43 Stuck Path Deviation (m) 04.25 0Stuck
+
+B. Comparison with Baseline 
+
+Our approach offers notable advantages over the baseline:  
+
+> •
+
+Obstacle Avoidance Rate (%): Our approach achieves an obstacle avoidance rate of 95% in challenging (ob-stacle) scenarios, effectively detecting and avoiding pits and steep slopes. In contrast, the baseline approach shows an avoidance rate of 0% under the same condi-tions. For non-rough terrain, this metric is not applicable (denoted as “*”) for both methods.  
+
+> •
+
+Average Slope (°): On non-rough terrain, both methods maintain an average slope of 0.7°. However, in the presence of obstacles, our method reduces the average encountered slope to 2.7° compared to 8° for the baseline, indicating better management of steep terrain.  
+
+> •
+
+Time to Goal (s): Both approaches take 43 seconds to reach the goal on non-rough terrain. Under challenging conditions, our approach requires 77 seconds—an ac-ceptable increase given the environmental complexity, whereas the baseline becomes stuck.  
+
+> •
+
+Path Deviation (m): On non-rough terrain, both meth-ods exhibit zero deviation. In obstacle scenarios, our approach shows a 4.25 m deviation as it maneuvers around hazards, while the baseline again becomes stuck .These results show that while the baseline performs well in simple environments, it fails in challenging conditions. In contrast, our approach enhances safety and robustness by detecting obstacles, avoiding hazards, and maintaining a lower slope, despite increased execution time and path deviation. VI. C ONCLUSION AND FUTURE WORK 
+
+This study presents a hybrid UGV navigation framework that integrates global satellite-derived DEM data with real-time local sensor information. It combines global terrain mapping with dynamic local path correction to enhance navigation in challenging outdoor environments. The system initially plans a trajectory using low-resolution DEM data, avoiding high-elevation regions, and then refines the path using local sensors to detect rough terrain, obstacles, and pits. Results show significant improvements in navigation effi-ciency, safety, and accuracy, with a 95% pit detection rate (vs. 0% baseline) and a reduction in average slope from 8° to 2.7°. While the approach leads to a higher path deviation (4.25 m vs. 0 m baseline), this trade-off enhances obstacle detection and safe traversal. Future work includes field trials on Compusult Ltd.’s Nanuk UGV models to validate real-world performance, in-tegrating multi-resolution DEM data for improved planning, and exploring reinforcement learning for adaptive decision-making. These advancements aim to bridge the gap between simulation and real-world deployment. REFERENCES [1] T. Zhang, J. Fan, N. Zhou, and Z. Gao, “Highly self-adaptive path-planning method for unmanned ground vehicle based on transformer encoder feature extraction and incremental reinforcement learning,” 
+
+Machines , vol. 12, no. 5, p. 289, 2024. [2] N. Karapetyan, A. B. Asghar, A. Bhaskar, G. Shi, D. Manocha, and P. Tokekar, “Ag-cvg: Coverage planning with a mobile recharging ugv and an energy-constrained uav,” in 2024 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2024, pp. 2617–2623. [3] S. T. Nguyen, A. Q. Pham, C. Motley, and H. M. La, “A practical climbing robot for steel bridge inspection,” in 2020 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2020, pp. 9322–9328. [4] R. R. Shamshiri, C. Weltzien, I. A. Hameed, I. J. Yule, T. E. Grift, S. K. Balasundram, L. Pitonakova, D. Ahmad, and G. Chowdhary, “Research and development in agricultural robotics: a perspective of digital farming,” International Journal of Agricultural and Biological Engineering , vol. 11, no. 4, pp. 1–14, 2018. [5] U. Ulusoy, O. Eren, and A. Demirhan, “Development of an obstacle avoiding autonomous vehicle by using stereo depth estimation and artificial intelligence based semantic segmentation,” Engineering Ap-plications of Artificial Intelligence , vol. 126, p. 106808, 2023. [6] J. Li, H. Dai, H. Han, and Y. Ding, “Mseg3d: Multi-modal 3d semantic segmentation for autonomous driving,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition ,2023, pp. 21 694–21 704. [7] M. Chen, L. Xiong, and L. Gao, “Real-time road slope estimation based on gnss/ins fusion system considering slope change,” SAE International Journal of Advances and Current Practices in Mobility ,vol. 6, no. 2023-01-7043, pp. 2628–2637, 2023. [8] A. Broggi, E. Cardarelli, S. Cattani, and M. Sabbatelli, “Terrain mapping for off-road autonomous ground vehicles using rational b-spline surfaces and stereo vision,” in 2013 IEEE Intelligent Vehicles Symposium (IV) . IEEE, 2013, pp. 648–653. [9] D. Khalidi, D. Gujarathi, and I. Saha, “T: A heuristic search based path planning algorithm for temporal logic specifications,” in 2020 IEEE International Conference on Robotics and Automation (ICRA) ,2020, pp. 8476–8482. [10] A. A. Ravankar, A. Ravankar, T. Emaru, and Y. Kobayashi, “Hpprm: hybrid potential based probabilistic roadmap algorithm for improved dynamic path planning of mobile robots,” Ieee Access , vol. 8, pp. 221 743–221 766, 2020. [11] C. Wilt and W. Ruml, “Effective heuristics for suboptimal best-first search,” Journal of Artificial Intelligence Research (JAIR) , vol. 57, pp. 273–306, 2016. [12] T. Gomes, D. Matias, A. Campos, L. Cunha, and R. Roriz, “A survey on ground segmentation methods for automotive lidar sensors,” 
+
+Sensors , vol. 23, no. 2, p. 601, 2023. [13] J. Redmon, S. Divvala, R. Girshick, and A. Farhadi, “You only look once: Unified, real-time object detection,” in Proceedings of the IEEE conference on computer vision and pattern recognition , 2016, pp. 779– 788. [14] T. Overbye and S. Saripalli, “G-vom: A gpu accelerated voxel off-road mapping system,” in 2022 IEEE Intelligent Vehicles Symposium (IV) .IEEE, 2022, pp. 1480–1486. [15] G. Shetty, S. Hossain, C. Hu, and X. Lin, “Road slope prediction and vehicle dynamics control for autonomous vehicles,” arXiv preprint arXiv:2210.05741 , 2022. [16] G. Bresson, Z. Alsayed, L. Yu, and S. Glaser, “Simultaneous localiza-tion and mapping: A survey of current trends in autonomous driving,” 
+
+IEEE Transactions on Intelligent Vehicles , vol. 2, no. 3, pp. 194–220, 2017. [17] D. C. Guastella, L. Cantelli, C. D. Melita, and G. Muscato, “A global path planning strategy for a ugv from aerial elevation maps for disaster response.” in ICAART (1) , 2017, pp. 335–342.

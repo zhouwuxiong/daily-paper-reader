@@ -1,0 +1,749 @@
+Title: LAPF: LLM-Agent-Based Path Finder Using the UAVScenes Dataset
+
+URL Source: https://arxiv.org/pdf/2608.15175v1
+
+Published Time: Tue, 18 Aug 2026 00:36:02 GMT
+
+Number of Pages: 15
+
+Markdown Content:
+> 1
+
+# LAPF: LLM-Agent-Based Path Finder Using the UAVScenes Dataset 
+
+Yousef Emami, Senior Member, IEEE, Mohammadhossein Homaei, Senior Member, IEEE, Hao Zhou, Senior Member, IEEE, Miguel Guti´ errez Gait´ an, Senior Member, IEEE, and Atefeh Hajijamali Arani, Member, IEEE, 
+
+and Rui Zhang, Fellow, IEEE, 
+
+Abstract —Unmanned aerial vehicles (UAVs) are increasingly deployed for autonomous navigation in complex outdoor environ-ments, where dynamic conditions and mission requirements re-quire intelligent adaptive decision-making. Existing optimization-based, Machine Learning (ML), and Reinforcement Learning (RL) approaches often rely on predefined models or task-specific training, limiting their generalization and adaptability in uncertain scenarios. Recent Large Language Model (LLM)-assisted approaches offer promising reasoning capabilities but remain constrained by limited agentic functionality, including insufficient memory, planning, and tool interaction mechanisms. This paper proposes an LLM-Agent-Based Path Finder (LAPF) framework for autonomous UAV navigation in town-scale outdoor environments. LAPF extends LLM-assisted navigation by inte-grating perception, memory, planning, and action modules into a closed-loop cognitive architecture. The proposed agent leverages prior navigation experiences, performs Chain-of-Thought (CoT) reasoning, couples each detected hazard to a bounded corrective action, and dynamically refines waypoint decisions based on environmental feedback. The three independent trials per method demonstrate that LAPF achieves mean path lengths of 512 .83 mand 506 .37 m compared to the straight-line optimum 497 .33 mcorresponding to path length reductions of 17 .2% and 15 .6% 
+
+relative to CoT prompting and absolute path efficiencies of 
+
+97 .1% and 98 .1% in open-field and obstacle-injected scenarios, respectively. Furthermore, LAPF is the only evaluated approach that couples every detected hazard to a bounded, metric-neutral corrective action while maintaining near-goal stability with zero clamp events in both scenarios, whereas CoT prompting increases from 9.7 to 14 .0 events. 
+
+Index Terms —UAV Navigation, Large Language Model Agents, Vision-Language Models, Episodic Memory, Chain-of-Thought Reasoning, Tool-Augmented Reasoning, Multimodal Perception 
+
+I. I NTRODUCTION 
+
+Uncrewed Aerial Vehicles (UAVs) provide three-dimensional mobility, dynamic Line-of-Sight (LoS) establishment, and high data throughput, making them suitable for operation in complex outdoor environments such as public safety, environmental monitoring, agriculture, and parcel delivery [1], [2]. Their ability to dynamically adjust trajectories according to mission requirements enables flexible coverage in dense urban areas where terrestrial infrastructure may be obstructed or unavail-able. Furthermore, UAVs can serve as aerial base stations, data collectors, relay platforms, and sensing nodes, extending their role from simple transportation platforms to intelligent networked systems [3]. UAV navigation and communication 
+
+Copyright (c) 2026 IEEE. Personal use of this material is permitted. However, permission to use this material for any other purposes must be obtained from the IEEE by sending a request to pubs-permissions@ieee.org. LLM Prompting vs. LLM Agent                   
+
+> Control – Autonomy scale
+> Each mode maps onto
+> ①Standalone Prompting — single pass, no correction
+> ②LLM Agent — closed loop
+> Contrasted with
+> Prompt LLM Answer
+> Task /
+> Mission Plan Action Environment /
+> Outcome
+> Update plan
+> High human control
+> Low autonomy
+> Low human control
+> High autonomy
+> Fig. 1: Architectural comparison between standalone LLM prompting and LLM agents. Conventional prompting (top) executes asingle prompt-to-answer pass without au-tonomous correction capabilities. In contrast, the LLM agent (bottom) establishes a closed-loop system via an internal Plan →Action cycle and an Update plan feedback mechanism. As illustrated on the right, these paradigms map directly onto a control-autonomy scale, highlighting the trade-off between direct human control and system autonomy.
+
+systems have traditionally relied on optimization-based meth-ods and, more recently, Machine Learning (ML) and Reinforce-ment Learning (RL) approaches to address challenges such as trajectory planning, resource allocation, and autonomous decision-making [4]. Although these methods have achieved significant progress, their effectiveness is often limited by predefined system models, task-specific training requirements, and insufficient generalization to dynamic and uncertain envi-ronments. In particular, emergency response, cooperative UAV networking, and large-scale autonomous operations require decision-making mechanisms that can rapidly adapt to changing conditions without extensive retraining or manual redesign. Large Language Models (LLMs) have recently demonstrated remarkable capabilities in reasoning, contextual understanding, and task automation across domains such as finance, healthcare, and networking [5], [6]. Techniques like In-Context Learning (ICL) and Chain-of-Thought (CoT) reasoning [7] enable LLMs to solve complex tasks by leveraging contextual information and structured reasoning processes. These emerging capabilities have motivated their exploration in UAV and autonomous sys-tem applications [8], [9]. However, directly applying standalone LLMs to UAV navigation remains challenging due to three fundamental limitations: 1) Multimodal perception gap : Conventional text-based LLMs cannot directly interpret heterogeneous UAV sen-sory inputs, including RGB images, LiDAR point clouds, depth information, and 6-Degrees of Freedom (DoF) localization data, which are critical for reliable naviga-tion. Addressing this gap requires a backbone capable of ingesting visual evidence natively, together with an interface that renders the non-visual channels in a form arXiv:2608.15175v1 [cs.RO] 15 Aug 2026 2
+
+the backbone can reason over [10]. 2) Limited agentic capabilities : Autonomous UAV opera-tion requires memory, adaptive planning, long-term spa-tial reasoning, and continual interaction with the environ-ment, which are beyond the capabilities of conventional single-pass LLM prompting [11]. 3) Lack of tool integration : Practical navigation relies on external modules, including simulators, obstacle detection systems, localization tools, and trajectory planners. Stan-dalone LLM prompting lacks mechanisms for reliable tool invocation and closed-loop execution [12]. Moreover, existing UAV navigation approaches based on optimization, ML, and RL often require extensive environ-ment modeling or task-specific training, offer limited inter-pretability, and struggle to integrate heterogeneous perception information into a unified decision-making framework [13], [14]. These limitations motivate the development of more flexible cognitive architectures capable of combining percep-tion, reasoning, memory, and action. LLM agents offer apromising solution by extending conventional LLMs with ad-ditional cognitive modules, including memory, planning, tool use, and action execution. As illustrated in Fig. 1, unlike standalone prompting approaches that perform a single prompt-to-response operation, LLM agents establish a closed-loop in-teraction process consisting of perception, reasoning, planning, execution, and feedback-based refinement. Such architectures enable autonomous systems to adapt their decisions based on environmental changes, retrieve prior experiences, and interact with external computational resources. Therefore, LLM agents provide a potential pathway toward intelligent UAV navigation with enhanced situational awareness, cross-layer coordination, and long-horizon decision-making capabilities. Nevertheless, several challenges remain, including reliable reasoning, real-time operation, domain-specific adaptation, and integration with existing UAV control frameworks [12], [15], [16]. Motivated by these opportunities, this work proposes the LLM-Agent-Based Path Finder (LAPF), a cognitive navigation framework for UAVs designed to enable adaptive waypoint generation and autonomous replanning. LAPF is evaluated using the UAVScenes dataset [17], whose town-scale out-door sequences provide a realistic evaluation environment for multimodal UAV perception and navigation. UAVScenes is a multimodal UAV perception benchmark combining RGB images, LiDAR, 6-DoF poses, semantic labels, and 3D maps. It supports diverse tasks such as segmentation, localization, place recognition, depth estimation, and novel view synthesis. The dataset enables evaluation of advanced learning-based and LLM-assisted UAV navigation systems. The LAPF agent integrates perception, memory, planning, and action modules to perform CoT reasoning, retrieve previous navigation ex-periences, invoke external tools such as obstacle checkers and trajectory validators, and generate candidate waypoints. During execution, newly observed environmental changes can trigger autonomous replanning, enabling continuous refine-ment of navigation decisions through a closed-loop percep-tion–reasoning–action process. The main contributions of this paper are summarized as follows:  
+
+> •
+
+LAPF, an LLM-agent-based autonomous UAV naviga-tion framework, extends conventional LLM prompting by integrating multimodal perception, episodic memory, and tool-enforced action within a closed-loop architec-ture. It grounds reasoning in UAVScenes observations by combining native RGB input to an open-weight Vision-Language Model (VLM) with symbolic LiDAR and 6-DoF pose representations in a single inference call. Running entirely on a consumer laptop, LAPF demonstrates that its performance gains stem from the agent architecture rather than a proprietary backbone. The framework lever-ages memory and external tools for adaptive waypoint generation, safety validation, and trajectory refinement. Its two-tier Action module guarantees safety-critical hazard checks at every decision step while allowing discretionary tool use, ensuring hazards always trigger corrective ac-tions, a reliability capability absent in prompting-only methods. Consequently, LAPF enables adaptive percep-tion–reasoning–action cycles without requiring additional model fine-tuning.  
+
+> •
+
+The effectiveness of LAPF is validated on the UAVScenes AMtown03 sequence under open-field and obstacle-injected scenarios. Using the same Qwen2-VL-7B [18] backbone and identical multimodal observation sequences for all methods, LAPF reduces mean path length by 17 .2% 
+
+and 15 .6% relative to CoT prompting across the two scenarios, reaches path efficiencies of 97 .05% and 98 .09% 
+
+respectively, and maintains zero near-goal clamp events in both, indicating that its advantage is preserved rather than eroded as environmental complexity increases. The remainder of this paper is organized as follows. Sec-tion II reviews related work. Section III describes the system model, and Section IV formulates the path-planning objective. Section V details the proposed LAPF framework. Section VI presents the numerical results and discussion. Finally, Sec-tion VII concludes the paper. II. R ELATED WORK 
+
+This section reviews classical UAV path-planning ap-proaches, recent LLM-agent frameworks for wireless networks, and emerging LLM-assisted UAV navigation methods. Finally, we identify the limitations of existing approaches and highlight the research gap that motivates the proposed LAPF framework. 
+
+A. Classical Path Planning 
+
+Iwashina et al. [19], Sui et al. [20], and Kuang et al. [21] study UAV path planning in urban environments, focusing on safety, efficiency, and autonomy. Iwashina et al. propose a V2X-based dynamic risk map with RRT for collision-aware navigation in changing urban conditions. Sui et al. apply RRT to obstacle-dense environments and demonstrate faster computa-tion, greater adaptability, and smoother paths compared with A* 3TABLE I: Comparative Analysis of LAPF Against Related UAV and LLM-Agent Frameworks                                                                                                                                 
+
+> Framework Domain Multimodal Input Explicit Memory Tool Use Fine-tuning Required UAV-specific Real Sensor Fusion
+> [19] Urban UAV safety path planning ✓×××✓×
+> [20] Urban UAV obstacle avoidance ××××✓×
+> [21] Urban UAV reconstruction ✓×××✓✓
+> [22] Risk-aware UAV path planning ✓×××✓×
+> [23] UAV optimization-based path planning (LGPSO) ××××✓×
+> [24] GNSS-aware urban UAV navigation ✓×××✓✓
+> [13] Wireless slicing ×✓✓×××
+> [25] Wireless multi-task optimization ×××✓××
+> [26] 6G network engineering ×✓✓✓××
+> [27] Wireless agent benchmark ××✓–××
+> [8] LLM-UAV general framework ––––✓–[28] UAV scheduling ××××✓×
+> [29] UAV trajectory and velocity optimization ××××✓×
+> [30] UAV AoI and flight resource allocation ××××✓×
+> [31] UAV autonomous navigation (AutoFly) ✓××✓✓✓
+> [32] UAV outdoor VLN (FreeFly-thinking) ✓××✓✓×
+> [33] Self-evolving VLN (SE-VLN) ✓✓×✓××
+> LAPF (this work) UAV navigation ✓✓✓×✓✓††Real recorded UAVScenes streams. The RGB frame is consumed natively by the VLM backbone; the LiDAR return and 6-DoF pose enter as a symbolic state at the perception interface. “–” denotes not reported or not applicable.
+
+and ACO. Kuang et al. develop a framework for real-time urban mapping that combines path generation, height estimation, SLAM-based image acquisition, and coverage prediction to improve reconstruction quality and reduce operational time. Hu et al. [22] suggest a comprehensive UAV risk assessment framework for safe urban operations by quantifying collision risks involving people, vehicles, and manned aircraft. Their approach integrates risk costs into UAV path planning by generating risk maps and optimizing flight trajectories. Cheng et al. [23] present an improved particle swarm optimization-based UAV path planning algorithm (LGPSO) to address limitations of traditional PSO, such as convergence to local optima and instability in complex urban environments. By incorporating safety constraints, stochastic inertia weights, asymmetric learn-ing factors, L´ evy flight strategies, and a greedy evaluation mechanism, the proposed method enhances path optimization and search efficiency. Zhang et al. [24] address the challenge of Global Navigation Satellite System (GNSS) positioning errors in urban UAV operations caused by multipath effects and Non-Line-of-Sight (NLOS) conditions. They propose a risk-aware path planning approach that predicts GNSS errors using ray-tracing simulations and 3D building models, then integrates the predicted positioning error into an enhanced A* path planning algorithm. The results show that accounting for localization uncertainty during route planning enables UAVs to select safer paths with fewer positioning errors compared with conventional distance-based planning methods. 
+
+B. LLM Agent for Wireless Networks 
+
+Tong et al. [13] introduce WirelessAgent, an LLM-agent framework for intelligent wireless network management built on four modules: perception, memory, planning, and action. Us-ing LangGraph-based agent workflows, it enables autonomous decision-making and achieves higher bandwidth utilization than prompt-based methods while approaching the performance of rule-based optimization. Yu et al. [25] present WirelessLLM-Agent, a multi-task wireless optimization framework that uses semantic state serialization and Mixture-of-Experts (MoE)-LoRA for efficient knowledge sharing. A two-stage training strategy that combines supervised fine-tuning with Group Rel-ative Policy Optimization (GRPO)-based RL improves long-term decision-making. Chen et al. [26] develop 6GAgentGym and 6G-Forge, a closed-loop tool-based environment for train-ing and evaluating wireless agents through NS-3 simulations, enabling small open-source models to achieve competitive performance on long-horizon 6G tasks. To address the limi-tations of existing benchmarks, Tong et al. [27] introduce a tolerance-aware benchmark covering reasoning, resource allo-cation, and mobility-aware decisions, with tool-based evalua-tion and catastrophic-error detection to identify practical agent failures. 
+
+C. LLMs for UAV Networks 
+
+Emami et al. have investigated the integration of LLMs with UAV networks through a series of contributions that establish a foundation for intelligent UAV decision-making. In their survey [8], they present a unified framework for LLM-assisted UAV systems, summarizing existing architectures, methodologies, and applications, and highlighting the potential of LLMs as high-level reasoning modules for autonomous aerial networks. Building on this perspective, they propose ICL-based solutions 4
+
+for UAV missions, including Search-and-Rescue (SAR) oper-ations, where LLM-assisted scheduling enables adaptive data collection by jointly considering dynamic channel conditions, battery constraints, and queue states [28]. Extending the role of LLMs from task scheduling to real-time control, they fur-ther investigate public safety applications by employing LLM-assisted ICL for UAV trajectory planning and adaptive velocity control [29]. To address freshness-aware sensing scenarios, they introduce FRSICL, an online resource allocation framework that integrates LLM-assisted reasoning with optimization tech-niques to jointly determine data collection schedules and UAV velocities, thereby minimizing the average Age of Information for ground sensors [30]. Beyond pure LLM-assisted reasoning, recent works have explored the integration of multimodal foundation models to enable UAVs with richer perception and embodied intelligence. Sun et al. [31] introduce AutoFly, an end-to-end Vision-Language-Action (VLA) model that enables UAVs to navigate unknown environments using coarse guidance rather than pre-defined trajectories. By incorporating pseudo-depth spatial rea-soning, progressive multimodal training, and a real-world au-tonomous navigation dataset, AutoFly improves UAV decision-making and achieves a 3.9% higher success rate than existing VLA baselines. Similarly, Zhou et al. [32] suggest an end-to-end Vision-Language Navigation framework that enables UAVs to perform outdoor navigation through explicit reason-ing over visual observations and language instructions. Their framework combines a dedicated UAV navigation dataset with CoT reasoning and a two-stage training strategy consisting of supervised fine-tuning and reinforcement learning, improving robustness and generalization in unseen environments. Going beyond static model deployment, Dong et al. [33] introduce a self-evolving Vision-Language Navigation framework that allows agents to continuously improve during testing through experience-driven learning. By integrating hierarchical memory, retrieval-augmented reasoning, and reflection mechanisms, their approach enhances long-term adaptation and achieves signifi-cant performance improvements in unseen environments. In contrast, among the reviewed approaches, LAPF com-bines explicit memory, tool-enforced action, and no fine-tuning requirement. It is also grounded in multimodal UAV data (RGB, LiDAR, and 6-DoF pose) from a real-world UAV dataset (UAVScenes), rather than synthetic states. The re-viewed wireless-domain agents show the value of memory and tool use. However, they lack multimodal grounding and aerial safety-critical design. UAV-specific LLM works avoid fine-tuning through prompting alone, but lack both memory of prior outcomes and a tool-use path to act on an unsafe classification. LAPF’s Action module addresses this gap. Clas-sical planners remain efficient for narrowly defined geometric objectives, such as risk-aware navigation, obstacle avoidance, and coverage mapping. They do not natively interpret natural-language mission intent, retain memory across missions, or jointly reason over heterogeneous constraints without planner redesign. LAPF is designed to complement rather than replace LLM Agent — iterative planning via reasoning  
+
+> UAVScenes Dataset
+> Multimodal input
+> RGB images | LiDAR point clouds | 6-DoF poses Memory External tools
+> Navigation decisions
+> (waypoint sequence)
+> UAV
+> Reason about scene Plan candidate waypoint
+> Refine plan iterate
+> Fig. 2: A typical UAV path planning pipeline with LLM agents. The agent receives multi-modal input from the UAVScenes dataset and, through an iterative Reason →Plan →Refine reasoning cycle, leverages external tools and memory in a bidirectional exchange to generate the UAV’s navigation decisions, one waypoint per decision step.
+
+classical planners. Overall, the reviewed literature reveals a consistent gap: existing LLM-agent frameworks are either agentic but domain-general (equipped with memory and/or tool use, but validated on wireless network management rather than physical navi-gation, and without multimodal sensor grounding), or UAV-specific but architecturally shallow (effective at single-shot or in-context optimization of scheduling and trajectory parameters, but reliant on prompting alone, with no persistent memory of past navigation outcomes and no enforced mechanism to translate a detected hazard into corrective action). To the best of our knowledge, few UAV navigation systems combine mul-timodal grounding, episodic memory, and tool-enforced safety control in a unified LLM-agent architecture. LAPF is designed to address this gap by combining these capabilities within a closed-loop UAV navigation architecture. Table I provides a comparative analysis. III. S YSTEM MODEL 
+
+This section presents the system model of the proposed LAPF framework for UAV navigation. The system consists of a single UAV equipped with a multi-modal sensor suite, an onboard or edge-based LLM agent, with the UAVScenes dataset serving as the source of environmental observations for evaluation, as depicted in Fig. 2. The proposed LAPF enables adaptive path planning through closed-loop interaction between the UAV and the LLM agent. The UAV is equipped with a synchronized camera–LiDAR configuration, matching that used in UAVScenes and compris-ing a Livox-Avia LiDAR and a high-resolution RGB camera (2448 ×2048 pixels at 10 Hz) as used in UAVScenes. This com-bination provides dense 2D texture information and accurate 3D spatial measurements. The system also includes GNSS/in-ertial measurement unit (IMU) measurements with Real-time Kinematic (RTK) support, which contributes to 6-DoF pose estimation (3-DoF position and 3-DoF orientation). All sen-sor streams are hardware-synchronised to produce frame-wise aligned image–LiDAR pairs. The UAV operates in environments represented in the UAVScenes dataset, which include towns, valleys, airports, 5
+
+and islands. However, extension to dense urban environments remains future work because UAVScenes currently does not in-clude high-rise buildings, narrow streets, and pedestrian crowds. The UAV is equipped with:  
+
+> •
+
+An RGB camera capturing high-resolution images ( 2448 ×
+
+2048 pixels) at 10 Hz, synchronized with the LiDAR.  
+
+> •
+
+A Livox Avia LiDAR sensor providing frame-wise 3D point clouds at 10 Hz.  
+
+> •
+
+A hardware-synchronized camera-LiDAR suite ensuring pixel-wise alignment via pre-calibrated extrinsics.  
+
+> •
+
+An onboard localization system that supplies 6-DoF poses, reconstructed using structure from motion (SfM) in DJI Terra and refined from the original 4-DoF GNSS/RTK data. These sensors generate multi-modal observations at each time step t, denoted as: 
+
+Ofull  
+
+> t
+
+= {I t, Pt, Dt, St, Lt} (1) where  
+
+> •
+
+It is the RGB image.  
+
+> •
+
+Pt is the raw LiDAR point cloud (Livox Avia, after noise filtering).  
+
+> •
+
+Dt is the dense depth map derived from projecting Pt onto the image plane using the known calibration.  
+
+> •
+
+St is the semantic segmentation mask, comprising 16 static classes (e.g., road, building, and vegetation), 2 dynamic object classes (sedan and truck only; pedestrians and other small dynamic objects are not annotated), and 1 background class – for a total of 19 classes. Annotations are provided for both the image and the LiDAR point cloud on a per-frame basis.  
+
+> •
+
+Lt is the 6-DoF pose (x, y, z, ψ, θ, ϕ ) (position and Eu-ler angles) reconstructed via SfM and aligned with the 3D map. The median positional accuracy on benchmark splits is approximately 6.1 m for state-of-the-art methods, indicating that the benchmarked methods do not achieve submeter localization accuracy. Eq. (1) specifies the full sensor suite available in UAVScenes; the subset instantiated in this work is denoted by Ot and defined in (2), as summarized in Table II. The three instantiated channels reach the backbone through two distinct pathways. The RGB frame It is registered, time-matched and resampled to 1024 ×768, and is then passed natively to the VLM backbone as an image input, so that visual scene evidence is available to the reasoning stage without an intermediate captioning step. The LiDAR point cloud and the pose, by contrast, are not visual quantities and are rendered symbolically: Pt enters through the summary statistic σt of (3) rather than as raw points, and the pose enters as Lt. Fusion of the visual and symbolic pathways therefore occurs inside the backbone at inference time, whereas the LiDAR return is reduced to a geometric abstraction at the interface. This separation is deliberate: it keeps the safety-critical clearance test of (5) on a deterministic geometric channel, independent of the backbone’s visual inference, while                                  
+
+> TABLE II: Instantiation of the system model in the present implementation
+> Symbol System model Instantiation
+> ItRGB image Passed natively to the VLM backbone at 1024 ×768; regis-tered and time-matched
+> PtRaw point cloud Entered via the summary σt,(3)
+> Lt6-DoF pose Pose (Rt, p t)with the time-matched RTK fix
+> DtDense depth map Not fused (future work)
+> StSemantic mask Not fused (future work)
+> MtEpisodic memory k=3 most recent episodes, recency-based
+> htHazard indicator ⊮[ct≤dsafe ], (5)
+> RCorrective operator Deterministic contraction to-ward pgoal , (6)
+
+still exposing the scene appearance to the planner. The dense depth map Dt and semantic mask St, although annotated in UAVScenes, are not supplied in this work. IV. P ROBLEM FORMULATION 
+
+This section formulates the UAV navigation problem ad-dressed by LAPF. We first define the observation model and se-quential decision process, followed by the memory-conditioned decision policy and the enforced hazard-response mechanism. Finally, we present the optimization objective and the perfor-mance metrics used to evaluate the proposed framework. This paper aims to minimize the projected mission length 
+
+eL of (10) while ensuring an enforced hazard response during autonomous navigation in the considered environment. The pro-posed LAPF leverages multimodal environmental information obtained from the UAVScenes dataset, including RGB images, summarized LiDAR returns, and 6-DoF localization states, to enable path planning through an LLM-assisted autonomous agent. The UAV agent dynamically reasons about obstacle dis-tributions, traversability conditions, localization confidence, and mission objectives to generate adaptive navigation trajectories. 
+
+A. Decision Process and Observation Model 
+
+The mission is modelled as a discrete-time, partially ob-servable sequential decision process over a horizon Tmax . At decision step t the agent holds a commanded state wp t ∈ R3,initialized at wp 0 = p0, and receives an observation 
+
+Ot = It, σ t, Lt , (2) where It is the RGB frame, Lt = ( Rt, p t) ∈ SE (3) is the 6-DoF pose, and σt is a compact statistic of the LiDAR return, 
+
+σt =  nt, r min  
+
+> t
+
+, r max  
+
+> t
+
+, b min  
+
+> t
+
+, b max  
+
+> t
+
+, c t
+
+, ct = min  
+
+> i
+
+xi, (3) in which xi is the boresight coordinate of return pi, nt
+
+is the return count, [rmin  
+
+> t
+
+, r max  
+
+> t
+
+] are the bounds of the Eu-clidean range, [bmin  
+
+> t
+
+, b max  
+
+> t
+
+] are the lateral bounds in the plane orthogonal to the boresight, and ct is the smallest boresight coordinate. Since ct ≤ ∥ pi∥ for the corresponding return pi,
+
+ct lower-bounds the Euclidean range. The test in (5) is therefore conservative by construction and cannot under-declare a hazard. 6EXTERNAL TOOL            
+
+> SUITE
+> RGB Frame
+> native image input
+> LiDAR Point Cloud
+> Geometric Summary
+> point count, clearance,
+> range and lateral bounds
+> Symbolic State
+> rendered
+> Pose and RTK Fix
+> Episodic Memory
+> three most recent episodes:
+> waypoint, outcome, reflection
+> Performance Feedback trailing path-length window
+> Planning Chain-of-Thought
+> reasoning over image,
+> state, memory, feedback
+> Structured Output
+> thought, proposed
+> waypoint, tool calls
+> Tier
+> 1: Guaranteed
+> Clearance below
+> safety threshold?
+> Corrective Replan bounded,
+> deterministic step toward the goal
+> Stability Clamp limits step size
+> near goal
+> yes
+> no
+> Tier 2:
+> Discretionary.
+> Waypoint adjustment
+> requested?
+> Proposed waypoint
+> Hold
+> Position
+> Executed
+> Waypoint
+> Execute Waypoint
+> appended to
+> trajectory log
+> Outcome
+> Reflection
+> thought versus
+> outcome
+> memory update
+> Store
+> Episode
+> next
+> decision
+> step
+> Next Observation
+> recorded stream,
+> cycled
+> NATIVE IMAGE BLOCK
+> text block, same call
+> Obstacle
+> Checker
+> instantiated,
+> guaranteed
+> Waypoint
+> Adjuster
+> instantiated,
+> discretionary
+> visual pathway, native image block symbolic pathway, text block dashed: feedback, or defined but not instantiated
+> tool calls
+
+Start point 
+
+WP 
+
+1
+
+WP 
+
+0
+
+WP 
+
+... 
+
+WP 
+
+N Safety 
+
+> threshold
+> Clearance
+
+GOAL 
+
+> Recorded stream,
+> one frame per decision step
+
+UAV SURVEY AND COMMANDED WAYPOINT SEQUENCE 
+
+> 1. PERCEPTION
+> 2. COGNITIVE NAVIGATION CORE
+> open-weight vision-language backbone,
+> single inference call
+> 3. ACTION
+> two-tier shielded policy
+> 4. EXECUTION AND CLOSED-LOOP
+> UPDATE
+> hazard
+> no hazard
+
+Fig. 3: Overview of the proposed LAPF framework. The observation reaches the backbone through two distinct pathways: the RGB frame is passed natively as an image block and is never textualized, whereas the LiDAR return and the pose are reduced to a symbolic state; fusion of the two pathways occurs inside the backbone at inference time, within a single multimodal call. The two-tier Action module evaluates the clearance test with guaranteed invocation at every decision step, so that a registered violation is always coupled to a bounded corrective replan, which is metric-neutral by construction; the discretionary tier remains under agent authority. 
+
+The Livox-Avia unit in UAVScenes is nadir-mounted and hardware-aligned with the RGB camera, so ct is the clearance between the platform and the nearest surface below it. Across the evaluated sequence the returns span a 77 ◦ cone, matching the nominal sensor field of view, and the boresight coordinate is tightly concentrated within each frame, as expected for a downward survey over near-planar terrain. The sequence is flown at survey altitude throughout, and the sensed clearance ct
+
+remains above 15 m in every frame, the lowest values arising from tree canopy. 
+
+Scope of the safety test. The enforcement mechanism of Sec-tion IV-C is defined over a scalar hazard signal and is agnostic to the channel supplying it. Whatever geometric quantity is placed in σt, its registration is guaranteed to be coupled to the bounded response of (6). This is a property of the action layer rather than of the sensor, and it is what prompting-only pipelines lack. The channel instantiated here is the boresight clearance ct,which measures separation from the nearest surface below the platform. Two properties of this channel are stated explicitly. First, ct certifies clearance along the boresight and not along the direction of commanded motion, so (15) guarantees a prescribed response to a registered clearance violation rather than horizontal collision avoidance. This is consistent with the disclaimer accompanying Property 1. Second, the return resolves range but not bearing within the sensed footprint, so a waypoint-level clearance ∥wp − o∥ cannot be evaluated without assuming a bearing that σt does not certify. The test is consequently expressed at the level of the observation, which is the conservative choice under this abstraction. This scope follows from the UAVScenes sensor configuration rather than from LAPF. Under the common-observation pro-tocol it applies identically to all three evaluated methods and therefore does not affect the comparison. Lateral scene structure remains available to the planner through the nadir RGB frame, which the VLM backbone consumes directly. That channel is excluded from enforcement because a safety-critical guarantee cannot depend on a stochastic visual inference. Extending enforcement to a bearing-resolved channel is identified as future work. 
+
+B. Memory-Conditioned Decision Policy 
+
+Let Mt = (Oj , wp j , y j , ρ j ) t−1
+
+j=t−k denote the episodic memory of the k most recent decision episodes, where yj is 7
+
+the execution outcome and ρj the generated reflection, and let 
+
+ϕt be the scalar performance-feedback signal derived from the trailing window of path-length statistics. The agent implements the policy 
+
+π :  Psys , G, Ot, M t, ϕ t
+
+ 7 −→   cwp t, Tools t
+
+, (4) where G is the mission specification, cwp t the proposed way-point and Tools t the requested tool set. 
+
+C. Enforced Hazard Response and Stability Regulation 
+
+The proposed waypoint cwp t is not executed directly. Given the minimum admissible clearance dsafe , the hazard indicator 
+
+ht = ⊮ ct ≤ dsafe 
+
+ (5) is evaluated at every decision step with guaranteed invocation, so that its activation does not depend on whether the corre-sponding tool is named in a particular sampling of Tools t;here, 
+
+⊮[·] denotes the indicator function, the agent retains full author-ity over cwp t and over the discretionary tier of Tools t. When 
+
+ht = 1 , the model-authored proposal is discarded and replaced by the deterministic corrective operator 
+
+R(wp t−1) = wp t−1 + κ pgoal − wp t−1
+
+, κ ∈ (0 , 1) , (6) which is a function of the commanded state and the mission goal alone. This operator serves strictly as a low-level fail-safe guardrail rather than an intelligent planner. Its role is not to optimize the trajectory, but to provide a prescribed and bounded reaction in critical states. The cognitive value of the framework lies in the agent’s ability to use memory and continuous reasoning to anticipate hazards, thereby learning to navigate efficiently to minimize the activation of this de-terministic shield. When triggered, the executed displacement becomes ∥R − wp t−1∥ = κ∥pgoal − wp t−1∥, which is bounded and reproducible across trials, and independent of temperature sampling, in contrast to an arbitrary model-authored coordinate. The magnitude κ∥pgoal − wp t−1∥ is a commanded set-point rather than an instantaneous displacement: the operator speci-fies where the vehicle is directed once a hazard is registered, and the rate at which that set-point is tracked is delegated to the low-level flight controller, which is outside the scope of the decision layer modelled here. Enforcing a decision-layer displacement bound jointly with C, so that set-point and kinematic feasibility are regulated by a single mechanism, is identified as future work. We state explicitly that R enforces a bounded and deterministic response to a detected hazard, and not a geometric clearance guarantee, which (3) does not support. Although R contracts toward pgoal , it is not an implicit optimizer of the reported objective: Property 1 below shows that it leaves eLt exactly invariant. A second operator regulates step magnitude in the terminal phase, where independently resampled coordinates would oth-erwise be charged as travelled distance. For a goal tolerance ε
+
+and a maximum near-goal displacement δmax ,
+
+C(w) = 
+
+
+
+wp t−1 + δmax 
+
+w − wp t−1
+
+∥w − wp t−1∥ , ∥wp t−1−pgoal ∥<ε,  
+
+> ∥w−wp t−1∥>δ max
+
+,w, otherwise .
+
+(7) together with a hold-position operator, invoked when the agent selects WaypointAdjust ,
+
+H(w) = 
+
+(
+
+wp t−1, ∥wp t−1 − pgoal ∥ < ε, w, otherwise. (8) The executed waypoint is obtained by the ordered composition 
+
+wp t = H ⊮[WaypointAdjust ∈Tools t]
+
+ht R(wp t−1)+ (1 − ht) C  cwp t
+
+
+
+.
+
+(9) Equation (9) defines a shielded policy πsafe : the language model retains authority over the waypoint on every step classified as hazard-free, while C constrains only model-authored proposals and is deliberately not applied to R, giving hazard response strict precedence over step-magnitude regulation. 
+
+D. Objective and Reported Estimators 
+
+Let Lt = Pti=1 ∥wp i − wp i−1∥ denote the travelled length and L⋆ = ∥pgoal − wp 0∥ the straight-line optimum. The projected mission length, path efficiency, detour ratio and clamp count are defined as 
+
+eLt = Lt + ∥pgoal − wp t∥, ηt = L⋆
+
+eLt
+
+, ϱt = η−1 
+
+> t
+
+, (10) 
+
+Nc =
+
+> Tmax
+
+X
+
+> t=1
+
+⊮ C is active at step t , Nh =
+
+> Tmax
+
+X
+
+> t=1
+
+ht. (11) The estimator eLt augments the travelled length with the residual distance to the goal, so that a trajectory is not credited for terminating early away from pgoal . By the triangle inequality 
+
+eLt ≥ L⋆, hence ηt ≤ 1, with equality attained exactly when the commanded sequence is collinear with, and monotone along, the start–goal segment. Reported efficiencies are means of the per-trial ratios ηt rather than the ratio of the mean path lengths; by Jensen’s inequality the two differ slightly. 
+
+Property 1 (Metric neutrality of R). Let ∆t = eLt − eLt−1.The triangle inequality gives ∆t ≥ 0, with equality if and only if wp t lies on the segment [wp t−1, p goal ], which (6) places it on for every κ ∈ (0 , 1) . Since eL0 = L⋆, this yields the exact decomposition 
+
+eLTmax = L⋆ + X  
+
+> t:ht=0
+
+∆t, ∆t ≥ 0. (12) Hence the enforcement pathway contributes identically zero to 
+
+ηt and is scored through Nh rather than through ηt. This is a designed separation of concerns: the shield is required to be metric-neutral so that safety enforcement and trajectory quality are never conflated. The decomposition (12) is an exact identity 8
+
+on the realized trajectory and so invokes no counterfactual. Neutrality is moreover not obtained at the expense of goal progress, since ∥pgoal − R (wp t−1)∥ = (1 − κ)∥pgoal − wp t−1∥:the residual distance entering eLt is strictly reduced, so en-forcement neither charges the metric on the step it acts nor imposes any additional penalty on the evaluation of subsequent steps. We claim metric neutrality and monotone reduction of the residual term only, and not a geometric reachability guarantee, which (3) does not support. The role of R is to render the hazard response bounded, deterministic and reproducible across trials, a guarantee unavailable to the prompting-only baselines evaluated in this work, which register the same hazard classification but possess no pathway to act on it. The metric therefore admits its supremum for a geometrically direct command sequence and does not by itself encode a per-step kinematic bound. The navigation problem solved by LAPF is 
+
+min  
+
+> π
+
+EeLTmax 
+
+ (13) subject to the goal-reaching condition 
+
+wp Tmax − pgoal ≤ ε (14) and to the enforcement condition 
+
+ht = 1= ⇒∥ wp t − wp t−1∥ = κ∥pgoal − wp t−1∥, ∀ t ≤ Tmax ,
+
+(15) which requires the hazard response to be a prescribed, model-independent displacement rather than an arbitrary model-authored coordinate, and which (9) satisfies by construction. Condition (14) is evaluated at the terminal step of the fixed horizon rather than used as a stopping rule, so that all methods are scored over an identical step budget, the residual term of 
+
+eLt penalizing any trajectory that has not met it. V. P ROPOSED LAPF This section presents the proposed LAPF framework for autonomous UAV navigation. We first describe its overall architecture and operational workflow, followed by the agent’s perception, memory, planning, and action modules. Finally, the structured prompting strategy and implementation details are introduced to illustrate how LAPF performs adaptive, closed-loop navigation. LAPF provides a framework for autonomous UAV navigation using an LLM agent. The system comprises a UAV tasked with navigation in the considered environment, while an edge server hosts the agent and supports memory updates. LAPF casts navigation as a closed loop rather than a single observation-to-waypoint mapping, with five stages per step t
+
+tied to the formulation of Section IV:  
+
+> •
+
+Perception : produces the observation Ot = {I t, σ t, Lt}
+
+of (2), keeping the RGB frame as an image and reducing the LiDAR return and pose to a symbolic state.  
+
+> •
+
+Memory : retrieves the k = 3 most recent episodes Mt,each carrying an executed waypoint, its outcome, and a reflection, supplying temporal context a single pass lacks.  
+
+> •
+
+Planning : evaluates the policy π :(Psys , G, Ot, M t, ϕ t) 7 → ( cwp t, Tools t) of (4), conditioning the proposed waypoint jointly on observation, memory, and feedback.  
+
+> •
+
+Action : does not execute cwp t directly; the guaranteed-invocation hazard test of (5) runs first, a registered hazard is replaced by the bounded operator R of (6), and the executed waypoint follows the shielded composition of (9). This is the only stage that performs external tool invocation.  
+
+> •
+
+Feedback : scores the step, updates ϕt, and writes the episode back into Mt, closing the loop. The non-agentic baselines collapse this loop to the special case Mt = ∅, ϕt = ∅, receiving the identical observation and the same operators, so the measured advantage isolates the memory and feedback channels rather than reasoning depth. Fig. 3 illustrates the end-to-end operation of the proposed LAPF framework, integrating multimodal perception, memory-augmented reasoning, and tool-enforced action within a closed-loop navigation cycle. The process begins with the acquisition of multimodal environmental observations. The full sensor suite 
+
+Ofull  
+
+> t
+
+of (1) is available in UAVScenes; the pipeline evaluated in this work instantiates the subset Ot of (2), as detailed in Table II. The depth and semantic channels are reserved for future integration and are therefore not shown in the figure. The scenario evaluated in Section VI uses injected clearance violations, as described there. The pair (It, symbolic prompt ) constitutes the interface be-tween the perception pipeline and the agent backbone, referred to as the Cognitive Navigation Core. The framework is or-ganized into four interdependent modules, namely Perception, Memory, Planning and Action, summarized in Table III; Fig. 3 arranges them by execution stage. The Perception module registers and time-matches the RGB frame for native ingestion by the VLM backbone, and separately reduces the LiDAR point cloud, obstacle range, and localization state into the compact symbolic representation that accompanies the image in the same inference call. This module provides step-synchronous situational awareness to the agent by summarizing traversability conditions, collision risks, environmental semantics, and navi-gation constraints, so that downstream reasoning is based on up-to-date environmental observations. The Memory module stores one episode per decision step, comprising the observation, the executed waypoint, the execution outcome, and an LLM-generated reflection on the discrepancy between the two, and maintains a persistent state representation that enables the LLM agent to recall prior navigation experiences. This memory-enhanced mechanism supports temporal continuity, adaptive reasoning, and long-term spatial awareness, allowing the agent to adapt navigation decisions over time through accumulated environmental knowledge. These two modules jointly inform the Planning module, which performs high-level CoT reasoning and autonomous decision-making to support UAV path plan-ning and trajectory generation using techniques such as ICL and CoT reasoning. Based on the current scene understanding 9TABLE III: Summary of the Proposed LAPF Framework Modules                           
+
+> Module Input Output Main Functions Perception RGB image, LiDAR point cloud, and 6-DoF pose RGB image and sym-bolic state Registers and synchronizes RGB images for native VLM inference, con-verts LiDAR and localization data into a compact symbolic representation, and summarizes traversability, obstacle proximity, environmental semantics, and navigation constraints to provide situational awareness for downstream reasoning.
+> Memory Current observation, executed waypoint, and execution outcome Retrieved navigation ex-perience Stores one navigation episode per decision step together with an LLM-generated reflection, retrieves relevant historical experiences, and maintains persistent memory to support temporal continuity, long-term spatial aware-ness, and adaptive reasoning.
+> Planning Current observation and re-trieved memory Candidate waypoint Performs high-level multimodal reasoning using CoT to generate one candidate waypoint per decision step, together with any required corrective tool calls, according to the current scene and historical context.
+> Action Candidate waypoint and agent tool calls Executable waypoint Coordinates external tool invocation, executes discretionary waypoint-adjustment operations when required, and translates high-level planning decisions into executable navigation commands.
+
+and historical context, the module generates a single candidate waypoint per decision step, aiming to minimize path length while supporting successful mission completion. The action module translates the planned navigation strategies into exe-cutable UAV control commands, such as waypoint updates, through textual outputs, API calls, or low-level navigation instructions. Table III provides a summary of the Proposed LAPF Framework Modules. Tool invocation is mediated through a dedicated external tool suite, comprising an Obstacle Checker, Trajectory Validator, Localization service, Simulator, Vector Database, and Knowl-edge Base, enabling the agent to evaluate candidate trajectories against safety and feasibility constraints prior to execution. The evaluation reported in Section VI instantiates the two tiers of this suite that bear on the reported metrics, namely the guaranteed-invocation Obstacle Checker and the discretionary waypoint adjuster; the remaining interfaces are defined by the architecture and left for future instantiation. Upon successful validation, the resulting waypoint is transmitted to the UAV controller for execution; the waypoint sequence {wp t} accumu-lates in Tlog over the horizon. This constitutes a single decision cycle within the broader closed-loop autonomous navigation process depicted at the bottom of Fig. 3, wherein the UAV iter-atively perceives its environment, encodes the non-visual chan-nels into a structured prompt that accompanies the RGB frame, reasons over the resulting multimodal input using both memory and external tools, generates and refines a candidate trajectory, validates that trajectory for safety and feasibility, executes the resulting validated path, observes the subsequent environmental state Ot+1 , and updates its memory to reflect the outcome of the completed action. This iterative perception-reasoning-action cycle enables LAPF to adapt its navigation strategy in response to evolving environmental conditions without requir-ing gradient-based retraining of the underlying language model, in contrast to conventional reinforcement-learning-based UAV navigation approaches during execution. The cycle described here is the general operation of the architecture; under the replay-based protocol described in Section VI the recorded observation stream is fixed, so the executed waypoint does not alter subsequent observations; all methods therefore receive an identical observation sequence. Algorithm 1 details the operational flow of the proposed LAPF framework. The procedure takes as input the UAVScenes dataset DS , a mission specification G, the UAV U , an edge server E hosting the LLM agent, a system prompt Psys , and a maximum step budget Tmax . It initializes an empty memory store M and an empty trajectory log Tlog , and subsequently enters a fixed-horizon control loop that executes while step < Tmax (lines 1–4). 
+
+Perception (lines 5–8): at each decision step, the algorithm retrieves the current frame’s multimodal data directly from the dataset, comprising the RGB image It, the LiDAR point cloud 
+
+Pt, and the 6-DoF pose Lt. The point cloud is reduced to the summary statistic σt of (3), and the resulting quantities are assembled into the observation Ot of (2). The non-visual channels (σt, Lt) are then rendered into the symbolic state st,whereas It is retained as an image and is not textualized. 
+
+Memory (lines 9–11): the memory store M is queried for the k most recent prior episodes Mt (with k = 3 ), so that retrieval is recency-based rather than similarity-based, enabling the agent to condition its subsequent reasoning on previously encountered trajectories, failures, and successful outcomes. The scalar performance-feedback signal ϕt of (4) is computed over the trailing window of path-length statistics. 
+
+Planning (lines 12–14): the mission goal G, the symbolic state st, the retrieved memory Mt, and the feedback signal ϕt
+
+are combined into a context Ctx . This context, together with the system prompt Psys and the image It, is passed to the agent backbone E.Agent( ·), which returns a reasoning trace 
+
+T hought , a proposed waypoint W aypoint , and a set of tool calls T oolCalls in a single multimodal inference call. 
+
+Action (lines 15–24): Hazard evaluation is performed with guaranteed invocation at every decision step, so that its ac-tivation does not depend on whether the corresponding tool is named in the tool set returned at line 14. It evaluates the sensed clearance ct against the threshold dsafe , returning the hazard indicator h of (5). If h = 1 , the deterministic corrective operator (6) overwrites W aypoint with a value computed from the commanded state and the mission goal; otherwise the 10 
+
+Algorithm 1 Agentic LAPF Framework           
+
+> Require: UAVScene dataset DS, mission G, UAV U, edge server E, system prompt
+> Psys , maximum steps Tmax
+> Ensure: Navigation trajectory Tlog
+
+1: Initialize memory M ← ∅ 
+
+2: Initialize trajectory log Tlog ← ∅ 
+
+3: step ← 0
+
+4: while step < T max do 
+
+5: Perception 
+
+6: (It, Pt, Lt) ← D S [step ]
+
+7: σt ← summarize( Pt); Ot ← {I t, σ t, Lt}
+
+8: st ← encode to text( σt, Lt) ▷ It kept as image 
+
+9: Memory 
+
+10: Mt ← M .retrieve recent( k = 3) 
+
+11: ϕt ← feedback( Tlog ) ▷ trailing window 
+
+12: Planning 
+
+13: Ctx ← {G , s t, M t, ϕ t}
+
+14: (T hought, W aypoint, T oolCalls ) ← E .Agent( Psys , It, Ctx )
+
+15: Action 
+
+16: h ← ⊮[ ct ≤ dsafe ] ▷ guaranteed invocation 
+
+17: if h = 1 then 
+
+18: W aypoint ← R (wp t−1) ▷ Eq. (6) 
+
+19: else 
+
+20: W aypoint ← C (W aypoint ) ▷ Eq. (7) 
+
+21: end if 
+
+22: if WaypointAdjust ∈ T oolCalls then 
+
+23: W aypoint ← H (W aypoint ) ▷ Eq. (8) 
+
+24: end if 
+
+25: U. execute( W aypoint )
+
+26: Outcome ← U. get feedback() 
+
+27: Memory Update 
+
+28: Ref lection ← E .Reflect( T hought, Outcome )
+
+29: M.store( Ot, W aypoint, Outcome, Ref lection )
+
+30: Tlog .append( U. pose()) 
+
+31: step ← step + 1 
+
+32: end while return Tlog 
+
+stability operator (7) is applied to the model-authored proposal. If WaypointAdjust appears in T oolCalls , the hold-position operator H of (8) is subsequently applied, completing the ordered composition of (9). 
+
+Execution (lines 25–26): the resulting waypoint, potentially modified by the Action step, is transmitted to the UAV via 
+
+U. execute( W aypoint ), and outcome feedback is subsequently retrieved via U. get feedback() .
+
+Memory Update (lines 27–30): the edge server evaluates the discrepancy between the original reasoning trace T hought and the observed Outcome , producing a Ref lection . The complete episode (Ot, W aypoint, Outcome, Ref lection ) is then stored in memory M for retrieval in subsequent iterations, and the UAV’s current pose is appended to the trajectory log Tlog .The step counter is incremented (line 31) and the loop repeats until Tmax steps have elapsed, at which point the complete trajectory log Tlog is returned. To ground the agent’s reasoning in a machine-parseable format at every decision step, LAPF employs a fixed structured template rather than free-form querying. Fig. 4 illustrates this template, comprising seven input fields and a JSON output format. A system prompt fixes the agent’s role and CoT objective. A mission field gives the goal coordinates and current position. The RGB frame is supplied as a separate image block. A symbolic state field carries the pose, the RTK geolocation, and the summarized LiDAR return, namely the point count, the clearance ct, and the range and lateral bounds. A retrieved-memory field lists the k most recent episodes. A 
+
+> TABLE IV: LAPF implementation hyperparameters
+
+Parameter Value 
+
+LLM inference 
+
+Backbone Qwen2-VL-7B-Instruct (open-weight VLM) Serving backend mlx-vlm, locally hosted Image input resolution 1024 ×768 (resampled from 2448 × 2048 )Temperature 0.7 Max tokens (planning) 8192 Max tokens (reflection) 150 Call timeout (planning) 600 s (LAPF), 120 s (baselines); scaled to context length 
+
+Mission configuration 
+
+Decision horizon Tmax 110 steps Dataset frame skip 20 Frames in evaluated subset 41 Independent trials per configura-tion 3
+
+Memory & feedback 
+
+Retrieved past experiences k 3Feedback trend window 5 steps Critical-deviation threshold > 10 .0 mWarning-deviation threshold > 5.0 mHigh-detour-ratio threshold > 1.5×
+
+Low-efficiency threshold < 60% 
+
+High-efficiency threshold > 85% 
+
+Safety & action 
+
+Clearance threshold dsafe 5.0 mNear-goal feedback trigger < 2.0 mNear-goal step bound δmax 2.0 mReplan contraction κ 0.5
+
+Reliability 
+
+Max retries per LLM call 20 Retry backoff min(2 attempt , 15) s
+
+performance field reports the current path-length error, trend, and efficiency score. A reasoning field instructs the agent to assess the situation, consult memory, plan a candidate waypoint, and select any required tools. To allow the Planning module to parse Thought , Waypoint 
+
+and ToolCalls deterministically at every step, the template constrains the output to a single raw JSON object with no surrounding text. The reasoning trace is thereby retained as the 
+
+thought field of the structured response rather than as un-constrained free text, so that CoT content remains available for the reflection step without compromising machine-parseability. VI. N UMERICAL RESULTS AND DISCUSSIONS 
+
+This section evaluates the performance of the proposed LAPF framework through numerical experiments on the UAVScenes dataset. We first describe the implementation settings and baseline methods, and then present comparative results under different navigation scenarios to assess path efficiency, safety, and overall navigation performance. 
+
+A. Implementation of LAPF 
+
+LAPF is implemented in Python and evaluated on a Mac-Book Air equipped with an Apple M5 processor and 16 GB unified memory under macOS. The framework uses Qwen2-VL-7B-Instruct as the open-weight vision-language backbone, 11                                                                              
+
+> LAPF Prompt Template
+> System Prompt You are an expert LAPF UAV navigation agent. Use CoT reasoning for safe and efficient path planning while minimizing path length.
+> Mission Mission= {mission }Goal=(gx,gy,gz) Current=(x,y,z)
+> Image input ⟨image ⟩It(1024 ×768) ---passed natively to the VLM backbone as aseparate content block, not as text
+> Symbolic State Pose=(x,y,z), RTK=(lat,lon,alt), LiDAR= {n_points }pts, Clearance= {c}m, range=[rmin,rmax], lateral=[bmin,bmax]
+> Retrieved Memory Waypoint= {wp };Outcome= {outcome };Reflection= {reflection };kmost recent episodes (k= 3 )
+> Performance Error=X m; Trend=degrading; Efficiency=Y%; Large deviation →choose amore direct waypoint.
+> Reasoning 1) Assess current state; 2) Retrieve memory; 3) Plan safe & efficient waypoint; 4) Select required tools.
+> JSON Output {"situation_analysis":"...", "thought":"...", "waypoint":[x,y,z], "tool_calls":["Tool1","Tool2"] }
+> Fig. 4: Multimodal prompt supplied to the VLM backbone at each planning cycle. The RGB frame is passed natively as an image block; all remaining fields are text, instantiated at runtime from σt,Lt, the mission goal, the retrieved episodic memory Mt, and the feedback signal ϕt. The returned JSON is parsed into Thought ,Waypoint , and ToolCalls by the Planning module.
+
+served locally through ’mlx-vlm’, enabling the complete eval-uation to run on a single laptop without relying on proprietary large-scale models. RGB inputs are resized from their original 2448×2048 resolution to 1024×768 before inference to con-trol the visual token budget. The structured prompt template enforces JSON-based outputs, with invalid responses handled through retries. A geometric fallback mechanism is monitored through the llm_fallback_steps log; across the two scenarios and three trials, LAPF executes 2 × 3 × 110 = 660 
+
+decision steps in total, over which this fallback was never activated. The evaluation uses three independent trials per configuration with a maximum horizon of 110 steps on the AMtown03 subset containing 41 frames. Since the decision horizon Tmax = 110 exceeds the 41 -frame observation subset, the recorded stream is cycled once exhausted, so that every method is scored over an identical 110 -step budget irrespective of sequence length. The remaining implementation parameters, including inference settings, memory configuration, feedback thresholds, and safety-related parameters, are summarized in Table IV. All methods follow the same observation schedule, ensuring a fair comparison where performance differences arise from decision-making strategies rather than input variations. 
+
+B. Baselines Description 
+
+Pure LLM represents a non-agentic baseline that directly generates navigation decisions from the input state without external feedback, memory, or iterative action correction. 
+
+CoT LLM represents a reasoning-enhanced but still non-agentic baseline, in which the model is prompted to perform step-by-step reasoning before generating navigation actions. All three methods are driven by the same Qwen2-VL-7B backbone under identical decoding settings. Crucially, all three receive the identical multimodal observation: the RGB frame It
+
+is passed natively as an image input in every configuration, and the symbolic fields derived from σt and Lt are byte-identical across the three prompts, as is the output schema. All three are additionally evaluated under the same near-goal stability operator C of (7) and the same hold-position operator H of (8), which are applied uniformly rather than only to the proposed method. 
+
+C. Open-Field Navigation (AMtown03) 
+
+Fig. 5 summarizes path length (panel a), efficiency (panel b), and clamp events (panel c) relative to the theoretical straight-line optimum (dashed red line). This scenario contains no injected obstacles, so ht = 0
+
+at every step and Nh = 0 in all trials: by (9) every ex-ecuted waypoint here is the model-authored proposal under the same operator C applied to the baselines. As shown in Fig. 5(a), LAPF achieves the shortest mean path length (512.83 
+
+± 26.78 m), closely tracking the optimal-path reference line, with T1 ( 497 .33 m) and T2 ( 497 .40 m) nearly coincident with it. Since Nh = 0, the coincidence of T1 with L⋆ reflects a collinear command sequence issued by the policy itself, not a geometric fallback. Pure LLM yields a longer mean path length of 556.37 ± 15.02 m, while CoT LLM exhibits the largest deviation from the optimal trajectory, averaging 619.16 ± 29.01 m. LAPF operates through a closed-loop agent architecture that enables the LLM to perceive outcomes, main-tain memory of previous actions, and iteratively refine future decisions. The reduced path length therefore reflects not only improved reasoning, but also the ability of the LLM agent to ground its decisions in feedback and continuously correct its behavior. This trend is further supported by Fig. 5(b), where LAPF achieves the highest mean efficiency (97.05 ± 5.09%) and the lowest mean detour ratio (1.032 ± 0.056), approaching the 100% efficiency reference. In comparison, Pure LLM achieves intermediate performance (89.43 ± 2.45% efficiency, with a 1.119 detour ratio), while CoT LLM performs worst (80.37 ± 3.85% efficiency, 1.246 detour ratio). The observed advantage is consistent with interaction between reasoning and externalized control mechanisms, where observations, memory, and corrective actions allow the system to adapt its behavior rather than relying on prompting alone. Fig. 5(c) provides additional evidence of this distinction. Both Pure LLM and LAPF achieve zero clamp events across all trials, indicating stable waypoint generation and appropriate step-size regulation. In contrast, CoT LLM produces an average of 9.7 clamp events despite operating in an obstacle-free environment. Without an execution-feedback loop, the model 12 Pure LLM CoT LLM LAPF 450 500 550 600 650 700 Path length (m) 
+
+> 556.4 619.2 512.8
+
+(a) Path length (mean ± SD)   
+
+> Optimum = 497.33 m
+> Pure LLM CoT LLM LAPF 65 70 75 80 85 90 95 100 Efficiency (%)
+> 89.4% 80.4% 97.0%
+
+(b) Efficiency (mean ± SD)   
+
+> Ideal = 100%
+> Pure LLM CoT LLM LAPF 0246810 12 Mean clamp events
+> 0.0 9.7 0.0
+
+(c) Clamp events (near-goal step truncations) 
+
+> Navigation performance in the open-field scenario (no injected obstacles)
+
+Fig. 5: Open-field scenario (AMtown03, no injected obstacles). Panels (a) and (b) show path length and efficiency (mean ± SD) across three trials per method, relative to the 497 .33 mstraight-line optimum shown as a dashed red line. Panel (c) shows mean clamp events (near-goal step truncations). LAPF converges to near-optimal path length and efficiency with zero clamp events, while CoT LLM shows the largest deviation from optimal and the only nonzero clamp-event rate even in the absence of obstacles. Pure LLM CoT LLM LAPF 450 500 550 600 650 700 Path length (m)  581.5 599.9 506.4 
+
+(a) Path length (mean ± SD)   
+
+> Optimum = 497.33 m
+> Pure LLM CoT LLM LAPF 65 70 75 80 85 90 95 100 Efficiency (%)  85.7% 83.0% 98.1%
+
+(b) Efficiency (mean ± SD)     
+
+> Ideal = 100%
+> Pure LLM CoT LLM LAPF 0246810 12 14 16 Mean event count
+> 4.0 4.0 4.0 2.3 14.0 0.0
+
+(c) Unsafe vs. clamp events 
+
+> Unsafe events Clamp events
+> Navigation performance under injected obstacles (5 obstacles, 4 below 5 m unsafe threshold)
+
+Fig. 6: Obstacle-injected scenario (AMtown03, five injected clearance violations, four below dsafe = 5 m). Panels (a) and (b) show path length and efficiency (mean ± SD) across three trials per method, relative to the 497 .33 m straight-line optimum shown as a dashed red line. Panel (c) shows mean unsafe-event and clamp-event counts. LAPF converges to near-optimal path length and efficiency while incurring zero clamp events, whereas CoT LLM shows the largest deviation and the highest clamp-event frequency, consistent with less regulated step proposals under obstacle constraints. 
+
+may generate actions that are internally plausible but poorly calibrated. LAPF avoids this issue by coupling LLM decision-making with explicit action constraints and feedback, allowing the agent to better regulate waypoint execution. The near-optimal values in panels (a) and (b) warrant explicit interpretation. By (10), ηt attains unity exactly when the commanded sequence is collinear with, and monotone along, the start–goal segment, so a value of 100% is admissible by construction and is not an artefact of the measurement. It does, however, indicate that the metric rewards geometric directness without separately certifying per-step kinematic realizability, since (9) constrains step magnitude only in the terminal phase through C. Path efficiency is therefore reported here as a measure of trajectory directness relative to the straight-line optimum, and is complemented by the clamp count Nc of (11), which is sensitive precisely to unregulated step magnitudes. Introducing a global displacement bound ∥wp t − wp t−1∥ ≤ 
+
+∆max applied uniformly to all methods, so that directness and kinematic feasibility are scored jointly, is identified as future work. The ability to maintain memory, observe execution outcomes, enforce constraints, and revise actions enables LAPF to produce more efficient and stable trajectories. These results suggest that effective LLM-assisted autonomy depends not only on model reasoning but also on the surrounding agent architecture that converts reasoning into adaptive behavior. 
+
+D. Obstacle-Injected Navigation (AMtown03) 
+
+Fig. 6 extends the open-field evaluation by injecting five obstacles into the environment, and compares Pure LLM, CoT LLM, and LAPF across three trials (T1–T3) relative to the same 497.33 m straight-line optimum. Obstacles are injected by overriding the sensed clearance ct at five pre-selected decision steps, identical across methods and trials. Four of these are set 13 
+
+below dsafe = 5 m and therefore register as hazards. Injection is applied to the observation stream rather than to the commanded state, which preserves the common-observation control and accounts for the identical unsafe-event count in panel (c). Controlled injection is also what exercises the enforcement pathway at all, since the recorded sequence is flown as a nadir survey and ct remains above 15 m in every frame, so it never approaches dsafe = 5 m at any point of the flight. The results below therefore establish mechanism correctness under a controlled stimulus. Evaluation against naturally occurring hazards requires a lower-clearance sequence or a forward-facing sensor and is identified as future work. Fig. 6 further demonstrates the importance of agentic capa-bilities when an LLM-assisted navigation system is exposed to increased environmental complexity. The obstacle-injected scenario introduces a setting where a single-pass generation strategy is insufficient: the system must not only produce a trajectory but also incorporate environmental constraints, regulate actions, and adapt its decisions based on feedback. As shown in Fig. 6(a), LAPF achieves the shortest mean path length (506.37 ± 16.68 m), remaining closest to the optimal-path reference line despite the presence of additional obstacles. In comparison, Pure LLM achieves 581.51 ± 35.20 m, while CoT LLM reaches 599.89 ± 37.20 m, showing the largest devi-ation from the optimum. Although all methods experience some increase in path length compared with the open-field condition due to obstacle avoidance requirements, LAPF exhibits almost no degradation. This robustness is consistent with the agentic structure enabling the LLM to integrate observations, maintain state information, and revise its trajectory when environmental constraints change, rather than relying on a fixed pre-generated plan. The same trend appears in Fig. 6(b), where LAPF maintains an efficiency of 98.09 ± 3.17% and a detour ratio of 1.020 
+
+± 0.034, closely matching its obstacle-free performance. In contrast, Pure LLM and CoT LLM undergo larger efficiency reductions, achieving 85.73 ± 5.05% and 82.96 ± 5.30%, respectively. These results suggest that additional reasoning depth alone is insufficient for effective obstacle handling, which also requires interaction and adaptation. Although CoT LLM performs additional internal reasoning, it lacks the external feedback mechanism needed to assess whether its generated actions remain appropriate under changing conditions. LAPF’s closed-loop agent architecture grounds reasoning in perception, memory, and action correction, enabling it to preserve high path efficiency even as the environment becomes more challenging. The stability of ηt under obstacle injection is a designed property rather than an incidental one. By Property 1 the enforcement pathway is metric-neutral by construction, so the efficiency reported here measures the agentic decision policy and not the shield, and enforcement is instead assessed through 
+
+Nh and the clamp count. This separation is what makes the present comparison interpretable. By Property 1 the hazard-classified steps contribute exactly zero to ηt, so the 93 .5 m and 
+
+75 .1 m advantages of LAPF over CoT LLM and Pure LLM are predominantly attributable to the decision policy, which under an identical backbone, identical decoding settings and an identical observation stream is most consistently explained by the agentic mechanism that distinguishes LAPF, namely the joint conditioning of every proposal on episodic memory and on the performance-feedback signal ϕt.Fig. 6(c) shows identical unsafe-event counts across all methods (mean 4.0), corresponding to the same set of injected obstacles below the safety threshold. This identity is intentional and serves as an experimental control: it certifies that the three methods were exposed to the same hazard set, so the divergence observed in the response metrics cannot be ascribed to unequal environmental difficulty. What distinguishes the methods is not how often a hazard is registered, because this is common to all methods, but whether registration is coupled to a prescribed response: LAPF converts all four instances into enforced replans through (15), whereas the prompting-only baselines classify the same four instances with no pathway to act on them. A more meaningful distinction appears in the clamp-event results, where LAPF maintains zero clamp events, Pure LLM shows a small increase (2.3 events), and CoT LLM increases substantially to 14.0 events. This distinction is not an artefact of the exemption of hazard steps from C: the exemption spans at most four steps, whereas the separation from CoT LLM is 14 .0, and in the open-field scenario Nh = 0 , so C is active on all 110 steps of every method and Nc = 0 is attained by LAPF with no exemption whatsoever. The high clamp rate of CoT LLM suggests that additional reasoning does not guarantee improved action regulation. Without an execution-feedback loop, the model may produce logically plausible but poorly calibrated waypoint predictions, particularly when jointly considering goal progression and obstacle constraints. Overall, panels (a)–(c) show that LAPF’s advantage is con-sistent with its agentic capabilities: perceiving the environment, preserving memory, enforcing action constraints, and iteratively refining decisions. Unlike non-agentic LLM baselines, whose performance becomes less stable as task complexity increases, LAPF maintains efficient, controlled navigation under environ-mental perturbations. These results suggest that reliable LLM-assisted autonomy depends not only on the model’s reasoning ability but also on the surrounding agent framework that translates reasoning into adaptive, feedback-driven action. 
+
+E. Discussion 
+
+The results are best interpreted through the closed loop of (4), in which each waypoint is conditioned not on the current observation alone but jointly on the episodic memory Mt
+
+and the feedback signal ϕt. The non-agentic baselines are the special case Mt = ∅, ϕt = ∅; since all three receive the byte-identical observation and the same operators C and H, the measured gap isolates these two channels rather than reasoning depth or perception quality. 
+
+Role of memory. Recency-based retrieval over the k = 3 
+
+most recent episodes, each carrying an executed waypoint, its outcome, and a reflection on their discrepancy, lets the 14 
+
+agent condition every proposal on how its own recent com-mands actually resolved. This is what turns a per-step reaction into a corrected trajectory: in the open-field case it yields near-collinear command sequences (T1 coincident with L⋆ at 
+
+Nh = 0 ), and under obstacle injection it preserves efficiency at 
+
+98 .09% rather than degrading, because past hazard episodes bias subsequent waypoints toward directions that anticipate the shield instead of repeatedly triggering it. Without Mt, the baselines regenerate each waypoint from scratch, a mechanism most consistent with their larger detour ratios and, for CoT LLM, the increase in clamp events from 9.7 to 14 .0.
+
+Role of tools. Tool use contributes a distinct and comple-mentary effect: it separates what the agent decides from what is guaranteed . The guaranteed-invocation Obstacle Checker of (5) tests clearance at every step independently of Tools t, so a registered hazard is always coupled to the bounded response of (6), while the discretionary waypoint adjuster of (8) regulates step magnitude near the goal. Fig. 6(c) shows that all methods register the same four unsafe events, yet only LAPF converts each into an enforced replan; by Property 1 this pathway is metric-neutral, so the two effects, safer response and shorter paths, are scored through separate estimators ( Nh versus ηt)and never conflated. Taken together, memory and feedback shorten and stabilize the trajectory, while tool-enforced action guarantees the hazard response; neither alone reproduces the full behavior. This is why additional reasoning depth, as in CoT LLM, is insufficient: without a feedback channel to test whether generated actions remain appropriate, and without an enforced path to act on detected hazards, deeper reasoning yields internally plausible but poorly calibrated waypoints, particularly when goal pro-gression and obstacle constraints must be considered jointly. In the obstacle-injected scenario, LAPF preserves both path efficiency and trajectory quality with minimal degradation: its mean path length changes only from 512 .83 m to 506 .37 mand its efficiency rises from 97 .05% to 98 .09% , with zero clamp events in both, whereas CoT LLM rises from 9.7 to 14 .0
+
+clamp events and Pure LLM from 0.0 to 2.3. The advantage is therefore not limited to unconstrained navigation but is sustained as complexity increases. LAPF is not intended to replace classical geometric planners when accurate maps and deterministic objectives are available; it targets environments that require semantic interpretation, adaptive replanning, and integration of heterogeneous infor-mation sources, providing a higher-level cognitive layer that formulates, revises, and validates navigation strategies. Several limitations remain: the evaluation is confined to UAVScenes and excludes dense urban settings with narrow corridors, tall buildings, and pedestrian interactions; the semantic and depth channels are not yet fused into the reasoning pipeline; and the safety layer operates on a conservative scalar clearance rather than a full 3D collision model. Finally, the contribution of the visual channel is not isolated here: the image is a control variable rather than a treatment, since all three methods receive it identically, and an image-ablated configuration is left to future work. VII. C ONCLUSION 
+
+This paper presents LAPF, an LLM-agent-based framework for autonomous UAV navigation that integrates multimodal perception, episodic memory, planning, and tool-enforced ac-tion within a closed-loop architecture. Using observations from UAVScenes, LAPF combines native RGB input with symbolic LiDAR and 6-DoF pose representations through a compact open-weight VLM, enabling edge-scale multimodal navigation on a single consumer laptop. The proposed memory and action mechanisms support adaptive waypoint generation and guarantee safety-critical hazard responses during navigation. Experimental results show that LAPF consistently outper-forms conventional prompting and CoT prompting in both open-field and obstacle-injected scenarios, achieving higher path efficiency, shorter trajectories, and improved navigation stability while maintaining zero clamp events under obstacle injection. In our experiments, the most decisive advantage. . . of the agentic design is the coupling of memory-grounded feed-back with tool-enforced action: this pairing, rather than reason-ing depth alone, allows LAPF to both shorten trajectories and guarantee a bounded hazard response, and most reliably dis-tinguishes it from prompting-only methods as task complexity grows. Although the current evaluation is limited to a single scene, one backbone, and three trials per configuration, the results demonstrate the effectiveness of integrating memory, reasoning, and tool interaction for autonomous UAV naviga-tion. Future work will extend the framework to larger-scale evaluations, interactive closed-loop simulation, and real-world UAV deployment. REFERENCES [1] H. Kurunathan, H. Huang, K. Li, W. Ni, and E. Hossain, “Machine learning-aided operations and communications of unmanned aerial ve-hicles: A contemporary survey,” IEEE Communications Surveys & Tuto-rials , vol. 26, no. 1, pp. 496–533, Sep. 2024. [2] A. H. Arani, X. Fernando, O. Alhussein, and Y. Zhu, “Deep reinforce-ment learning for resource sharing and UAV trajectory optimization in multi-operator UAV-assisted wireless networks,” IEEE Transactions on Vehicular Technology , pp. 1–16, 2026. [3] L. Zhang, W. Chen, J. Chang, and Y. Xue, “A survey on navigation tech-nologies of unmanned aerial vehicle swarm,” in International Conference of Mechanical Engineering on Aerospace (CoMEA) , 2025, pp. 01–20. [4] A. H. Arani, P. Hu, and Y. Zhu, “UAV-assisted space-air-ground integrated networks: A technical review of recent learning algorithms,” IEEE Open Journal of Vehicular Technology , vol. 5, pp. 1004–1023, 2024. [5] Z. Chkirbene, R. Hamila, A. Gouissem, and U. Devrim, “Large language models (llm) in industry: A survey of applications, challenges, and trends,” in IEEE 21st International Conference on Smart Communities: Improving Quality of Life using AI, Robotics and IoT (HONET) , Doha, Qatar, Dec. 2024, pp. 229–234. [6] M. A. K. Raiaan, M. S. H. Mukta, K. Fatema, N. M. Fahad, S. Sakib, M. M. J. Mim, J. Ahmad, M. E. Ali, and S. Azam, “A review on large language models: Architectures, applications, taxonomies, open issues and challenges,” IEEE access , vol. 12, pp. 26 839–26 874, Feb. 2024. [7] J. Wei, X. Wang, D. Schuurmans, M. Bosma, F. Xia, E. Chi, Q. V. Le, D. Zhou et al. , “Chain-of-thought prompting elicits reasoning in large language models,” Advances in neural information processing systems ,vol. 35, pp. 24 824–24 837, 2022. 15 
+
+[8] Y. Emami, H. Zhou, R. Reddy, A. H. Arani, B. Wang, K. Li, L. Almeida, and Z. Han, “Large language model-assisted uav operations and communications: a multifaceted survey and tutorial,” arXiv preprint arXiv:2602.19534 , 2026. [9] H. El Alami and D. B. Rawat, “Lightweight language models in au-tonomous systems: In-context learning with bidirectional alignment for fault detection,” in IEEE International Conference on Communications .Montreal, QC, Canada: IEEE, Jun 2025, pp. 4395–4400. [10] C. Cui, Y. Ma, X. Cao, W. Ye, Y. Zhou, K. Liang, J. Chen, J. Lu, Z. Yang, K.-D. Liao, T. Gao, E. Li, K. Tang, Z. Cao, T. Zhou, A. Liu, X. Yan, S. Mei, J. Cao, Z. Wang, and C. Zheng, “A survey on multimodal large language models for autonomous driving,” in IEEE/CVF Winter Conference on Applications of Computer Vision Workshops (WACVW) ,Waikoloa, HI, Jan. 2024, pp. 958–979. [11] D. Lee and H. Kim, “A survey on llm agents: Architecture, applications, and challenges,” in 40th International Conference on Information Net-working (ICOIN) , Hanoi, Vietnam, Jan 2026, pp. 979–982. [12] M. A. Ferrag, A. Lakas, N. Tihanyi, and M. Debbah, “Llm and ai agents for autonomous systems: A survey of applications, datasets, and security challenges,” IEEE Open Journal of Intelligent Transportation Systems ,vol. 7, pp. 615–657, Feb. 2026. [13] T. Jingwen, G. Wei, S. Jiawei, W. Qiong, L. Zijian, L. Zehong, and Z. Jun, “Wirelessagent: Large language model agents for intelligent wireless networks,” China Communications , vol. 23, no. 3, p. 265–285, Mar. 2026. [14] M. A. Ferrag, N. Tihanyi, and M. Debbah, “From llm reasoning to autonomous ai agents: A comprehensive review,” IEEE Access , vol. 14, pp. 84 237–84 285, Jun. 2026. [15] H. Zhou, C. Hu, D. Yuan, Y. Yuan, D. Wu, X. Chen, H. Tabassum, and X. Liu, “Large language models (llms) for wireless networks: An overview from the prompt engineering perspective,” arXiv preprint arXiv:2411.04136 , 2024. [16] F. Jiang, C. Pan, K. Wang, P. Michiardi, O. A. Dobre, and M. Debbah, “From large ai models to agentic ai: A tutorial on future intelligent communications,” IEEE Journal on Selected Areas in Communications ,2026. [17] S. Wang, S. Li, Y. Zhang, S. Yu, S. Yuan, R. She, Q. Guo, J. Zheng, O. K. Howe, L. Chandra et al. , “Uavscenes: A multi-modal dataset for uavs,” arXiv preprint arXiv:2507.22412 , 2025. [18] P. Wang, S. Bai, S. Tan, S. Wang, Z. Fan, J. Bai, K. Chen, X. Liu, J. Wang, W. Ge, Y. Fan, K. Dang, M. Du, X. Ren, R. Men, D. Liu, C. Zhou, J. Zhou, and J. Lin, “Qwen2-vl: Enhancing vision-language model’s perception of the world at any resolution,” 2024. [Online]. Available: https://arxiv.org/abs/2409.12191 [19] Y. Iwashina, M. Kunibe, S. Kato, and H. Shigeno, “Uav path planning in urban environments with dynamic risk-map generation by vehicle and pedestrian perception,” in IEEE 96th Vehicular Technology Conference (VTC2022-Fall) , London, United Kingdom, Sep. 2022, pp. 1–5. [20] C. Sui, Q. Liu, J. Wang, R. Zhang, and Y. Wang, “Uav path planning in urban environments based on rrt algorithm,” in 3rd International Conference on Signal Processing and Intelligent Computing (SPIC) , 2025, pp. 404–407. [21] Q. Kuang, J. Wu, J. Pan, and B. Zhou, “Real-time uav path planning for autonomous urban scene reconstruction,” in IEEE International Confer-ence on Robotics and Automation (ICRA) , 2020, pp. 1156–1162. [22] X. Hu, B. Pang, F. Dai, and K. H. Low, “Risk assessment model for uav cost-effective path planning in urban environments,” IEEE Access , vol. 8, pp. 150 162–150 173, Aug. 2020. [23] Q. Cheng, Z. Zhang, Y. Du, and Y. Li, “Research on particle swarm optimization-based uav path planning technology in urban airspace,” 
+
+Drones , vol. 8, no. 12, p. 701, 2024. [24] G. Zhang and L.-T. Hsu, “A new path planning algorithm using a gnss localization error map for uavs in an urban area,” Journal of Intelligent & Robotic Systems , vol. 94, no. 1, pp. 219–235, 2019. [25] G. Yu, I. Butler, and A. Collins, “Wirelessllm-agent: A unified llm-based agent framework for multi-task wireless communication decision-making,” Preprints , Apr. 2026. [26] J. Chen, J. Tang, X. Yang, and Z. Lv, “6gagentgym: Tool use, data synthesis, and agentic learning for network management,” 2026. [27] J. Tong, F. Liu, L. Xv, S. Lu, K. Li, Y. Zhang, Y. Song, Z. Xue, and J. Zhang, “Wirelessbench: A tolerance-aware llm agent benchmark for wireless network intelligence,” 2026. [28] Y. Emami, H. Zhou, S. Nabavirazavi, and L. Almeida, “Llm-enabled in-context learning for data collection scheduling in uav-assisted sensor networks,” IEEE Internet of Things Journal , vol. 12, no. 23, pp. 51 664– 51 676, Sep. 2025. [29] Y. Emami, H. Zhou, M. G. Gait´ an, K. Li, L. Almeida, and Z. Han, “From prompts to protection: Large language model-assisted in-context learning for smart public safety uav,” IEEE Wireless Communications , pp. 1–10, 2026. [30] Y. Emami, H. Zhou, M. Guti´ errez Gait´ an, K. Li, and L. Almeida, “Frsicl: Llm-enabled in-context learning flight resource allocation for fresh data collection in uav-assisted wildfire monitoring,” IEEE Internet of Things Journal , vol. 13, no. 10, pp. 21 613–21 622, Feb. 2026. [31] X. Sun, W. Si, W. Ni, Y. Li, D. Wu, F. Xie, R. Guan, H.-Y. Xu, H. Ding, Y. Wu et al. , “Autofly: Vision-language-action model for uav autonomous navigation in the wild,” arXiv preprint arXiv:2602.09657 , 2026. [32] J. Zhou, S. Wang, Z. Yang, Z. Yu, and T. Li, “Freefly-thinking: Align-ing chain-of-thought reasoning with continuous uav navigation,” arXiv preprint arXiv:2603.07181 , 2026. [33] X. Dong, H. Zhao, J. Gao, H. Li, X. Ma, Y. Zhou, F. Chen, and J. Liu, “Se-vln: A self-evolving vision-language navigation framework based on multimodal large language models,” arXiv preprint arXiv:2507.13152 ,2025.

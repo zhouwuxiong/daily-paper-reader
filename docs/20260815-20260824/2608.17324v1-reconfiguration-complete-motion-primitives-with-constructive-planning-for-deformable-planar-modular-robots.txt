@@ -1,0 +1,550 @@
+Title: Reconfiguration-Complete Motion Primitives with Constructive Planning for Deformable Planar Modular Robots
+
+URL Source: https://arxiv.org/pdf/2608.17324v1
+
+Published Time: Wed, 19 Aug 2026 00:27:48 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Reconfiguration-Complete Motion Primitives with Constructive Planning for Deformable Planar Modular Robots 
+
+Jie Gu 1, Tingting Wang 1, Hongrun Gao 1, Yirun Sun 1, Zhihao Xia 1, Chunxu Tian 1, Dan Zhang 2
+
+Abstract — The continuously deformable geometry of modular robots makes it difficult to define a fixed representation for reconfiguration planning and analysis. This letter introduces a square-cell abstraction that maps deformable rhombus modules to fixed-size grid cells while retaining physically interpretable local motions through two primitives, pivoting and shearing. Under this abstraction, we prove that every non-straight edge-connected configuration with N ≥ 7 can be transformed to a fixed canonical staircase using only admissible primitive motions. Since these motions are reversible, any two configurations in this class are mutually reconfigurable. The proof is constructive and directly yields a staircase-canonicalization planner that transports removable boundary modules while preserving connectivity. As a practical enhancement, we further introduce a boundary-to-delivery lookahead selector that ranks admissible high level choices without affecting the completeness guarantee. Experiments demonstrate the constructive reconfiguration pro-cess and show that the selector substantially reduces planning time, while reference comparisons indicate lower planning times than the prior framework over the shared module counts. 
+
+I. I NTRODUCTION 
+
+Modular self-reconfigurable robots (MSRRs) are composed of repeated robotic units [1], [2] that can alter their mor-phology, connectivity, and functional arrangement through reconfiguration [3], [4]. Over the past decades, a broad range of MSRR architectures has been developed, reflecting different tradeoffs in mobility [5], [6], connectivity, and structural versatility [7]–[9]. Despite this mechanical diversity, a common challenge is to synthesize globally feasible reconfiguration sequences from local connection and motion primitives [10]. Planar deformable modules make this challenge particularly pronounced because their geometry changes continuously dur-ing reconfiguration [11], complicating both state representa-tion and motion planning. Shape-changing triangular modules have been explored for planar structural reconfiguration [12], while rhombus-based modules exploit continuous geometric deformation to realize stable reconfiguration motions [13]. Practical execution further depends on docking, alignment, and local motion feasibility, which must be respected by the planner [14]. For the deformable rhombus modules considered  
+
+> This work was supported by the National Natural Science Foundation of China under Grant 52305012. Jie Gu and Tingting Wang are co-first authors.
+> (Corresponding authors: Chunxu Tian; Dan Zhang.)
+> 1Jie Gu, Tingting Wang, Hongrun Gao, Zhihao Xia, Yirun Sun, and Chunxu Tian are with the Institute of AI and Robotics, Academy for Engineering & Technology, Fudan University, Shanghai 200433, China
+> chxtian@fudan.edu.cn .
+> 2Dan Zhang is with the Department of Mechanical Engineering, The Hong Kong Polytechnic University, Hung Hom, Hong Kong SAR, China
+> dan.zhang@polyu.edu.hk .Digital Object Identifier (DOI): see top of this page.
+
+here, this creates a fundamental representation problem: planning and reconfigurability analysis require a fixed discrete state description that retains the connectivity and local motion constraints relevant to physical execution without explicitly modeling every continuous deformation degree of freedom. Existing reconfiguration methods address different aspects of this problem. Early work formulated reconfiguration as a search over local module actions [15], [16], while complexity results show that optimal reconfiguration planning is hard in standard modular-robot settings [17], [18]. Search-based and engineering-oriented methods can handle practical instances but may rely on heuristics, auxiliary workspace, or support structures [19], [20]. Meta-module approaches simplify planning by grouping modules into higher-level units [21], [22], whereas theoretical treatments of lattice reconfiguration establish strong reachability properties under abstract local transformations [23]–[25]. Such abstractions are valuable for global analysis, but their transformations do not necessarily correspond directly to the local motions available to a continuously deformable planar module. This leads to the central question considered in this work: can continuously deformable modules be mapped to a fixed discrete representation that retains physically interpretable local motions while still supporting a global reconfigurability guarantee? A recent framework provides initial-to-target planning for deformable quadrilateral modular robots [26]. Complementing this planning framework, we focus on the representation-and-reachability problem: whether a compact discrete abstraction together with a fixed set of local motion primitives is sufficient to establish global reconfigurability for deformable rhombus modules. We address this question using a square-cell abstraction in which each deformable rhombus module is represented by its square pose on the integer lattice. The abstraction retains lattice occupancy, edge adjacency, exterior-boundary access, and the local feasibility constraints required for reconfiguration, while removing continuous rhombus-angle variables from the global state description. Within this representation, we define two admissible primitive classes, pivoting and shearing, illustrated in Fig. 1. We then prove that every non-straight edge-connected configuration with 
+
+N ≥ 7 can be transformed, using only these primitives, to a fixed canonical staircase SN . Since the admissible primitive motions are reversible, the common canonical form establishes mutual reconfigurability between any two configurations in this class. The resulting completeness guarantee applies to the square-cell abstraction; its connection to continuous rhombus-module execution is captured through the primitive-motion arXiv:2608.17324v1 [cs.RO] 18 Aug 2026 .         
+
+> M
+> Pivoting
+> MM
+> M
+> M
+> M
+> Shearing
+> M
+> M
+> (b)
+> (c)
+> Morphing
+> Shearing
+> Pivoting
+> 𝒬𝒬
+> r
+> 𝑁𝑁𝑚𝑚
+> 𝒬𝒬
+> 𝑑𝑑 1
+> d2
+> d3
+> d4
+> p41
+> p12 p23
+> p34
+> 𝒩𝒩 3
+> 𝒩𝒩 2M: Moving set
+> Fixed set
+> Nm : Neighbor Module
+> Q: 2 ×2 module patch
+> r: Root of M
+> (a) (d) (e)
+> (f) Fig. 1. Continuous morphing and the corresponding primitive-motion abstractions. (a) Example morphing of the deformable rhombus platform. (b) Representative shearing sequence. (c) Representative pivoting sequence. (d) Geometric notation for a fully occupied 2×2patch and its neighboring regions. (e) Shearing primitive and neighbor condition. (f) Pivoting primitive about a lattice vertex.
+
+templates and associated feasibility assumptions, while closed-loop hardware validation is left for future work. The proof is constructive and directly yields a staircase-canonicalization planner. The planner maintains a decom-position into a staircase prefix, a remainder, and a mobile gadget, and repeatedly harvests removable boundary modules, transports them along the exterior boundary, and places them at the staircase tip while preserving edge connectivity. Thus, the planning procedure is not separate from the completeness proof, but follows directly from its constructive argument. As a practical enhancement to this planner, we further introduce a boundary-to-delivery lookahead selector that ranks admissible boundary targets and post-capture gadget states to reduce unnecessary transport and local search. The selector changes only the ordering of admissible high level choices and therefore does not alter the primitive set or the completeness guarantee. The main contributions are as follows. 1) We formulate a square-cell abstraction for planar de-formable rhombus modular robots and define admissible pivoting and shearing primitives with explicit feasibility conditions. 2) We prove that every non-straight edge-connected config-uration with N ≥ 7 can be transformed to a canonical staircase, establishing universal reconfigurability under the proposed abstraction. 3) We develop a constructive staircase-canonicalization planner from the proof and further introduce a boundary-to-delivery lookahead selector to improve planning efficiency without affecting completeness. II. D EFINITION 
+
+A. Basic model 
+
+The motivating system is a two-dimensional modular robot composed of identical deformable rhombus modules. For mathematical analysis and constructive planning, we use a square-cell abstraction: each physical rhombus module is represented by one occupied unit square whose center lies on the integer lattice. A configuration therefore records the occupied cells, rather than module identities, as a finite set of integer coordinates 
+
+C = {p1, p2, . . . , pN } ⊂ Z2, (1) where each pi = ( xi, y i) denotes the center of an abstract cell. This abstraction preserves the combinatorial contact structure and the local motion constraints used by the planner, while removing continuous rhombus-angle variables from the proof. For any lattice vertex v ∈ V , where V := Z2 + ( 12 , 12 ), we define the vertex density D(v) ∈ { 0, 1, 2, 3, 4} as the number of modules incident to the vertex v.Two modules centered at p, q ∈ C are edge-adjacent if and only if ∥p − q∥1 = 1 , where ∥ · ∥ 1 denotes the ℓ1 norm on Z2. We collect these adjacencies in the induced graph 
+
+G(C) = ( C, E ), with 
+
+E := {p, q} ⊆ C | ∥ p − q∥1 = 1 , (2) A configuration is edge-connected if G(C) is connected, or equivalently if any two modules are joined by an edge-adjacent path. This edge connectivity is the global connectivity constraint maintained by every admissible transition below. To describe reconfiguration, we define a generic primitive motion as acting on a subset of modules, denoted as the moving set M ⊆ C. Let S := C \ M denote the stationary set. Given a transformation map f : Z2 → Z2 associated with the specific motion, the target of the moving set is 
+
+M ′ := {f (p) | p ∈ M }, and the resulting configuration is 
+
+C′ := S ∪ M ′. A transition is topologically admissible if and only if the following common constraints are met: 1) M̸ = ∅, S̸ = ∅, and both M and S are edge-connected. 2) The target cells are unoccupied by the stationary modules, i.e., M ′ ∩ S = ∅.3) The final configuration C′ is edge-connected. 
+
+B. Pivoting 
+
+As illustrated in Fig. 1(f), pivoting is a local primitive motion in which the moving set M rotates as a rigid body by 90 ◦ about a lattice vertex of a module in M , called the pivot point u ∈ V . We define the rotation map fp : Z2 → Z2
+
+as a 90 ◦ counterclockwise rotation about u:
+
+fp(p) := pu + R(p − pu), where R =
+
+0 −11 0
+
+
+
+. (3) Here pu denotes the coordinate vector of the pivot vertex u;the clockwise case is obtained by using R−1.A pivot is admissible if it is topologically admissible and the pivot point satisfies the vertex-density condition D(u) = 3 .Every admissible pivot is reversible by applying the opposite 
+
+90 ◦ rotation about the same pivot point. 
+
+C. Shearing 
+
+To mitigate local deadlocks, a reversible primitive motion, called shearing and illustrated in Fig. 1(e), is defined over a fully occupied 2 × 2 module patch Q ⊂ C (Fig. 1(d)) and a neighboring module Nm chosen from the neighbor set Nk
+
+defined below. A shear translates an edge-connected moving set M ⊂ C rooted in a chosen corner of the patch Q.For this patch, let D = {d1, d2, d3, d4} be the set of four outward, grid-aligned unit normal vectors of Q, indexed in counterclockwise cyclic order. We denote the centers of the four corner cells by: 
+
+Q = {p12 , p23 , p34 , p41 }, (4) where pkj denotes the center of the unique corner cell adjacent to the two sides with outward normals dk and dj ,and pkj = pjk .For the selected side dk, define the occupied neighbor set 
+
+Nk(Q) := q + dk | q ∈ Q , q + dk ∈ C \ Q . (5) Given these labels, fix a normal index k ∈ { 1, . . . , 4} and choose an adjacent index j ∈ { k − 1, k + 1 }, with indices taken modulo 4. The root is defined as r := pkj ∈ Q with the constraint 
+
+M ∩ Q = {r}. (6) The shear map fs : Z2 → Z2 is defined as a translation of the moving set by the difference of the chosen normal vectors: 
+
+fs(p) := p + ∆, where ∆ := dj − dk. (7) In addition to topological admissibility, a shear requires the geometric neighbor condition: the 2 × 2 patch must have at least one occupied neighbor on its dk side. Equivalently, this means Nk(Q)̸ = ∅, and the chosen neighbor satisfies 
+
+Nm ∈ N k(Q).Every admissible shear is reversible by applying the operation with displacement −∆ (swapping the roles of dk
+
+and dj ) in the configuration C′.III. P ROBLEM STATEMENT AND MAIN THEOREM 
+
+Given the admissible primitive motions in Section II, a 
+
+reconfiguration sequence is a finite sequence of configurations 
+
+C0, C 1, . . . , C T such that each Ct+1 is obtained from Ct by one admissible primitive motion. The central question is whether such a sequence exists between two configurations and, if so, how to construct it. This leads to Problem 1: 
+
+Problem 1 (Universal Reconfiguration): Given two edge-connected configurations C, C ′ ⊂ Z2 of the same size 
+
+N , decide whether C can be reconfigured into C′ under admissible primitive motions, and if so, construct an explicit plan. Straight-line configurations are isolated under the primitives of Section II and are excluded throughout. Small cases with 
+
+N ≤ 6 can be handled separately by finite enumeration, so the main result focuses on the regime N ≥ 7.
+
+Theorem 1 (Universal Reconfigurability): For any two non-straight edge-connected configurations C and C′ of size 
+
+N ≥ 7, there exists a finite sequence of admissible primitive motions that transforms C into C′.The proof is constructive and is organized around a fixed canonical staircase SN of size N . We define SN directly as a staircase made of N unit cells, anchored at the origin and generated by alternating horizontal and vertical steps. Let 
+
+s1 = (0 , 0) and for i ≥ 1 define 
+
+si+1 =
+
+(si + (1 , 0) , i odd ,si + (0 , 1) , i even . (8) Equivalently, si =  ⌈ i−12 ⌉, ⌊ i−12 ⌋. Then the staircase configuration is 
+
+SN = { si ∈ Z2 
+
+> ≥0
+
+| 1 ≤ i ≤ N }. (9) 
+
+Theorem 2 (Reachability to Canonical Staircase): For any non-straight edge-connected configuration C of size 
+
+N ≥ 7, there exists a finite sequence of admissible primitive motions transforming C into the canonical staircase SN .
+
+Proof of Theorem 1. Apply Theorem 2 to obtain a plan 
+
+C → SN . Applying the same theorem to C′ gives C′ → SN ;reversing that plan using reversibility of the primitive motions yields SN → C′. Concatenating the two sequences gives 
+
+C → SN → C′.IV. P ROOFS OF RECONFIGURABILITY 
+
+To prove Theorem 2, Algorithm 1 gives a constructive canonicalization planner. It maintains a staircase prefix, a remainder, and a mobile gadget, and repeatedly performs one harvest, transport, and place cycle: select a removable boundary module, move the empty gadget to it, absorb it into the carrying gadget, return to the staircase tip, and extend the prefix. Algorithm 1: STAIRCASE CANONICALIZE (C)
+
+Input: Edge-connected configuration C of size 
+
+N ≥ 7 that is not a straight line. 
+
+Output: A plan transforming C into SN . 
+
+> 1
+
+Initialize: INITIALIZE C0 ; 
+
+> 2
+
+while R̸ = ∅ do  
+
+> 3
+
+SELECT (x) on the outer boundary ∂B ; 
+
+> 4
+
+BOUNDARY FLOW (G◦) ⇝ x and dock next to x ; 
+
+> 5
+
+PICKUP (x) to obtain eG• and update R ← R \ { x}
+
+; 
+
+> 6
+
+GADGET NORMALIZE ( eG•) ⇝ G• ; 
+
+> 7
+
+BOUNDARY FLOW (G•) ⇝ tip( Pk) and dock at the tip ;  
+
+> 8
+
+if R = ∅ then  
+
+> 9
+
+CLOSE OUT (G•) to merge the gadget into the prefix and obtain SN ; 
+
+> 10
+
+else  
+
+> 11
+
+PLACE AND EXTEND (G•) ⇝ Pk+1 and G◦ ; 
+
+> 12
+
+end  
+
+> 13
+
+end 
+
+The remainder of this section follows the proof structure behind the algorithm. Section IV-A defines the maintained decomposition and boundary notation, Section IV-B states the lemmas that make each high level step feasible, and Section IV-C maps the algorithmic operations to primitive motion sequences or bookkeeping updates. 
+
+A. Configuration Decomposition 
+
+At each stage, the planner maintains the disjoint decompo-sition 
+
+C = Pk ⊎ R ⊎ Gσ , (10) where Pk is the length-k staircase prefix already fixed in the canonical form, R is the remainder still to be harvested, and 
+
+Gσ is the mobile gadget. The superscript σ ∈ {◦ , •} denotes whether the gadget is empty or carrying one payload module. We use two standard gadget shapes:  
+
+> •
+
+G◦ (empty), with |G◦| = 5 ; 
+
+> •
+
+G• (carrying one payload module), with |G•| = 6 .The base B := Pk ⊎ R contains all modules that are not currently part of the mobile gadget. Let W∞ be the unique unbounded connected component of the complement lattice 
+
+Z2 \ B. The outer boundary used by the gadget is the subset of base modules adjacent to this unbounded exterior: 
+
+∂B = {p ∈ B | ∃ q ∈ W ∞ s.t. p, q are edge-adjacent }.
+
+(11) Hence any selected harvest target x ∈ R ∩ ∂B is accessible from the exterior boundary traversed by the gadget. Fig. 2 illustrates the roles of Pk, R, and Gσ . We repeatedly use three invariants: Pk is a staircase prefix and remains fixed, 
+
+B = Pk ⊎ R remains edge-connected, and the gadget is docked on the outer boundary component at the beginning and end of each high level operation. These are the main properties used by the lemmas below. 12  11 3             
+
+> 621
+> 8413 07
+> 59
+> 10
+> 14
+> G:gadget
+> R:Remainder set of modules
+> P:Staircase prefix
+> 12 11 3
+> 621
+> 8413
+> 14
+> 07
+> 59
+> 10
+> B:=P ⋃R
+> 8413 07
+> 59
+> 10
+> 14
+> 12
+> 11
+> 3
+> 6
+> 2
+> 1
+> 8
+> 4
+> 13
+> 07
+> 59
+> 10
+> 14
+> S15: Staircase made of 15 modules
+> Multi-Morphing
+> Fig. 2. Illustration of the configuration decomposition. The overall configuration is disjointly partitioned into a staircase prefix ( P), the remainder (R), and a mobile gadget ( G) for module transportation.
+
+B. Core Lemmas 
+
+The following lemmas provide the key claims needed to justify Algorithm 1. Lemma 1 creates the initial decomposi-tion; Lemmas 2–3 ensure that each iteration can select and reach a removable outer-boundary target; Lemma 4 restores the carrying-gadget shape after pickup; and Lemma 5 handles the final closeout. Together, these lemmas show that each cycle is feasible and decreases |R| by one. 
+
+Lemma 1 (Initializability): For any configuration C with 
+
+N ≥ 7 that is not a straight line, there exists a finite primitive sequence that reaches an initial decomposed configuration 
+
+C0 = Pk0 ⊎ R0 ⊎ G◦, (12) where Pk0 is an initial staircase prefix of length k0, R0 is the initial remainder, and G◦ is the standard empty gadget docked on the outer boundary component of the base B0 = Pk0 ⊎ R0.
+
+Proof. Choose a boundary module t ∈ ∂C and a connected subset U ⊆ C with |U | = 7 and t ∈ U such that M := U \{ t}
+
+is edge-connected, not a straight line, and C \ M is edge-connected (such a choice can be ensured by selecting M as a non-bridge six-module cluster on the outer boundary). By Lemma 4, while keeping t fixed we can locally reconfigure 
+
+M into the standard carrying gadget G• docked at t. Let 
+
+x ∈ G• be a corner backbone module adjacent to t, and define G◦ := G• \ { x}. Define the resulting base as B0 := 
+
+C \ G◦ = ( C \ M ) ∪ { x}. Since x is adjacent to t ∈ C \
+
+M , B0 remains edge-connected. Within B0, select as many modules as possible that align with the staircase pattern to form the initial prefix Pk0 ; the remaining modules constitute 
+
+R0. Hence, C0 = Pk0 ⊎ R0 ⊎ G◦ is constructible. 
+
+Lemma 2 (Existence of a removable boundary module): 
+
+Let B = Pk ⊎ R with R̸ = ∅. Then there exists a module 
+
+x ∈ R ∩ ∂B lying on the outer boundary component of B
+
+such that B \ { x} remains edge-connected. 
+
+Proof. Let GB be the edge-adjacency graph of B and let 
+
+∂B be defined by adjacency to the unbounded exterior W∞.Since R̸ = ∅ and Pk is a staircase path, Pk cannot separate the plane; hence R ∩ ∂B ̸ = ∅. Fix any b ∈ R ∩ ∂B .Consider the block-cut tree T of GB rooted at the block containing Pk. Let L be the leaf block of T contained in the Rotation Straight Translation Straight Translation Diagonal Translation Diagonal Translation                   
+
+> Empty Gadget (N=5)
+> PPSPPSPPPPPPPPPPPP
+> Carrying Gadget (N=6)
+> Straight Translation Diagonal Translation Diagonal Translation SPSSSPSSRotation SSubstrate Gadget SShear Pivot PRotation SSPFig. 3. Primitive templates underlying the high level gadget motions used by the constructive planner.
+
+subtree reached by following the unique root-to-b path in T
+
+(i.e., L is the last block on that path and has degree 1 in T ), and let a be the unique cut vertex adjacent to L in T (if L
+
+is the root block, take a = ∅). Because b lies in this subtree, we have L ∩ R ∩ ∂B ̸ = ∅.If a = ∅, then GB has no articulation vertices and we may take x = b. Otherwise, since L is a leaf block, the only vertex of L that belongs to another block is a; thus every 
+
+x ∈ L \ { a} is not an articulation vertex of GB . Choose any 
+
+x ∈ (L ∩ R ∩ ∂B ) \ { a}. Then x is not an articulation vertex of GB , hence B \ { x} remains edge-connected. 
+
+Lemma 3 (Traversability): The standard gadget Gσ can move along the outer boundary component of the base 
+
+B. Each step is a gadget meta-motion , implemented by a sequence of admissible primitive motions. 
+
+Proof. Let W∞ be the unbounded component of Z2 \ B. We define a vacancy e ∈ W ∞ as a groove unit if exactly three of its four edge-neighbors are occupied by modules of B;this implies e has a unique neighbor e′ ∈ W ∞. Recursively, if e′ has exactly two occupied neighbors in B (forming a tunnel), we also classify it as a groove unit and continue extending the chain outward. The process terminates at the first vacancy possessing at least three vacant neighbors in 
+
+W∞. The groove depth , denoted by dg , is defined as the total number of groove units in this chain. S P P S 2P P     
+
+> Fig. 4. Illustration of the constructive proof for Lemma 5. A standard carrying gadget G•is reconfigured into the final segment of the target staircase SNvia a sequence of primitive motions.
+
+All auxiliary boundary adjustments used to resolve grooves act only on modules in R, leaving the staircase prefix Pk
+
+unchanged. If dg > 1, we apply an anti-shear to transfer a module from the groove’s side-wall into the groove. This operation reduces dg by at least 1. We iterate this process until dg = 1 .If dg = 1 , the remaining groove is eliminated by repeatedly pivoting an adjacent boundary module into the vacancy. Each pivot maintains the edge-connectivity of B and propagates the vacancy along the boundary contour. Since this motion effectively shifts the local concavity from the middle of a segment toward a convex endpoint, the groove disappears after a finite number of pivots. Thus, all grooves can be resolved locally using admissible primitives, rendering the outer boundary groove-free. On a groove-free outer boundary, a gadget encounters only three local surface patterns: an in-place 90 ◦ rotation, a unit axis-aligned translation, or a unit diagonal translation. For both G◦ and G•, Fig. 3 provides a meta-motion template realizing each pattern as a finite sequence of admissible primitives. Therefore, by repeatedly instantiating these templates, Gσ
+
+can be flowed along the outer boundary component of B
+
+between any two valid docking locations. 
+
+Lemma 4 (Carrying-gadget normalization): Any non-straight six-module gadget, with the dock fixed, can be locally reconfigured by admissible primitive motions into the standard G•, preserving connectivity and avoiding collisions. 
+
+Proof. Fix the dock and assume an exterior workspace Wloc 
+
+around the dock that is free of other modules, so that all intermediate motions of the six-module system are collision-free with the rest of the configuration. Let S be the set of all non-straight configurations of six modules with the dock fixed. Because the six modules remain edge-connected, all module positions lie within a finite lattice neighborhood of the dock; hence S is finite. We exhaustively enumerate the transition graph on S under admissible primitives and verify that this graph is connected. Therefore, any two configurations in S are mutually reconfig-urable within Wloc . In particular, any non-straight six-module gadget can be locally reconfigured into the standard carrying gadget G• while preserving edge connectivity and avoiding collisions. 
+
+Lemma 5 (Convergence): When R = ∅, there exists a primitive motion sequence that merges the standard carrying gadget into the prefix, yielding the full staircase SN .
+
+Proof. Fig. 4 gives a primitive motion template that fills the terminal cells of the target staircase SN using a docked standard carrying gadget G•, without collision and without breaking connectivity. Applying this template absorbs the gadget into the prefix and yields SN .
+
+C. High Level Operations 
+
+Algorithm 1 separates selection, motion, and bookkeeping. SELECT chooses a removable boundary target; P ICKUP 
+
+and P LACE AND EXTEND update the decomposition; and INITIALIZE , B OUNDARY FLOW , G ADGET NORMALIZE , and CLOSE OUT are primitive-motion routines. 
+
+INITIALIZE : Starting from a connected configuration C,this routine uses a finite primitive sequence to form the initial gadget-and-prefix decomposition C0; Lemma 1 guarantees feasibility. 
+
+SELECT : This step picks a removable target module x ∈
+
+R ∩ ∂B on the outer boundary of B; Lemma 2 guarantees that such an x exists. 
+
+BOUNDARY FLOW : This routine moves the gadget Gσ ∈{G◦, G •} along the outer boundary to the selected docking location; Lemma 3 guarantees feasibility, and Fig. 3 gives the motion templates. 
+
+PICKUP : Given G◦ docked next to x, this bookkeeping step updates the decomposition: 
+
+Pk ⊎ R ⊎ G◦ ⇝ Pk ⊎ (R \ { x}) ⊎ eG•. (13) Only the labels change; the occupied cells do not. 
+
+GADGET NORMALIZE : After P ICKUP , Lemma 4 converts 
+
+eG• into the standard G• by a finite local primitive sequence. 
+
+PLACE AND EXTEND : If R̸ = ∅, after G• has docked at the current tip t = tip( Pk), the contacting corner module is relabeled into the prefix, so this step is bookkeeping only. 
+
+Pk ⊎ R ⊎ G• ⇝ Pk+1 ⊎ R ⊎ G◦.
+
+This restores G◦ and extends the prefix. 
+
+CLOSE OUT : If R = ∅ after the final pickup, the docked carrying gadget G• is merged directly into the prefix using the primitive sequence of Lemma 5, yielding SN .
+
+Proof of Theorem 2. By Lemmas 1–5, each iteration decreases 
+
+|R| by one. Hence, after finitely many iterations, the final pickup makes R = ∅, and C LOSE OUT yields SN . Con-catenating the finite admissible primitive sequences used in INITIALIZE , B OUNDARY FLOW , G ADGET NORMALIZE , and CLOSE OUT yields a finite admissible primitive sequence transforming C into SN .V. A U NIFIED LOOKAHEAD SELECTOR 
+
+The constructive planner in Section IV is complete, but it still leaves two coupled high level choices: which removable boundary module to harvest next and which reachable post-capture canonical state to continue from. We resolve both choices with one unified lookahead selector. The selector adds no new primitive motions; it only ranks admissible candidates and falls back to S ELECT when the ranked set is empty. At iteration k, let Wk = ( ω1
+
+> k
+
+, . . . , ω hk ) be the next h
+
+staircase sites generated by the baseline continuation rule, and let Ak ⊆ Rk ∩ ∂B k be the removable modules on the outer boundary component. We partition Ak into short contiguous boundary segments Qk = {q1, . . . , q Kk } with 1 ≤ | qi| ≤ b
+
+and ignore hole boundaries, since harvesting stays on the unbounded exterior component. For each segment q, the baseline admissibility test selects a harvested module x(q) ∈ q
+
+using the smallest boundary-distance proxy. After capturing 
+
+x(q), let 
+
+Zk(q) := {z ∈ S can | eG•
+
+> k
+
+(q) ⇝ z}, (14) where Scan is the set of canonical carrying-gadget templates and ⇝ denotes reachability by the local primitive search used for G ADGET NORMALIZE .We score each admissible segment state pair (q, z ) by a compact scalar objective 
+
+J(q, z ; Wk) = λd ∂B (dock( G◦), q )+ Lcan (z) + βD del (z, ω 1
+
+> k
+
+)
+
+− Rlh (q; Wk, q k−1),
+
+(15) where d∂B is shortest-path distance along the outer boundary, 
+
+Lcan (z) is the number of local normalization moves to reach z,and Rlh (q; Wk, q k−1) is the short-horizon lookahead reward defined by 
+
+A(q, W k) = max 
+
+> ω∈Wk
+
+11 + min p∈q ∥p − ω∥1
+
+, (16) 
+
+Ddel (z, ω 1
+
+> k
+
+) = min  
+
+> i∈C (z)
+
+∥pi(z) − ω1
+
+> k
+
+∥1, (17) 
+
+H(q, q k−1) = 
+
+( 11+ d∂B (q,q k−1) , k > 0,
+
+0, k = 0 . (18) 
+
+Rlh (q; Wk, q k−1) = αA (q, W k) + νH (q, q k−1), (19) Here C(z) is the set of endpoint modules in candidate state 
+
+z. The weights λ, β, α, ν > 0 are fixed tuning constants. The first three terms penalize transport, normalization, and delivery effort, while the internal weights α and ν balance the alignment and continuity subterms inside Rlh .
+
+(q⋆k, z ⋆k ) ∈ arg min    
+
+> q∈Qk, z ∈Z k(q)
+
+J(q, z ; Wk), (20) The planner then chooses the minimizer in (20), executes one corresponding iteration of Algorithm 1 with x(q⋆k), and takes z⋆k as the selected post-capture canonical state. Only this iteration is committed; if reconfiguration continues, the window and candidate set are rebuilt after the prefix is extended. Completeness is preserved because the selector only reorders admissible baseline choices. Every harvested module lies in Ak, every selected state in Zk(q) is reachable by the same local primitive search used by G ADGET NORMALIZE ,and the fallback rule recovers the baseline choice when the ranked set is empty. Therefore each executed cycle remains a valid cycle of Algorithm 1, and the termination argument of Theorem 2 is unchanged. VI. E XPERIMENTS 
+
+The experiments evaluate the proposed planner through a qualitative reconfiguration example and full-reconfiguration runtime studies. The runtime studies compare with the prior 12                                        
+
+> 11 36218413 0759
+> 10 14 12 11 36218413 0759
+> 10 14 12 11 36218413 0759
+> 10 14
+> 126311 12
+> 8413 0759
+> 10 14 126311 12
+> 8413 0759
+> 10 14 126311 12
+> 8413 0759
+> 10 14 126311
+> 12 8413 0759
+> 10 14
+> 126311
+> 12 8413 0759
+> 10 14 126311
+> 12
+> 84
+> 13 0759
+> 10 14 126311 12
+> 84
+> 13 0759
+> 10 14
+> 126311 12
+> 84
+> 13 0759
+> 10 14 126311
+> 12 84
+> 13
+> 0759
+> 10 14
+> 126311
+> 12
+> 84
+> 13
+> 0759
+> 10 14
+> 2P1S 1S 6S 6S 1P3S 2S 2S 3S 3P2S Lemma 5 2P 12311
+> 12
+> 84
+> 13
+> 0759
+> 10 14
+> 61P2S 1S
+
+G R P 𝐀 k𝐀 Fig. 5. Reconfiguration demonstration for a 15-module example. The sequence shows the planned boundary transport process from the initial configuration to the target staircase configuration, where green, blue, and pink cells denote the gadget G, remainder R, and staircase prefix P , respectively. The dashed red cell marks the first staircase site ω1 
+
+> k
+
+in the lookahead window, and the arrows indicate the executed primitive motions. 9 10 12 14 16 18 20 
+
+Number of modules N
+
+> 0400 800 1200
+> Full planning time (s)
+> Baseline Ablation Study Ours
+
+Fig. 6. Full-reconfiguration planning-time comparison with respect to N .Baseline denotes the prior initial-to-target planner. Ablation Study and Ours denote the proposed two-stage protocol through SN , without and with the lookahead selector, respectively. 
+
+framework under an initial-to-target protocol and use an ablation study to evaluate the contribution of the lookahead selector. 
+
+A. Reconfiguration Demonstration 
+
+Fig. 5 provides a qualitative demonstration of the complete planner by visualizing the transport process that reconfigures a 15-module instance from a fixed initial configuration to the target staircase. By showing the entire sequence, this case gives an executable illustration of the constructive proof: under the theorem assumptions, a valid initial configuration is reduced to the canonical staircase by repeatedly applying the operations in Algorithm 1, including P ICKUP , B OUND -
+
+ARY FLOW , and P LACE AND EXTEND .This example highlights three properties of the planner. First, every intermediate configuration remains connected because the algorithm transports only removable boundary modules. Second, each transport operation can be decomposed into the primitive pivoting and shearing motions defined ear-lier. Third, the sequence explicitly shows boundary transport by the gadget in its empty and carrying modes, G◦ and G•.
+
+B. Comparison with Prior Framework 
+
+We compare the proposed planner with the prior frame-work [26] under an initial-to-target reconfiguration task. The prior framework directly plans from a given initial configuration to a given target configuration. To report the same task-level quantity, our planner forms the full path by canonicalizing the initial configuration to SN and concatenating the reverse canonicalization path from the target configuration to SN . For each N ∈ [9 , 20] , we evaluate 40 seeded initial-to-target pairs of random edge-connected, non-straight configurations, with each full reconfiguration consisting of two canonicalization runs through SN .We report success rate and average full-reconfiguration runtime. For the proposed variants, the reported runtime is the sum of the two canonicalization stages, measured at the implementation level rather than as a planning-kernel-only runtime. The prior framework reports 100% success on its tested instances, while both proposed variants complete all trials used here. The formal reachability guarantee for our planner follows from Theorem 2. Fig. 6 reports the average initial-to-target planning time. On the shared module counts, the prior framework grows rapidly from N = 9 , whereas the proposed planner maintains lower full-reconfiguration runtime. The comparison should be interpreted as a reference com-parison, rather than a calibrated speedup benchmark, because such a benchmark would require rerunning both planners on identical initial-target pairs with matched hardware, timeout policy, implementation language, and visualization settings. 
+
+C. Ablation Study 
+
+The ablation study evaluates the lookahead selector while keeping the constructive planner, primitive set, configuration decomposition procedure, and target staircase definition fixed. The only changed component is the high level selection criterion for choosing the next harvested module and post-capture state. The ablation study in Fig. 6 shows that the lookahead selector reduces repeated planning by accounting for the delivery cost after capture. At N = 20 , for example, the full planner reduces full-reconfiguration planning time from 
+
+1496 .08 s in the ablation study to 602 .60 s , a reduction of approximately 59 .7% .VII. C ONCLUSION 
+
+This paper presented a constructive self-reconfiguration framework for planar deformable rhombus modular robots under a square-cell abstraction. We defined admissible pivoting and shearing primitives, proved that every non-straight edge-connected configuration with N ≥ 7 can be transformed to the canonical staircase SN , and used this result to establish mutual reconfigurability within the abstraction. The proof is realized by a staircase-canonicalization planner that maintains a staircase prefix, a remainder, and a mobile gadget while preserving edge connectivity. We further added a unified boundary-to-delivery lookahead selector that changes only the high level ordering of admissible choices. On the tested random instances, the planner variants achieved 100% 
+
+success, and the lookahead selector reduced the two-stage full-reconfiguration runtime in the reported ablation study. Future work will focus on larger instances, tighter cost models, obstacle and workspace constraints, and closed-loop validation on physical deformable modular platforms. REFERENCES [1] A. Castano, W.-M. Shen, and P. Will, “CONRO: Towards deployable robots with inter-robots metamorphic capabilities,” Autonomous Robots ,vol. 8, no. 3, pp. 309–324, 2000. [2] D. Rus and M. Vona, “Crystalline robots: Self-reconfiguration with compressible unit modules,” Autonomous Robots , vol. 10, no. 1, pp. 107–124, 2001. [3] T. Fukuda and S. Nakagawa, “Approach to the dynamically reconfig-urable robotic system,” Journal of Intelligent and Robotic Systems ,vol. 1, no. 1, pp. 55–72, 1988. [4] M. Yim, W.-M. Shen, B. Salemi, D. Rus, M. Moll, H. Lipson, E. Klavins, and G. S. Chirikjian, “Modular self-reconfigurable robot systems [Grand Challenges of Robotics],” IEEE Robotics & Automation Magazine , vol. 14, no. 1, pp. 43–52, 2007. [5] J. W. Romanishin, K. Gilpin, and D. Rus, “M-Blocks: Momentum-driven, magnetic modular robots,” in 2013 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2013, pp. 4288–4295. [6] J. W. Romanishin, K. Gilpin, S. Claici, and D. Rus, “3D M-Blocks: Self-reconfiguring robots capable of locomotion via pivoting in three dimensions,” in 2015 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2015, pp. 1925–1932. [7] B. Salemi, M. Moll, and W.-M. Shen, “SUPERBOT: A deployable, multi-functional, and modular self-reconfigurable robotic system,” in 
+
+2006 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2006, pp. 3636–3641. [8] H. Ahmadzadeh, E. Masehian, and M. Asadpour, “Modular robotic systems: Characteristics and applications,” Journal of Intelligent & Robotic Systems , vol. 81, no. 3–4, pp. 317–357, 2016. [9] L. A. T. Vu, Z. Bi, D. Mueller, and N. Younis, “Modular self-configurable robots: The state of the art,” Actuators , vol. 12, no. 9, p. 361, 2023. [10] G. Liang, A. J. Ijspeert, M. Yim, and T. L. Lam, “Modular reconfig-urable robots: Toward on-demand multifunctional applications,” Science Robotics , vol. 11, no. 111, p. eadz1999, 2026. [11] A. Lyder, R. F. M. Garcia, and K. Støy, “Mechanical design of Odin, an extendable heterogeneous deformable modular robot,” in 2008 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2008, pp. 883–888. [12] M. Gerbl, M. Pieber, E. Ulrich, and J. Gerstmayr, “PARTS: A 2D self-reconfigurable programmable mechanical structure,” Robotics , vol. 13, no. 5, p. 77, 2024. [13] J. Gu, Y. Sun, Z. Xia, T. L. Lam, C. Tian, and D. Zhang, “RhoMorph: Rhombus-shaped deformable modular robots for stable, medium-independent reconfiguration motion,” CoRR abs/2601.19529 ,2026. [Online]. Available: https://arxiv.org/abs/2601.19529 [14] S. Feng, Y. Liu, I. Pressgrove, and P. Ben-Tzvi, “Autonomous alignment and docking control for a self-reconfigurable modular mobile robotic system,” Robotics , vol. 13, no. 5, p. 81, 2024. [15] A. Casal and M. H. Yim, “Self-reconfiguration planning for a class of modular robots,” in Sensor Fusion and Decentralized Control in Robotic Systems II , vol. 3839. SPIE, 1999, pp. 246–257. [16] D. Rus and M. Vona, “Self-reconfiguration planning with compressible unit modules,” in Proceedings 1999 IEEE International Conference on Robotics and Automation (ICRA) , vol. 4. IEEE, 1999, pp. 2513–2520. [17] F. Hou and W.-M. Shen, “On the complexity of optimal reconfiguration planning for modular reconfigurable robots,” in 2010 IEEE International Conference on Robotics and Automation . IEEE, 2010, pp. 2791–2796. [18] Z. Ye, M. Yu, and Y.-J. Liu, “NP-completeness of optimal planning problem for modular robots,” Autonomous Robots , vol. 43, no. 8, pp. 2261–2270, 2019. [19] P. Thalamy, B. Piranda, and J. Bourgeois, “A survey of autonomous self-reconfiguration methods for robot-based programmable matter,” 
+
+Robotics and Autonomous Systems , vol. 120, p. 103242, 2019. [20] P. Thalamy, B. Piranda, and J. Bourgeois, “Engineering efficient and massively parallel 3D self-reconfiguration using sandboxing, scaffolding and coating,” Robotics and Autonomous Systems , vol. 146, p. 103875, 2021. [21] D. Brandt and D. J. Christensen, “A new meta-module for controlling large sheets of ATRON modules,” in 2007 IEEE/RSJ International Conference on Intelligent Robots and Systems . IEEE, 2007, pp. 2375– 2380. [22] D. J. Dewey, M. P. Ashley-Rollman, M. De Rosa, S. C. Goldstein, T. C. Mowry, S. S. Srinivasa, P. Pillai, and J. Campbell, “Generalizing metamodules to simplify planning in modular robotic systems,” in 
+
+2008 IEEE/RSJ International Conference on Intelligent Robots and Systems . IEEE, 2008, pp. 1338–1345. [23] G. Aloupis, N. Benbernou, M. Damian, E. D. Demaine, R. Flatland, J. Iacono, and S. Wuhrer, “Efficient reconfiguration of lattice-based modular robots,” Computational Geometry , vol. 46, no. 8, pp. 917–928, 2013. [24] Z. Abel and S. D. Kominers, “Pushing hypercubes around,” CoRR abs/0802.3414 , 2008. [25] F. Hurtado, E. Molina, S. Ramaswami, and V. Sacristán, “Distributed reconfiguration of 2D lattice-based modular robotic systems,” Au-tonomous Robots , vol. 38, no. 4, pp. 383–413, 2015. [26] J. Gu, H. Gao, Z. Xia, Y. Sun, C. Tian, and D. Zhang, “Self-reconfiguration planning for deformable quadrilateral modular robots,” 
+
+IEEE Robotics and Automation Letters , vol. 11, no. 6, pp. 7300–7307, 2026.

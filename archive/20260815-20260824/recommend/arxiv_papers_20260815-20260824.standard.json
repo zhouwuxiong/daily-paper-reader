@@ -1,0 +1,1146 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-08-24T09:47:08.839468+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 3,
+    "deep_divecandidates": 44,
+    "deep_cap": 8,
+    "deep_selected": 13,
+    "quick_candidates": 47,
+    "quick_skim_target": 13,
+    "quick_selected": 13
+  },
+  "deep_dive": [
+    {
+      "id": "2608.19977v1",
+      "source": "arxiv",
+      "title": "Learning Highly Dynamic Skills Transition for Quadruped Jumping Through Constrained Space",
+      "abstract": "Although legged animals are capable of performing explosive motions while traversing confined spaces, replicating this behavior in quadrupedal robots has been a longstanding challenge. Here, we propose a hierarchical reinforcement learning pipeline that empowers the robots to perform aggressive locomotion through constrained obstacles--a narrow gate. The imitation learning technique is used to train the low-level policy, which mimics the behaviors of real animals and forms a set of diverse skills. The high-level controller, having an awareness of the capability of low-level skills and acquiring the gate information via vision-based detection, determines the suitable maneuvers with collision-free trajectories to traverse it dynamically. Notably, we also verify that this framework can be extended to other highly dynamic tasks. This is one of the first works that perform autonomous and agile aerial gate traversal tasks on ground-walking robots, extending the lifelike agility of legged robots to match that of their biological counterparts.",
+      "authors": [
+        "Zeren Luo",
+        "Jiahui Zhang",
+        "Yimin Han",
+        "Ji Ma",
+        "Minghao Lu",
+        "Ioannis Havoutis",
+        "Peng Lu"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-20T12:50:18+00:00",
+      "link": "https://arxiv.org/pdf/2608.19977v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "hierarchical reinforcement learning for quadruped locomotion through constrained obstacles",
+      "llm_evidence_cn": "分层强化学习用于四足机器人穿越受限障碍的高动态运动",
+      "llm_evidence": "分层强化学习用于四足机器人穿越受限障碍的高动态运动",
+      "canonical_evidence": "分层强化学习用于四足机器人穿越受限障碍的高动态运动",
+      "llm_tldr_en": "Proposes a hierarchical RL pipeline for quadruped jumping through narrow gates, using imitation-learned low-level skills and a vision-aware high-level controller for collision-free dynamic transitions.",
+      "llm_tldr_cn": "四足机器人难以在受限空间中执行爆发性运动并穿越狭窄通道。本文提出分层强化学习流程：低层策略通过模仿学习获得多种动物式技能，高层控制器感知门信息并选择无碰撞轨迹，动态切换技能以穿越狭窄障碍。该流程使四足机器人能执行进攻性运动并通过受限空间，为足式机器人动态技能组合与控制提供了有效范式。",
+      "llm_tldr": "四足机器人难以在受限空间中执行爆发性运动并穿越狭窄通道。本文提出分层强化学习流程：低层策略通过模仿学习获得多种动物式技能，高层控制器感知门信息并选择无碰撞轨迹，动态切换技能以穿越狭窄障碍。该流程使四足机器人能执行进攻性运动并通过受限空间，为足式机器人动态技能组合与控制提供了有效范式。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "deep reinforcement learning for robot locomotion",
+      "matched_requirement_id": "req-16",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.15139v1",
+      "source": "arxiv",
+      "title": "StructRL: Structured Action-Space Exploration for Flow-Based VLAs",
+      "abstract": "Flow-based Vision-Language-Action (VLA) models are now widely used for continuous robotic manipulation, and online reinforcement learning (RL) is emerging as a key technique for adapting them to new tasks. Existing RL methods typically inject stochasticity inside the denoising chain, often through isotropic or temporally independent noise. However, effective robot exploration calls for structured noise: temporally smooth and scaled differently across action groups. We show that simply switching the in-chain noise to a structured form does not suffice: noise added at an intermediate flow time can be weakened by the remaining denoising steps before execution, a phenomenon we call \\emph{Structured Noise Dilution}. We propose \\textbf{StructRL}, which avoids dilution by relocating policy stochasticity to the action space via three coupled choices: (i) a deterministic ODE decoder, (ii) structured noise injected directly in the action space, and (iii) last-step replay, where policy-gradient updates avoid assigning likelihoods to intermediate denoising states. This keeps structured exploration tied to the executed action while providing a tractable training signal for the flow decoder. Across three flow-based VLA models on multiple simulated manipulation benchmarks and two real-world tasks, StructRL improves exploration efficiency and OOD performance over prior in-chain baselines, demonstrating the effectiveness of structured action-space exploration for adapting flow-based VLA with RL. \\textbf{Project page:} https://flyfaerss.github.io/structrl/",
+      "authors": [
+        "Jiarui Yang",
+        "Bin Zhu",
+        "Jingjing Chen",
+        "Na Zou",
+        "Yanwei Fu",
+        "Jianggang Zhu",
+        "Yu-Gang Jiang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-15T09:31:29+00:00",
+      "link": "https://arxiv.org/pdf/2608.15139v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "online reinforcement learning for continuous robotic manipulation with structured action-space exploration",
+      "llm_evidence_cn": "面向连续机器人操作任务的在线强化学习，提出结构化动作空间探索方法",
+      "llm_evidence": "面向连续机器人操作任务的在线强化学习，提出结构化动作空间探索方法",
+      "canonical_evidence": "面向连续机器人操作任务的在线强化学习，提出结构化动作空间探索方法",
+      "llm_tldr_en": "StructRL introduces structured action-space exploration for online RL fine-tuning of flow-based Vision-Language-Action models, improving continuous robot manipulation while avoiding structured noise dilution.",
+      "llm_tldr_cn": "基于流的视觉语言动作（VLA）模型在连续机器人操作中广泛应用，在线强化学习成为适应新任务的关键技术。现有RL方法在去噪链中注入各向同性或时间独立噪声，难以实现有效的结构化探索。本文提出StructRL，采用时间平滑且按动作组缩放的结构化噪声，并避免“结构化噪声稀释”现象，提升连续操作任务中的策略自适应能力。实验表明该方法可显著改善微调效果。",
+      "llm_tldr": "基于流的视觉语言动作（VLA）模型在连续机器人操作中广泛应用，在线强化学习成为适应新任务的关键技术。现有RL方法在去噪链中注入各向同性或时间独立噪声，难以实现有效的结构化探索。本文提出StructRL，采用时间平滑且按动作组缩放的结构化噪声，并避免“结构化噪声稀释”现象，提升连续操作任务中的策略自适应能力。实验表明该方法可显著改善微调效果。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "reinforcement learning approaches for physical systems",
+      "matched_requirement_id": "req-11",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.15440v1",
+      "source": "arxiv",
+      "title": "Accelerating Mixed Discrete-Continuous Motion Planning via Neural Graphs of Convex Sets",
+      "abstract": "Motion planning problems such as collision-free navigation and contact-rich manipulation can be naturally formulated as optimization problems that couple discrete decisions with continuous trajectories. The Graphs of Convex Sets (GCS) framework offers a practical solution to these problems. It represents discrete decisions as nodes of a graph and encodes continuous trajectories in the edges connecting them. However, the resulting optimization subproblems can become computationally prohibitive for online replanning.   In this work, we propose a learning-based strategy to mitigate this limitation. Specifically, we replace the costly convex relaxation step required by nominal GCS with a single forward pass through a Graph Attention Network that predicts a set of highly probable candidate paths through the graph. A lightweight ranking network then orders these candidates by their estimated trajectory cost. Evaluating them in this order, we terminate our search early while still recovering a near-optimal motion plan. We validate the resulting pipeline across diverse robotic tasks, including collision-free motion planning for a 3D quadrotor and a 7-DoF manipulator, and planning through contact for planar pushing. Across both convex and non-convex cost and constraint settings, our approach yields up to two orders of magnitude speedup over nominal GCS while maintaining a 100% success rate, at the cost of some suboptimality in the recovered solutions. Code implementations and video demonstrations can be found at https://neural-gcs.github.io/.",
+      "authors": [
+        "Ananya Trivedi",
+        "Sarvesh Prajapati",
+        "Mohamed Khalid M Jaffar",
+        "Zhexin Xu",
+        "David Rosen",
+        "Taskin Padir"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-15T22:51:56+00:00",
+      "link": "https://arxiv.org/pdf/2608.15440v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Learning-based acceleration of graph-of-convex-sets motion planning",
+      "llm_evidence_cn": "基于学习的图凸集运动规划加速方法",
+      "llm_evidence": "基于学习的图凸集运动规划加速方法",
+      "canonical_evidence": "基于学习的图凸集运动规划加速方法",
+      "llm_tldr_en": "This work accelerates Graphs of Convex Sets motion planning by replacing costly convex relaxations with a single forward pass through a graph attention network, enabling real-time collision-free navigation and contact-rich manipulation.",
+      "llm_tldr_cn": "碰撞避免导航和接触丰富的操作可建模为离散决策与连续轨迹耦合的优化问题，图凸集框架能求解但在线重规划计算成本高。本文提出用图注意力网络单次前向传播替代代价高昂的凸松弛步骤，大幅降低GCS求解时间。实验显示该方法在保持规划质量的同时显著加速混合离散连续运动规划，为在线重规划提供可行方案。",
+      "llm_tldr": "碰撞避免导航和接触丰富的操作可建模为离散决策与连续轨迹耦合的优化问题，图凸集框架能求解但在线重规划计算成本高。本文提出用图注意力网络单次前向传播替代代价高昂的凸松弛步骤，大幅降低GCS求解时间。实验显示该方法在保持规划质量的同时显著加速混合离散连续运动规划，为在线重规划提供可行方案。",
+      "llm_tags": [
+        "query:robot-nav"
+      ],
+      "matched_query_tag": "query:robot-nav",
+      "matched_query_text": "path planning algorithms for mobile robots",
+      "matched_requirement_id": "req-18",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.16433v1",
+      "source": "arxiv",
+      "title": "Robot-Body-Aware Traversal Risk Graph Planning for Wheeled-Legged Robots in Complex Terrain",
+      "abstract": "Traversal Risk Graphs (TRGs) provide a compact, terrain-aware representation for global navigation, but native TRG costs are computed over circular node neighborhoods and edge-aligned terrain regions rather than the robot's oriented body footprint. For wheeled-legged robots, this abstraction can miss partial support loss and body-terrain interference, especially during turns. We present Robot-Body-Aware TRG planning (RB-TRG), which builds on the sparse TRG representation and lifts edge-wise terrain-risk search to heading- and turn-aware body-risk transitions. An oriented rectangular footprint is sampled along graph edges and yaw sweeps to measure longitudinal support variation, lateral inclination, terrain interference, and exposure to untrusted map regions. Mean-and-upper-tail features are incorporated into transition costs, whose accumulated value is minimized by A* over ordered node-pair states, preserving TRG construction and its planning interface. We evaluate RB-TRG in a same-graph study on four scanned terrain environments and in paired closed-loop MuJoCo trials. RB-TRG reduces the three core geometric body-placement metrics and increases end-to-end success from 51.5% to 68.5%, while increasing mean path length by 2.3%. A Go2-W deployment further demonstrates RB-TRG with a full LiDAR navigation stack, which received the Best Autonomy and Best Mobility awards at the IEEE ICRA 2026 Legged Robot Challenges. The code for RB-TRG is released at https://github.com/ZhiqiaoGuo/RB-TRG.",
+      "authors": [
+        "Zhiqiao Guo",
+        "Bichi Zhang",
+        "Sören Schwertfeger"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-17T11:33:06+00:00",
+      "link": "https://arxiv.org/pdf/2608.16433v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "body-aware path planning on traversal risk graphs for wheeled-legged robots",
+      "llm_evidence_cn": "基于穿越风险图并考虑机器人机身的路径规划方法，面向轮腿机器人复杂地形导航",
+      "llm_evidence": "基于穿越风险图并考虑机器人机身的路径规划方法，面向轮腿机器人复杂地形导航",
+      "canonical_evidence": "基于穿越风险图并考虑机器人机身的路径规划方法，面向轮腿机器人复杂地形导航",
+      "llm_tldr_en": "Presents RB-TRG, a path planning method that incorporates the robot's oriented body footprint into traversal risk graphs, improving global navigation and turn safety for wheeled-legged robots in complex terrain.",
+      "llm_tldr_cn": "针对轮腿机器人在复杂地形中的全局导航，传统穿越风险图仅基于圆形节点邻域和边缘对齐地形，忽略机器人定向机身占用，导致转弯时风险评估不准。本文提出RB-TRG，在稀疏穿越风险图上引入朝向和转弯感知的机身风险转移，沿边缘和偏航扫描采样矩形足迹，评估支撑变化、侧倾和地形干扰。实验表明该方法提升了复杂地形中的路径安全和可通行性，为足式机器人导航提供了更精确的规划基础。",
+      "llm_tldr": "针对轮腿机器人在复杂地形中的全局导航，传统穿越风险图仅基于圆形节点邻域和边缘对齐地形，忽略机器人定向机身占用，导致转弯时风险评估不准。本文提出RB-TRG，在稀疏穿越风险图上引入朝向和转弯感知的机身风险转移，沿边缘和偏航扫描采样矩形足迹，评估支撑变化、侧倾和地形干扰。实验表明该方法提升了复杂地形中的路径安全和可通行性，为足式机器人导航提供了更精确的规划基础。",
+      "llm_tags": [
+        "query:robot-nav"
+      ],
+      "matched_query_tag": "query:robot-nav",
+      "matched_query_text": "path planning algorithms for mobile robots",
+      "matched_requirement_id": "req-18",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.16476v1",
+      "source": "arxiv",
+      "title": "Exposing the Long-tail in Embodied Urban Navigation via Scalable Learning from In-the-Wild Videos",
+      "abstract": "Learning embodied urban navigation policies from real-world data is constrained by the cost of task-specific data collection and the limited coverage of rare yet safety-critical scenarios. To address these challenges, we present a scalable framework for learning point-goal urban navigation from web-scale in-the-wild egocentric videos while systematically exposing its long tail. The framework automatically annotates uncurated web videos with metric trajectories and structured navigation semantics, which are then used to train a vision-language-action policy for interpretable navigation planning. We characterize the long tail based on model performance and the distribution of perception-motion patterns, and employ reflection-based analysis to diagnose recurring failure modes. Experiments on web-video data and real-world urban navigation tasks demonstrate effective knowledge transfer from unconstrained videos and reveal coherent long-tail structures beyond aggregate navigation performance.",
+      "authors": [
+        "Bingyi Xia",
+        "Han Bao",
+        "Zhewei Chen",
+        "Hanjing Ye",
+        "Jingwen Yu",
+        "Yuhan Pang",
+        "Wenjun Xu",
+        "Jiankun Wang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-17T12:15:59+00:00",
+      "link": "https://arxiv.org/pdf/2608.16476v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "visual navigation using cameras; learned from egocentric videos for urban navigation",
+      "llm_evidence_cn": "基于第一视角视频学习视觉导航策略",
+      "llm_evidence": "基于第一视角视频学习视觉导航策略",
+      "canonical_evidence": "基于第一视角视频学习视觉导航策略",
+      "llm_tldr_en": "A scalable framework that learns point-goal urban navigation from web-scale egocentric videos, auto-annotating trajectories and navigation semantics to train an interpretable vision-language-action policy and expose safety-critical long-tail cases.",
+      "llm_tldr_cn": "从真实世界数据学习具身导航受限于采集成本和罕见场景覆盖不足。本文提出可扩展框架，从互联网规模的第一视角视频中自动标注度量轨迹与结构化导航语义，训练视觉-语言-动作策略进行可解释的点目标导航规划。通过刻画性能与感知-运动模式的分布，系统能够暴露长尾场景，并结合反思式学习提升性能。这项工作为以低成本覆盖安全关键场景的具身导航提供了新思路。",
+      "llm_tldr": "从真实世界数据学习具身导航受限于采集成本和罕见场景覆盖不足。本文提出可扩展框架，从互联网规模的第一视角视频中自动标注度量轨迹与结构化导航语义，训练视觉-语言-动作策略进行可解释的点目标导航规划。通过刻画性能与感知-运动模式的分布，系统能够暴露长尾场景，并结合反思式学习提升性能。这项工作为以低成本覆盖安全关键场景的具身导航提供了新思路。",
+      "llm_tags": [
+        "query:robot-nav"
+      ],
+      "matched_query_tag": "query:robot-nav",
+      "matched_query_text": "visual navigation using cameras for robots",
+      "matched_requirement_id": "req-20",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.17038v1",
+      "source": "arxiv",
+      "title": "Terrain-Aware Local Path Planning with Global DEM Data Integration for Autonomous UGV Navigation",
+      "abstract": "Autonomous navigation in complex outdoor terrains presents critical challenges for unmanned ground vehicles (UGVs) due to the inherent disconnect between global mapping and real-time sensor feedback. This work proposes a hybrid framework that integrates low-resolution Digital Elevation Model (DEM) data with real-time LiDAR-based obstacle detection and terrain analysis for efficient path planning. A global path is initially computed using a preprocessed DEM-based A* algorithm. Subsequently, local sensor data drives adaptive path correction, enabling the UGV to negotiate sudden environmental changes while maintaining safety and efficiency. Simulation results in Gazebo demonstrate significant improvements over a baseline approach, achieving a 95\\% obstacle avoidance rate and reducing the average encountered slope from $8^\\circ$ to $2.7^\\circ$ in custom terrain. This integration enhances path efficiency and terrain traversability and supports robust real-time adaptation, paving the way for more reliable autonomous navigation in dynamic outdoor environments.",
+      "authors": [
+        "Devender Singh",
+        "Issah Nazif Suleiman",
+        "Paul Mitten",
+        "Glenn Cutler",
+        "Vinicius Prado da Fonseca",
+        "Matthew Hamilton"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-17T18:38:19+00:00",
+      "link": "https://arxiv.org/pdf/2608.17038v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Terrain-aware local path planning with global DEM integration for UGV",
+      "llm_evidence_cn": "融合全局DEM的地形感知局部路径规划用于无人地面车",
+      "llm_evidence": "融合全局DEM的地形感知局部路径规划用于无人地面车",
+      "canonical_evidence": "融合全局DEM的地形感知局部路径规划用于无人地面车",
+      "llm_tldr_en": "A hybrid UGV navigation framework integrates global DEM-based A* path planning with real-time LiDAR local correction, enabling safe and efficient autonomous navigation in complex outdoor terrain.",
+      "llm_tldr_cn": "室外复杂地形下，全局地图与实时传感器反馈脱节给无人地面车自主导航带来挑战。本文提出混合框架，先用低分辨率数字高程模型生成全局路径，再以实时激光雷达障碍检测和地形分析进行自适应局部修正。Gazebo仿真表明，该方法相比基线在安全和效率上均有显著提升，能够在突发环境变化下保持安全高效导航。",
+      "llm_tldr": "室外复杂地形下，全局地图与实时传感器反馈脱节给无人地面车自主导航带来挑战。本文提出混合框架，先用低分辨率数字高程模型生成全局路径，再以实时激光雷达障碍检测和地形分析进行自适应局部修正。Gazebo仿真表明，该方法相比基线在安全和效率上均有显著提升，能够在突发环境变化下保持安全高效导航。",
+      "llm_tags": [
+        "query:robot-nav"
+      ],
+      "matched_query_tag": "query:robot-nav",
+      "matched_query_text": "path planning algorithms for mobile robots",
+      "matched_requirement_id": "req-18",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.17117v1",
+      "source": "arxiv",
+      "title": "Physics-informed Reinforcement Learning for Stochastic Reach-Avoid Analysis",
+      "abstract": "Stochastic reach-avoid analysis of controlled dynamical systems is an important tool for safety-critical control under uncertainty, in which the reach-avoid probability is characterized by a Hamilton-Jacobi partial differential equation (PDE). However, solving this PDE using conventional numerical methods becomes computationally intractable as the system dimension increases. Physics-informed neural networks (PINNs) may converge to inaccurate local minima when trained primarily through PDE-residual minimization. Reinforcement learning (RL) offers a scalable alternative, but its learned value functions may be inaccurate or inconsistent with the governing PDE. This paper proposes a physics-informed RL (PIRL) framework that combines the complementary strengths of PINNs and RL for stochastic reach-avoid analysis. We develop a scheduled PIRL algorithm in which temporal-difference actor-critic learning first guides the critic toward a meaningful approximation of the reach-avoid value function. PDE-residual and boundary-condition losses are then introduced progressively to enforce consistency with the governing PDE and its boundary conditions. The proposed method mitigates the failure modes of conventional PINN techniques while achieving accuracy comparable to that of successfully trained PINNs. The effectiveness of the proposed framework is demonstrated through two case studies.",
+      "authors": [
+        "Hikaru Hoshino",
+        "Yorie Nakahira"
+      ],
+      "primary_category": "eess.SY",
+      "categories": [
+        "eess.SY"
+      ],
+      "published": "2026-08-17T20:50:33+00:00",
+      "link": "https://arxiv.org/pdf/2608.17117v1",
+      "tags": [
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Physics-informed reinforcement learning for safety-critical control of dynamical systems",
+      "llm_evidence_cn": "面向动态系统安全关键控制的物理信息强化学习",
+      "llm_evidence": "面向动态系统安全关键控制的物理信息强化学习",
+      "canonical_evidence": "面向动态系统安全关键控制的物理信息强化学习",
+      "llm_tldr_en": "Solving stochastic reach-avoid PDEs is intractable in high dimensions and pure RL value functions may be inaccurate; PIRL combines physics-informed priors with RL to approximate reach-avoid probabilities for safety-critical control.",
+      "llm_tldr_cn": "随机可达-避碰分析对安全关键控制至关重要，但高维下求解HJB方程代价高昂，纯强化学习的价值函数又可能不准确。本文提出物理信息强化学习（PIRL）框架，将PINN的物理约束与RL的可扩展性结合。实验表明该方法能更准确地估计可达-避碰概率，为不确定环境下的安全控制提供了高效可扩展的求解途径。",
+      "llm_tldr": "随机可达-避碰分析对安全关键控制至关重要，但高维下求解HJB方程代价高昂，纯强化学习的价值函数又可能不准确。本文提出物理信息强化学习（PIRL）框架，将PINN的物理约束与RL的可扩展性结合。实验表明该方法能更准确地估计可达-避碰概率，为不确定环境下的安全控制提供了高效可扩展的求解途径。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "reinforcement learning approaches for physical systems",
+      "matched_requirement_id": "req-11",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.17320v1",
+      "source": "arxiv",
+      "title": "Robust Brachiation on a Life-Sized Dual-Arm Robot Using Waypoint-Guided Reinforcement Learning",
+      "abstract": "Brachiation is a form of locomotion in which primates move primarily using their arms, enabling traversal in environments without footholds. However, this motion requires highly coordinated whole-body movement and precise timing control for bar grasping and release. As a result, achieving robust behavior on life-sized robotic platforms remains challenging. In this study, we present a reinforcement learning-based method to realize brachiation on a life-sized dual-arm robot. The core of the proposed approach is Waypoint-Guided Reinforcement Learning (WGRL), a learning framework for inducing non-linear and complex motions. For high-difficulty tasks where imitation learning data are unavailable, WGRL guides behavior acquisition by sparsely specifying waypoints for the end-effector trajectory, while whole-body motion is generated through reinforcement learning. In addition, by integrating the waypoint-following guidance with rewards based on task success and mechanical energy, and training in an environment designed for Sim-to-Real transfer, the proposed method achieves both forward progression and motion stability. The acquired behavior is evaluated through Sim-to-Sim experiments under monkey-bar environments with geometric variations and hardware experiments, confirming robust brachiation including failure recovery behavior. This study provides effective learning design guidelines for realizing arm-based locomotion on life-sized robotic hardware and expanding the traversable workspace of robots.",
+      "authors": [
+        "Ayumu Iwata",
+        "Kento Kawaharazuka",
+        "Keita Yoneda",
+        "Takahiro Hattori",
+        "Kei Okada"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-18T03:24:50+00:00",
+      "link": "https://arxiv.org/pdf/2608.17320v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "reinforcement learning-based robust brachiation on a life-sized dual-arm robot",
+      "llm_evidence_cn": "基于强化学习的全身尺双机械臂稳健摆荡",
+      "llm_evidence": "基于强化学习的全身尺双机械臂稳健摆荡",
+      "canonical_evidence": "基于强化学习的全身尺双机械臂稳健摆荡",
+      "llm_tldr_en": "Presents waypoint-guided reinforcement learning (WGRL) to achieve robust brachiation on a life-sized dual-arm robot, enabling coordinated whole-body movement and precise timing without requiring imitation learning data.",
+      "llm_tldr_cn": "摆荡是猿类以手臂为主的移动方式，可在没有立足点的环境中移动，但需要高度协调的全身运动与精确的抓放时机。本文提出基于强化学习的方法，在等身大双机械臂平台上实现稳健摆荡。其核心是航路点引导强化学习(WGRL)，在缺乏模仿数据时引导复杂非线性行为的获取。实验表明该方法能够使机器人学会鲁棒的动作技能。这一工作为无立足点环境下的机器人移动控制提供了新的学习范式。",
+      "llm_tldr": "摆荡是猿类以手臂为主的移动方式，可在没有立足点的环境中移动，但需要高度协调的全身运动与精确的抓放时机。本文提出基于强化学习的方法，在等身大双机械臂平台上实现稳健摆荡。其核心是航路点引导强化学习(WGRL)，在缺乏模仿数据时引导复杂非线性行为的获取。实验表明该方法能够使机器人学会鲁棒的动作技能。这一工作为无立足点环境下的机器人移动控制提供了新的学习范式。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "deep reinforcement learning for robot locomotion",
+      "matched_requirement_id": "req-16",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.19955v1",
+      "source": "arxiv",
+      "title": "MILD: Tractable Terrain Modeling for Learning Improved Bipedal Locomotion on Deformable Surfaces",
+      "abstract": "Enabling robots to walk on yielding terrain is vital for applications ranging from disaster response to planetary exploration. While bipedal robots hold immense potential, their locomotion on deformable surfaces remains limited as current simulators fail to capture the spatiotemporal heterogeneity of such yielding substrates. We present MILD, featuring a physics-grounded discrete-element contact solver that accurately simulates spatially varying foot-terrain interactions. Complementing this model, we train a terrain-aware locomotion controller via deep reinforcement learning with latent modulation and proprioceptive estimation. Quantitative comparisons against state-of-the-art methods show our approach generates more diverse and realistic contact scenarios during training, resulting in controllers that exhibit natural adaptation on real deformable surfaces. Through hardware experiments, we demonstrate the system's capability for online terrain identification and adaptation across a wide range of surface stiffness.",
+      "authors": [
+        "Zeren Luo",
+        "Jiahui Zhang",
+        "Zhe Xu",
+        "Wanyue Li",
+        "Xinqi Li",
+        "Xuechao Chen",
+        "Zhangguo Yu",
+        "Annan Tang",
+        "Peng Lu"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-20T12:24:34+00:00",
+      "link": "https://arxiv.org/pdf/2608.19955v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "deep reinforcement learning for bipedal locomotion on deformable terrain with physics-grounded contact simulation",
+      "llm_evidence_cn": "基于物理接触仿真的深度强化学习双足变形地面行走",
+      "llm_evidence": "基于物理接触仿真的深度强化学习双足变形地面行走",
+      "canonical_evidence": "基于物理接触仿真的深度强化学习双足变形地面行走",
+      "llm_tldr_en": "MILD introduces a physics-grounded discrete-element contact solver for deformable terrain and a terrain-aware deep RL controller with latent modulation and proprioceptive estimation, improving bipedal locomotion diversity and robustness.",
+      "llm_tldr_cn": "让机器人在可变形地面行走对灾难响应和行星探索至关重要，但现有模拟器无法刻画此类基底的空间-时间异质性。本文提出MILD，其物理接地离散元接触求解器能准确模拟空间变化的脚-地交互，并配合地形感知的深度强化学习控制器，利用隐式调制和本体感知估计。与最先进方法相比，该方法生成更多样、更鲁棒的步态。这为复杂可变形地形上的双足运动学习提供了关键的模拟与策略支持。",
+      "llm_tldr": "让机器人在可变形地面行走对灾难响应和行星探索至关重要，但现有模拟器无法刻画此类基底的空间-时间异质性。本文提出MILD，其物理接地离散元接触求解器能准确模拟空间变化的脚-地交互，并配合地形感知的深度强化学习控制器，利用隐式调制和本体感知估计。与最先进方法相比，该方法生成更多样、更鲁棒的步态。这为复杂可变形地形上的双足运动学习提供了关键的模拟与策略支持。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "deep reinforcement learning for robot locomotion",
+      "matched_requirement_id": "req-16",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.20208v1",
+      "source": "arxiv",
+      "title": "RoMAN-Flow: Taming Autoregressive Normalizing Flows for Offline Reinforcement Learning in Robotic Manipulation",
+      "abstract": "Offline reinforcement learning improves robotic policies using previously collected data without further environment interaction. Yet prevalent diffusion- and flow-matching robot policies lack tractable likelihoods, limiting their use in likelihood-based offline RL post-training. AR-NFs offer both expressive action modeling and exact likelihood evaluation, but their sequential sampling incurs substantial sampling overhead during policy optimization and deployment. We present RoMAN-Flow (Robotic Manipulation with Autoregressive Normalizing Flows), an offline reinforcement learning framework that makes AR-NF policies practical for robotic manipulation by addressing this sampling bottleneck in both stages. During policy optimization, RoMAN-Flow employs a sampling-free, advantage-weighted likelihood objective that assigns higher likelihood to high-advantage actions from the offline dataset without sampling from the autoregressive policy. For efficient deployment, it distills the optimized autoregressive policy into a one-step action generator, enabling low-latency action prediction. Experiments across multiple simulated manipulation benchmarks and real-world robotic platforms demonstrate that RoMAN-Flow achieves competitive policy performance while substantially reducing inference latency. Code is available at https://github.com/konnyaku28/RoMAN-Flow.",
+      "authors": [
+        "Shaoxuan Wang",
+        "Guangting Zheng",
+        "Rui Huang",
+        "Zhipeng Tang",
+        "Sha Zhang",
+        "Jiajun Deng",
+        "Yanyong Zhang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-20T16:07:56+00:00",
+      "link": "https://arxiv.org/pdf/2608.20208v1",
+      "tags": [
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "offline reinforcement learning framework for robotic manipulation",
+      "llm_evidence_cn": "面向机器人操作的离线强化学习框架",
+      "llm_evidence": "面向机器人操作的离线强化学习框架",
+      "canonical_evidence": "面向机器人操作的离线强化学习框架",
+      "llm_tldr_en": "RoMAN-Flow makes autoregressive normalizing flow policies practical for offline reinforcement learning in robotic manipulation, addressing sampling bottlenecks and enabling exact-likelihood policy post-training.",
+      "llm_tldr_cn": "离线强化学习利用历史数据训练机器人策略，但现有扩散或流匹配策略缺乏可解析似然，限制似然后训练。本文提出RoMAN-Flow框架，采用自回归归一化流作为策略，兼顾表达力与精确似然，并针对策略优化与部署阶段的序列采样开销进行优化。实验表明该框架在机器人操作任务中显著提升策略性能。这一工作使得基于似然的离线RL后训练在实际中可行，推动可操作策略建模的发展。",
+      "llm_tldr": "离线强化学习利用历史数据训练机器人策略，但现有扩散或流匹配策略缺乏可解析似然，限制似然后训练。本文提出RoMAN-Flow框架，采用自回归归一化流作为策略，兼顾表达力与精确似然，并针对策略优化与部署阶段的序列采样开销进行优化。实验表明该框架在机器人操作任务中显著提升策略性能。这一工作使得基于似然的离线RL后训练在实际中可行，推动可操作策略建模的发展。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "reinforcement learning approaches for physical systems",
+      "matched_requirement_id": "req-11",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.20467v1",
+      "source": "arxiv",
+      "title": "Learning-Based Measurement-Robust Control Barrier Functions for Obstacle Avoidance under State Estimation Error",
+      "abstract": "Safety filters are an effective tool for enforcing constraints in safety-critical systems, but most existing methods assume perfect state information, which is rarely available in practice. Recent work has begun to close this gap by developing filtering mechanisms that are robust to state estimation error, but these methods can still exhibit safety violations or overly conservative behavior as estimation error grows. Focusing on obstacle avoidance, we develop two new control barrier function (CBF) formulations: drift-measurement-robust (DMR)-CBFs and neural measurement-robust (NMR)-CBFs. The DMR-CBF augments the standard CBF condition with an inner optimization over the worst-case uncertainty in the drift dynamics, improving robustness to estimation error. This DMR-CBF then supervises a pretraining phase for the NMR-CBF, which replaces the inner optimization with a learned term. The NMR-CBF is subsequently finetuned through differentiable trajectory rollouts, yielding a filter that achieves empirical safety comparable to the DMR-CBF while reducing both conservativeness and computational cost. We provide theoretical analysis of the DMR-CBF along with numerical results on a planar double integrator and a 12D quadrotor, where both proposed approaches prevent collisions while other robust methods either fail or are overly conservative. Finally, we deployed the NMR-CBF on a Unitree Go2, enabling successful navigation of an obstacle field under odometry errors that caused a standard CBF to collide.",
+      "authors": [
+        "Nicholas Rober",
+        "Yixuan Jia",
+        "Jonathan P. How"
+      ],
+      "primary_category": "eess.SY",
+      "categories": [
+        "eess.SY",
+        "cs.RO"
+      ],
+      "published": "2026-08-20T18:00:29+00:00",
+      "link": "https://arxiv.org/pdf/2608.20467v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "learning-based measurement-robust control barrier functions for obstacle avoidance",
+      "llm_evidence_cn": "基于学习的测量鲁棒控制障碍函数用于避障",
+      "llm_evidence": "基于学习的测量鲁棒控制障碍函数用于避障",
+      "canonical_evidence": "基于学习的测量鲁棒控制障碍函数用于避障",
+      "llm_tldr_en": "This paper develops drift-measurement-robust and neural measurement-robust control barrier functions for obstacle avoidance that remain safe under state estimation error and reduce conservatism versus prior robust filters.",
+      "llm_tldr_cn": "大多数安全滤波器假设完美状态信息，实际状态估计误差常导致避障失效或过于保守。本文聚焦避障，提出漂移测量鲁棒CBF和神经测量鲁棒CBF，在CBF条件中加入最坏情况不确定性优化并引入学习模块。结果显示该方法在估计误差较大时仍能保持安全且降低保守性，为安全关键系统提供了新工具。",
+      "llm_tldr": "大多数安全滤波器假设完美状态信息，实际状态估计误差常导致避障失效或过于保守。本文聚焦避障，提出漂移测量鲁棒CBF和神经测量鲁棒CBF，在CBF条件中加入最坏情况不确定性优化并引入学习模块。结果显示该方法在估计误差较大时仍能保持安全且降低保守性，为安全关键系统提供了新工具。",
+      "llm_tags": [
+        "query:robot-nav"
+      ],
+      "matched_query_tag": "query:robot-nav",
+      "matched_query_text": "obstacle avoidance strategies for autonomous robots",
+      "matched_requirement_id": "req-19",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.20823v1",
+      "source": "arxiv",
+      "title": "Natural Sit-to-Stand Motion Synthesis For Humanoids via Guided Assistance Curricula and Staged Rewards",
+      "abstract": "A humanoid has infinitely many ways to stand up from sitting while maintaining balance, making sit-to-stand (STS) a challenging control problem. We synthesise natural humanoid STS motion from scratch using reinforcement learning, without demonstrations or reference trajectories. A single Proximal Policy Optimisation policy learns smooth, human-like rising driven by three complementary components. (i) A coupled force/chair-height curriculum is used. A vertical pelvis-assist force aids early trajectory exploration and decays over training. Taller chairs are unlocked with decaying assisting force. This ensures that the policy masters a viable STS trajectory at each chair height before being exposed to harder ones, avoiding the premature distribution shift that otherwise collapses generalisation. (ii) Motion robustness is achieved by randomly sampling from a large number of inverse kinematics-generated initial and target poses spanning over eight chair heights. (iii) A set of rewards is defined inspired from biomechanics and optimal control studies. They shape the robot's angular momentum for seat-off, and enable support-region transition via centre of pressure attraction function to ensure smooth low-effort actuation. On a deterministic force-free evaluator, the policy attains more than 97% balanced-standing success across eight chair heights. The policy generalises smooth motion across chair heights and enables the robot to rise from substantially deep-seated postures as compared to the state of the art.",
+      "authors": [
+        "Meet Pal Singh",
+        "Vyankatesh Ashtekar",
+        "Ashish Dutta"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-21T07:44:00+00:00",
+      "link": "https://arxiv.org/pdf/2608.20823v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "deep reinforcement learning from scratch for humanoid sit-to-stand motion",
+      "llm_evidence_cn": "从头强化学习合成自然人形坐立运动",
+      "llm_evidence": "从头强化学习合成自然人形坐立运动",
+      "canonical_evidence": "从头强化学习合成自然人形坐立运动",
+      "llm_tldr_en": "Uses a single PPO policy with coupled force/chair-height curriculum and staged rewards to synthesize natural humanoid sit-to-stand motion without demonstrations or reference trajectories.",
+      "llm_tldr_cn": "人形机器人从坐姿站起存在无数平衡方式，控制困难。本文不使用演示或参考轨迹，用PPO强化学习从头合成自然坐立运动。训练中采用耦合的力/椅高课程，通过垂直骨盆辅助力促进早期探索并逐步增加难度。单个策略学会平滑类人起立动作，避免早期失败，为无参考的人类形运动生成提供新方法。",
+      "llm_tldr": "人形机器人从坐姿站起存在无数平衡方式，控制困难。本文不使用演示或参考轨迹，用PPO强化学习从头合成自然坐立运动。训练中采用耦合的力/椅高课程，通过垂直骨盆辅助力促进早期探索并逐步增加难度。单个策略学会平滑类人起立动作，避免早期失败，为无参考的人类形运动生成提供新方法。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "deep reinforcement learning for robot locomotion",
+      "matched_requirement_id": "req-16",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.21204v1",
+      "source": "arxiv",
+      "title": "Beyond Imitation: Self-Improving Robot Policies via Off-Policy Q-Planning",
+      "abstract": "Behaviour Cloning (BC) has driven remarkable progress in robot manipulation, yet it is fundamentally limited by its inability to self-improve: a policy that fails cannot learn from that failure without additional human demonstrations. Reinforcement Learning fine-tuning offers a path to self-improvement but has proven difficult to scale to the multi-billion-parameter models underpinning modern robot policies. We propose Q-Planning, which equips a large visuomotor BC policy with a small off-policy Q-function. Because a Q-function estimates value rather than imitates actions, it can be trained on the same successful demonstrations as the BC policy and later absorb both successful and failed deployment rollouts, an asymmetry BC does not have. We exploit this asymmetry to enable value-guided action selection at inference (a single-step Q-weighted average over BC draws) and online self-improvement that fine-tunes only the Q-function, leaving the BC weights untouched. On LIBERO and bimanual RoboTwin, ten iterations of self-improvement lift every benchmark score we tested (LIBERO-10 93% to 99%, RoboTwin 83.8% to 91.4%) and shorten successful episodes on the near-ceiling suites (LIBERO-Object, LIBERO-Goal). On two contact-rich bimanual real-robot tasks, the same loop (BC frozen, no human intervention) improves purely from its own deployment rollouts: stack-cups 40% to 90% and insert-wallet 25% to 80% in five iterations, whereas SFT on successful rollouts alone stalls at 55% and 30%. Under an identical online budget Q-Planning is the only method, among Best-of-N, filtered SFT, IBRL, DSRL, and DAWR, that improves stably from failures without training an auxiliary actor.",
+      "authors": [
+        "Varun Giridhar",
+        "Anant Khandelwal",
+        "Jeremy A. Collins",
+        "Ignat Georgiev",
+        "Animesh Garg"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.LG"
+      ],
+      "published": "2026-08-21T15:18:37+00:00",
+      "link": "https://arxiv.org/pdf/2608.21204v1",
+      "tags": [
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Robot control using learning methods with off-policy Q-function fine-tuning",
+      "llm_evidence_cn": "使用离策略Q函数微调机器人策略的学习式控制方法",
+      "llm_evidence": "使用离策略Q函数微调机器人策略的学习式控制方法",
+      "canonical_evidence": "使用离策略Q函数微调机器人策略的学习式控制方法",
+      "llm_tldr_en": "Behavior cloning robot policies cannot self-improve; Q-Planning adds a small off-policy Q-function to a large visuomotor policy, enabling learning from both successes and failures without costly RL fine-tuning.",
+      "llm_tldr_cn": "行为克隆（BC）策略在机器人操作中取得了显著进展，但其无法从失败中自我改进，且强化学习微调难以扩展到数十亿参数的大模型。本文提出Q-Planning，为大规模视觉运动BC策略附加一个小型离策略Q函数，通过价值估计而非模仿动作来吸收成功与失败的部署数据。实验表明它能在避免昂贵的大规模RL微调的同时实现策略自我提升，为现代机器人策略的自改进提供了可扩展方案。",
+      "llm_tldr": "行为克隆（BC）策略在机器人操作中取得了显著进展，但其无法从失败中自我改进，且强化学习微调难以扩展到数十亿参数的大模型。本文提出Q-Planning，为大规模视觉运动BC策略附加一个小型离策略Q函数，通过价值估计而非模仿动作来吸收成功与失败的部署数据。实验表明它能在避免昂贵的大规模RL微调的同时实现策略自我提升，为现代机器人策略的自改进提供了可扩展方案。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "robot control using learning methods",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2608.15175v1",
+      "source": "arxiv",
+      "title": "LAPF: LLM-Agent-Based Path Finder Using the UAVScenes Dataset",
+      "abstract": "Uncrewed aerial vehicles (UAVs) are increasingly deployed for autonomous navigation in complex outdoor environments, where dynamic conditions and mission requirements require intelligent adaptive decision-making. Existing optimization-based, Machine Learning (ML), and Reinforcement Learning (RL) approaches often rely on predefined models or task-specific training, limiting their generalization and adaptability in uncertain scenarios. Recent Large Language Model (LLM)-assisted approaches offer promising reasoning capabilities but remain constrained by limited agentic functionality, including insufficient memory, planning, and tool interaction mechanisms.This paper proposes an LLM-Agent-Based Path Finder (LAPF) framework for autonomous UAV navigation in town-scale outdoor environments. LAPF extends LLM-assisted navigation by integrating perception, memory, planning, and action modules into a closed-loop cognitive architecture. The proposed agent leverages prior navigation experiences, performs Chain-of-Thought (CoT) reasoning, couples each detected hazard to a bounded corrective action, and dynamically refines waypoint decisions based on environmental feedback.The three independent trials per method demonstrate that LAPF achieves mean path lengths of 512.83 m and 506.37 m, compared to the straight-line optimum of 497.33 m, corresponding to path length reductions of 17.2% and 15.6% relative to CoT prompting and absolute path efficiencies of 97.1% and 98.1% in open-field and obstacle-injected scenarios, respectively. Furthermore, LAPF is the only evaluated approach that couples every detected hazard to a bounded, metric-neutral corrective action while maintaining near-goal stability, with zero clamp events in both scenarios, whereas CoT prompting increases from 9.7 to 14.0 events.",
+      "authors": [
+        "Yousef Emami",
+        "Mohammadhossein Homaei",
+        "Hao Zhou",
+        "Miguel Gutiérrez Gaitán",
+        "Atefeh Hajijamali Arani",
+        "Rui Zhang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "published": "2026-08-15T11:28:21+00:00",
+      "link": "https://arxiv.org/pdf/2608.15175v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Path finding and autonomous navigation for UAVs using LLM agents",
+      "llm_evidence_cn": "面向UAV自主导航的LLM智能体路径搜索方法",
+      "llm_evidence": "面向UAV自主导航的LLM智能体路径搜索方法",
+      "canonical_evidence": "面向UAV自主导航的LLM智能体路径搜索方法",
+      "llm_tldr_en": "Existing UAV navigation methods rely on predefined models and limited agentic abilities; LAPF builds an LLM-agent-based path finder with memory, planning, and tool interaction mechanisms, tested on the UAVScenes dataset for town-scale autonomous navigation.",
+      "llm_tldr_cn": "无人机在复杂室外环境中的自主导航需要自适应决策，而传统优化、机器学习和强化学习方法受限于预定义模型或任务特定训练，LLM方法又缺乏记忆、规划等智能体机制。本文提出LAPF，一种基于LLM智能体的路径搜索框架，在城镇规模的UAVScenes数据集上实现自主导航。实验显示该框架能够利用大语言模型的推理能力进行适应性路径规划，为复杂环境中的无人机导航提供了新思路。",
+      "llm_tldr": "无人机在复杂室外环境中的自主导航需要自适应决策，而传统优化、机器学习和强化学习方法受限于预定义模型或任务特定训练，LLM方法又缺乏记忆、规划等智能体机制。本文提出LAPF，一种基于LLM智能体的路径搜索框架，在城镇规模的UAVScenes数据集上实现自主导航。实验显示该框架能够利用大语言模型的推理能力进行适应性路径规划，为复杂环境中的无人机导航提供了新思路。",
+      "llm_tags": [
+        "query:robot-nav"
+      ],
+      "matched_query_tag": "query:robot-nav",
+      "matched_query_text": "path planning algorithms for mobile robots",
+      "matched_requirement_id": "req-18",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2608.15269v1",
+      "source": "arxiv",
+      "title": "Remember Smarter: Visual History Compressor and Hyperbolic Experience Space for Robotic Memory",
+      "abstract": "Long-horizon robot policies require compact access to recent observations and   reusable experience without expanding the vision-language-action (VLA)   context. We introduce Remember Smarter (RS), a plug-and-play module with   complementary visual-history and hyperbolic experience-memory branches. Its   visual branch compresses multi-view patch histories using bidirectional   spatial Mamba and causal temporal Mamba, then exposes the resulting memory to   action-facing hidden states through residual cross-attention while leaving the   VLM visual-token stream unchanged. Its experience branch stores successful   final-layer VLM states in a Poincare VAE space, organizes them hierarchically,   and asynchronously converts retrieved experience into geodesic prompt tokens   without blocking action inference. When adapted to pi0, RS increases total   success on LIBERO-Plus from 53.6% to 70.6% and   achieves substantial   performance gains in real-robot experiments designed to evaluate memory   retention and experience utilization.",
+      "authors": [
+        "Dai Zhou",
+        "Jiexi Yan",
+        "Tong Li",
+        "Yuxuan Wang",
+        "Cheng Deng"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-15T15:13:33+00:00",
+      "link": "https://arxiv.org/pdf/2608.15269v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "visual-history compression and hyperbolic experience memory for long-horizon vision-language-action robot policies",
+      "llm_evidence_cn": "面向长视界视觉-语言-动作机器人策略的记忆模块，压缩视觉历史并组织经验空间",
+      "llm_evidence": "面向长视界视觉-语言-动作机器人策略的记忆模块，压缩视觉历史并组织经验空间",
+      "canonical_evidence": "面向长视界视觉-语言-动作机器人策略的记忆模块，压缩视觉历史并组织经验空间",
+      "llm_tldr_en": "Introduces Remember Smarter (RS), a plug-and-play memory module that compresses multi-view visual-history and stores successful policy states in a Poincare VAE, improving long-horizon VLA robot control without expanding context.",
+      "llm_tldr_cn": "长视界机器人策略需要在不扩大视觉-语言-动作上下文的前提下访问近期观测和可复用经验。本文提出RS模块，用双向空间与因果时序Mamba压缩多视角视觉历史，并在庞加莱VAE空间中组织成功经验。该模块通过残差交叉注意力将记忆接入动作相关隐状态，不改变VLM视觉token流，从而提升机器人长期任务表现。",
+      "llm_tldr": "长视界机器人策略需要在不扩大视觉-语言-动作上下文的前提下访问近期观测和可复用经验。本文提出RS模块，用双向空间与因果时序Mamba压缩多视角视觉历史，并在庞加莱VAE空间中组织成功经验。该模块通过残差交叉注意力将记忆接入动作相关隐状态，不改变VLM视觉token流，从而提升机器人长期任务表现。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "robot control using learning methods",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.16264v1",
+      "source": "arxiv",
+      "title": "Cyclops: LiDAR as a Camera That Dreams in Color",
+      "abstract": "Conventionally, robotic perception relies heavily on cameras due to the rich semantic texture they provide. However, their performance degrades significantly in low-light or high-dynamic-range environments. Conversely, while Light Detection and Ranging (LiDAR) captures illumination-invariant geometric and intensity properties, the resulting data are typically single-channel and sparse, creating a significant modality gap when applying vision models pre-trained on RGB datasets. In this paper, we propose Cyclops, a framework that translates sparse Non-Repetitive Scanning LiDAR (NRS-LiDAR) intensity into RGB video, enabling camera-free inference for all-day perception tasks. Our approach first converts sparse LiDAR intensity projections into dense representations via a frozen pre-trained densification module, serving as a geometrically rich source condition. The dense intensity latent is then transported toward the target RGB distribution through Latent Bridge Matching (LBM) with a learned velocity field in a few ODE integration steps. To mitigate inter-frame flickering, we inject prior-frame context via temporal attention layers and further formulate the velocity field as a policy optimized by a differentiable terminal reward that encourages terminal fidelity through backpropagation along the ODE trajectory. Extensive experiments demonstrate that the synthesized RGB, including those generated under near-dark conditions, enable standard RGB-based perception models to substantially outperform both LiDAR baselines and conventional cameras on semantic segmentation, lane detection, and point cloud colorization across diverse lighting conditions.",
+      "authors": [
+        "Wei Gao",
+        "Jian Shu",
+        "Mingle Zhao",
+        "Maani Ghaffari",
+        "David Kong",
+        "Chengzhong Xu",
+        "Hui Kong"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-17T08:37:09+00:00",
+      "link": "https://arxiv.org/pdf/2608.16264v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:robot-nav"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "LiDAR-based perception for robot navigation",
+      "llm_evidence_cn": "面向机器人导航的LiDAR感知",
+      "llm_evidence": "面向机器人导航的LiDAR感知",
+      "canonical_evidence": "面向机器人导航的LiDAR感知",
+      "llm_tldr_en": "Cyclops converts sparse LiDAR intensity into dense RGB-like representations, enabling camera-free all-day perception for robotics and reducing reliance on optical cameras.",
+      "llm_tldr_cn": "机器人感知在低光照或高动态范围下依赖相机容易失效，而LiDAR数据稀疏且单通道。Cyclops通过冻结预训练模型将非重复扫描LiDAR强度转换为稠密RGB视频，使下游感知任务无需相机即可全天候推理，为机器人导航提供跨模态感知新思路。",
+      "llm_tldr": "机器人感知在低光照或高动态范围下依赖相机容易失效，而LiDAR数据稀疏且单通道。Cyclops通过冻结预训练模型将非重复扫描LiDAR强度转换为稠密RGB视频，使下游感知任务无需相机即可全天候推理，为机器人导航提供跨模态感知新思路。",
+      "llm_tags": [
+        "query:robot-nav"
+      ],
+      "matched_query_tag": "query:robot-nav",
+      "matched_query_text": "robot navigation methods and systems",
+      "matched_requirement_id": "req-17",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.15680v1",
+      "source": "arxiv",
+      "title": "Robo-Dopamine 2.0: History-Conditioned and OOD-Aware Process Reward Modeling for Robotic Manipulation",
+      "abstract": "Vision-language-action (VLA) models improve robotic manipulation but remain vulnerable to compounding errors, scene changes, and off-trajectory states. Reinforcement learning can refine pretrained VLA policies, yet sparse success signals hinder exploration, while engineered dense rewards are costly and task-specific. Existing learned visual reward models often rely on static before-after observations, causing temporal ambiguity and weak discrimination between robustness-preserving variations and task-invalid failures under out-of-distribution (OOD) execution. We introduce Robo-Dopamine 2.0, a history- and OOD-aware process reward model with a pairwise prediction interface. It combines (1) history-conditioned pairwise rewards that use source-aligned reference panels for synthetic OOD queries and observed rollout history for online queries, while preserving the queried endpoints, and (2) an OOD-aware signed progress space that represents valid progress, robustness, failure, and recovery. A Signed-Hop Curriculum with transition-aware replay learns coarse execution ordering before fine-grained progress calibration. We also construct an OOD trajectory dataset and a five-family benchmark. Reference panels improve mean visual order consistency (VOC) from 0.967 to 0.986 and OOD-robust VOC from 0.906 to 0.958. With the same 400K pairwise-reward budget, Signed-Hop training with 25% replay reaches 0.9872 mean VOC, compared with 0.9858 for a matched-pool shuffled control. In downstream reinforcement learning, the full model achieves 86.8% mean RoboTwin success and 71/80 successful real-world insertions.",
+      "authors": [
+        "Yijie Xu",
+        "Haopeng Jin",
+        "Run Zhou",
+        "Shengbang Liu",
+        "Sixiang Chen",
+        "Hongyang Cheng",
+        "Sicheng Hu",
+        "Peterson Co",
+        "Jinwen Luo",
+        "Huajie Tan",
+        "Shanghang Zhang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "published": "2026-08-16T11:15:55+00:00",
+      "link": "https://arxiv.org/pdf/2608.15680v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "history-conditioned and OOD-aware process reward model for reinforcement learning in robotic manipulation",
+      "llm_evidence_cn": "用于机器人操作强化学习的历史条件与分布外感知过程奖励模型",
+      "llm_evidence": "用于机器人操作强化学习的历史条件与分布外感知过程奖励模型",
+      "canonical_evidence": "用于机器人操作强化学习的历史条件与分布外感知过程奖励模型",
+      "llm_tldr_en": "Introduces Robo-Dopamine 2.0, a history-conditioned and OOD-aware process reward model with pairwise prediction, improving RL refinement of VLA policies for robotic manipulation under sparse rewards.",
+      "llm_tldr_cn": "视觉-语言-动作模型在机器人操作中易出现复合错误和离策略状态，强化学习可微调策略但稀疏奖励制约探索。本文提出Robo-Dopamine 2.0，一种历史和分布外感知的过程奖励模型，采用成对预测接口，结合历史条件成对奖励，区分鲁棒性变化与任务无效失败。该方法为预训练VLA策略提供更有效的奖励信号，减轻了奖励工程负担，提升了分布外执行下的操作可靠性。",
+      "llm_tldr": "视觉-语言-动作模型在机器人操作中易出现复合错误和离策略状态，强化学习可微调策略但稀疏奖励制约探索。本文提出Robo-Dopamine 2.0，一种历史和分布外感知的过程奖励模型，采用成对预测接口，结合历史条件成对奖励，区分鲁棒性变化与任务无效失败。该方法为预训练VLA策略提供更有效的奖励信号，减轻了奖励工程负担，提升了分布外执行下的操作可靠性。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "reinforcement learning approaches for physical systems",
+      "matched_requirement_id": "req-11",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2608.16172v1",
+      "source": "arxiv",
+      "title": "SparkVLA: Stop-Aware Hierarchical VLA with Adaptive Action Chunking for Long-Horizon Manipulation",
+      "abstract": "At every re-observation point in a hierarchical Vision-Language-Action (VLA) system, two interface decisions must be made: when to terminate the current subtask and how far to execute the proposed action chunk. These decisions are mutually dependent---the optimal stopping point depends on what the executor plans to do, while the optimal execution length depends on where the subtask boundary lies---yet existing architectures evaluate them in isolation, an asymmetry neither module can overcome alone. We present SparkVLA, a stop-aware hierarchical VLA that resolves this mutual dependency by formulating both decisions as a single ranking: Stop competes against every action-prefix length in a unified candidate set, and the system selects the highest-scoring option, eliminating threshold tuning and requiring only offline ordinal preferences. An Anchor-Conditioned Context Encoding module caches a history-aware subtask anchor encoding onset-state memory and goal semantics, guiding visual-token pruning toward task-relevant regions; a Stop-Aware Action-Prefix Selection head scores all candidates via full self bnattention at chunk boundaries for efficiency. On RoboCerebra, SparkVLA achieves 47.12% success rate, surpassing the official hierarchical baseline by 30.57% and the strongest reproducible method by 26.83% Real-robot experiments on multi-step tasks further validate these gains on physical hardware.",
+      "authors": [
+        "Xunyao Lei",
+        "Renjun Wu",
+        "Tianlin Huo",
+        "Xuesong Li"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-17T06:43:11+00:00",
+      "link": "https://arxiv.org/pdf/2608.16172v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "robot control using learning methods; VLA action chunking for manipulation",
+      "llm_evidence_cn": "学习型 VLA 用于机器人操作控制",
+      "llm_evidence": "学习型 VLA 用于机器人操作控制",
+      "canonical_evidence": "学习型 VLA 用于机器人操作控制",
+      "llm_tldr_en": "Presents SparkVLA, a stop-aware hierarchical Vision-Language-Action system that unifies subtask stopping and action chunk length decisions into a single ranking, improving long-horizon manipulation performance.",
+      "llm_tldr_cn": "层次化视觉-语言-动作系统在每个再观测点需要同时决定子任务终止位置和动作块执行长度，而现有架构孤立地评估这两个相互依赖的决策。SparkVLA 提出将停止决策与每个动作前缀长度放在统一候选集中进行单一排序，由系统同时选择最优停止点与执行长度。这种设计解决了二者之间无法单独克服的不对称性，在长时程操作任务上提升了执行效率。该工作为 VLA 系统的接口设计提供了一种统一决策的新方法。",
+      "llm_tldr": "层次化视觉-语言-动作系统在每个再观测点需要同时决定子任务终止位置和动作块执行长度，而现有架构孤立地评估这两个相互依赖的决策。SparkVLA 提出将停止决策与每个动作前缀长度放在统一候选集中进行单一排序，由系统同时选择最优停止点与执行长度。这种设计解决了二者之间无法单独克服的不对称性，在长时程操作任务上提升了执行效率。该工作为 VLA 系统的接口设计提供了一种统一决策的新方法。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "robot control using learning methods",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.17209v1",
+      "source": "arxiv",
+      "title": "Teach and Grow: An Agent-Centered Architecture for General Robot Learning",
+      "abstract": "End-to-end vision-language-action (VLA) and world-action models offer an elegant route to general-purpose robotics, but their reliability is bounded by validated physical coverage. When an unfamiliar object, sensor, embodiment, or contact falls outside that coverage and no validated fallback exists, correcting the failure requires new robot data, a policy update, and regression testing. This recurring burden is the retraining tax. Unlike text, embodied data must often be created by operating machines. We present Teach-and-Grow Learning (TGL), an agent-centered architecture for general robot learning. In its general form, a multimodal agent turns a few successful demonstrations into reusable Skill Blocks: closed-loop behaviors for meaningful subgoals. In a new scene, the agent grounds and composes these blocks, selects learned or geometric tools, observes the physical outcome, and revises the route when execution departs from intent. A Skill Library stores executable behavior, while structured Experience Memory carries forward success, failure, and repair. New tasks are acquired without task-specific policy retraining. Our LIBERO evaluation attains state-of-the-art performance; controlled studies expose skill induction, persistent reuse, and agent-directed adaptation. Finally, we propose the Teach-and-Grow scaling-law hypothesis: if X denotes effective reusable experience, future-task error and teaching demand should approach irreducible floors as power laws in X. The architecture therefore treats deployment as a period of continued learning, in which one task can make the next easier.",
+      "authors": [
+        "Chang Nie",
+        "Zhe Liu",
+        "Hesheng Wang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.AI",
+        "cs.CV",
+        "cs.LG"
+      ],
+      "published": "2026-08-17T23:45:21+00:00",
+      "link": "https://arxiv.org/pdf/2608.17209v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "general robot learning via multimodal demonstrations and reusable skill blocks",
+      "llm_evidence_cn": "通过多模态示范与可复用技能模块实现通用机器人学习",
+      "llm_evidence": "通过多模态示范与可复用技能模块实现通用机器人学习",
+      "canonical_evidence": "通过多模态示范与可复用技能模块实现通用机器人学习",
+      "llm_tldr_en": "Introduces Teach-and-Grow Learning, an agent-centered architecture that turns a few demonstrations into reusable Skill Blocks, reducing the retraining tax for general-purpose robot learning.",
+      "llm_tldr_cn": "端到端视觉-语言-动作模型在陌生对象或场景上可靠性有限，且每次失败都需重新收集数据、更新策略并回归测试，带来重训练负担。本文提出Teach and Grow学习架构，以智能体为中心，将少量成功示范转化为可复用的技能模块，形成闭环行为以完成有意义的分目标。该架构减少了对大规模数据重训练的依赖，为通用机器人学习提供了持续积累能力的路径。",
+      "llm_tldr": "端到端视觉-语言-动作模型在陌生对象或场景上可靠性有限，且每次失败都需重新收集数据、更新策略并回归测试，带来重训练负担。本文提出Teach and Grow学习架构，以智能体为中心，将少量成功示范转化为可复用的技能模块，形成闭环行为以完成有意义的分目标。该架构减少了对大规模数据重训练的依赖，为通用机器人学习提供了持续积累能力的路径。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "robot control using learning methods",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.15741v1",
+      "source": "arxiv",
+      "title": "Some Modifications to Our End-to-End UAV Planner",
+      "abstract": "The one-stage planner YOPO maps a single depth image and the robot state directly to a set of candidate trajectories, trained by backpropagating through differentiable trajectory costs. This yields dense, geometrically informative supervision, but inherits the pathologies of soft-constrained optimization: the safety cost competes with the smoothness and goal-reaching terms, is non-convex across homotopy classes, and the single-piece polynomial is limited in expressiveness. In this report, we summarize several effective modifications. We adopt a two-piece MINCO parameterization, trading time for smoothness without altering the trajectory's spatial profile. We further lift YOPO's multi-modal prediction to span distinct homotopy classes, treating each motion primitive as a homotopy anchor that confines the trajectory to a feasible basin - without explicit safe-flight-corridor construction or front-end search. For dynamic feasibility, we impose barrier penalties on velocity and acceleration together with a curvature-dependent speed limit whose gradient acts only on the velocity, producing an adaptive-speed behavior that decelerates in cluttered regions or sharp turns. We replace score regression with a ranking loss, preventing small score errors from reordering the candidate set. These yield richer trajectory representations, safer obstacle avoidance, and more direct flight paths.",
+      "authors": [
+        "Junjie Lu",
+        "Bailing Tian"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-16T13:39:46+00:00",
+      "link": "https://arxiv.org/pdf/2608.15741v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "end-to-end UAV trajectory planning with safety cost",
+      "llm_evidence_cn": "带安全代价的端到端无人机轨迹规划",
+      "llm_evidence": "带安全代价的端到端无人机轨迹规划",
+      "canonical_evidence": "带安全代价的端到端无人机轨迹规划",
+      "llm_tldr_en": "Improves the end-to-end UAV planner YOPO using two-piece MINCO parameterization and lifting multi-modal predictions to cover different homotopy classes, addressing safety/smoothness trade-offs in differentiable trajectory planning.",
+      "llm_tldr_cn": "端到端无人机规划器 YOPO 通过可微轨迹代价获得稠密监督，但存在软约束优化的固有缺陷：安全代价与平滑性、目标项竞争，且单段多项式表达能力有限。本文提出两段 MINCO 参数化，在不改变轨迹空间形状的情况下以时间换平滑性；同时将多模态预测扩展到不同同伦类，让每个运动基元对应一个候选模态。这些改进有效缓解了安全与平滑之间的冲突，提升了复杂环境下的轨迹质量和规划灵活性。",
+      "llm_tldr": "端到端无人机规划器 YOPO 通过可微轨迹代价获得稠密监督，但存在软约束优化的固有缺陷：安全代价与平滑性、目标项竞争，且单段多项式表达能力有限。本文提出两段 MINCO 参数化，在不改变轨迹空间形状的情况下以时间换平滑性；同时将多模态预测扩展到不同同伦类，让每个运动基元对应一个候选模态。这些改进有效缓解了安全与平滑之间的冲突，提升了复杂环境下的轨迹质量和规划灵活性。",
+      "llm_tags": [
+        "query:robot-nav"
+      ],
+      "matched_query_tag": "query:robot-nav",
+      "matched_query_text": "path planning algorithms for mobile robots",
+      "matched_requirement_id": "req-18",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2608.16351v1",
+      "source": "arxiv",
+      "title": "Arm-Aware Guided Dexterous Grasp Generation with Arm-Agnostic Grasp Models",
+      "abstract": "Dexterous grasp generation that considers arm-related constraints is crucial in real-world scenarios involving arm environment collision avoidance, workspace boundary grasps, and consecutive grasping. Existing hand-centric grasp models, which primarily focus on the floating hand's pose, are insufficient for such cases. Conventional arm-aware methods either rely on rejection sampling to discard infeasible samples or require retraining on arm-specific data, leading to low sample efficiency under adverse conditions or limited generalization across different robots and environments. To overcome these limitations, this letter presents an arm-aware dexterous grasp generation framework that leverages pretrained arm-agnostic grasp models while integrating arm and environmental information only at inference time. Specifically, we formulate arm-aware constrained grasp generation as a joint optimization of hand pose and arm configuration, and derive closed-form gradients for arm-related constraints. Assuming the hand pose distribution is represented by a diffusion model, we prove that gradient-based optimization is equivalent to guided diffusion sampling, steering near-feasible samples toward the feasible region. Through comprehensive evaluation involving 10k objects across 6 scenarios, we demonstrate that the proposed framework generates feasible grasps in highly constrained settings with significantly higher probability, highlighting its advantages in real-world applications. Supplementary materials and appendix are available at https://arm-aware-dexgrasp.github.io/.",
+      "authors": [
+        "Yongyi Jia",
+        "Yongpeng Jiang",
+        "Kangchen Lv",
+        "Yi Ren",
+        "Mingrui Yu",
+        "Xiang Li"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-17T10:01:56+00:00",
+      "link": "https://arxiv.org/pdf/2608.16351v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "learning-based arm-aware dexterous grasp generation using pretrained grasp models",
+      "llm_evidence_cn": "基于预训练抓取模型的臂感知学习型灵巧抓取生成",
+      "llm_evidence": "基于预训练抓取模型的臂感知学习型灵巧抓取生成",
+      "canonical_evidence": "基于预训练抓取模型的臂感知学习型灵巧抓取生成",
+      "llm_tldr_en": "This letter presents an arm-aware dexterous grasp generation framework that leverages pretrained arm-agnostic grasp models to handle arm-environment collision, workspace boundaries, and consecutive grasping without retraining for each arm.",
+      "llm_tldr_cn": "真实场景中的灵巧抓取需考虑机械臂与环境碰撞、工作空间边界和连续抓取，而现有手中心模型和臂专用重训练方法要么样本效率低，要么泛化有限。本文提出一个臂感知抓取生成框架，复用预训练的臂无关抓取模型，并整合臂相关约束，无需针对每个机械臂重新训练。该方法提高了不利条件下的样本效率，并提升跨机器人、跨环境的泛化能力。该框架为真实机器人灵巧操作提供了实用的臂感知生成方案。",
+      "llm_tldr": "真实场景中的灵巧抓取需考虑机械臂与环境碰撞、工作空间边界和连续抓取，而现有手中心模型和臂专用重训练方法要么样本效率低，要么泛化有限。本文提出一个臂感知抓取生成框架，复用预训练的臂无关抓取模型，并整合臂相关约束，无需针对每个机械臂重新训练。该方法提高了不利条件下的样本效率，并提升跨机器人、跨环境的泛化能力。该框架为真实机器人灵巧操作提供了实用的臂感知生成方案。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "robot control using learning methods",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.17324v1",
+      "source": "arxiv",
+      "title": "Reconfiguration-Complete Motion Primitives with Constructive Planning for Deformable Planar Modular Robots",
+      "abstract": "The continuously deformable geometry of modular robots makes it difficult to define a fixed representation for reconfiguration planning and analysis. This letter introduces a square-cell abstraction that maps deformable rhombus modules to fixed-size grid cells while retaining physically interpretable local motions through two primitives, pivoting and shearing. Under this abstraction, we prove that every non-straight edge-connected configuration with $N \\geq 7$ can be transformed to a fixed canonical staircase using only admissible primitive motions. Since these motions are reversible, any two configurations in this class are mutually reconfigurable. The proof is constructive and directly yields a staircase-canonicalization planner that transports removable boundary modules while preserving connectivity. As a practical enhancement, we further introduce a boundary-to-delivery lookahead selector that ranks admissible high level choices without affecting the completeness guarantee. Experiments demonstrate the constructive reconfiguration process and show that the selector substantially reduces planning time, while reference comparisons indicate lower planning times than the prior framework over the shared module counts.",
+      "authors": [
+        "Jie Gu",
+        "Tingting Wang",
+        "Hongrun Gao",
+        "Yirun Sun",
+        "Zhihao Xia",
+        "Chunxu Tian",
+        "Dan Zhang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-18T03:34:54+00:00",
+      "link": "https://arxiv.org/pdf/2608.17324v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Constructive motion primitives for reconfiguration planning of modular robots",
+      "llm_evidence_cn": "面向模块化机器人重构规划的构造性运动基元",
+      "llm_evidence": "面向模块化机器人重构规划的构造性运动基元",
+      "canonical_evidence": "面向模块化机器人重构规划的构造性运动基元",
+      "llm_tldr_en": "This paper introduces a square-cell abstraction with pivoting and shearing primitives for deformable planar modular robots, proving reconfiguration-completeness and providing constructive planning to transform any configuration to a canonical staircase.",
+      "llm_tldr_cn": "可变形平面模块化机器人的几何连续变化使重构规划难以定义固定表示。本文提出方形单元抽象，将变形菱形模块映射为固定尺寸网格单元，并用枢转和剪切两个基元保持物理可解释的局部运动。作者证明任意非直边连接配置可变换到规范阶梯形，且基元可逆，因而任意两个配置可互重构，并给出构造性规划方法。",
+      "llm_tldr": "可变形平面模块化机器人的几何连续变化使重构规划难以定义固定表示。本文提出方形单元抽象，将变形菱形模块映射为固定尺寸网格单元，并用枢转和剪切两个基元保持物理可解释的局部运动。作者证明任意非直边连接配置可变换到规范阶梯形，且基元可逆，因而任意两个配置可互重构，并给出构造性规划方法。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "motion control strategies in robotics",
+      "matched_requirement_id": "req-12",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.16153v2",
+      "source": "arxiv",
+      "title": "Unified Condition-Action Modeling for Accurate One-Step Action Generation",
+      "abstract": "Robot manipulation requires policies that are both accurate and efficient, as robot control must respond to changing observations under tight latency constraints. Recent diffusion and flow policies are promising, but they often treat conditions as auxiliary signals rather than jointly evolving them with action trajectories. We find that this limitation can be effectively mitigated by a \\textbf{simple yet effective unified condition-action modeling design} that represents conditions and actions in a shared token space, allowing a compact model to achieve high performance while improving both inference speed and accuracy. Therefore, we propose UCA-Flow, a unified condition-action modeling framework for accurate one-step action generation. Our method unifies observation conditions, timestep conditions, interval conditions, and action tokens into a single sequence, and processes them with a Unified Condition-Action Transformer for joint condition-action representation learning. As a result, condition representations are dynamically reconstructed according to the current generation stage, highlighting information most relevant for action refinement. Furthermore, we introduce an improved dual-pass supervision scheme over $u$ and $v$ for stronger optimization of unified condition-action modeling. UCA-Flow improves the average success rate by 9.3 percentage points over the strongest baseline, while achieving $45.6\\times$ and $33.4\\times$ speedups over DP3 and Simple DP3, and remaining $4.3\\times$ and $2.3\\times$ faster than one-step FlowPolicy and MP1, respectively.",
+      "authors": [
+        "Xinyu Zhou",
+        "Zikun Cai",
+        "Kuangji Zuo",
+        "Gen Li",
+        "Boyu Ma",
+        "Yanshuo Lu",
+        "Yutong Song",
+        "Mingqi Yuan",
+        "Jiayu Chen",
+        "Jianfei Yang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-17T06:14:16+00:00",
+      "link": "https://arxiv.org/pdf/2608.16153v2",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "learning-based robot action generation for control",
+      "llm_evidence_cn": "面向机器人控制的动作生成学习方法",
+      "llm_evidence": "面向机器人控制的动作生成学习方法",
+      "canonical_evidence": "面向机器人控制的动作生成学习方法",
+      "llm_tldr_en": "Robot manipulation needs fast, accurate policies; UCA-Flow unifies conditions and actions in a shared token space for compact one-step action generation, improving inference speed and accuracy.",
+      "llm_tldr_cn": "机器人操控要求策略既准确又高效，现有扩散策略和流策略往往把条件视为辅助信号，而不是让条件与动作轨迹共同演化，限制了生成质量。本文提出UCA-Flow，将条件与动作表示在共享词元空间中，使紧凑模型可以一步生成高质量动作，同时提升推理速度。实验验证该方法在保持或提高动作精度的前提下显著降低延迟，并简化了策略模型，为实时机器人控制提供了新思路。",
+      "llm_tldr": "机器人操控要求策略既准确又高效，现有扩散策略和流策略往往把条件视为辅助信号，而不是让条件与动作轨迹共同演化，限制了生成质量。本文提出UCA-Flow，将条件与动作表示在共享词元空间中，使紧凑模型可以一步生成高质量动作，同时提升推理速度。实验验证该方法在保持或提高动作精度的前提下显著降低延迟，并简化了策略模型，为实时机器人控制提供了新思路。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "robot control using learning methods",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2608.16658v1",
+      "source": "arxiv",
+      "title": "X$^2$Localizer: Cross-grained Alignment for Progressive Cross-view Video Geo-localization",
+      "abstract": "Cross-view Video Geo-localization (CVG) aims to localize ground-view videos by retrieving their corresponding geo-tagged aerial images. However, CVG approaches rely on fixed-length inputs and post-hoc refinement, hindering online-oriented localization under partial or dynamic observations. In this work, we formulate Progressive Cross-view Video Geo-localization (PCVG) as a deployment-oriented extension and evaluation protocol of CVG, enabling localization under varying temporal budgets, prefix-based inference, random-start evaluation, and long-range localization with interruptions. To explore PCVG, we introduce X$^2$Localizer, a cross-grained alignment framework that jointly supervises global prefix-to-aerial retrieval and token-aggregated frame--aerial-tile matching with a budget-dependent asymmetric objective. Furthermore, we introduce a Sliding-Window Re-Localization (SWRL) strategy that dynamically refreshes candidate regions for failure recovery and long-range deployment without full-sequence reprocessing. Extensive experiments show that X$^2$Localizer preserves conventional full-video performance, with marginal gains of +0.1 Recall@1 and +0.3 Recall@10, while substantially improving early localization. In the challenging single-frame setting, X$^2$Localizer improves coarse retrieval by +4.7 Recall@1 and +11.5 Recall@10 over the previous state-of-the-art method. With SWRL, our approach further enables robust progressive localization under random-start and long-distance scenarios, narrowing the gap between benchmark evaluation and real-world deployment.",
+      "authors": [
+        "Zichao Zeng",
+        "Weijia Fan",
+        "Yufan Chen",
+        "June Moh Goo",
+        "Junwei Zheng",
+        "Ruiping Liu",
+        "Kunyu Peng",
+        "Jiaming Zhang",
+        "Rainer Stiefelhagen",
+        "Jan Boehm"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI",
+        "cs.RO"
+      ],
+      "published": "2026-08-17T14:53:13+00:00",
+      "link": "https://arxiv.org/pdf/2608.16658v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:robot-nav"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "visual geo-localization for robot navigation",
+      "llm_evidence_cn": "面向机器人导航的视觉地理定位",
+      "llm_evidence": "面向机器人导航的视觉地理定位",
+      "canonical_evidence": "面向机器人导航的视觉地理定位",
+      "llm_tldr_en": "Introduces progressive cross-view video geo-localization with cross-grained alignment, enabling online localization under partial observations and varying temporal budgets.",
+      "llm_tldr_cn": "跨视角视频地理定位通常要求固定长度输入和事后优化，不利于在线定位。论文提出渐进式跨视角视频地理定位协议，并设计X²Localizer框架，通过全局前缀到航拍检索和token级聚合的联合监督，支持部分观测、随机起始和长期定位，为视觉导航提供实时定位能力。",
+      "llm_tldr": "跨视角视频地理定位通常要求固定长度输入和事后优化，不利于在线定位。论文提出渐进式跨视角视频地理定位协议，并设计X²Localizer框架，通过全局前缀到航拍检索和token级聚合的联合监督，支持部分观测、随机起始和长期定位，为视觉导航提供实时定位能力。",
+      "llm_tags": [
+        "query:robot-nav"
+      ],
+      "matched_query_tag": "query:robot-nav",
+      "matched_query_text": "visual navigation using cameras for robots",
+      "matched_requirement_id": "req-20",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.17717v1",
+      "source": "arxiv",
+      "title": "CompCPZ: Preserving Multi-Modal Intent in Language-Guided Robot Manipulation",
+      "abstract": "A robot asked to \"place the cup near the red plate or the blue plate\" may reach the centroid between them and appear geometrically successful, while satisfying neither disjunct of the instruction. This silent semantic failure exposes a structural limitation of language-conditioned robot policies: representations that collapse a disjunctive instruction into a single connected set cannot preserve all feasible modes, and planners that commit to one action degrade under run-time mode uncertainty. We address this limitation with CompCPZ, a sound algebraic layer that language-conditioned learning systems wrap to recover multi-modal disjunctive representation, recursively composing per-primitive constrained polynomial zonotope enclosures along the language parse tree with distribution-free conformal coverage and sub-millisecond runtime. On a closed-loop ManiSkill3 tabletop-manipulation benchmark, CompCPZ outperforms convex set baselines, multi-peak decoders, and a zero-shot vision-language-action model (1,900/1,918 paired wins, p << 10^(-30)); the same compiler also transfers without retuning to planar real-robot trials on a Unitree Go2 quadruped under motion capture. These results suggest that compositional language grounding should be evaluated not only by reaching a decoded target, but by whether the represented feasibility set preserves the connected-component structure of the user's intent.",
+      "authors": [
+        "Zhen Zhang",
+        "Ahmad Hafez",
+        "Peng Xie",
+        "Yanliang Huang",
+        "Wenyuan Wu",
+        "Amr Alanwar"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-18T12:42:26+00:00",
+      "link": "https://arxiv.org/pdf/2608.17717v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "language-conditioned robot policies with multi-modal intent preservation",
+      "llm_evidence_cn": "面向语言引导机器人策略的析取意图保持方法",
+      "llm_evidence": "面向语言引导机器人策略的析取意图保持方法",
+      "canonical_evidence": "面向语言引导机器人策略的析取意图保持方法",
+      "llm_tldr_en": "CompCPZ wraps language-conditioned robot policies with a sound algebraic layer that recursively composes constrained polynomial zonotopes, preserving disjunctive multi-modal intent and avoiding silent semantic failures.",
+      "llm_tldr_cn": "语言条件机器人策略常把析取指令折叠成单一连通集合，导致在几何上可行但语义失败的行为。CompCPZ提出一种可靠的代数层，通过递归组合逐原语的约束多项式zonotope包络来恢复多模态析取表示。该方法保留所有可行模式，避免运行时的模式不确定性，提升语言引导操作对复合意图的服从能力。",
+      "llm_tldr": "语言条件机器人策略常把析取指令折叠成单一连通集合，导致在几何上可行但语义失败的行为。CompCPZ提出一种可靠的代数层，通过递归组合逐原语的约束多项式zonotope包络来恢复多模态析取表示。该方法保留所有可行模式，避免运行时的模式不确定性，提升语言引导操作对复合意图的服从能力。",
+      "llm_tags": [
+        "query:rl-motion"
+      ],
+      "matched_query_tag": "query:rl-motion",
+      "matched_query_text": "robot control using learning methods",
+      "matched_requirement_id": "req-13",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.16229v1",
+      "source": "arxiv",
+      "title": "Planner-Conditioned Diffusion for Coordinated Multi-Agent Exploration",
+      "abstract": "Coordinated multi-agent exploration requires not only efficient individual coverage but also non-redundant coverage across agents over extended planning horizons. Conventional approaches rely on hand-crafted coordination rules, while end-to-end multi-agent learning methods are difficult to scale and train. Diffusion-based planners such as DARE offer a promising alternative by generating long-horizon trajectories instead of single-step actions, but existing methods are trained on a narrow planner distribution, limiting behavioral diversity and inference-time controllability. We propose a Planner-Conditioned Diffusion Policy (PCDP) for graph-based multi-agent exploration. PCDP is trained on demonstrations from multiple planner styles with planner identity as an explicit conditioning input, enabling a single shared model to learn a multimodal trajectory distribution and generate diverse, controllable trajectory candidates from the same observation. Rather than learning coordination end-to-end, we reuse this multimodal single-agent policy across all agents and introduce coordination through local reranking, in which nearby agents jointly select the trajectory combination with minimal predicted overlap. We evaluate PCDP against classical and diffusion-based baselines on 100 held-out maps in a four-agent simulation setting. PCDP matches the perfect success rate of the diffusion-based baselines while improving mean max-agent travel, total team travel, and agent imbalance. Crucially, reranking alone over a single-planner baseline yields only marginal gains, indicating that planner-conditioned multimodality is the main contributor to improved coordination. Qualitative simulation results and real-robot experiments with two agents further validate that diverse long-horizon trajectory generation produces emergent spatial separation between agents without any explicit repulsion mechanism.",
+      "authors": [
+        "Marcus Yu Siong Teo",
+        "Jeric Lew",
+        "Tanishq Duhan",
+        "Guillaume Sartoretti"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-17T08:07:20+00:00",
+      "link": "https://arxiv.org/pdf/2608.16229v1",
+      "tags": [
+        "keyword:d-slam",
+        "keyword:rl-motion",
+        "keyword:robot-nav",
+        "query:d-slam",
+        "query:rl-motion",
+        "query:robot-nav"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "diffusion-based long-horizon trajectory generation for multi-agent exploration",
+      "llm_evidence_cn": "基于扩散模型的多智能体协调探索轨迹规划",
+      "llm_evidence": "基于扩散模型的多智能体协调探索轨迹规划",
+      "canonical_evidence": "基于扩散模型的多智能体协调探索轨迹规划",
+      "llm_tldr_en": "PCDP is a planner-conditioned diffusion policy for graph-based multi-agent exploration, trained on multiple planner styles to generate diverse long-horizon trajectories and enable inference-time controllability.",
+      "llm_tldr_cn": "多智能体协调探索需要长时程的路径规划，且要避免冗余覆盖。现有扩散规划器只在单一规划器分布上训练，限制了行为多样性。本文提出规划器条件扩散策略PCDP，基于多种规划风格的演示训练，用规划器身份控制行为样式。该方法能生成长时程轨迹，提高多样性并提供推理时的可控性，用于基于图的协调探索。",
+      "llm_tldr": "多智能体协调探索需要长时程的路径规划，且要避免冗余覆盖。现有扩散规划器只在单一规划器分布上训练，限制了行为多样性。本文提出规划器条件扩散策略PCDP，基于多种规划风格的演示训练，用规划器身份控制行为样式。该方法能生成长时程轨迹，提高多样性并提供推理时的可控性，用于基于图的协调探索。",
+      "llm_tags": [
+        "query:robot-nav"
+      ],
+      "matched_query_tag": "query:robot-nav",
+      "matched_query_text": "path planning algorithms for mobile robots",
+      "matched_requirement_id": "req-18",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    }
+  ]
+}

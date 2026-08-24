@@ -1,0 +1,220 @@
+Title: Robust Brachiation on a Life-Sized Dual-Arm Robot Using Waypoint-Guided Reinforcement Learning
+
+URL Source: https://arxiv.org/pdf/2608.17320v1
+
+Published Time: Wed, 19 Aug 2026 00:27:25 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Robust Brachiation on a Life-Sized Dual-Arm Robot Using Waypoint-Guided Reinforcement Learning 
+
+Ayumu Iwata 1, Kento Kawaharazuka 1, Keita Yoneda 1, Takahiro Hattori 1, and Kei Okada 1
+
+Abstract — Brachiation is a form of locomotion in which primates move primarily using their arms, enabling traversal in environments without footholds. However, this motion requires highly coordinated whole-body movement and precise timing control for bar grasping and release. As a result, achieving robust behavior on life-sized robotic platforms remains chal-lenging. In this study, we present a reinforcement learning-based method to realize brachiation on a life-sized dual-arm robot. The core of the proposed approach is Waypoint-Guided Reinforcement Learning (WGRL), a learning framework for inducing non-linear and complex motions. For high-difficulty tasks where imitation learning data are unavailable, WGRL guides behavior acquisition by sparsely specifying waypoints for the end-effector trajectory, while whole-body motion is generated through reinforcement learning. In addition, by integrating the waypoint-following guidance with rewards based on task success and mechanical energy, and training in an environment designed for Sim-to-Real transfer, the proposed method achieves both forward progression and motion sta-bility. The acquired behavior is evaluated through Sim-to-Sim experiments under monkey-bar environments with geo-metric variations and hardware experiments, confirming robust brachiation including failure recovery behavior. This study provides effective learning design guidelines for realizing arm-based locomotion on life-sized robotic hardware and expanding the traversable workspace of robots. 
+
+I. INTRODUCTION Recent advances in reinforcement learning (RL) have enabled robust legged locomotion, including walking [1], [2], running [3], ladder climbing [4], and parkour [5]. However, these behaviors remain limited to environments with footholds. In contrast, primates achieve locomotion by suspending their bodies with their arms, even when their legs are not in contact with the ground. Realizing such arm-based locomotion in robots would significantly expand the range of possible mobility. A representative form of arm-based locomotion is brachiation, in which forward progression is achieved by alternately grasping and releasing overhead structures with the left and right hands. This motion involves discontinuous contact dynamics and simultaneously requires highly coordinated whole-body movement and precise timing control. Therefore, brachiation is a challenging motion and has attracted sustained research interest in robotics. Most prior studies have adopted theory- or model-based approaches [6]–[9], including energy-based control and vir-tual holonomic constraint methods [10]. While these ap-proaches provide insight into the principles of brachiation,   
+
+> 1The authors are with the Department of Mechano-Informatics, Graduate School of Information Science and Technology, The University of Tokyo, 7-3-1 Hongo, Bunkyo-ku, Tokyo, 113-8656, Japan.
+
+[a-iwata, kawaharazuka, yoneda, t-hattori, k-okada]@jsk.imi.i.u-tokyo.ac.jp  
+
+> Fig. 1. Brachiation motion of a life-sized dual-arm robot traversing four cylindrical bars (30 mm in diameter) arranged at 0.4 m intervals.
+
+their reliance on accurate models limits robustness under uncertain contact conditions and disturbances. More recently, RL approaches have been explored, including a two-stage learning approach that acquires trajectories on simplified models [11] and a study highlighting the robustness of RL compared with optimal control on minimalistic robots [12]. However, despite the promise of RL, most studies remain limited to simulation or small-scale systems. Compared with legged locomotion, there are two main fac-tors that hinder the development of brachiation through RL. First, reward design is challenging. Unlike walking, where design guidelines are relatively well established, system-atic knowledge for brachiation remains limited. Moreover, the complexity of brachiation makes it difficult to acquire the behavior using only simple distance- or velocity-based rewards. In addition, high-quality reference motions for brachiation, particularly those compatible with robotic end-effector mechanisms, are scarce, making imitation learning methods such as DeepMimic [13] difficult to apply. Second, since brachiation lacks leg support, failure directly leads to falling and episode termination, making it a high-risk task, particularly in hardware experiments. In this study, we address the above challenges and propose a learning method to realize robust brachiation on a life-sized dual-arm robot hardware platform. The specific contributions are as follows. arXiv:2608.17320v1 [cs.RO] 18 Aug 2026 180 °
+
+> Shank
+> 1090
+> mm
+> 19.6 kg
+
+End -Effector Hook Design   
+
+> Aluminum Part Fig. 2. Mechanical design of the life-sized dual-arm robot. Left: Overview of the robot, modeled after the upper body of an adult human. Right: Hook-shaped end-effector designed for secure bar suspension and robust brachiation.
+> •
+
+We propose Waypoint-Guided Reinforcement Learning (WGRL), a learning method that induces non-linear and complex motions without imitation data.  
+
+> •
+
+We examine multiple formulations of the waypoint-following reward in WGRL and analyze how differences in its definition affect motion acquisition and learning convergence.  
+
+> •
+
+We demonstrate that integrating a success reward and a mechanical energy reward enables both forward loco-motion and motion stability.  
+
+> •
+
+We validate robust brachiation with failure recovery through Sim-to-Sim evaluation under geometric varia-tions and zero-shot Sim-to-Real transfer on life-sized robotic hardware. II. PROBLEM DEFINITION This study aims to propose a method for achieving brachi-ation on a life-sized dual-arm robot with hook-shaped hands in a monkey-bar environment. The target motion consists of releasing one hand from the current bar and reaching forward to grasp the next bar ahead of the supporting hand. Forward progression is achieved by alternately repeating this motion between the left and right hands. 
+
+Robot : We use a life-sized dual-arm robot shown in Fig. 2. The robot models the upper body of an adult human, with a total height of 1093 mm and a total weight of 19.6 kg. Each arm has five degrees of freedom: shoulder roll, pitch, and yaw, elbow pitch, and wrist pitch. This robot is developed based on the open-source hardware MEVITA [2]. The two metal-structured limbs, which provide high strength and rigidity to withstand dynamic motions, are used as arms, and the end-effectors are modified into hook-shaped hands capable of suspending from bars. The detailed structure of the hook part is shown in the right panel of Fig. 2. 
+
+Monkey Bars : We use a monkey-bar environment in which horizontal bars with a diameter of 30 mm and a length of 1200 mm are arranged at a constant height with intervals of 400 mm. To promote and evaluate robustness, random variations are introduced to the position and orientation of each bar in the simulation, including the RL environment. Specifically, variations of up to ±20 mm are applied to the                                              
+
+> TABLE I OBSERVATION SPACE USED FOR THE POLICIES
+> Name Symbol Base (torso link) angular velocity ωb∈R3
+> Gravity direction (in torso local frame) gb∈R3
+> All joint positions q∈R10
+> All joint velocities ˙q∈R10
+> Motion phase indicator sphase ∈ { 0,1}
+> TABLE II PRIVILEGED OBSERVATION SPACE USED FOR THE CRITIC
+> Name Symbol Joint position history qt−2: t∈R3×10
+> Joint velocity history ˙qt−2: t∈R3×10
+> Joint position tracking error history et−2: t∈R3×10
+> IMU history oIMU
+> t−7: t∈R8×6
+> End-effector hooking contact state c∈ { 0,1}2
+> End-effector contact forces fc∈R6
+> Friction coefficients μ∈Rk
+> End-effector positions pL,R ∈R6
+> Five nearby bars geometry b1:5 ∈R5×6
+
+bar intervals, up to ±40 mm in the vertical direction, and additionally up to ±0.2 rad in the yaw direction relative to the robot’s forward direction. III. BRACHIATION CONTROL WITH WGRL We present a control method that achieves brachiation on a life-sized dual-arm robot using RL. As an overall procedure, the policy is first trained in a simulation environment under a reward design centered on Waypoint-Guided Reinforcement Learning (WGRL). Through this process, a general motion pattern for brachiation is acquired. After that, additional training is conducted under a modified reward weight con-figuration to obtain more refined and robust motions suitable for Sim-to-Real transfer. The resulting policy is executed on the real robot in a zero-shot manner without additional fine-tuning. 
+
+A. Policy Architecture 
+
+An Actor-Critic architecture is adopted for the agent, and the policy is trained under an asymmetric observation setting. 
+
+Actor : The actor receives as input the observations avail-able from the hardware, as shown in Table I. The motion phase indicator sphase is a command input from the con-troller, where sphase = 0 denotes the left-hand motion phase and sphase = 1 denotes the right-hand motion phase. By explicitly providing motion phase information, the policy can recognize the current phase and generate appropriate actions accordingly. The output of the actor is the target angle for each joint, which is fed into a PD controller. The policy runs at 50 Hz, while the PD controller operates at 200 Hz. 
+
+Critic : In addition to the observations used by the actor, the critic receives privileged observations obtainable only in simulation, as shown in Table II. The observation in-cludes the history of the most recent three steps for joint information and eight steps for IMU information, where one step corresponds to 0.02 s, allowing the policy to capture short-term motion dynamics. The observation of the five bars near the robot, denoted as b1:5 , includes the center position, orientation, length, and thickness of each bar, expressed in the base link coordinate frame. Privileged observations improve value estimation and stabilize learning. ①
+
+② ③Fig. 3. Waypoint design for inducing non-linear hooking trajectories in WGRL. The reaching hand is guided to detach, move forward beneath the bars while avoiding the support-hand bar, and hook onto the target bar from above. 
+
+B. RL Environment Setup 
+
+An RL environment is constructed based on Legged Gym [14]. Training is conducted with 4096 parallel envi-ronments. To improve robustness and overcome the Sim-to-Real gap, random noise is added to the observations input to the actor. In addition, domain randomization is applied to the friction coefficients, link masses, and centers of mass. At the beginning of each episode, the posture and motion phase are randomly selected. 
+
+C. Overview of WGRL 
+
+Waypoint-Guided Reinforcement Learning (WGRL) is a learning framework that induces non-linear and complex motions by guiding the trajectory of representative points essential for task execution through sparsely specified way-points, while leaving whole-body motion generation to RL. Specifically, in this study targeting brachiation, the hand position is selected as the representative point, and way-points are predefined based on an ideal motion trajectory. Subsequently, the policy begins exploration under a reward function that encourages the end-effector to sequentially follow these waypoints. As learning progresses and a basic motion pattern is acquired, the waypoint guidance is gradu-ally relaxed through a curriculum strategy by enlarging the distance threshold for reaching each waypoint. WGRL has two key features. First, unlike previous waypoint-based RL methods such as [15], which use way-points as intermediate task goals, WGRL employs waypoints only to guide early-stage exploration. Combined with the curriculum strategy, this design enables both stable initial exploration and diverse final motions. Second, WGRL can be applied even when full-body reference motion data for imitation learning are unavailable. The waypoint positions specified for acquiring brachiation in this study are shown in Fig. 3. The waypoints are defined on the XZ plane (sagittal plane) and are alternately assigned to the left and right end-effectors according to the motion phase. The first waypoint {w1} induces a motion that rotates the hand backward to detach the hook from the bar, preventing inappropriate motions that attempt to push the hand forward while still grasping the bar. The second and third waypoints {w2, w3} guide the hand to pass beneath the bar and move forward, avoiding unnecessary contact with the bar located before the target. The fourth and fifth waypoints 
+
+{w4, w5} guide the hand to hook onto the target bar from                                                                                                
+
+> TABLE III REWARD DEFINITIONS FOR BRACHIATION
+> Name Equation* Weight †
+> 1st 2nd WGRL (Position) rpos 0.64 0.8 WGRL (Progress) rprog 4.0 5.0 WGRL (Success) rsucc 10 –Support-Hand Grasp I{support-hand grasp }0.5 0.5 Bars Reached Nbar 20.3 Mechanical Energy −(e−eref )2+ 0 .5–0.8 Hook Orientation P(ϕ2hook +ψ2hook )-0.2 -0.2 Hook Lin. Vel. P∥vhook ∥2-0.1 -1 Base Position y2base -5e-2 -0.1 Base Orientation θ2base -5e-2 -0.1 Base Lin. Vel. ∥vbase ∥2-3e-2 -5e-2 Base Ang. Vel. ∥ωbase ∥2-1e-3 -1e-2 Joint Torques ∥τ∥2-1e-6 -1e-4 Joint Acceleration ∥¨q∥2-3e-7 -3e-7 Joint Pos. Limit |q−clip( q,qmin ,qmax )|-100 -100 Joint Vel. Limits clip  |˙q| − 0.9˙qmax ,0,1-1e-2 -5e-2 Joint Torque Limit clip  |τ| − 0.9τmax ,0,∞-1e-2 -5e-2 Action Rate ∥at−1−at∥2-1e-2 -3e-2 Forearm Col. PI{forearm collision }-20 -20 Reaching-Hand Col. I{reaching-hand collision }-0.5 -0.5 Termination I{end in failure }-70 -70 *I{. . . }denotes an indicator function that returns 1 if the condition inside the braces is true, and 0 otherwise. Nbar is the number of bars reached since the start of the episode. Pindicates the aggregation of the values for the left and right hands.
+> †The 1st weights are used during the initial 4000 training iterations, whereas the 2nd weights are used during the subsequent 9000 iterations.
+
+above. The fourth waypoint lifts the end-effector sufficiently upward, and the fifth forms a trajectory that wraps around the bar from the far side, improving the success rate of hooking. 
+
+D. Reward Function Definitions 
+
+Reward for WGRL : The reward function that encourages the end-effector to sequentially follow the waypoints is de-fined as a weighted sum of three reward terms, as expressed in the following equation. 
+
+rWGRL = wpos rpos + wprog rprog + wsucc rsucc (1)  
+
+> •
+
+rpos — a reward based on the current end-effector po-sition. The specific functional form of f( ·) is introduced and analyzed in the ablation study in Section IV. 
+
+rpos = f(cos θ, ˜ℓ) (2) Specifically, θ is defined as the angle between two vectors: (i) the vector from the current end-effector po-sition to the target, and (ii) the vector from the previous waypoint to the target waypoint. The cosine similarity term cos θ is used to encourage the end-effector to approach the target from the direction of the previous waypoint. The normalized distance term ˜ℓ represents the current distance to the target waypoint normalized by the distance between the previous waypoint and the target waypoint. 
+
+cos θ = (˜ pref − ˜p)⊤(˜ pref − ˜pprev )
+
+∥˜pref − ˜p∥∥ ˜pref − ˜pprev ∥ (3) ˜ℓ = ∥˜pref − ˜p∥∥˜pref − ˜pprev ∥ (4) Here, p denotes the current end-effector position, pref 
+
+denotes the current target waypoint position, and pprev 
+
+denotes the previous waypoint position. The tilde sym-bol denotes projection onto the sagittal plane: ˜p =[px, p z ]⊤, where the y-axis component is omitted.  
+
+> •
+
+rprog — a reward based on the decrease in the nor-malized distance, which encourages progress toward the target waypoint over time. 
+
+rprog = clip 
+
+˜ℓt−1 − ˜ℓt, −0.1, 0.1
+
+
+
+(5)  
+
+> •
+
+rsucc — a binary reward that assigns 1 when the end-effector reaches the current target waypoint and the target is updated to the next waypoint, and assigns 0 otherwise. The target update is performed based on the comparison between the distance and the threshold ˜ℓth , as shown in the following equation. 
+
+(pprev , pref ) = ( wi−1, wi) ˜ℓ< ˜ℓth 
+
+−−−−−→ (wi, wi+1 )
+
+where i ∈ { 1, . . . , 5} (6) The threshold is initially set to ˜ℓth = 0 .03 . As learning progresses, the threshold for each waypoint is gradually increased when the number of agents that have passed it exceeds those that have not yet reached it across the 4096 parallel environments. This creates a curriculum structure in which strong guidance is applied in the early stage and gradually relaxed as learning proceeds. 
+
+Other Rewards : All reward definitions used in training are shown in Table III. Among them, the most important terms are the success reward (Bars Reached) and the mechan-ical energy reward (Mechanical Energy). The bar-reaching success reward is given in proportion to the number of bars reached since the start of the episode. To ensure that forward locomotion is prioritized, the weight of this reward is set to dominate the total reward. The mechanical energy reward encourages the base-link energy to approach a prescribed target value. The mechanical energy is defined as the sum of the kinetic energy computed from the linear velocity and the potential energy calculated based on the relative height from the bar. The target energy is set to the value observed in stable dual-hand suspension, eref = −72 J , to encourage stabilization after grasping and suppress excessive swing. By combining the success reward that promotes forward progression with the mechanical energy reward that prevents excessive energy growth, both locomotion achievement and motion stability are attained. 
+
+E. Training Procedure 
+
+Proximal Policy Optimization (PPO) [16] is adopted as the RL algorithm. First, to acquire the initial motion, the weight of the WGRL reward is set large and training is performed for 4000 iterations. After that, to refine the motion, additional exp −෨ ℓ2(a) 
+
+cos 𝜃 ⋅ exp −෨ ℓ2(c)  cos 𝜃 − 0.25෨ ℓ2(d) 
+
+cos 𝜃 (b)               
+
+> Fig. 4. Reward field visualization for different definitions of rpos .(a) distance-only, (b) direction-only, (c) multiplicative distance–direction coupling, and (d) additive distance–direction formulation. The formulation (c) and (d) encourage the end-effector to approach the target from the direction of the previous waypoint. Learning Curves: 𝒓pos Definition Ablation
+> Fig. 5. Learning curves for rpos definition ablation. The vertical axis plots the number of bars reached since the start of each episode, averaged over all parallel environments. Each curve represents the mean of three independent training runs. The right panel shows the mean and standard deviation at 8000 iterations. Reward formulations incorporating both distance and directional alignment yield higher performance and more consistent convergence result.
+
+training for 9000 iterations is conducted under a reward setting in which the bar-reaching success and mechanical energy terms dominate. The specific values of the reward weights used during training are shown in Table III. IV. WGRL T RAINING EXPERIMENT 
+
+To analyze how the definition of rpos = f (cos θ, ˜ℓ)
+
+affects the efficiency of motion acquisition, four reward field formulations shown in Fig. 4 were compared. All other reward terms and training conditions were kept identical, and training was conducted three times for each configuration. The results are shown in Fig. 5. The left panel shows the mean learning curves of the number of bars reached since the start of each episode, averaged across all parallel environments, while the right panel shows the mean and standard deviation at 8000 iterations. For the distance-only definition shown in Fig. 4(a), a high degree of exploration freedom was observed, and forward motion was occasionally acquired in the early stage of learning. The evaluation metric exceeded 0.5 after an average of 1368 iterations, indicating a relatively fast initial rise of the learning curve. However, without directional guidance, the policy often converged to approaching the target bar from Learning Curves: Reward Component Ablation  
+
+> 5 configurations remain at zero Fig. 6. Learning curves for reward component ablation in WGRL. The horizontal axis indicates training iterations, and the vertical axis shows the number of bars reached since the start of each episode, averaged over all parallel environments. Brachiation behavior emerges only when all three reward components are combined, or when paired with the success reward.
+
+below. Such trajectories are physically incapable of hooking onto the bar, causing learning to stagnate. Consequently, the standard deviation at 8000 iterations reached 1.016, indicating large performance variation and unstable learning. For the direction-only definition based on cosine similarity shown in Fig. 4(b), the reward lacked a clear incentive to approach the target waypoint. As a result, the average number of bars reached at 8000 iterations was 0.257, which was the lowest performance among the four definitions. The distance–direction combined formulations shown in Fig. 4(c) and (d) both demonstrated stable learning conver-gence and high motion acquisition performance. In particular, formulation (c) achieved the highest performance, with the evaluation metric exceeding 0.5 after an average of 954 iterations and reaching 2.6 bars at 8000 iterations. This is attributed to its narrow positive reward region, which strongly restricts the exploration space. On the other hand, formula-tion (d) includes a −˜ℓ2 term that introduces a continuous penalty increasing with the distance from the target, enabling stable approach guidance from a wide range of positions. In this study, although formulation (c) also demonstrated strong performance, formulation (d), rpos = cos θ − 0.25 ˜ℓ2,was adopted for the subsequent experiments because of the advantage described above. Another ablation study was conducted to verify the effec-tiveness of the reward design in Eq. (1) of WGRL. Specif-ically, the roles of the three reward terms were analyzed by training all combinations of their presence or absence, resulting in eight configurations. The evaluation metric was the same as in the previous experiment, namely the average number of bars reached since the start of each episode across all parallel environments. The results are shown in Fig. 6. The basic motion, which consists of releasing the hand and grasping the forward bar, was acquired only when all three reward terms were included, or when the combinations 
+
+{rpos , r succ } and {rprog , r succ } were used. When the waypoint-reaching success reward rsucc was ex-cluded, learning did not progress, indicating that the success reward is indispensable as a clear incentive for waypoint traversal. However, when the sparse reward rsucc was used alone, learning also failed to progress. This result indicates that it must be combined with reward terms providing continuous feedback, such as rpos or rprog .When the combination {rpos , r succ } was used, rpos en-couraged the end-effector to approach the target waypoint. However, since this term behaves as a potential-based reward, motion tended to stagnate in regions where the gradient was small. When the combination {rprog , r succ } was used, rprog 
+
+promoted motion toward the target direction by evaluating the decrease in distance over time. However, because rewards are given even when the end-effector is still far from the target, sufficient approach to the waypoint is not always guaranteed. As a result, learning converged at relatively low performance levels, with the average number of bars reached being 0.9 for {rpos , r succ } and 1.3 for {rprog , r succ }.In contrast, when all three reward terms were included, the complementary effects of rsucc as a motivation for reaching, 
+
+rpos as potential guidance, and rprog as a temporal progress reward enabled stable learning and successful acquisition of brachiation. V. BRACHIATION RESULT AND DISCUSSION 
+
+A. Sim-to-Sim 
+
+To verify the robustness of the trained policy, Sim-to-Sim evaluation was conducted in a MuJoCo [17] environment. In a monkey-bar environment with bar intervals of 400 mm, ten trials were conducted, and in all trials continuous traversal of more than 30 bars was achieved. The robot detached one hook by swinging backward, moved it forward, and wrapped around the target bar from above to grasp it. By alternately repeating detachment and grasping with the left and right hands, forward progression through brachiation was realized. Next, experiments were conducted in an environment where the bars had geometric variations of up to ±40 mm in the vertical direction and up to ±0.2 rad in yaw relative to the robot’s forward direction. As shown in Fig. 7 α, contin-uous forward progression was maintained even under these perturbed conditions. Occasionally, cases were observed in which the hook failed to catch the bar during the reaching motion. However, the robot was able to recover and attempt to grasp the bar again. Specifically, the recovery behavior consisted of flexion and extension of the elbow joint of the support-side arm immediately after the failure. This motion absorbed the disturbance of balance, prevented a fall, and generated a re-swing of the reaching arm. As a result, the robot was able to repeatedly retry the grasp and continue forward progression. Furthermore, validation was conducted in environments completely different from the training environment, namely an up-and-down inclined course with a slope of 5 deg (Fig. 7 
+
+β) and a circular course composed of 36 bars (Fig. 7 γ). The time-series variation of the base link position shown in Fig. 7 confirms that the robot adapted to previously unseen bar configurations and maintained forward progression. In the inclined course, 28 out of 30 reaching motions were successful, corresponding to 93.3%, and in the circular course, 91 out of 100 were successful, corresponding to 91%. Failure recovery behavior similar to that observed under uneven conditions was also confirmed, and grasping was often eventually achieved after multiple reattempts. α γβRough  Down Up  Circular 
+
+Base Link Center Position  Base Link Center Position  Base Link Center Position Fig. 7. Sim-to-Sim evaluation in MuJoCo under diverse monkey bars configurations. The learned policy is tested in three unseen environments: ( α)geometrically perturbed bars, ( β) a 5° inclined up–down course, and ( γ) a circular course. The lower plots show the base link center position over time, demonstrating sustained forward progression despite environmental variations. 
+
+Discussion : In this study, brachiation was successfully achieved in environments with geometric variations and in unseen inclined and circular courses, even though the agent’s observations did not include explicit bar position information or visual perception. This result suggests that the proposed method can generate robust motions that do not rely on precise estimation of the environment geometry. Two main factors contribute to this robustness. The first is the design of the hook mechanism. The hook arc diameter (60 mm) provides sufficient clearance relative to the 30 mm bar, enabling passive tolerance to positional errors. The second factor is the acquired hooking trajectory characterized by a large wrap-around motion from above. Because of this motion, even when the bar is displaced from its expected position, the straight shank of the hook can contact the bar and slide into engagement. The hooking trajectory can be interpreted as having been acquired through WGRL. In the early stage of learning, the waypoint-following reward constrains the exploration toward a trajectory that wraps around the bar from above. Afterward, even when the guidance is weakened through the curriculum strategy, the large wrap-around motion is considered to have been retained due to its stable motion performance. These results indicate that the proposed method effectively induces non-linear and complex motion trajectories and enables sta-ble whole-body motion based on such trajectories. The acquisition of recovery behavior after failing to grasp the target bar is strongly influenced by the reward design. In this study, a large penalty is imposed for falling, while a large reward proportional to successful bar grasping is provided. Under this reward structure, the agent is encour-aged to learn control strategies that avoid episode termination and maximize future success rewards through learning. As a result, behaviors that recover balance immediately after failure to prevent falling and repeatedly attempt bar grasping emerged spontaneously. In fact, when the weight of the success reward was reduced, the frequency of reattempts after failure significantly decreased. This result supports the interpretation that failure recovery behavior is induced by the reward structure. In addition, the mechanical design also enhances recoverability. The hook arc was designed with a central angle of 180 deg, which makes the structure resistant to detachment even when whole-body motion is disturbed. When the central angle was set to less than 180 deg in simulation, immediate detachment upon failure was frequently observed, making recovery behavior difficult to establish. Therefore, the robust brachiation motion demonstrated in this study is enabled by both the reward design, including WGRL, and the passive mechanical role of the hook. 
+
+B. Hardware Experiment 
+
+The policy trained in simulation was applied to the hardware robot in a zero-shot manner. The experiment was conducted in a monkey-bar environment consisting of four cylindrical bars arranged at intervals of 400 mm. Starting from an initial state in which both hands supported the same bar, 3 reaching phases (right, left, and right) were executed. Although the first hooking attempt failed in each reaching phase, recovery behavior similar to that observed in the Sim-to-Sim experiments consistently emerged, enabling successful reattempts. As a result, the reaching motion was ultimately completed in all 3 phases, and the robot traversed the entire course without falling. Fig. 8 shows snapshots of the motion during the exper-iment. Fig. 9 shows the time-series transitions of the base link position, orientation, and energy. These values were estimated from IMU and joint angle logs using forward kinematics. Velocity information was obtained through dif-ferentiation followed by low-pass filtering. From the tran-sitions of the base link’s x position and pitch angle, it can be confirmed that forward progression was achieved through repeated swings to attempt grasping during single-hand support. Regarding the energy transition, during the swing phase under single-hand support, the peak value of kinetic energy increased stepwise as the number of swings increased, and the mechanical energy remained higher than the target value. On the other hand, when bar grasping was 1 2 3 4 5
+
+Left -Hand Reaching Right -Hand Reaching  
+
+> t = 3.0 [s] t = 12.2 [s] t = 11.8 [s] t = 6.5 [s] t = 5.3 [s]
+
+# 6 7 8 9 10 
+
+Left -Hand Reaching  Right -Hand Reaching   
+
+> t = 21.8 [s] t = 21.3 [s] t = 18.7 [s] t = 17.3 [s] t = 25.9 [s] Fig. 8. Zero-shot Sim-to-Real brachiation on the life-sized dual-arm robot. Sequential snapshots show alternating reaching and hooking phases across four bars spaced at 400 mm intervals.
+
+## Base Position (x) and Pitch 
+
+## Base Energy 
+
+Progress 
+
+Swing 
+
+Peak increase 
+
+Convergence target  
+
+> Fig. 9. Hardware experiment logs during zero-shot Sim-to-Real brachiation. The top plot shows the forward base link position and pitch angle, indicat-ing forward progression through repeated swinging motions. The bottom plot presents the base energy. During hooking failures, swing momentum increases, resulting in progressively higher kinetic energy peaks that enable reattempts. Once stable dual-hand support is established, the mechanical energy decays and converges toward the target value.
+
+completed and the dual-hand support state became stable, the mechanical energy decayed and converged toward the target value. Differences in motion characteristics were observed be-tween the left-hand reaching motion and the right-hand reaching motion. During left-hand motion, the swing period tended to be shorter and the amplitude larger, and the mechanical energy also showed relatively higher values. In addition, the end-effector trajectory during left-hand motion exhibited greater variation compared with that during right-hand motion. 
+
+Discussion : In the hardware experiment, although the bars were arranged at equal intervals and constant height, the robot sometimes failed to grasp the target bar during the reaching motion. One possible factor is approximation errors in the contact model. In simulation, a collision model based on capsule approximation was adopted, which may lead to differences in contact characteristics compared with the hardware. In particular, on hardware, the friction coefficient of the grasping surface was small and prone to slipping, which may have prevented sufficient support force from being generated during the wrap-around motion from above. From the time-series variation of mechanical energy, the influence of the reward structure can be clearly observed. Because the bar-reaching success reward is weighted larger than the energy-target tracking reward, the policy prioritizes forward progression during reaching even when the mechan-ical energy exceeds the target value. In fact, during phases in which grasping failures were repeated, the peak value of kinetic energy increased stepwise as the number of swings increased. As shown in Fig. 10, this behavior can be inter-preted as an amplification of the swing amplitude to extend the reachable distance of the end-effector, eventually leading to successful grasping. On the other hand, once grasping is achieved and the state transitions to dual-hand support, the mechanical energy rapidly decays and converges toward the target value to obtain the energy reward. This result indicates that the reward structure effectively switches the control objective between forward locomotion and stabilization. Asymmetry between left-hand and right-hand motions was observed. In the training environment, the initial motion ① ③②   
+
+> Hooking Failure Build Momentu mSuccess
+
+Fig. 10. Failure recovery behavior during hardware brachiation. After an initial hooking failure, the robot increases swing amplitude to build momentum and successfully reattempts bar engagement, preventing fall and enabling continued progression. 
+
+phase of each episode was randomly selected between the left and right sides. However, the learning logs indicate that the right-hand motion converged earlier than the left-hand motion. This difference in acquisition speed likely resulted in differences in motion characteristics between the two sides on hardware, with the right-hand motion being more refined than the left-hand motion. Since symmetry constraints were not explicitly introduced in this study, the asymmetry remained in the learned policy. A particularly important observation in the hardware ex-periment was that failure recovery behavior consistently emerged. The fact that the robot was able to restore its pos-ture and continue swinging without falling after a grasping failure indicates that the brachiation motion strategy acquired by the proposed method remains effective even under the Sim-to-Real gap, including contact errors. VI. CONCLUSIONS In this study, a learning method based on Waypoint-Guided Reinforcement Learning (WGRL) was proposed to acquire brachiation on a life-sized dual-arm robot. WGRL enables guidance toward a target trajectory by specifying a small number of waypoints, even when full-body motion data for imitation learning are unavailable. By combining a potential term that considers both distance and approach di-rection with rewards for progress and successful arrival, sta-ble waypoint-following learning was achieved. This resulted in the emergence of non-linear and complex motions for hook detachment and hooking. Furthermore, the bar-reaching success reward promoting locomotion and the mechanical-energy tracking reward promoting motion stabilization were designed as paired elements. Through this reward structure, a control strategy emerged in which the swing amplitude increases to reattempt grasping after failure, while the energy decreases after successful grasping to stabilize the motion. As a result, robust forward progression was maintained even under geometric variations in the environment and in pre-viously unseen courses. Hardware validation also confirmed brachiation that sequentially transitions across bars without falling due to the emergence of failure recovery behavior. This study demonstrates that RL-based brachiation can expand the traversable workspace of robots to environments without footholds. Future work will focus on improving mo-tion stability by introducing learning designs that explicitly promote symmetry between left and right motions, and on achieving more general arm-based locomotion by incorpo-rating environment perception such as visual information. REFERENCES [1] Kento Kawaharazuka, Shintaro Inoue, Temma Suzuki, Sota Yuzaki, Shogo Sawaguchi, Kei Okada, and Masayuki Inaba. ”MEVIUS: A Quadruped Robot Easily Constructed through E-Commerce with Sheet Metal Welding and Machining”. In IEEE-RAS International Conference on Humanoid Robots (Humanoids) , pp. 631–636. IEEE, 2024. [2] Kento Kawaharazuka, Shogo Sawaguchi, Ayumu Iwata, Keita Yoneda, Temma Suzuki, and Kei Okada. ”MEVITA: Open-Source Bipedal Robot Assembled from E-Commerce Components via Sheet Metal Welding”. In IEEE-RAS International Conference on Humanoid Robots (Humanoids) , p. WI5C.1. IEEE, 2025. [3] Jonah Siekmann, Yesh Godse, Alan Fern, and Jonathan Hurst. ”Sim-to-real learning of all common bipedal gaits via periodic reward composition”. In IEEE International Conference on Robotics and Automation (ICRA) , pp. 7309–7315. IEEE, 2021. [4] Dylan Vogel, Robert Baines, Joseph Church, Julian Lotzer, Karl Werner, and Marco Hutter. ”Robust ladder climbing with aquadrupedal robot”. In IEEE/RSJ International Conference on In-telligent Robots and Systems (IROS) , pp. 7239–7244. IEEE, 2025. [5] Ziwen Zhuang, Zipeng Fu, Jianren Wang, Christopher Atkeson, Soren Schwertfeger, Chelsea Finn, and Hang Zhao. ”Robot Parkour Learn-ing”. In Conference on Robot Learning (CoRL) , 2023. [6] Hideki Kajima, Yasuhisa Hasegawa, and Toshio Fukuda. ”Learning algorithm for a brachiating robot”. Applied Bionics and Biomechanics ,Vol. 1, No. 1, pp. 57–66, 2003. [7] Toshio Fukuda, Yasuhisa Hasegawa, Masahiro Doi, and Yoshihiko Asano. ”Multi-locomotion robot-energy-based motion control for dexterous brachiation”. In IEEE International Conference on Robotics and Biomimetics (ROBIO) , pp. 4–9. IEEE, 2005. [8] Shuo Yang, Zhaoyuan Gu, Ruohai Ge, Aaron M Johnson, Matthew Travers, and Howie Choset. ”Design and implementation of a three-link brachiation robot with optimal control based trajectory tracking controller”. arXiv preprint arXiv:1911.05168 , 2019. [9] Shourie S Grama, Mahdi Javadi, Shivesh Kumar, Hossein Zamani Boroujeni, and Frank Kirchner. ”RicMonk: A three-link brachiation robot with passive grippers for energy-efficient brachiation”. In IEEE International Conference on Robotics and Automation (ICRA) , pp. 8920–8926. IEEE, 2024. [10] Toshio Fukuda, Shigetaka Kojima, Kosuke Sekiyama, and Yasuhisa Hasegawa. ”Design method of brachiation controller based on virtual holonomic constraint”. In IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , pp. 450–455. IEEE, 2007. [11] Daniele Reda, Hung Yu Ling, and Michiel van de Panne. ”Learning to Brachiate via Simplified Model Imitation”. In ACM SIGGRAPH 2022 conference proceedings , pp. 1–9, 2022. [12] Mahdi Javadi, Daniel Harnack, Paula Stocco, Shivesh Kumar, Shub-ham Vyas, Daniel Pizzutilo, and Frank Kirchner. ”Acromonk: A minimalist underactuated brachiating robot”. IEEE Robotics and Automation Letters , Vol. 8, No. 6, pp. 3637–3644, 2023. [13] Xue Bin Peng, Pieter Abbeel, Sergey Levine, and Michiel van de Panne. ”DeepMimic: Example-Guided Deep Reinforcement Learning of Physics-Based Character Skills”. ACM Transactions on Graphics (TOG) , Vol. 37, No. 4, pp. 1–14, 2018. [14] Nikita Rudin, David Hoeller, Philipp Reist, and Marco Hutter. ”Learn-ing to Walk in Minutes Using Massively Parallel Deep Reinforcement Learning”. In Conference on Robot Learning (CoRL) , pp. 91–100. PMLR, 2022. [15] Shaunak A Mehta, Soheil Habibian, and Dylan P Losey. ”Waypoint-Based Reinforcement Learning for Robot Manipulation Tasks”. In 
+
+IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , pp. 541–548. IEEE, 2024. [16] John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov. ”Proximal policy optimization algorithms”. arXiv preprint arXiv:1707.06347 , 2017. [17] Emanuel Todorov, Tom Erez, and Yuval Tassa. ”MuJoCo: A physics engine for model-based control”. In IEEE/RSJ International Confer-ence on Intelligent Robots and Systems (IROS) , pp. 5026–5033. IEEE, 2012.
