@@ -1,0 +1,3689 @@
+Title: IMU-Free Body-Frame State Estimation with Sparse Scene Flow for Quadcopters
+
+URL Source: https://arxiv.org/pdf/2608.20891v1
+
+Published Time: Mon, 24 Aug 2026 00:36:16 GMT
+
+Number of Pages: 56
+
+Markdown Content:
+# IMU-Free Body-Frame State Estimation with Sparse Scene Flow for Quadcopters 
+
+## Daniel Grønhaug, Sofie Markeset, Mathias Kolberg 
+
+dfgronha@math.uio.no, sofielma@ifi.uio.no, mathiko@ifi.uio.no 
+
+Abstract 
+
+We present a vision-only state estimation system for X-configuration quadcopters equipped with a canonical stereo camera pair and no inertial sensors. The system operates entirely in the body frame, requiring only synchronised stereo images and motor thrust commands as inputs. A continuous-discrete extended Kalman filter on a composite manifold state ⟨SE (3) , R3, . . . ⟩ maintains estimates of body-frame pose, velocity, angular velocity, gravity, and disturbances, using stationary scene points as implicit inertial references. Feature points are detected (FAST, Shi-Tomasi), tracked temporally (SSD, Lucas-Kanade) and matched across cameras (NCC), with prediction-assisted search regions constructed from filter-derived pose and point uncertainty. Chi-squared gating on the normalised innovation classifies points as stationary or moving; only stationary points enter the filter. Beyond the state estimate, the system produces a sparse 3D point cloud in which each point carries a position, velocity, and joint covariance. These are obtained through a 4-view (i.e. two stereo pairs for two timestamps) full bundle adjustment that jointly estimates point position and velocity, fusing stereo disparity and temporal parallax across two stereo observations, using the filter-derived relative pose as a prior. Feature points in the EKF do not enter the solver; their measurement information is reflected through the pose prior. Point cloud density is spatially adaptive: an external focus point directs allocation, producing dense coverage in the region of attention and sparse peripheral coverage from the feature points (akin to foveation). The output — a body-frame state estimate, a calibrated pose change, and a sparse scene flow — is intended as a measurement source for a downstream world model (environment state and dynamics) anchored in the current body frame, without dependence on GPS, IMU, or any world-frame infrastructure, though the architecture accommodates their future integration. arXiv:2608.20891v1 [cs.RO] 21 Aug 2026 Contents 
+
+1 Introduction 3
+
+1.1 Rotor Configuration . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31.2 Camera Configuration . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41.3 Priors . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41.4 Inputs . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 51.5 Outputs . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
+
+2 Mathematical Preliminaries 7
+
+2.1 Lie Algebra on SE (3) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 72.2 Composite Manifold State . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 82.3 Projective Geometry . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 82.4 Rigid Body Dynamics . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10 2.5 Covariance and Chi-Squared Tests . . . . . . . . . . . . . . . . . . . . . . . . 11 
+
+3 Extended Kalman Filter 12 
+
+3.1 Filter Equations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12 3.2 System Model . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14 3.3 Measurement Model . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21 3.4 Relative Pose from Filter State . . . . . . . . . . . . . . . . . . . . . . . . . . 24 
+
+4 Joint MAP Solver 29 
+
+4.1 Nonlinear MAP with Gauss-Newton . . . . . . . . . . . . . . . . . . . . . . . 29 4.2 Including a Prior . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30 4.3 Joint Point-Velocity Solver with Pose Prior . . . . . . . . . . . . . . . . . . . 31 
+
+5 Measurement Pipeline 39 
+
+5.1 Computer Vision Primitives . . . . . . . . . . . . . . . . . . . . . . . . . . . . 39 5.2 Geometric Estimation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41 5.3 Search Region Construction . . . . . . . . . . . . . . . . . . . . . . . . . . . . 42 5.4 Stationarity Testing . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 44 
+
+6 Algorithm Overview 46 
+
+6.1 Point Sets and Roles . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46 6.2 Accumulator . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46 6.3 Input and Output . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46 6.4 Pseudocode . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 47 
+
+7 Evaluation 49 
+
+7.1 Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 49 7.2 State Estimate Accuracy . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 50 7.3 State Diagnostics . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 53 
+
+8 Future Work 54 References 55 
+
+21 Introduction 
+
+This document describes the design of a vision-only state and scene flow estimation system. The system takes synchronised stereo images and motor thrust commands as input and produces three outputs: (1) the quadcopter’s body-frame state (pose, velocity, angular velocity, gravity, disturbance) with covariance, (2) the frame-to-frame pose change with covariance, and (3) a sparse 3D point cloud with per-point velocity and uncertainty. The architecture has two coupled estimators. The first is a continuous-discrete extended Kalman filter on a composite manifold state ⟨SE (3) , R3, . . . ⟩ (Section 3). The filter maintains stationary scene points as inertial references: their body-frame positions evolve deterministically under the known kinematics (Section 3.2), and pixel measure-ments correct the state through covariance cross-correlations (Section 3.3). A gravity magnitude pseudo-measurement prevents drift in the gravity estimate. The second estimator is a two-frame nonlinear MAP solver (Section 4.3) that jointly estimates point positions and velocities with a pose change, using the filter-derived pose as a Lie algebra prior (Section 3.4) and stereo triangulated point estimates as priors on the points (Section 5.2). Feature points in the EKF do not enter the solver; their infor-mation enters through the pose prior, avoiding double-counting. The solver handles all four stereo/mono visibility combinations (SS, SM, MS, MM), with mono-mono points constrained to the observable perpendicular velocity component (Section 4.3), though we have constrained ourselves to the observation combination SS due to unresolved numerical instability. Points are managed in three sets: feature points ( F) in the EKF for state estimation, pre-admission candidates ( Fpre ) awaiting their first solve and stationarity test, and interest points ( I) steered by an external focus for task-directed dense coverage. All candidate and interest points enter the joint solver; the output point cloud is uniform across roles (Section 6). The system operates without IMU, GPS, or any world-frame infrastructure. The body-frame formulation means the output is naturally suited to a world model anchored in the current body frame Bk, propagated between frames using the solver’s pose change ∆ ˆTsolver rather than an accumulating absolute pose. 
+
+## 1.1 Rotor Configuration 
+
+Viewed from above, the rotors are numbered and spin as follows: 
+
+Rotor Position Spin Body-frame location 
+
+1 Front-right CW +e1, +e2
+
+2 Rear-right CCW −e1, +e2
+
+3 Rear-left CW −e1, −e2
+
+4 Front-left CCW +e1, −e2
+
+3Adjacent rotors spin in opposite directions to cancel net reactive torque in steady flight. CW rotors (1, 3) produce negative yaw torque (about + e3); CCW rotors (2, 4) produce positive yaw torque. All rotors produce thrust along −e3 (upward in FRD, opposing gravity). 
+
+## 1.2 Camera Configuration 
+
+Two hardware-synchronised cameras with global shutter are rigidly mounted facing for-ward (along + e1), arranged in a canonical stereo configuration: horizontally separated along e2 with parallel optical axes. The left camera is at −e2 and the right camera at +e2 relative to the body centre, giving a baseline b = ∥tR − tL∥.Both cameras share the same orientation: their optical axes are aligned with the body 
+
+e1 axis, image x-axis with e2, and image y-axis with e3. The stereo overlap region (where both fields of view intersect) is centred on the forward direction. The left and right fringe zones are visible to only one camera. The cameras are fixed-focus with deep depth of field. Images are delivered as synchro-nised w × h frames at rate λ Hz. Fish-eye lenses are preferred for wider field of view; HDR or dual-exposure capability is beneficial for varying lighting conditions. 
+
+## 1.3 Priors 
+
+All quantities that must be known or calibrated before the algorithm runs. These are constant throughout operation. Runtime values, units, sources, and mathematical types (manifolds, shapes) are maintained in calibration.yaml. Groups, with cross-references for how each is used: • Coordinate frames. Body B (FRD), cameras CL, C R (RealSense), Vicon marker M . Used throughout. • Camera parameters. Intrinsics, distortion, body-to-camera extrinsics in SE (3), frame rate, image resolution. Stereo baseline b derived. See §2.3. • Quadcopter parameters. Mass, inertia, arm length, per-rotor thrust and torque coefficients, drag, gravity. Determine mixing matrix and dynamics. See §2.4. • Noise parameters. Process noise spectral densities for actuators, torques, gravity, and disturbance; pixel measurement noise; gravity pseudo-measurement noise. See §3.2, §3.3. • Initial covariance. Diagonal of P0 for each state component, reflecting the assumption that the quadcopter starts stationary, level, at the body-frame origin. See §3.2. 4Several entries are flagged [EST] in the file. These are educated guesses rather than measurements: the inertia tensor J, the drag coefficient Cd, and the camera-to-body rotation RBC , which is the nominal mount with any mounting misalignment unmodelled. Identifying them properly is outstanding work. 
+
+## 1.4 Inputs 
+
+All objects the algorithm receives at the start of time step tk. The control input and focus are indexed k−1 because they reflect commands applied during the interval [tk−1, t k): 
+
+Lk, R k ∈ R1×h×w Stereo pair with timestamp tk (1) 
+
+uk−1 = ( T1, T 2, T 3, T 4)⊤ ∈ R4 Rotor thrusts during [ tk−1, t k) (§3.2) (2) 
+
+Fk−1 ∈ R3 Focus point in Bk−1 (§5.1) (3) 
+
+σF,k −1 ∈ R>0 Focus spread (§5.1) (4) 
+
+## 1.5 Outputs 
+
+All objects the algorithm produces at the end of time step tk.
+
+1.5.1 Core State (body frame) 
+
+The EKF state with feature point rows and columns stripped (§6): ˆTBk ,B 0 ∈ SE (3) Body pose (5) ˆv ∈ R3 Linear velocity in Bk (6) ˆω ∈ R3 Angular velocity in Bk (7) ˆgB ∈ R3 Gravity in Bk (∥ˆgB ∥ ≈ g) (8) ˆdB ∈ R3 Wind/disturbance in Bk (9) 
+
+Pcore ∈ R18 ×18 Core state covariance (10) The pose ˆTBk ,B 0 accumulates drift and is suitable for coarse waypoint navigation; for local geometry, use ∆ ˆT below. 
+
+1.5.2 Pose Change 
+
+From the joint solver (§4.3): ∆ ˆTsolver = ˆTBk ,B k−1 ∈ SE (3) Frame-to-frame pose change (11) 
+
+Σsolver ∆ξ ∈ R6×6 Pose change covariance (Lie algebra) (12) This is the recommended transform for propagating a downstream world model anchored in the current body frame. 51.5.3 Point Cloud (body frame Bk)
+
+Ck = {(ˆ pi, ˆvp 
+
+> i
+
+, Σi, role i, stage i)}Ni=1 (13) where for each point i:ˆpi ∈ R3 Position in Bk (14) ˆvp 
+
+> i
+
+∈ R3 Velocity in Bk (stage 2 only) (15) 
+
+Σi ∈ Rdi×di Covariance (dimension depends on source) (16) 
+
+role i ∈ {F , Fpre , I} Point role (17) 
+
+stage i ∈ { 1, 2} Single-frame or two-frame (18) The content depends on the point’s source: 
+
+Stage 2 ( Fpre , I). Position, velocity, and joint covariance from the joint solver, transformed to Bk (§4.3). For SS/SM/MS: Σi ∈ R6×6 (full position-velocity). For MM: Σi ∈ R4×4 (position and perpendicular velocity v⊥); the velocity field is ˆ vp 
+
+> i
+
+=ˆv⊥,i ∆ ˆ R d ⊥ with the along-epipolar component unobservable and set to zero. 
+
+Stage 1 stereo ( Fpre , I). Position and covariance from stereo disparity (§5.2): 
+
+Σi = Σp,i ∈ R3×3. Velocity not yet available. 
+
+Feature points ( F). Position and marginal covariance extracted from the EKF state and covariance: Σi = ΣEKF  
+
+> p,i
+
+∈ R3×3. Velocity not returned (the EKF does not maintain per-point velocity; feature points are assumed stationary, and this assumption is repeatedly tested). 62 Mathematical Preliminaries 
+
+## 2.1 Lie Algebra on SE (3) 
+
+We consider the matrix Lie group T ∈ SE (3) , T =
+
+> (
+
+R t0⊤ 1
+
+> )
+
+, with Lie algebra elements 
+
+ξ∧ ∈ se (3) and coordinate vectors ξ ∈ R6 (Solà et al., 2021). A coordinate vector and its Lie algebra element are: 
+
+ρ = Translation , ϕ = Rotation 
+
+ξ =
+
+> (
+
+ρϕ
+
+> )
+
+= (
+
+ρ1 ρ2 ρ3 ϕ1 ϕ2 ϕ3
+
+> )⊤
+
+ξ∧ =
+
+> [
+
+[ϕ]× ρ
+
+0⊤ 0
+
+> ]
+
+∈ R4×4, (ξ∧)∨ = ξ
+
+The rotation ϕ can be represented in angle-axis form ϕ = θu. A coordinate vector is related to a pose and vice versa by (where exp is the matrix exponential and log its inverse): 
+
+Tξ = Exp( ξ) = exp( ξ∧), ξT = Log( T ) = log( T )∨
+
+R = Exp so (3) (ϕ) := I + sin θ[u]× + (1 − cos θ)[ u]2
+
+> ×
+
+ϕ = Log so (3) (R) := θ
+
+2 sin θ (R − R⊤)∨, θ = arccos  
+
+> (
+
+tr( R) − 12
+
+> )
+
+V(ϕ) = I + 1 − cos θθ [u]× + θ − sin θθ [u]2
+
+> ×
+
+V−1(ϕ) = I − θ
+
+2[u]× +
+
+> (
+
+1 − θ sin θ
+
+2(1 − cos θ)
+
+> )
+
+[u]2
+
+> ×
+
+Exp( ξ) := 
+
+> [
+
+Exp so (3) (ϕ) V(ϕ)ρ
+
+0⊤ 1
+
+> ]
+
+Log( T ) := 
+
+> [
+
+V−1(ϕ)t
+
+ϕ
+
+> ]
+
+Addition and subtraction on this Lie group (right perturbation convention): 
+
+T ⊕ ξ = T · Exp( ξ) ∈ SE (3) 
+
+T1 ⊖ T2 = Log( T −12 · T1) ∈ R6
+
+Adjoint of SE (3) . The adjoint matrix Ad T linearly maps tangent vectors between reference frames (Solà et al., 2021, Example 6, Appendix D Eq. 175): Ad T =
+
+> (
+
+R [t]×R0 R
+
+> )
+
+∈ R6×6 (19) satisfying ( T ξ∧ T −1 )∨ = Ad T ξ.72.2 Composite Manifold State 
+
+The estimation state contains both Lie group and Euclidean components. Following (Solà et al., 2021, Section IV, Eqs. 84–90), we define a composite manifold M =
+
+⟨SE (3) , R3, R3, . . . ⟩ with state: 
+
+X = ⟨ T, v, ω, gB , dB , pB 
+
+> 1
+
+, . . . , pBNf ⟩ (20) where T ∈ SE (3) is the body pose and all other components are in R3.
+
+Composite plus and minus. The composite operators ˆ ⊕ and ˆ ⊖ act on each block according to its own manifold (Solà et al., 2021, Eqs. 86–87): 
+
+X ˆ⊕ δx = ⟨ T ⊕ δξ, v + δv, ω + δω, gB + δgB , dB + δdB , pB 
+
+> 1
+
++ δpB 
+
+> 1
+
+, . . . ⟩ (21) where T ⊕ δξ = T · Exp( δξ) is the SE (3) right-plus and + is standard vector addition (Solà et al., 2021, Appendix E Eq. 186). The composite perturbation vector is: 
+
+δx =
+
+> 
+
+δξ
+
+δv
+
+δω
+
+δgB
+
+δdB
+
+δpB
+
+> 1
+
+...
+
+> 
+
+∈ R18+3 Nf (22) with δξ = ( δρ, δ ϕ) ∈ R6 the SE (3) tangent vector. The composite minus is the inverse: 
+
+δx = X ˆ⊖ ˆX gives δξ = T ⊖ ˆT = Log( ˆT −1T ) for the SE (3) block and δv = v − ˆv for the R3 blocks. 
+
+Composite derivative. Jacobians of functions on the composite state are computed block-wise (Solà et al., 2021, Eq. 88–89): each block ∂f i/∂ Xj uses the manifold derivative (Eq. 41a) for Lie group components and the standard derivative for R3
+
+components. We denote this Jacobian as: Df (X ) 
+
+> DX
+
+. This derivative coincides with the perturbation derivative, which in turn reduces to the standard partial derivative for Euclidean components. 
+
+## 2.3 Projective Geometry 
+
+See (Szeliski, 2022) and (Ma et al., 2004) for comprehensive treatments. 
+
+2.3.1 Pinhole Camera Model 
+
+A 3D point passes through several transformations to become a pixel. 
+
+Homogeneous coordinates. 
+
+˜· : p 7 →
+
+> (
+
+p
+
+1
+
+> )
+
+, (˜ ·)−1 :
+
+> (
+
+p
+
+s
+
+> )
+
+7→ p
+
+s Homogeneous representation (23) 8Perspective divide. Projects a 3D camera-frame point to normalised image coordi-nates, discarding depth: 
+
+πn(p) = 1
+
+pz
+
+> (
+
+px
+
+py
+
+> )
+
+=
+
+> (
+
+xn
+
+yn
+
+> )
+
+(24) 
+
+Lens distortion. Maps undistorted normalised coordinates to distorted normalised coordinates. Model-dependent (Brown-Conrady, equidistant, etc.): 
+
+D : R2 → R2, D(xn, y n) = ( xd, y d) (25) 
+
+Camera intrinsics. Maps distorted normalised coordinates to pixel coordinates: 
+
+K =
+
+> 
+
+fu 0 cu
+
+0 fv cv
+
+0 0 1 
+
+> 
+
+, κ(xd, y d) = 
+
+> (
+
+fu xd + cu
+
+fv yd + cv
+
+> )
+
+(26) 
+
+Full projection. From camera frame to pixel: 
+
+π = κ ◦ D ◦ πn : R3 → R2 (27) 
+
+Inverse projection. From pixel to normalised coordinates and then to a ray (up to unknown depth Z): (u, v ) κ−1
+
+−−→ (xd, y d) D−1
+
+−−→ (xn, y n) × Z
+
+−−→ pc = Z
+
+> 
+
+xn
+
+yn
+
+1 
+
+> 
+
+(28) The depth Z cannot be recovered from a single image; projection is a many-to-one mapping. 
+
+2.3.2 Camera Extrinsics Rotation convention. RAB rotates vectors from frame B into frame A: vA =
+
+RAB vB . Frames: B0 (initial body / world), B (body), L (left camera), R (right camera). 
+
+Body to camera. A body-frame point pB in camera c ∈ { L, R }:
+
+pc = RcB pB + tc (29) The full projection from body frame to pixel: 
+
+u = π(
+
+RcB pB + tc
+
+> )
+
+(30) 
+
+Camera to camera. For canonical stereo with baseline b = ∥tR − tL∥:
+
+pR = RRL pL + tRL (31) For parallel cameras: RRL = I, tRL = ( −b, 0, 0) ⊤.92.3.3 Stereo Geometry 
+
+For a rectified stereo pair, corresponding points lie on the same horizontal scanline (epipolar line). The horizontal disparity encodes depth: 
+
+d = uL − uR Disparity (pixels) (32) 
+
+Z = fu · bd Depth from disparity (33) Depth uncertainty from first-order propagation of disparity noise σd:
+
+σZ =
+
+> ∣∣∣∣∣
+
+∂Z ∂d  
+
+> ∣∣∣∣∣
+
+σd = fu bd2 σd = Z2
+
+fu b σd (34) Depth uncertainty grows quadratically with distance. 
+
+2.3.4 Epipolar Constraint 
+
+Given a point in the left image at pixel ( uL, v L), its correspondence in the right image is constrained to lie on a line (the epipolar line). For a rectified pair this is simply 
+
+vR = vL, the same row. 
+
+## 2.4 Rigid Body Dynamics 
+
+These equations can among others be found in (Beard and McLain, 2012).  
+
+> ∑
+
+F = m ˙v Newton’s second law (35) ( ˙ v)inertial = ( ˙ v)body + ω × v Transport theorem (36) 
+
+J ˙ω + ω × (Jω) = τ Euler’s rotation equations (37) 
+
+τ = r × F Torque (38) 
+
+Fdrag = −Cd v Linear drag (39) 
+
+T = kf ω2 
+
+> r
+
+Propeller thrust (40) 
+
+Q = km ω2 
+
+> r
+
+Reactive propeller torque (41) [a]× =
+
+> 
+
+0 −a3 a2
+
+a3 0 −a1
+
+−a2 a1 0 
+
+> 
+
+Skew-symmetric (cross-product) matrix (42) 
+
+Transport theorem for world-fixed vectors. A vector aB0 constant in the B0
+
+frame, expressed in the rotating body frame as aB = RB,B 0 aB0 , satisfies: ˙aB = −ω × aB (43) Derived from ˙RB,B 0 = −[ω]× RB,B 0 (Solà et al., 2021, Example 4, p. 5). 10 2.5 Covariance and Chi-Squared Tests 
+
+2.5.1 Covariance Identities 
+
+Given a function y = g(x) with x ∼ N (¯ x, Σx), the output covariance is (Bar-Shalom et al., 2001): 
+
+Σy = J Σ x J⊤, J = ∂g ∂x
+
+> ∣∣∣∣∣¯x
+
+(44) The following standard identities are used throughout the document. For zero-mean random vectors a, b and deterministic matrices M, N (Bar-Shalom et al., 2001): 
+
+Cross-covariance. 
+
+Cov( a, b) = E[ a b ⊤] (45) 
+
+Linear transformation. If c = Ma , then: Cov( c) = M Cov( a) M⊤ (46) 
+
+Cross-covariance under linear transformation. If c = Ma , then: Cov( c, b) = M Cov( a, b) (47) 
+
+Independence. If a and b are independent: Cov( a, b) = 0 (48) 
+
+Sum with independent term. If c = Ma + n with n independent of both a and b:Cov( c, b) = M Cov( a, b) (49) 
+
+2.5.2 Chi-Squared Hypothesis Test 
+
+Following (Bar-Shalom et al., 2001, p. 57), if x ∼ N (¯ x, P) is an n-dimensional Gaussian, then: 
+
+q = ( x − ¯x)⊤P−1(x − ¯x) ∼ χ2
+
+> n
+
+, (50) with E[ q] = n and var[ q] = 2 n.11 3 Extended Kalman Filter 
+
+The Extended Kalman Filter on a Composite Manifold State 1 maintains a Gaussian approximation of the state belief: at any time, the state estimate ˆX and covariance P
+
+represent a multivariate normal distribution N ( ˆX , P). This approximation is what justifies the use of chi-squared tests on innovations (Section 5.4). The continuous-discrete formulation (Crassidis and Junkins, 2004, Table 3.9) uses continuous-time dynamics with discrete-time measurements. We extend the Euclidean EKF formulation to a Composite Manifold state following (Solà et al., 2021, Pages 1-12), (Huai and Gao, 2023), (Bourmaud et al., 2014, Section 3) and (Im, 2024, Section 5) 2.We attempt to keep the notation similar to (Crassidis and Junkins, 2004) as this is what most are familiar with: ˙X (t) = f (X (t), u(t), w(t)) (51) ˜y(tk) = h(X (tk), v(tk)) (52) where: 
+
+f, h Continuously differentiable 
+
+f System model , h Measurement model 
+
+X (t) True State , u(t) Control input 
+
+w(t) ∼ N (0, Q(t)) , v(tk) ∼ N (0, R(tk)) Uncorrelated noise 
+
+δx = X ˆ⊖ ˆX Estimation error 
+
+## 3.1 Filter Equations 
+
+Initialise. ˆX (t0) = ˆX0, P0 = E [
+
+(X0 ˆ⊖ ˆX0) ( X0 ˆ⊖ ˆX0)⊤]
+
+(53) 
+
+Gain. Kk = P− 
+
+> k
+
+H⊤
+
+> k
+> [
+
+Hk P− 
+
+> k
+
+H⊤ 
+
+> k
+
++ HvR(tk)H⊤
+
+> v
+> ]−1
+
+(54) 
+
+Hk := Dh DX     
+
+> ∣∣∣∣∣ˆX−
+> k,v(tk)= 0
+
+, Hv = ∂h ∂v     
+
+> ∣∣∣∣∣ˆX−
+> k,v(tk)= 0
+
+(55) 
+
+Update. 
+
+ˆX + 
+
+> k
+
+= ˆX − 
+
+> k
+
+ˆ⊕ Kk
+
+> [
+
+˜yk ˆ⊖ h( ˆX − 
+
+> k
+
+, 0)]
+
+(56) 
+
+P+ 
+
+> k
+
+= [ I − Kk Hk] P− 
+
+> k
+
+(57) 
+
+> 1Closely related to Multiplicative EKF (MEKF) , Error State KF (ESKF), M-CD-EKF, ...
+> 2We have not found this composite-manifold continuous-discrete formulation stated as such in the literature. We posit it and verify that it reduces to the formulations we cite; it is an Ansatz, not a proved result.
+
+12 Propagation (continuous form). 
+
+˙ˆX (t) = f ( ˆX (t), u(t), 0) (58) ˙P(t) = F (t) P(t) + P(t) F ⊤(t) + G(t) Q(t) G⊤(t) (59) 
+
+F (t) := Df DX    
+
+> ∣∣∣∣∣ˆX(t),u(t),w=0
+
+, G(t) = ∂f ∂w    
+
+> ∣∣∣∣∣ˆX(t),u(t),w=0
+
+(60) 
+
+Propagation (Discrete form). First-order Forward Euler integration of the es-timate, component-wise according to the system model, with discrete-time process noise covariance approximated following (Crassidis and Junkins, 2004, Equations 3.179, 3.193). ˆX − 
+
+> k+1
+
+= ˆX + 
+
+> k
+
+ˆ⊕ ∆tk · f ( ˆX + 
+
+> k
+
+, uk, 0) (61) Φk = I + ∆ tk · Fk (62) 
+
+P− 
+
+> k+1
+
+= Φ k P+ 
+
+> k
+
+Φ⊤ 
+
+> k
+
++ ∆ tk Gk Qk G⊤ 
+
+> k
+
+(63) where ∆ tk = tk+1 − tk is the actual frame interval (not assumed constant). Note, state propagation being a left or right perturbation depends on the dynam-ics. Our equation is therefore strictly only right if f is defined as the right acting dynamics, as whether it is a right or left perturbation is dictated by the dynamics and is a per sub-state decision. In our case we’ll see the pose dynamics are left acting and use the left perturbation. You can map a left perturbation to a right perturbation using the adjoint. Thereby restating all perturbations as right acting. We don’t restate pose propagation as right acting because it costs FLOPS for no benefit. The state vector has variable length: feature points enter and leave the filter as they are detected, lost, or reclassified. Three operations are needed (Mourikis and Roumeliotis, 2007). 
+
+Adding a state (augmentation). When a new feature with estimated position ˆpB 
+
+> new
+
+is added, the state and covariance grow: ˆX ← ⟨ ˆX , ˆpB 
+
+> new
+
+⟩, P ←
+
+> (
+
+P P J ⊤
+
+> aug
+
+Jaug P Σnew 
+
+> )
+
+(64) where Jaug captures how the new point’s position depends on the current error state, and Σnew is the full covariance of the point including measurement noise (Section 5.2). The blocks P J ⊤
+
+> aug
+
+, Jaug P encode the initial cross-correlations between the new point and all existing states. The same distinction as for F and H applies: the R3 columns of Jaug are standard partial derivatives; the SE (3) column uses the right Jacobian (Solà et al., 2021, Eq. 41a). 13 The position of augmented feature points depends on the estimated pose change, which itself depends on the filter state. Tracing Jaug through the full chain (state → pose →
+
+pose change → solver → reconstruction) is complex. We set Jaug = δ 1 with a small 
+
+δ > 0 to seed nonzero cross-correlations, avoiding the transient of recovering from exactly zero correlation 3.
+
+Removing a state (marginalisation). When a feature is removed (lost, reclassified, or retired), delete the corresponding 3 rows and 3 columns from both ˆX and P. No information about the remaining states is lost; their estimates and mutual cross-correlations are preserved. 
+
+Visibility transition (stereo ↔ mono). A stereo feature demoted to mono, or a mono feature promoted to stereo, does not change its state representation. pBi ∈ R3 is the same regardless of visibility class. The transition affects only: • Which cameras produce measurements for this point (the measurement model row count changes). • The group label ( S, L, R) used for bookkeeping. No augmentation or marginalisation is needed for visibility transitions. 
+
+## 3.2 System Model 
+
+We derive the system model f (X , u, w) for the continuous-discrete filter (Section 3), followed by the process noise covariance Q, the error dynamics Jacobian F , and the noise Jacobian G.
+
+3.2.1 State Vector 
+
+The composite manifold state (Section 2.2) is: 
+
+X = 〈
+
+T, v, ω, gB , dB , pB 
+
+> 1
+
+, . . . , pBNf
+
+> 〉
+
+(65) where T = TBt,B 0 ∈ SE (3) is the body pose (Section 2.1) and all other components are in R3. The pose acts as pBt = RBt pB0 + tBt , where tBt is the B0 origin expressed in the body frame, a world-fixed point, identical in nature to the feature positions pBi .   
+
+> 3Iis the identity. 1is the matrix of only ones.
+
+14 The composite perturbation vector (Section 2.2, Equation 22) is: 
+
+δx =
+
+> 
+
+δξ
+
+δv
+
+δω
+
+δgB
+
+δdB
+
+δpB
+
+> 1
+
+...
+
+δpBNf
+
+> 
+
+∈ R18+3 Nf (66) with δξ = ( δρ, δ ϕ) ∈ R6 the SE (3) tangent vector and Nf = NS + NL + NR. The R3
+
+components are: 
+
+v ∈ R3 Linear velocity in body frame (67) 
+
+ω ∈ R3 Angular velocity in body frame (68) 
+
+gB ∈ R3 Gravity in body frame ( ∥gB ∥ ≈ g) (69) 
+
+dB ∈ R3 Wind/disturbances in body frame (70) Feature positions partitioned by visibility: 
+
+pSj ∈ R3, j = 1 , . . . , N S Stereo features (71) 
+
+pLj ∈ R3, j = 1 , . . . , N L Mono-left features (72) 
+
+pRj ∈ R3, j = 1 , . . . , N R Mono-right features (73) All positions are in body frame. The visibility label ( S, L, R) determines which measurements a point contributes (Section 3.3). Gravity is split from disturbances: gravity is well approximated as constant in the world frame with known magnitude, requiring only small process noise. Wind is genuinely stochastic, requiring larger process noise. Separate tuning avoids compromising one to accommodate the other. 
+
+3.2.2 Input Vector u = (
+
+T1 T2 T3 T4
+
+> )⊤
+
+∈ R4 (74) where Ti = kf ω2 
+
+> r,i
+
+is the thrust from rotor i.
+
+3.2.3 Dynamics Block 0: Pose ( ˙T ). The body-frame velocity twist ξv = ( v, ω) drives the pose. The continuous dynamics are: ˙T = −ξ∧ 
+
+> v
+
+T (75) 15 Derivation. Write T = [ R, t; 0⊤, 1] and compute the right-hand side using the Lie algebra element ξ∧ 
+
+> v
+
+= [[ ω]×, v; 0⊤, 0] (Section 2.1): 
+
+−ξ∧ 
+
+> v
+
+T = −
+
+> (
+
+[ω]× v0⊤ 0
+
+> ) (
+
+R t0⊤ 1
+
+> )
+
+=
+
+> (
+
+−[ω]×R −[ω]×t − v0⊤ 0
+
+> )
+
+(76) Reading off the blocks: ˙R = −[ω]×R, which is the rotation kinematics (Section 2.4), and ˙ t = −v − [ω]×t = −v − ω × t, which is the transport theorem (Equation 36) applied to tBt , the B0 origin expressed in body frame, a world-fixed point. Both known component dynamics are recovered. No process noise enters the pose directly: pose uncertainty is inherited entirely from velocity and angular velocity through integration. Propagation (left multiply, see Section 3): ˆT − 
+
+> k+1
+
+= Exp( −ˆξv,k ∆tk) · ˆT + 
+
+> k
+
+(77) This follows from the ODE ˙T = A T with constant A = −ξ∧ 
+
+> v
+
+, whose solution is 
+
+T (t + ∆ t) = exp( A∆t) T (t) = Exp( −ξv∆t) · T (t). 
+
+Block 1: Translational ( ˙v). Newton’s second law in the rotating body frame: ˙v = 1
+
+mFthrust (u + wu) − ω × v − Cd
+
+m v + gB + dB (78) with Fthrust = (0 , 0, − ∑(Ti + wu,i )) ⊤ in FRD. Actuator noise wu enters through the thrust mapping Bv (Equation 89). 
+
+Block 2: Rotational ( ˙ω). Euler’s rotation equations, assuming the inertia tensor is diagonal J = diag( Jxx , J yy , J zz ) (valid for a symmetric X-configuration where the body axes align with the principal axes of inertia): ˙ω = J−1 (τ (u + wu) − ω × (Jω)) + wω (79) Actuator noise wu enters through the torque mapping Bω (Equation 90). The addi-tional process noise wω accounts for unmodelled aerodynamic torques (e.g. asymmetric wind loading) that are not captured by the actuator channel. Torques from the X-configuration mixing matrix (Noise adds to each Ti, omitted here for clarity. l is the arm length, and we have assumed the body frame aligns with the centre of mass.): 
+
+τ1 = l√2 (T4 + T3 − T1 − T2) Roll (80) 
+
+τ2 = l√2 (T1 + T4 − T2 − T3) Pitch (81) 
+
+τ3 = km 
+
+> kf
+
+(T2 + T4 − T1 − T3) Yaw (82) 16 Block 3: Gravity ( ˙gB ). From the transport theorem for world-fixed vectors (Equa-tion 43): ˙gB = −ω × gB + wg (83) Process noise wg accounts for the error in the approximation that gravity is constant in the world frame (small spectral density Qg). 
+
+Block 4: Disturbances ( ˙dB ). Same transport equation: ˙dB = −ω × dB + wd (84) Process noise wd drives the disturbance as a random walk in the world frame (larger spectral density Qd). 
+
+Block 5: Feature positions ( ˙pBi ). A world-stationary point in the body frame satisfies (derived from pBi = RB,B 0 (pB0 
+
+> i
+
+−tB0 ) using ˙ pB0 
+
+> i
+
+= 0 and the transport theorem, Equation 36): ˙pBi = −v − ω × pBi (85) Identical for all visibility groups. Points are assumed stationary in the world frame; violations of this assumption are detected by the chi-squared test (Section 5.4) and the point is removed. Note that the translation component tBt of the pose satisfies the same equation (Block 0 derivation above). 
+
+3.2.4 Process Noise 
+
+The process noise vector is: 
+
+w =
+
+> 
+
+wu
+
+wω
+
+wg
+
+wd
+
+> 
+
+∈ R13 (86) where wu ∈ R4 is actuator noise on the rotor thrusts, wω ∈ R3 is unmodelled aerodynamic torque, and the remaining terms are as before. The continuous-time spectral density (Section 3): 
+
+Q = diag( Qu, Qω, Qg, Qd) ∈ R13 ×13 (87) where Qu ∈ R4×4 is the actuator spectral density and Qω, Qg, Qd are each 3 × 3(units: state 2/time). Actuator noise enters both the velocity and angular velocity through the thrust and torque mappings. No noise enters the pose ( T ). Nor does any enter the linear velocity ( v) directly beyond the actuator channel: pose uncertainty is inherited from v and ω through integration, and velocity uncertainty is inherited from the forcing terms gB , dB , ω, and the actuators through the dynamics (Equation 78). 17 3.2.5 Complete System Model 
+
+The SE (3) dynamics are ˙T = −ξ∧ 
+
+> v
+
+T (Equation 75). The R3 dynamics are assembled as: ˙xR = fR(X , u, w) = 
+
+ 
+
+> 1
+> m
+
+Fthrust (u + wu) − ω × v − Cd 
+
+> m
+
+v + gB + dB
+
+J−1(τ (u + wu) − ω × (Jω)) + wω
+
+−ω × gB + wg
+
+−ω × dB + wd
+
+−v − ω × pB
+
+> 1
+
+...
+
+−v − ω × pBNf
+
+
+
+(88) Together with ˙T these form the complete system model f (X , u, w). Setting w = 0
+
+recovers the nominal dynamics used for state propagation (Section 3). 
+
+3.2.6 Noise Jacobian G
+
+The noise Jacobian G = ∂f /∂ w is the standard partial derivative (Section 2.2) since 
+
+w ∈ R13 is Euclidean. Define the actuator-to-force and actuator-to-torque mappings: 
+
+Bv = 1
+
+m∂Fthrust 
+
+∂u = 1
+
+m
+
+
+
+0 0 0 00 0 0 0
+
+−1 −1 −1 −1
+
+ ∈ R3×4 (89) 
+
+Bω = J−1 ∂τ
+
+∂u = J−1
+
+
+
+− l√2 − l√2 
+
+> l√2
+> l√2
+> l√2
+
+− l√2 − l√2
+
+> l√2
+
+−km 
+
+> kf
+> km
+> kf
+
+−km
+
+> kf
+> km
+> kf
+
+ ∈ R3×4 (90) The full G matrix maps the (13)-dimensional noise into the (18 + 3 Nf )-dimensional perturbation space. Column groups correspond to wu, wω, wg, wd:
+
+G =
+
+
+
+06×4 06×3 06×3 06×3
+
+Bv 03×3 0 0
+
+Bω I3 0 003×4 0 I3 003×4 0 0 I3
+
+03×4 0 0 0
+
+... ...
+
+03×4 0 0 0
+
+
+
+∈ R(18+3 Nf )×13 (91) Row groups correspond to δξ, δv, δω, δgB , δdB , δpBi . The pose row is zero (no direct noise). The velocity row receives actuator noise through Bv. The angular velocity 18 row receives both actuator noise through Bω (structured, via the mixing matrix) and unmodelled torque wω (unstructured). 
+
+3.2.7 Error Dynamics Jacobian FF is the composite Jacobian (Section 2.2) of the error dynamics ˙δx ≈ F δ x, evaluated at w = 0. The noise terms do not affect F : they enter linearly through G and do not couple to the state. 
+
+R3 blocks. For the R3 states, F is obtained by standard differentiation of fR with 
+
+w = 0 (Crassidis and Junkins, 2004, Eqs. 3.239–3.244): 
+
+Fvv = −[ ˆ ω]× − Cd 
+
+> m
+
+I3 Fvω = [ˆ v]× (92) 
+
+Fωω = J−1([ J ˆω]× − [ ˆ ω]×J) (93) 
+
+Fgω = [ˆ gB ]× Fgg = −[ ˆ ω]× (94) 
+
+Fdω = [ ˆdB ]× Fdd = −[ ˆ ω]× (95) 
+
+Fpv = −I3 Fpiω = [ˆ pBi ]× (96) 
+
+Fpipi = −[ ˆ ω]× (97) Cross-point terms vanish: ∂ ˙pBi /∂ pBj = 0 for j̸ = i.
+
+SE (3) blocks. For the pose, the error dynamics are ˙δξ = −Ad ˆT −1 (δv, δ ω)⊤.
+
+Derivation. The true pose satisfies ˙Ttrue = −(ξv + δξv)∧ Ttrue where δξv = ( δv, δ ω). With Ttrue = ˆT · Exp( δξ) (Solà et al., 2021, Eq. 25), expand the left side via the product rule: ˙ˆT Exp( δξ) + ˆT ddt Exp( δξ) = −(ξv + δξv)∧ ˆT Exp( δξ) (98) The estimate dynamics ˙ˆT = −ξ∧ 
+
+> v
+
+ˆT (Equation 75) cancel from both sides: ˆT ddt Exp( δξ) = −(δξv)∧ ˆT Exp( δξ) (99) Left-multiply by ˆT −1 and apply the adjoint conjugation property X −1τ ∧X = (Ad X −1 τ )∧
+
+(Solà et al., 2021, Eq. 29):  
+
+> ddt
+
+Exp( δξ) = −(Ad ˆT −1 δξv)∧ Exp( δξ) (100) First order: Exp( δξ) ≈ E + δξ∧ (Solà et al., 2021, Eq. 16, truncated after the first term), so ddt Exp( δξ) ≈ ( ˙δξ)∧ and Exp( δξ) ≈ E on the right. Extracting the vector: ˙δξ = −Ad ˆT −1 δξv = −Ad ˆT −1
+
+> 
+
+δv
+
+δω 
+
+> 
+
+(101) 19 The resulting F blocks are: 
+
+Fδξ, δ ξ = 06×6, Fδξ, (δv, δ ω) = −Ad ˆT −1 (102) with Ad ˆT −1 from Equation 19 evaluated at ˆT −1. All other entries in the δξ row are zero ( δg, δd, δpi do not enter the pose error dynamics). All entries in the δξ column from existing rows are zero (no R3 dynamics depend on pose). 
+
+Full F matrix. Column order: δξ, δ v, δ ω, δ gB , δ dB , δ pB 
+
+> 1
+
+, . . . , δ pBNf :
+
+F =
+
+> 
+
+06 −Ad ˆT −1 0 0 0 · · · 00 Fvv Fvω I3 I3 0 · · · 00 0 Fωω 0 0 0 · · · 00 0 Fgω Fgg 0 0 · · · 00 0 Fdω 0 Fdd 0 · · · 00 Fpv Fp1ω 0 0 Fp1p1 · · · 0
+
+... ... ... . . .
+
+0 Fpv FpNf ω 0 0 0 · · · FpNf pNf
+
+> 
+
+(103) The lower-right block is block-diagonal in the per-point states: each point i has its own diagonal block Fpipi = −[ ˆ ω]× and off-diagonal coupling Fpiω = [ˆ pBi ]× to angular velocity. All points share the same Fpv = −I3. Cross-point terms vanish: ∂ ˙pBi /∂ pBj = 0
+
+for j̸ = i. The first row (pose error dynamics) couples to velocity and angular velocity through −Ad ˆT −1 . The first column is zero throughout (no R3 dynamics depend on pose). 
+
+3.2.8 Initialisation 
+
+ˆT0 =
+
+> (
+
+I 00⊤ 1
+
+> )
+
+Body at B0 origin, aligned (104) ˆv0 = 0 Stationary start (105) ˆω0 = 0 No initial rotation (106) ˆgB 
+
+> 0
+
+= (0 , 0, g )⊤ FRD: down = + e3 (107) ˆdB 
+
+> 0
+
+= −ˆgB 
+
+> 0
+
+Normal force (108) No feature points are present at initialisation. All points must pass the velocity entry test (Section 5.4) before being augmented into the filter. The first frame provides stereo and mono detections; these are tracked to the second frame where the joint solver (Section 4.3) produces position and velocity estimates with covariance, at which point they are augmented (Section 3.1). Initial covariance: 
+
+P0 = diag (
+
+σ2 
+
+> ξ
+
+I6, σ 2 
+
+> v
+
+I3, σ 2
+
+> ω
+
+I3, σ 2 
+
+> g
+
+I3, σ 2
+
+> d
+
+I3
+
+> )
+
+(109) with no feature blocks until augmentation. 20 3.3 Measurement Model 
+
+We derive the measurement model ˜ y(tk) = h(X (tk), v(tk)) for the continuous-discrete filter (Section 3), followed by the measurement noise R, and the Jacobians Hk and Hv.
+
+3.3.1 Observations 
+
+At each frame tk, the observations are LK-tracked pixel coordinates of feature points in one or both cameras: ˜y(tk) = 
+
+> 
+
+˜y1
+
+...˜yNf 
+
+> 
+
+∈ R∑  
+
+> iνi
+
+(110) where ˜ yi ∈ Rνi are the pixel coordinates of point i, with νi = 4 (stereo: left and right cameras) or νi = 2 (mono: single camera). 
+
+3.3.2 Measurement Function 
+
+The measurement prediction maps the state to pixel coordinates via direct geometric projection (Equation 30). For a single point i in camera c ∈ { L, R }:
+
+hi,c (X , vi,c ) = π(RcB pBi + tc) + vi,c (111) where vi,c ∈ R2 is additive pixel noise in camera c for point i. The noise is additive because the dominant error source (LK sub-pixel localisation) acts directly on the pixel coordinates. 
+
+Stereo feature ( FS ). A stereo feature pBi is observed in both cameras: 
+
+hS,i (X , vi) = 
+
+> 
+
+π(RLB pBi + tL)
+
+π(RRB pBi + tR) 
+
+> 
+
++ vi =
+
+> 
+
+uL
+
+vL
+
+uR
+
+vR
+
+> 
+
+∈ R4 (112) with vi ∈ R4.
+
+Why not a separate disparity measurement? Disparity d = uL − uR is a linear function of the four pixel coordinates already observed. Adding it as a 5th row adds no new information. A depth error produces different innovations in uL and uR because the Jacobians ∂h/∂ pBi differ between the two cameras (different extrinsics). The filter exploits this geometric discrepancy through the existing four rows. 
+
+Mono feature ( FM ). A mono feature is observed in one camera c ∈ { L, R }:
+
+hM,i (X , vi) = π(RcB pBi + tc) + vi =
+
+> 
+
+uc
+
+vc 
+
+> 
+
+∈ R2 (113) with vi ∈ R2.21 Assembled measurement function. Stacking all points: 
+
+h(X , v) = 
+
+> 
+
+h·,1(X , v1)...
+
+h·,N f (X , vNf ) 
+
+> 
+
+∈ R∑  
+
+> iνi
+
+(114) where each h·,i is hS,i or hM,i according to the visibility of point i.
+
+3.3.3 Measurement Noise 
+
+The noise vector v = ( v1, . . . , vNf )⊤ has covariance: 
+
+R = diag (
+
+σ2px Iν1 , . . . , σ 2px IνNf
+
+> )
+
+= σ2px I∑  
+
+> iνi
+
+(115) where σpx ≈ 0.3–1 .0 px is a tuning parameter representing LK sub-pixel accuracy; the runtime value is maintained in algorithm.yaml. All pixel measurements share the same noise level; the block-diagonal structure reflects independence between points and between cameras. 
+
+3.3.4 Measurement Jacobian H k
+
+Following Section 3, Hk = Dh DX     
+
+> ∣∣∣ˆX−
+> k,v=0
+
+is the composite Jacobian (Section 2.2). Since the measurement noise is additive, setting v = 0 simply removes it. 
+
+Projection Jacobian. For camera c, define pci = RcB pBi + tc. The chain rule through π = κ ◦ D ◦ πn (Section 2.3) gives: 
+
+∂π
+
+∂pc = K2×2 JD
+
+1
+
+pcz
+
+> 
+
+1 0 −xn
+
+0 1 −yn 
+
+> 
+
+(116) 
+
+K2×2 =
+
+> 
+
+fu 00 fv 
+
+> 
+
+, JD = ∂D ∂(xn, y n) (117) The Jacobian with respect to the body-frame position: 
+
+∂π
+
+∂pBi
+
+> ∣∣∣∣∣c
+
+= ∂π
+
+∂pc RcB (118) 
+
+Per-point row. The measurement depends only on pBi — not on T , v, ω, gB , dB ,or any other point pBj (j̸ = i). The full Jacobian row for point i in camera c:
+
+Hci = (
+
+02×6 02×3 02×3 02×3 02×3 · · · ∂π 
+
+> ∂pBi
+> ∣∣∣c
+
+· · · 02×3
+
+> )
+
+(119) Nonzero only in the columns corresponding to pBi . For a stereo feature, stack HLi and 
+
+HRi (4 rows). For a mono feature, a single Hci (2 rows). 22 Assembled H k. Stacking all points: 
+
+Hk =
+
+> 
+
+H1
+
+...
+
+HNf 
+
+> 
+
+∈ R(∑   
+
+> iνi)×(18+3 Nf)
+
+(120) The matrix is block-sparse: each point contributes a nonzero block only in its own columns. 
+
+3.3.5 Noise Jacobian H v
+
+Since the noise is additive (Equation 111): 
+
+Hv = ∂h ∂v    
+
+> ∣∣∣∣∣ˆX−
+> k,v=0
+
+= I∑  
+
+> iνi
+
+(121) so the gain equation (Section 3.1) simplifies to: 
+
+Kk = P− 
+
+> k
+
+H⊤
+
+> k
+> [
+
+Hk P− 
+
+> k
+
+H⊤ 
+
+> k
+
++ R]−1
+
+(122) 
+
+3.3.6 Indirect Correction of Non-Observed States 
+
+The measurement Jacobian has zeros in the δξ, δv, δω, δgB , and δdB columns: the measurement model projects body-frame feature positions through fixed camera extrinsics, so pose, velocity, rotation rate, gravity, and disturbance do not appear. These states are corrected indirectly through covariance cross-correlations built during propagation: ˙pBi depends on v and ω (Equation 85), and ˙T depends on v and ω
+
+(Equation 75), so P develops off-diagonal blocks that couple feature-point innovations to velocity, rotation, pose, gravity, and disturbance corrections. 
+
+3.3.7 Gravity Pseudo-Measurement 
+
+The gravity magnitude ∥gB ∥ ≈ g is known a priori. We encode this as a scalar measurement to prevent magnitude drift: ˜yg = hg(X , v g) = ∥gB ∥2 + vg = g2 + vg (123) where vg ∼ N (0 , R g) is scalar measurement noise. The "observation" is the known constant ˜ yg = g2. Rg should reflect the minor variations in gravity ( g = 9 .81 is a common approximation whose true value varies along the earth’s surface and decays with height). Rg should be small; unmodelled forces ought to be reflected in dB .
+
+Jacobians. The state Jacobian Hg = Dh g   
+
+> DX
+> ∣∣∣ˆXk, v g=0
+
+. Since hg depends only on gB ∈ R3
+
+(Euclidean), the composite derivative reduces to the standard partial derivative: 
+
+∂ ∥gB ∥2
+
+∂ gB = 2( gB )⊤ (124) 23 All other state components do not appear in hg, giving: 
+
+Hg = (
+
+01×6 01×3 01×3 2(ˆ gB )⊤ 01×3 01×3 · · · 01×3
+
+> )
+
+∈ R1×(18+3 Nf ) (125) The noise Jacobian is: 
+
+Hvg = ∂h g
+
+∂v g 
+
+> ∣∣∣∣∣vg=0
+
+= 1 (126) so the gain equation gives: 
+
+Kg = P H⊤
+
+> g
+> [
+
+Hg P H⊤ 
+
+> g
+
++ Rg
+
+> ]−1
+
+∈ R(18+3 Nf )×1 (127) which is a scalar division (the bracketed term is 1 × 1). 
+
+Sequential update. The gravity pseudo-measurement can be processed as a separate update step after the feature-point update. This is valid because the Kalman update equations can be applied any number of times within a single time step by splitting the measurement vector into independent groups (Wescott, 2022). Each group updates ˆX and P using the posterior from the previous group as the prior for the next. The result is algebraically equivalent to processing all measurements simultaneously in a single large update, provided the measurement noises are independent. This is not to be confused with the iterated EKF (IEKF), which re-linearises the measurement model at the updated state and solves an optimisation problem iteratively. We stack all measurements into one update however since deriving the pose change and its covariance becomes easier. 
+
+## 3.4 Relative Pose from Filter State 
+
+The relative pose ∆ T = TBk ,B k−1 ∈ SE (3) and its covariance are extracted directly from the filter state. 
+
+Relative Pose After propagation at step k, the discrete estimated poses are ˆT +
+
+> k−1
+
+and ˆT − 
+
+> k
+
+(or ˆT + 
+
+> k
+
+after the update). From ∆ T = TBk ,B 0 · T −1 
+
+> Bk−1,B 0
+
+:∆ ˆT = ˆTk · ˆT −1 
+
+> k−1
+
+(128) with rotation and translation blocks: ∆ ˆ R = ˆ RBk
+
+ˆR⊤ 
+
+> Bk−1
+
+, ∆ˆ t = ˆ tBk − ∆ ˆ R ˆtBk−1 (129) 
+
+Derivation. From pBk = RBk pB0 + tBk and pB0 = R⊤ 
+
+> Bk−1
+
+(pBk−1 − tBk−1 ), substitute: 
+
+pBk = RBk R⊤  
+
+> Bk−1
+> ︸︷︷ ︸
+> ∆R
+
+pBk−1 + tBk − RBk R⊤ 
+
+> Bk−1
+
+tBk−1  
+
+> ︸︷︷ ︸
+> ∆t
+
+(130) 24 Perturbation of the Relative Pose The filter uses right perturbation (Section 2.2): 
+
+TBj ,true = ˆTBj · Exp( δξj ) where δξj ∈ R6 lives in B0 (the domain frame of TBj ,B 0 ) for both j = k−1 and j = k. The relative pose perturbation δ∆ξ ∈ R6, defined by ∆Ttrue = ∆ ˆT · Exp( δ∆ξ), lives in Bk−1 (the domain frame of ∆ TBk ,B k−1 ). 
+
+Derivation. Perturb both poses: ∆Ttrue = ˆTBk Exp( δξk) · ( ˆTBk−1 Exp( δξk−1))−1
+
+(131) Invert the second factor: = ˆTBk Exp( δξk) Exp( −δξk−1) ˆT −1 
+
+> Bk−1
+
+(132) Both δξk and δξk−1 are small filter perturbations. Apply (Solà et al., 2021, Eq. 69): Exp( τ ) Exp( δτ ) ≈ Exp( τ + J−1 
+
+> r
+
+(τ ) δτ ) (133) with τ = δξk and δτ = −δξk−1. Since δξk is small, J−1 
+
+> r
+
+(δξk) ≈ I6: the SE (3) right Jacobian evaluated at the origin gives I6, as Jl(θ) (Solà et al., 2021, Eq. 145) has sin θ/θ → 1 and [ u]× terms vanishing, Q(ρ, θ) (Solà et al., 2021, Eq. 180) has every term proportional to ρ× or θ× so Q(0, 0) = 0, giving Jl(0) = I6 (Solà et al., 2021, Eq. 179a), and Jr(τ ) = Jl(−τ ) (Solà et al., 2021, Eq. 76). Therefore: ∆Ttrue = ˆTBk Exp( δξk − δξk−1) ˆT −1 
+
+> Bk−1
+
+(134) Insert E = ˆT −1
+
+> Bk−1
+
+ˆTBk−1 between ˆTBk and Exp( ·): = ˆTBk
+
+ˆT −1
+
+> Bk−1
+
+︸ ︷︷ ︸
+
+> ∆ ˆT
+
+· ˆTBk−1 Exp( δξk − δξk−1) ˆT −1 
+
+> Bk−1
+
+(135) Apply the adjoint property X Exp( τ ) X −1 = Exp(Ad X τ ), obtained from (Solà et al., 2021, Eq. 32): X ⊕ τ = (Ad X τ ) ⊕ X , expanded as X · Exp( τ ) = Exp(Ad X τ ) · X and right-multiplied by X −1. With X = ˆTBk−1 :∆Ttrue = ∆ ˆT · Exp 
+
+(
+
+Ad ˆTBk−1
+
+(δξk − δξk−1)
+
+)
+
+(136) Reading off the right perturbation of ∆ T :
+
+δ∆ξ = Ad ˆTBk−1
+
+(δξk − δξk−1) (137) where Ad ˆTBk−1
+
+(Equation 19) maps from B0 (where δξj live) to Bk−1 (where δ∆ξ lives). 
+
+Verification. At ˆTBk−1 = E: Ad E = I6, so δ∆ξ = δξk − δξk−1. ✓
+
+25 Jacobian and Covariance From Equation 137, the perturbation is linear in (δξk−1, δ ξk): 
+
+δ∆ξ = (−Ad ˆTBk−1
+
+Ad ˆTBk−1
+
+)︸ ︷︷ ︸  
+
+> J∆∈R6×12
+
+(
+
+δξk−1
+
+δξk
+
+)
+
+(138) By Equation 46: 
+
+Σ∆ξ = J∆ Ppose ,joint J⊤ 
+
+> ∆
+
+∈ R6×6 (139) where Ppose ,joint is the 12 × 12 joint covariance of ( δξk−1, δ ξk), derived below. 
+
+Cross-covariance between time steps. The filter covariance P at any single time step contains only the perturbation at that time. To assemble Ppose ,joint , we need the cross-covariance between the perturbations at k−1 and k.The discrete covariance propagation P− 
+
+> k
+
+= Φ k−1 P+ 
+
+> k−1
+
+Φ⊤ 
+
+> k−1
+
++ ∆ tk−1 Gk−1 Qk−1 G⊤
+
+> k−1
+
+(Section 3.1) corresponds to the linearised error relation: 
+
+δx− 
+
+> k
+
+= Φ k−1 δx+ 
+
+> k−1
+
++ nk−1 (140) where Φ k−1 = I +∆ tk−1 Fk−1 is the first-order state transition matrix (the discretisation of the continuous error dynamics ˙δx = F δ x, Section 3.2.7), and nk−1 is the discretised process noise with covariance ∆ tk−1 Gk−1 Qk−1 G⊤
+
+> k−1
+
+, independent of δx+
+
+> k−1
+
+.
+
+Verification : applying Equation 46 and Equation 48: Cov( δx− 
+
+> k
+
+) = Φ k−1 Cov( δx+
+
+> k−1
+
+) Φ ⊤ 
+
+> k−1
+
++ Cov( nk−1)= Φ k−1 P+ 
+
+> k−1
+
+Φ⊤ 
+
+> k−1
+
++ ∆ tk−1 Gk−1 Qk−1 G⊤ 
+
+> k−1
+
+= P− 
+
+> k
+
+(141) which recovers the propagation equation. ✓
+
+The cross-covariance follows from Equation 49 with c = δx− 
+
+> k
+
+, M = Φ k−1, a = δx+
+
+> k−1
+
+,
+
+b = δx+
+
+> k−1
+
+, and n = nk−1 independent of δx+
+
+> k−1
+
+:Cov( δx− 
+
+> k
+
+, δ x+
+
+> k−1
+
+) = Φ k−1 Cov( δx+
+
+> k−1
+
+, δ x+
+
+> k−1
+
+)
+
+︸ ︷︷ ︸
+
+> P+
+> k−1
+
+= Φ k−1 P+ 
+
+> k−1
+
+(142) 
+
+Pre-update joint covariance. Using ˆT − 
+
+> k
+
+(after propagation, before update at k). Let subscript ξ denote the 6 × 6 pose block: 
+
+P− 
+
+> pose ,joint
+
+=
+
+
+
+Pk−1,+
+
+> ξξ
+
+(
+
+Φk−1 Pk−1,+)⊤
+
+> ξξ
+
+(
+
+Φk−1 Pk−1,+) 
+
+> ξξ
+
+Pk, −
+
+> ξξ
+
+ (143) where: • Pk−1,+ 
+
+> ξξ
+
+: the 6 × 6 pose block after the update at k−1. • Pk, − 
+
+> ξξ
+
+: the 6 × 6 pose block after propagation to k. Larger than Pk−1,+ 
+
+> ξξ
+
+because propagation adds process noise. 26 • (Φ k−1 Pk−1,+)ξξ : pose rows of Φ k−1 Pk−1,+ restricted to pose columns. This is 
+
+not simply (Φ k−1)ξξ Pk−1,+ 
+
+> ξξ
+
+: the full product is needed because Φ k−1 couples pose to velocity and rotation through Fδξ,(δv,δ ω) = −Ad ˆT −1 (Equation 102), so the cross-covariance picks up contributions from the velocity and rotation uncertainty at k−1. 
+
+Post-update joint covariance. Using ˆT + 
+
+> k
+
+(after the update at k). The update gives P+ 
+
+> k
+
+= ( I − KkHk)P− 
+
+> k
+
+, corresponding to the error transformation: 
+
+δx+ 
+
+> k
+
+= ( I − KkHk) δx− 
+
+> k
+
++ Kkvk (144) where vk is measurement noise, independent of δx+
+
+> k−1
+
+. Verification : applying Equa-tion 46 and Equation 48 (noting Cov( Kv ) = KR kK⊤ and ( I − KH )P−(I − KH )⊤ +
+
+KR kK⊤ = ( I − KH )P− by the Joseph form identity when K is the optimal gain): Cov( δx+ 
+
+> k
+
+) = ( I − KkHk) P− 
+
+> k
+
+= P+ 
+
+> k
+
+✓ (145) The cross-covariance with δx+ 
+
+> k−1
+
+follows from Equation 49 with c = δx+ 
+
+> k
+
+, M =(I − KkHk), a = δx− 
+
+> k
+
+, b = δx+
+
+> k−1
+
+, and n = Kkvk independent of δx+
+
+> k−1
+
+:Cov( δx+ 
+
+> k
+
+, δ x+
+
+> k−1
+
+) = ( I − KkHk) Cov( δx− 
+
+> k
+
+, δ x+
+
+> k−1
+
+)= ( I − KkHk) Φ k−1 Pk−1,+ (146) substituting Equation 142 in the second step. The 12 × 12 joint covariance becomes: 
+
+P+pose ,joint =
+
+> 
+
+Pk−1,+
+
+> ξξ
+> (
+
+(I − KkHk) Φ k−1 Pk−1,+)⊤
+
+> ξξ (
+
+(I − KkHk) Φ k−1 Pk−1,+) 
+
+> ξξ
+
+Pk, + 
+
+> ξξ
+> 
+
+(147) 
+
+Which version to use. The pre-update version (Equation 143) is simpler: it is avail-able immediately after propagation and requires only Φ k−1 Pk−1,+. The post-update version (Equation 147) is tighter: the update at k reduces Pk, + 
+
+> ξξ
+
+relative to Pk, − 
+
+> ξξ
+
+and tightens the cross-covariance, yielding a more informative prior. Since the pose is corrected indirectly through feature cross-correlations (Section 3.3), the improvement depends on the quality of feature matches at k. In practice, the post-update version should be used when the joint solver runs after the filter update. The post-update covariance occasionally comes out with eigenvalues near −10 −7, well above the floating-point noise floor. We clip eigenvalues at 10 −12 , which masks the symptom rather than fixing it. The likely sources are the selector construction across a changing state dimension and the J−1 
+
+> r
+
+≈ I approximation above. 
+
+Implementation. Before propagation at step k, store the pose rows of Pk−1,+ (a 6 × n slice where n = 18 + 3 Nf ). After propagation, compute (Φ k−1 Pk−1,+)ξξ by extracting the pose rows of the product and restricting to pose columns. For the post-update version, apply ( I − KkHk) to this slice after the update. This is O(n)additional storage per frame. 27 Conversion to SE (3) Lie Algebra For the joint solver (Section 4.3), the prior is expressed in the Lie algebra: ∆ˆξ = Log(∆ ˆT ) ∈ R6, Σprior = J−1 
+
+> r
+
+Σ∆ξ J−⊤  
+
+> r
+
+(148) where J−1 
+
+> r
+
+is evaluated at ∆ ˆξ (Solà et al., 2021, Eq. 79), which gives JLog( X ) 
+
+> X
+
+= J−1 
+
+> r
+
+(τ )with τ = Log( X ). For one frame interval at typical frame rates, the relative pose is near the identity, J−1 
+
+> r
+
+≈ I6 (Solà et al., 2021, Eqs. 179a, 145, 76), and Σprior ≈ Σ∆ξ.28 4 Joint MAP Solver 
+
+## 4.1 Nonlinear MAP with Gauss-Newton 
+
+Following the formulation in (Haavardsholm, 2026b). 
+
+4.1.1 Residual and Noise Model 
+
+For measurements zi and latent state x, assume: 
+
+zi = hi(x) + ηi, ηi ∼ N (0, Σi) (149) The predicted measurement is ˆ zi = hi(x), and the measurement residual is: 
+
+ei(x) = hi(x) − zi (150) 
+
+4.1.2 Nonlinear MAP as Weighted Least Squares 
+
+Under Gaussian noise, the MAP estimate is obtained by solving the nonlinear least squares problem: 
+
+x∗ = arg min 
+
+> x
+> n∑
+> i=1
+
+∥hi(x) − zi∥2 
+
+> Σi
+
+(151) where the squared Mahalanobis norm is: 
+
+∥e∥2 
+
+> Σ
+
+= e⊤ Σ−1 e = ∥Σ−1/2 e∥2 (152) This yields the whitened Jacobian and residual: 
+
+Ai = Σ−1/2 
+
+> i
+
+Jhi 
+
+> x
+> ∣∣∣ˆxt
+
+(153) 
+
+bi = Σ−1/2 
+
+> i
+
+(zi − hi(ˆ xt)) (154) Stack all measurements: 
+
+A =
+
+> 
+
+A1
+
+...
+
+An 
+
+> 
+
+, b =
+
+> 
+
+b1
+
+...
+
+bn 
+
+> 
+
+(155) 
+
+4.1.3 Gauss-Newton Iteration 
+
+At iteration t, linearise the residual around the current estimate ˆ xt:
+
+hi(x) ≈ hi(ˆ xt) + Jhi 
+
+> x
+> ∣∣∣ˆxt
+
+τ (156) where τ is the increment. The Gauss-Newton step solves: 
+
+τ ∗ = arg min  
+
+> τ
+
+∥Aτ − b∥2 (157) via the normal equations A⊤A τ ∗ = A⊤b. Update: ˆxt+1 = ˆ xt ⊕ τ ∗ (158) where ⊕ is addition in Euclidean space or the right plus operator on the appropriate manifold. Note the Jacobian must also be defined on the manifold. 29 4.1.4 Estimated Covariance 
+
+The covariance of the MAP estimate is approximated by the inverse of the approximate Hessian at the solution: 
+
+Σˆx ≈ (A⊤A)−1 (159) so that x ∼ N (ˆ x, Σˆx). 
+
+## 4.2 Including a Prior 
+
+If a prior on part or all of the state is available, it enters as an additional term in the objective. This is seen by noticing the prior adds a quadratic penalty to the negative log-posterior (Wilkinson et al., 2022, Equation 34). The prior is then treated as a virtual measurement and stacked into A and b alongside the measurement terms. 
+
+Full prior on Euclidean state. If x ∈ Rn with prior x ∼ N (μ0, Σ0): 
+
+A0 = Σ−1/20 In, b0 = Σ−1/20 (μ0 − ˆxt) (160) The residual b0 is prior minus estimate , consistent with the general formula bi =
+
+Σ−1/2 
+
+> i
+
+(zi − hi(ˆ xt)). 
+
+Partial prior. If the prior applies only to a subset of the state (e.g. x = ( xa, xb)with prior on xa only), the selection matrix replaces the identity: 
+
+A0 = Σ−1/20
+
+> (
+
+Ina 0na×nb
+
+> )
+
+, b0 = Σ−1/20 (μ0 − ˆxta) (161) where na is the dimension of xa. This penalises only the τ a increment, leaving τ b
+
+unconstrained by the prior. 
+
+Prior on a manifold state. If the state (or the prior subset) includes a compo-nent X ∈ M on a Lie group with prior mean ¯X and covariance Σ0 defined on the tangent space, the Euclidean difference μ0 − ˆxt is replaced by the manifold ⊖ operator (Section 2.1): 
+
+b0 = Σ−1/20 ( ¯X ⊖ ˆX t) = Σ−1/20 Log (
+
+( ˆX t)−1 · ¯X )
+
+(162) This is prior ⊖ estimate , the manifold analogue of prior minus estimate. At ˆX t = ¯X
+
+the residual is Log( E) = 0, as required. The sign follows from the virtual measurement formulation: the residual e0 = X ⊖ ¯X = Log( ¯X −1 · X ) and b0 = −Σ−1/20 e0| ˆX t , using 
+
+−Log( X) = Log( X−1) (Solà et al., 2021, Eqs. 19, 23, 24). The A0 matrix is unchanged: 
+
+A0 = Σ−1/20 Im (163) where m = dim( M) is the tangent space dimension (e.g. m = 6 for SE (3)), padded with zeros if the prior is partial. 30 A0 is the whitened Jacobian of the prior’s measurement function. In the Euclidean case that function is the identity on the state, so the Jacobian is I exactly. On a manifold the derivative is the composite one (Section 2.2): it is taken with respect to a perturbation of ˆX t, whereas the residual and Σ0 live in the tangent space at ¯X .Writing I asserts that no conversion between those two tangent spaces is needed. We believe the exact form to be A0 = Σ−1/20 J−1 
+
+> l
+
+(δ), with δ = ¯X ⊖ ˆX t, following the expansion Log(Exp( δτ ) Exp( τ )) ≈ τ + J−1 
+
+> l
+
+(τ ) δτ (Solà et al., 2021, Eq. 74, p. 10). We use J−1 
+
+> l
+
+≈ I, which is valid near the prior mean; over a single frame interval the prior residual is small. 
+
+Combined manifold and Euclidean prior. If the prior covers both a Lie group component X ∈ M and a Euclidean component xe ∈ Rn (e.g. pose and a point position), with joint prior mean ( ¯X , μe) and joint covariance Σ0 ∈ R(m+n)×(m+n), the residual is assembled block-wise using the appropriate operator for each component: 
+
+b0 = Σ−1/20 
+
+> (
+
+¯X ⊖ ˆX t
+
+μe − ˆxte
+
+> )
+
+(164) with A0 = Σ−1/20 (Im+n, 0) if the prior is partial, or A0 = Σ−1/20 Im+n if it covers the full state. The joint covariance Σ0 may have nonzero off-diagonal blocks encoding correlations between the manifold and Euclidean components; the whitening Σ−1/20
+
+handles this automatically. 
+
+## 4.3 Joint Point-Velocity Solver with Pose Prior 
+
+The two-frame point-velocity solver estimates position and velocity for all tracked points jointly with the pose change, using the filter-derived pose (Section 3.4) as a prior. The structure follows the MAP framework of Section 4.1, applied to a joint state containing one SE (3) pose and N Euclidean per-point states. This is a four-view bundle adjustment over two stereo pairs (Haavardsholm, 2026a). An interesting observation is that for every n’th frame correspondence you can estimate the n − 1’th order derivative of position. 
+
+Joint State The state to be estimated is: 
+
+xjoint = ⟨ ∆T, s1, . . . , sN ⟩ (165) where ∆ T = TBk ,B k−1 ∈ SE (3) is the pose change, maintained as a group element. Per point: • SS, SM, MS: si = ( pBk−1 
+
+> i
+
+, vp 
+
+> i
+
+) ∈ R6
+
+• MM: si = ( pBk−1 
+
+> i
+
+, v ⊥,i ) ∈ R4
+
+31 The Gauss-Newton increment (Section 4.1) is: 
+
+τ =
+
+> 
+
+τ ξ
+
+τ s1
+
+...
+
+τ sN
+
+> 
+
+∈ R6+ ∑  
+
+> idim( si)
+
+(166) where τ ξ ∈ R6 is a fresh tangent vector at each iteration. The update uses ⊕ appropriate to each component: ∆T t+1 = ∆ T t · Exp( τ ξ), st+1  
+
+> i
+
+= sti + τ si (167) The SE (3) update composes on the right (Section 2.1), so τ ξ is always a small pertur-bation near the identity regardless of how far ∆ T is from E.MM is observable only when the camera centre moves between frames: ∥tc
+
+> base
+
+∥ > 0 is required for the cross product in Equation 180 to define a non-degenerate epipolar plane. Pure rotation gives tc 
+
+> base
+
+= 0 (Section 4.3); a numerical threshold on ∥tc
+
+> base
+
+∥
+
+excludes MM points from the joint solver when this fails. 
+
+Measurement Model Given the joint state, the measurement prediction proceeds in two steps: (1) transport the point from Bk−1 to Bk using ∆ T ; (2) project through the camera. 
+
+Step 1: Transport. For SS/SM/MS (full velocity), the transported point is the 
+
+SE (3) action ∆ T · p with p = pBk−1 
+
+> i
+
++ vp 
+
+> i
+
+∆tk−1:
+
+pBk 
+
+> i
+
+= ∆ T · p = ∆ R (pBk−1 
+
+> i
+
++ vp 
+
+> i
+
+∆tk−1) + ∆ t (168) where ∆ R and ∆ t are the rotation and translation blocks of ∆ T . For MM (perpendic-ular velocity only): 
+
+pBk 
+
+> i
+
+= ∆ R (pBk−1 
+
+> i
+
++ v⊥,i d⊥ ∆tk−1) + ∆ t (169) where d⊥ is the perpendicular direction (Section 4.3). 
+
+Step 2: Projection. Project into camera c ∈ { L, R } (Equation 30): 
+
+hki,c = π(RcB pBk 
+
+> i
+
++ tc) (170) At k−1, the projection uses pBk−1 
+
+> i
+
+directly (no transport): 
+
+hk−1 
+
+> i,c
+
+= π(RcB pBk−1 
+
+> i
+
++ tc) (171) 32 Assembled measurement models. Stacking the projections for each visibility type: 
+
+SS: h i =
+
+
+
+hk−1
+
+> i,L
+
+hk−1
+
+> i,R
+
+hki,L 
+
+hki,R 
+
+
+
+∈ R8, SM: h i =
+
+
+
+hk−1
+
+> i,L
+
+hk−1
+
+> i,R
+
+hki,c 
+
+ ∈ R6,
+
+MS: h i =
+
+
+
+hk−1
+
+> i,c
+
+hki,L 
+
+hki,R 
+
+ ∈ R6, MM: h i =
+
+hk−1
+
+> i,c
+
+hki,c 
+
+ ∈ R4
+
+The corresponding measurements zi are the tracked pixel coordinates at both frames. Measurement noise: Σz,i = σ2px Iνi with νi matching the row count. 
+
+Measurement Jacobian Following Section 4.1, the Jacobian Jhi 
+
+> x
+
+is the derivative of hi with respect to the increment τ (Equation 166), evaluated at τ = 0. For the 
+
+R3 per-point states this is the standard partial derivative. For the SE (3) pose it is the manifold Jacobian: the derivative with respect to the right perturbation τ ξ (Solà et al., 2021, Eq. 41a). For the SS case, the full Jacobian with respect to the joint state is: 
+
+SS: Jhi 
+
+> x
+
+=
+
+   
+
+> D h k−1
+> i,L
+> D∆T∂ h k−1
+> i,L
+> ∂s1
+
+· · · ∂ h k−1    
+
+> i,L
+> ∂sN
+> D h k−1
+> i,R
+> D∆T∂ h k−1
+> i,R
+> ∂s1
+
+· · · ∂ h k−1    
+
+> i,R
+> ∂sN
+> D h ki,L
+> D∆T∂ h ki,L
+> ∂s1
+
+· · · ∂ h ki,L     
+
+> ∂sN
+> D h ki,R
+> D∆T∂ h ki,R
+> ∂s1
+
+· · · ∂ h ki,R  
+
+> ∂sN
+
+
+
+where D/D ∆T denotes the manifold derivative with respect to the right perturbation 
+
+τ ξ at τ ξ = 0, and ∂/∂ sj is the standard partial derivative. For other correspondence types, remove the corresponding row; for MM recall that hi is a different function. Only the transported point pBk 
+
+> i
+
+depends on the pose change, and there is no dependence between points, so only the column corresponding to point i is nonzero: 
+
+SS: Jhi 
+
+> x
+
+=
+
+
+
+0 0 · · · 0 ∂ h k−1  
+
+> i,L
+> ∂si
+
+0 · · · 00 0 · · · 0 ∂ h k−1  
+
+> i,R
+> ∂si
+
+0 · · · 0  
+
+> D h ki,L
+> D∆T
+
+0 · · · 0 ∂ h ki,L   
+
+> ∂si
+
+0 · · · 0  
+
+> D h ki,R
+> D∆T
+
+0 · · · 0 ∂ h ki,R   
+
+> ∂si
+
+0 · · · 0
+
+
+
+33 We can simplify further since only the transported point depends on velocity: 
+
+SS: Jhi 
+
+> x
+
+=
+
+
+
+0 0 · · · 0 ∂ h k−1 
+
+> i,L
+> ∂pBk−1
+> i
+
+0 0 · · · 00 0 · · · 0 ∂ h k−1 
+
+> i,R
+> ∂pBk−1
+> i
+
+0 0 · · · 0  
+
+> D h ki,L
+> D∆T
+
+0 · · · 0 ∂ h ki,L   
+
+> ∂pBk−1
+> i
+> ∂ h ki,L
+> ∂vp
+> i
+
+0 · · · 0  
+
+> D h ki,R
+> D∆T
+
+0 · · · 0 ∂ h ki,R   
+
+> ∂pBk−1
+> i
+> ∂ h ki,R
+> ∂vp
+> i
+
+0 · · · 0
+
+
+
+It remains to find each nonzero block. Let Mk−1 
+
+> c
+
+= ∂π
+
+> ∂q
+
+∣∣∣k−1 RcB and Mkc = ∂π
+
+> ∂q
+
+∣∣∣k RcB 
+
+denote the projection-times-extrinsic Jacobians (Section 3.3). 
+
+Per-point Jacobians w.r.t. s i. At k−1 (no dependence on velocity or pose): 
+
+∂h k−1
+
+> i,c
+
+∂pBk−1
+
+> i
+
+= Mk−1 
+
+> c
+
+, ∂h k−1
+
+> i,c
+
+∂vp
+
+> i
+
+= 0 (172) At k (SS/SM/MS), by the chain rule through Equation 168: 
+
+∂h ki,c 
+
+∂pBk−1
+
+> i
+
+= Mkc ∆ ˆ R, ∂h ki,c 
+
+∂vp
+
+> i
+
+= Mkc ∆ ˆ R ∆tk−1 (173) At k (MM), by the chain rule through Equation 169: 
+
+∂h ki,c 
+
+∂pBk−1
+
+> i
+
+= Mkc ∆ ˆ R, ∂h ki,c 
+
+∂v ⊥,i 
+
+= Mkc ∆ ˆ R d ⊥ ∆tk−1 (174) 
+
+Jacobian w.r.t. ∆T . The measurement at k is the composition hki,c = π ◦ (RcB (·) + 
+
+tc) ◦ (∆ T · p). By the chain rule, the manifold Jacobian with respect to ∆ T is the product of the Jacobians of each stage (Solà et al., 2021, Eq. 41): 
+
+Jhki,c  
+
+> ∆T
+
+= ∂π
+
+∂q
+
+∣∣∣∣∣k
+
+︸ ︷︷ ︸ 
+
+> projection
+
+· RcB 
+
+︸ ︷︷ ︸ 
+
+> extrinsics
+
+· J∆T ·p
+
+> ∆T
+
+︸ ︷︷ ︸ 
+
+> action
+
+(175) The action Jacobian J∆T ·p 
+
+> ∆T
+
+is the derivative of the SE (3) action on p with respect to the right perturbation of ∆ T (Solà et al., 2021, Appendix D Eq. 182): 
+
+J∆T ·p 
+
+> ∆T
+
+= (
+
+∆ ˆ R −∆ ˆ R[p]×
+
+)
+
+∈ R3×6 (176) This is defined as ∂∂τ ξ [(∆ T · Exp( τ ξ)) · p]∣∣∣τ ξ =0 — the differentiation through Exp is already performed in deriving Eq. 182; no additional chain rule is needed. Since ∆T acts directly on p (no inversion), there is no inversion Jacobian (Solà et al., 2021, Eq. 178) unlike the motion-only BA formulation of (Haavardsholm, 2026a). Substituting Equation 176 into Equation 175: 
+
+Jhki,c  
+
+> ∆T
+
+= Mkc
+
+(
+
+∆ ˆ R −∆ ˆ R[p]×
+
+)
+
+(177) At k−1: Jhk−1 
+
+> i,c
+> ∆T
+
+= 0 (the k−1 projection does not depend on the pose change). 34 Compact nonzero block for one SS point. Extracting the nonzero columns (∆ T
+
+and si only, 8 rows × 12 cols): 
+
+Jnz  
+
+> i
+
+=
+
+> 
+
+02×6 Mk−1 
+
+> L
+
+002×6 Mk−1 
+
+> R
+
+0
+
+Jhki,L  
+
+> ∆T
+
+MkL∆ ˆ R MkL∆ ˆ R∆tJhki,R  
+
+> ∆T
+
+MkR∆ ˆ R MkR∆ ˆ R∆t
+
+> 
+
+(178) SM: remove the second-camera row at k (6 measurements). MS: remove the second-camera row at k−1 (6 measurements). MM: single camera at both frames, velocity column is Mkc ∆ ˆ Rd ⊥∆t (scalar, 4 measurements). 
+
+Perpendicular Direction (MM) A two-frame mono correspondence is geometri-cally restricted: velocity in the epipolar plane is indistinguishable from a stationary point at a different depth. Only the perpendicular component is observable. Compute the baseline vector between camera c at k−1 and camera c at k via Tck−1,c k =
+
+TcB · ∆T −1 · TBc , using TcB = [ RcB , tc; 0⊤, 1], TBc = [ RBc , −RBc tc; 0⊤, 1], and ∆T −1 = [∆ R⊤, −∆R⊤∆t; 0⊤, 1] (Solà et al., 2021, Appendix D Eq. 170). The transform Tck−1,c k maps from ck to ck−1; its translation column is the ck origin in ck−1
+
+— the baseline from ck−1 toward ck, expressed in ck−1. Computing the 4 × 4 product: 
+
+tc 
+
+> base
+
+= tc − RcB ∆R⊤(RBc tc + ∆ t) (179) Verification: ∆ R = I, ∆ t = 0 gives tc 
+
+> base
+
+= 0. ✓
+
+For a point with undistorted normalised coordinates ( xn, y n) in camera c at k−1, the ray is ˜ x = ( xn, y n, 1) ⊤. The ray and baseline both live in ck−1. Their cross product gives the normal to the epipolar plane (Opsahl and Haavardsholm, 2023, slide 15): 
+
+nc = tc 
+
+> base
+
+× ˜x (180) The perpendicular direction in body frame: 
+
+d⊥ = RBc nc
+
+∥nc∥ (181) Since d⊥ depends on ∆ T (through ∆ R and ∆ t in tc
+
+> base
+
+), it is recomputed at each Gauss-Newton iteration. It is then held constant within the iteration: the Jacobian above omits the d⊥ derivative through ∆ T . The full product rule remains to be derived and included. 
+
+Pose Prior The filter-derived relative pose ∆ ˆTEKF with covariance Σprior (Section 3.4, Equation 148) enters as a partial manifold prior on ∆ T (Section 4.2): 
+
+A0 = Σ−1/2prior 
+
+> (
+
+I6 0 · · · )
+
+, b0 = Σ−1/2prior (∆ ˆTEKF ⊖ ∆T t) (182) 35 where ∆ ˆTEKF ⊖ ∆T t = Log((∆ T t)−1 · ∆ ˆTEKF ) is prior ⊖ estimate (Section 4.2). At ∆T t = ∆ ˆTEKF , b0 = 0. ✓
+
+The ( I6, 0, . . . ) selects only the τ ξ columns, leaving the per-point states unconstrained by the prior. The pose prior anchors the 6-DOF gauge freedom of the two-view problem, ensuring the Hessian is non-singular (Haavardsholm, 2026a). 
+
+Point Priors Per-point priors on the stereo-observed position regularise the joint solve. SS is observable without a prior, but the projection Jacobians for p and vp
+
+at frame k differ only by a factor of ∆ tk−1 (Equation 173), giving condition number 
+
+∝ 1/∆tk−1 on the per-point block. For SM and MS only one camera observes the point at one of the two frames. That view constrains the point in two directions and leaves the third unconstrained. With vp included the per-point block is then rank-deficient without further information. The prior comes from stereo triangulation (and can come from the previous joint solve) at the frame where both cameras observe the point (Section 5.2). Stereo at frame 
+
+k−1 (SS, SM) gives (ˆ pBk−1 
+
+> i
+
+, ΣBk−1 
+
+> p,i
+
+) as a direct prior on pBk−1 
+
+> i
+
+. Stereo at frame k (MS) gives (ˆ pBk 
+
+> i
+
+, ΣBk 
+
+> p,i
+
+) as a prior on the transported point qi = ∆ T · (pBk−1 
+
+> i
+
++ vp 
+
+> i
+
+∆tk−1)(Equation 168). In principle MM could use a previous-solve prior; currently MM is excluded entirely due to numerical instability. 
+
+Prior at k−1. The state component pBk−1 
+
+> i
+
+is directly part of si; the prior reduces to a standard partial Gaussian prior (Section 4.2): 
+
+Ap,i = Σ−1/2
+
+> p,i
+> (
+
+03×6 · · · Sp,i · · · )
+
+, bp,i = Σ−1/2 
+
+> p,i
+
+(ˆ pBk−1 
+
+> i
+
+− pBk−1,t i ) (183) where Sp,i selects rows 1-3 of the si columns. 
+
+Prior at k. The prior is on the transported point qi(si, ∆T ). Linearising at the current iterate gives the Jacobian blocks (using Equation 173 and Equation 176): 
+
+∂qi
+
+∂pBk−1
+
+> i
+
+= ∆ ˆ R, ∂qi
+
+∂vp
+
+> i
+
+= ∆ ˆ R ∆tk−1 (184) 
+
+Dqi
+
+D ∆T = (
+
+∆ ˆ R −∆ ˆ R [pi + vp 
+
+> i
+
+∆tk−1]×
+
+> )
+
+(185) The whitened row stacks these into the pose and per-point columns: 
+
+Aq,i = Σ−1/2   
+
+> p,i
+> (Dqi
+> D∆T
+
+0 · · · ∆ ˆ R ∆ ˆ R ∆tk−1 · · · 
+
+> )
+
+, bq,i = Σ−1/2 
+
+> p,i
+
+(ˆ pBk 
+
+> i
+
+−qi(sti, ∆T t)) (186) This is a linearised manifold prior (Section 4.2, manifold case): A and b are rebuilt each Gauss-Newton iteration because qi depends nonlinearly on both ∆ T and si.Previous-solve priors on points are deferred to future work; stereo triangulation is currently the only source. MM points have been excluded entirely for now due to numerical instability for which we’ve found no solution for yet. 36 Whitened System and Solution Following Section 4.1, whiten each per-point measurement block: 
+
+Ai = Σ−1/2 
+
+> z,i
+
+Jhi 
+
+> x
+
+, bi = Σ−1/2 
+
+> z,i
+
+(zi − hi(ˆ xt
+
+> joint
+
+)) (187) Stack the prior and all point measurements: 
+
+A =
+
+> 
+
+A0
+
+A1
+
+...
+
+AN
+
+> 
+
+, b =
+
+> 
+
+b0
+
+b1
+
+...
+
+bN
+
+> 
+
+(188) Solve the normal equations (Section 4.1): (A⊤A) τ ∗ = A⊤b (189) Update: ∆T t+1 = ∆ T t · Exp( τ ∗ 
+
+> ξ
+
+), st+1  
+
+> i
+
+= sti + τ ∗ 
+
+> si
+
+(190) Iterate until ∥τ ∗∥ < ϵ 1 or ∥b∥ < ϵ 2.
+
+Covariance at convergence. Σˆx ≈ (A⊤A)−1 (191) The diagonal blocks give the marginal covariances: Σpost ∆T (6 × 6) for the pose, and Σsi
+
+for each point (6 × 6 or 4 × 4). 
+
+Initialisation ∆T 0 = ∆ ˆTEKF from Section 3.4. Per-point initialisation comes from the point prior or from the search step (Section 5.3): the input sample (depth, velocity) that produced the winning LK candidate provides (ˆ p0 
+
+> i
+
+, ˆvp,0 
+
+> i
+
+). 
+
+Transform to Bk. After convergence, transform position and velocity to the current body frame. For SS/SM/MS points ( si = ( pi, vp 
+
+> i
+
+) ∈ R6): 
+
+pBk 
+
+> i
+
+= ∆ ˆ R (ˆ pBk−1 
+
+> i
+
++ ˆ vp 
+
+> i
+
+∆tk−1) + ∆ˆ t (192) 
+
+vp,B k 
+
+> i
+
+= ∆ ˆ R ˆvp 
+
+> i
+
+(193) The Jacobian of this transformation with respect to si is: 
+
+T∆,i =
+
+> 
+
+∆ ˆ R ∆ ˆ R ∆tk−1
+
+0 ∆ ˆ R 
+
+> 
+
+∈ R6×6 (194) The off-diagonal block ∆ ˆ R ∆tk−1 captures the velocity-to-position coupling from the transport. For MM points ( si = ( pi, v ⊥,i ) ∈ R4): 
+
+TMM ∆,i = 
+
+> 
+
+∆ ˆ R ∆ ˆ R d ⊥ ∆tk−1
+
+01×3 1 
+
+> 
+
+∈ R4×4 (195) The scalar v⊥ is a magnitude along d⊥ and does not rotate, but contributes to position uncertainty through d⊥ ∆tk−1.37 Covariance transformation. The full joint solver covariance Σˆx = ( A⊤A)−1 (Sec-tion 4.3) has block structure over (∆ T, s1, . . . , sN ). The pose perturbation δξ lives in the tangent space at ∆ T (anchored in Bk−1) and is not transformed. The per-point states are transformed by T∆,i . The full block-diagonal transformation: 
+
+T = diag( I6, T∆,1, . . . , T∆,N ) (196) Applied via (Equation 46): 
+
+ΣBk = T Σ ˆx T⊤ (197) This leaves Σξξ unchanged, transforms per-point blocks ΣBk 
+
+> sisj
+
+= T∆,i Σsisj T⊤ 
+
+> ∆,j
+
+, and transforms the pose–point cross-covariances on the point side only: ΣBk 
+
+> ξs i
+
+= Σξs i T⊤
+
+> ∆,i
+
+.This is an approximation. It understates the point covariance by the pose-uncertainty contribution. 38 5 Measurement Pipeline 
+
+## 5.1 Computer Vision Primitives 
+
+5.1.1 Feature Detection: FAST 
+
+FAST (Features from Accelerated Segment Test) (Rosten and Drummond, 2006) examines a circle of 16 pixels around each candidate. If a contiguous arc of N pixels (typically 9 or 12) are all brighter or darker than the centre by a threshold, it is a corner. 
+
+5.1.2 Feature Quality: Shi-Tomasi 
+
+The Shi-Tomasi cornerness score (Shi and Tomasi, 1994) is min( λ1, λ 2) where λ1, λ 2
+
+are eigenvalues of the structure tensor M = ∑ 
+
+> patch
+
+∇I ∇I⊤. A high score means strong gradients in two independent directions — the patch is uniquely localised and suitable for tracking. A minimum score τmin rejects unreliable detections. In featureless or overexposed scenes, the pool may be empty and this is the correct behaviour. 
+
+5.1.3 Temporal Tracking: Lucas-Kanade 
+
+LK (Lucas and Kanade, 1981) (pyramidal implementation (Bouguet, 2000)) finds the displacement δu that minimises ∑
+
+> patch
+
+[Ik(u + δu) − Ik−1(u)] 2. Linearising gives (Szeliski, 2022, §9.1.3, eqs. 9.26–9.35, pp. 566–567): 
+
+M δu = − ∑
+
+> patch
+
+(Ik − Ik−1) ∇Ik (198) where M is the same structure tensor. The system is well-conditioned when both eigen-values are large (Shi-Tomasi score high). Pyramidal LK handles large displacements by solving coarse-to-fine. We use OpenCV’s calcOpticalFlowPyrLK (4.13.0), which iterates the update at each pyramid level until the displacement change falls below a tolerance or an iteration cap is reached; see vision.py. 
+
+Forward-backward check. Track forward k−1 → k to get u′, then backward 
+
+k → k−1 from u′ to get u′′ . If ∥u′′ − u∥ > ϵ fb , the match is inconsistent and the point is dropped. This is our primary failure detector. 
+
+5.1.4 Stereo Matching: NCC 
+
+Normalised Cross-Correlation (Szeliski, 2022, §9.1, eq. 9.11, p. 561) matches a patch from one image along the epipolar line in the other: NCC( uL, uR) = 
+
+> ∑
+
+(IL − ¯IL)( IR − ¯IR)
+
+> √∑
+
+(IL − ¯IL)2 ∑(IR − ¯IR)2
+
+(199) 39 Invariant to brightness and contrast differences between cameras. For rectified stereo the epipolar line is a horizontal row, so the search reduces to 1D over the disparity range [ dmin , d max ]. The location of the highest NCC value, provided it exceeds threshold NCC min , is the match. Sub-pixel refinement by parabolic fitting on the three response values around the peak: ∆u = 12
+
+y−1 − y+1 
+
+y−1 − 2y0 + y+1 
+
+, u∗ = upeak + ∆ u (200) clamped to [ −1, 1]. Boundary peaks skip refinement. 
+
+5.1.5 Grid Selection and Focus Weighting 
+
+The image is divided into a cols × rows grid. Both selection routines first filter the candidate pool against the pixels of currently-tracked points, discarding any candidate closer than dpx min to an existing one. 
+
+Feature point allocation. The top Nfeat ,gl candidates by Shi-Tomasi cornerness are picked globally. The remaining candidates are binned into the grid, and the top 
+
+Nfeat ,lo per cell are added. The grid is purely a spatial spread mechanism and need not match the interest-point grid. Feature replenishment ought to be weighted by expected remaining cell lifetime (from estimated velocity and angular velocity): cells the quadcopter is moving toward get more features. This also avoids spending compute on points that fall out of the image at the next time step anyway. Feature points should remain in frame for at least 3 frames, so 50ms at 60Hz frame rate. Ideally more. 
+
+Interest point allocation. The focus point Fk−1 ∈ R3 projects into each camera as 
+
+fc = π(RcB Fk−1 + tc), c ∈ { L, R }. A 2D isotropic Gaussian N (fc, σ 2 
+
+> F
+
+I) defined over the image plane assigns a probability mass to each grid cell. Isotropy makes the two axes independent (Devore et al., 2021, §5.5, p. 331), so the joint mass factors: 
+
+P (cell r,c ) = P (x ∈ [xc, x c+1 ]) P (y ∈ [yr, y r+1 ]) 
+
+Zx · Zy
+
+(201) where each one-dimensional probability is a difference of normal CDFs (Devore et al., 2021, §4.3, p. 217–219), and Zx = P (0 ≤ x ≤ W ), Z y = P (0 ≤ y ≤ H) re-normalise the distribution over the image rectangle. Each camera receives N max  
+
+> I
+
+/2 points, allocated ⌊(N max  
+
+> I
+
+/2) · P (cell r,c )⌋ per cell, with the top candidates per cell by Shi-Tomasi cornerness chosen. Any residual from the floor operation is distributed in weight-descending order, peak cell first, then outward. Cells that cannot fulfil their allocation (too few candidates) overflow their residual into the same descending order. Smaller σF concentrates points near the focus; larger σF
+
+spreads them. NCC stereo matching then attempts to pair each interest point across cameras; successful matches contribute stereo interest points, failures contribute mono. 40 5.2 Geometric Estimation 
+
+Stereo Depth From a stereo match with pixel coordinates ( uL, v L) in the left camera and ( uR, v R) in the right camera, first undistort to normalised coordinates: (xn, y n) = D−1(
+
+κ−1(uL, v L))
+
+(202) Compute depth from disparity and reconstruct the 3D point in the left camera frame: 
+
+Z = fu buL − uR
+
+, pc = Z
+
+> 
+
+xn
+
+yn
+
+1 
+
+> 
+
+(203) Taking the disparity in raw pixel coordinates presumes a rectified pair. Our input is rectified. D−1 is then the identity and ( xn, y n) = κ−1(uL, v L). We keep D−1 above and its Jacobian below for the unrectified case. There the disparity must be taken on undistorted coordinates as well. Transform to body frame: 
+
+pB = RBL (pc − tL) (204) 
+
+Covariance Initialisation The covariance of the reconstructed 3D position is obtained by first-order uncertainty propagation (Equation 44). The raw measurements are ( uL, v L, u R) — three independent pixel coordinates, each with noise σpx . Note that uL affects both the normalised coordinates ( xn, y n) and the depth Z = fub/ (uL − uR), so these are correlated and cannot be treated independently. We derive ∂pc/∂ (uL, v L, u R) using the product rule on pc = Z · (xn, y n, 1) ⊤.
+
+Intermediate quantities. Depth derivatives: 
+
+∂Z ∂u L
+
+= − fub
+
+(uL − uR)2 = −Zd , ∂Z ∂v L
+
+= 0 , ∂Z ∂u R
+
+= Zd (205) where d = uL − uR.Normalised coordinate derivatives (chain rule through undistortion): 
+
+∂(xn, y n)
+
+∂(uL, v L) = ∂D −1
+
+∂(xd, y d)  
+
+> ︸︷︷ ︸
+> JD−1
+
+· ∂κ −1
+
+∂(u, v )  
+
+> ︸︷︷ ︸
+> K−12×2
+
+≜ C =
+
+> (
+
+C11 C12 
+
+C21 C22 
+
+> )
+
+(206) where κ−1: xd = ( u − cu)/f u, yd = ( v − cv)/f v gives K−12×2 = diag(1 /f u, 1/f v), and 
+
+JD−1 = ∂D −1/∂ (xd, y d) ∈ R2×2 is the Jacobian of the undistortion model (model-dependent; identity if no distortion). ( xn, y n) do not depend on uR.
+
+Product rule. Since pcx = Z · xn, pcy = Z · yn, pcz = Z:
+
+∂(Z · xn)
+
+∂(·) = ∂Z ∂(·) xn + Z ∂x n
+
+∂(·) (207) 41 Row 1: pcx = Z x n.
+
+∂p cx
+
+∂u L
+
+= Z
+
+> (
+
+C11 − xn
+
+d
+
+> )
+
+(208) 
+
+∂p cx
+
+∂v L
+
+= Z C 12 (209) 
+
+∂p cx
+
+∂u R
+
+= Z x n
+
+d (210) 
+
+Row 2: pcy = Z y n.
+
+∂p cy
+
+∂u L
+
+= Z
+
+> (
+
+C21 − yn
+
+d
+
+> )
+
+(211) 
+
+∂p cy
+
+∂v L
+
+= Z C 22 (212) 
+
+∂p cy
+
+∂u R
+
+= Z y n
+
+d (213) 
+
+Row 3: pcz = Z.
+
+∂p cz
+
+∂u L
+
+= −Zd , ∂p cz
+
+∂v L
+
+= 0 , ∂p cz
+
+∂u R
+
+= Zd (214) 
+
+Assembled Jacobian. 
+
+∂pc
+
+∂(uL, v L, u R) = Z
+
+> 
+
+C11 − xn/d C12 xn/d C21 − yn/d C22 yn/d 
+
+−1/d 0 1/d  
+
+> 
+
+(215) 
+
+Camera-frame covariance. Σpc = ∂pc
+
+∂(uL, v L, u R) σ2px I3
+
+∂pc
+
+∂(uL, v L, u R)
+
+> ⊤
+
+(216) 
+
+Body-frame covariance. ΣpB = RBc Σpc R⊤ 
+
+> Bc
+
+(217) 
+
+Mono features. Initial covariance and point come from the point-velocity solver (Section 4.3). 
+
+## 5.3 Search Region Construction 
+
+For filter feature points, the search region is the projection of the χ2 
+
+> α, 3
+
+ellipsoid of the filter’s body-frame position estimate ˆ pBi and its 3 × 3 block of P− 
+
+> k
+
+. For all other points (interest and pre-admission features), the search region is constructed from the prediction function and the uncertainty in its inputs. 42 Prediction function. The predicted pixel position at frame k is a function of pose change, position, and velocity: ˆuk(∆ T, pBk−1 
+
+> i
+
+, vp 
+
+> i
+
+) = π(
+
+RcB 
+
+> (
+
+∆R (pBk−1 
+
+> i
+
++ vp 
+
+> i
+
+∆tk−1) + ∆ t)
+
++ tc
+
+> )
+
+(218) 
+
+Uncertainty sets. The EKF-derived relative pose ∆ ˆT , Σ∆ξ (Section 3.4) is always available. Position and velocity may or may not be available from previous iterations. When an estimate with covariance exists, the uncertainty set is the nσ ellipsoid. When no estimate exists, the uncertainty set is a physically bounded domain. 
+
+Statistical sets (nσ ellipsoids at confidence level α): 
+
+Eξ = {
+
+∆ ˆT ◦ Exp( ξ) ∣∣∣ ξ⊤ Σ−1∆ξ ξ ≤ χ2
+
+> α, 6
+> }
+
+(219) 
+
+Ep = {
+
+p ∣∣∣ (p − ˆpi)⊤ Σ−1 
+
+> pp
+
+(p − ˆpi) ≤ χ2
+
+> α, 3
+> }
+
+(220) 
+
+Ep,v =
+
+> (
+
+pv
+
+> ) ∣∣∣∣∣∣((
+
+pv
+
+> )
+
+−
+
+> (
+
+ˆpi
+
+ˆvp
+
+> i
+> )) ⊤
+
+Σ−1
+
+> i
+> ((
+
+pv
+
+> )
+
+−
+
+> (
+
+ˆpi
+
+ˆvp
+
+> i
+> ))
+
+≤ χ2 
+
+> α, 6
+> 
+
+(221) 
+
+Bounded sets (physical limits, used when no estimate exists): 
+
+SZ = {
+
+Z (xn, y n, 1) ⊤ ∣∣∣ Z ∈ [Zmin , Z max ]}
+
+Back-projected depth range (§5.2) (222) 
+
+Sv = {v ∈ R3 | ∥ v∥ ≤ vmax } Velocity bound (223) 
+
+Sa = {a ∈ R3 | ∥ a∥ ≤ amax } Acceleration bound (224) 
+
+Acceleration expansion. For points with a velocity estimate, the velocity may have changed since the last frame: 
+
+Ep,v ⊎ S a = {(p, v + a ∆tk−1) | (p, v) ∈ E p,v, a ∈ S a} (225) 
+
+Search regions by available information. In each case, the search region is ˆuk[·] ∩ [0 , w ] × [0 , h ]: 
+
+Available Input domain 
+
+ˆpi, ˆ vp 
+
+> i
+
+ˆuk[Eξ × (Ep,v ⊎ S a)] ˆpi only ˆuk[Eξ × E p × S v]Neither ˆuk[Eξ × S Z × S v]
+
+Temporal matching protocol. The search region is a 2D subset of the pixel plane. Matching proceeds as follows: 1. Discretise input domain. Sample the uncertainty sets above. Each sample specifies a candidate (∆ T, pi, vp 
+
+> i
+
+). 43 2. Project. Pass each sample through ˆ uk (Equation 218) to obtain candidate pixels. Discard those outside [0 , w ] × [0 , h ] and deduplicate on integer pixel coordinates. The surviving candidates are the search region. Their convex hull bounds it if a contiguous region is wanted. If no candidate survives, do not attempt a match. 3. Coarse match. Evaluate SSD between the reference patch at uk−1 
+
+> i
+
+and the candidate pixels. Select the candidate with lowest SSD. 4. Fine match. Run pyramidal LK from the coarse winner to obtain sub-pixel accuracy. 5. Validate. Forward-backward check: run LK backward from the result; if ∥u′′ −
+
+uk−1 
+
+> i
+
+∥ > ϵ fb , reject. 6. Solver initialisation. The input sample (∆ T, pi, vp 
+
+> i
+
+) that produced the winning candidate provides the initial estimate (ˆ p0 
+
+> i
+
+, ˆvp,0 
+
+> i
+
+) for the joint solver (Section 4.3). Point data is overwritten by stereo triangulation when available. SSD rather than NCC is sufficient for temporal matching: the reference and target are from the same camera separated by one frame interval, so brightness and contrast are effectively unchanged. 
+
+## 5.4 Stationarity Testing 
+
+5.4.1 Feature Movement Detection Individual gate. The EKF predicts measurement ˆ zk,i = hi(ˆ x− 
+
+> k
+
+). The innovation: 
+
+yk,i = zk,i − hi(ˆ x− 
+
+> k
+
+) (226) Under the stationarity hypothesis, yk,i ∼ N (0, Sk,i ), where the innovation covariance combines state uncertainty projected into measurement space with sensor noise (Bar-Shalom et al., 2001, p. 236): 
+
+Sk,i = Hk,i P− 
+
+> k
+
+H⊤ 
+
+> k,i
+
++ Rk,i (227) The normalised innovation squared (NIS): 
+
+γk,i = y⊤ 
+
+> k,i
+
+S−1 
+
+> k,i
+
+yk,i ∼ χ2 
+
+> νi
+
+(228) where νi = 4 (stereo) or νi = 2 (mono). If γk,i > χ 2 
+
+> α, ν i
+
+, reject stationarity. 
+
+Joint consistency check. After individual gating, test the remaining inlier set S
+
+for collective consistency (Bar-Shalom et al., 2001, p. 236): 
+
+γjoint = ∑
+
+> i∈S
+
+γk,i ∼ χ2 
+
+> νtotal
+
+, νtotal = ∑
+
+> i∈S
+
+νi (229) If γjoint > χ 2 
+
+> α, ν total
+
+: the inlier set is inconsistent. Exact χ2 behaviour assumes the innovations are independent. The sum is otherwise an approximation. 44 5.4.2 Feature Admission 
+
+Before a feature point enters the EKF, it must pass a stationary test which depends on the correspondence type. For MS/SS/SM correspondences: 
+
+γv = (ˆ vp 
+
+> i
+
+)⊤ Σ−1 
+
+> vv
+
+ˆvp 
+
+> i
+
+∼ χ23 (230) For MM correspondences: 
+
+γv = ˆv2
+
+> ⊥,i
+
+σ2
+
+> v⊥
+
+∼ χ21 (231) If γv exceeds the threshold: do not admit. The NIS gate ejects features later if they were in fact moving. Points that pass are augmented into the EKF (Section 3.1) with covariance from the point-velocity solve ( A⊤A)−1 (Section 4.3). 
+
+Limitation. For MM, motion along the epipolar plane is undetectable by this test (absorbed into the position estimate). The NIS gate (Section 5.4.1) catches such points one frame after EKF admission, since the epipolar geometry changes between frames. 
+
+5.4.3 Stationarity Assumption 
+
+The dynamics ˙ pBi = −v − ω × pBi (Equation 85) assume the point is fixed in the world. If the point is moving, the propagated position is wrong, the predicted pixel position is wrong, and the innovation is large. The chi-squared test (Section 5.4) detects this and excludes the point from the update. 45 6 Algorithm Overview 
+
+This section gives a conceptual map of the estimator. The code is the source of truth: algo.py contains the orchestration; tuning parameters are maintained in algorithm.yaml; Point-Set and Point datatypes are in points.py; the joint solver lives in solver.py; the EKF in ekf.py. 
+
+## 6.1 Point Sets and Roles 
+
+Tracked points are partitioned by role: • F: feature points augmented into the EKF state. Stationary, used as inertial references. Their measurement information enters via the pose update; they do not participate in the joint solver. • Fpre : candidate feature points awaiting their first two-frame solve and admission test. Enter the joint solver. • I: interest points steered by the focus. Not in the EKF. Enter the joint solver. Each Point carries its pixel observations at k−1 and k (stereo or mono per camera), its 3D state and covariance in Bk−1 from the previous solve and in Bk from the current solve, plus an id and age. The populated fields determine its stage (one-frame vs two-frame), correspondence type (SS/SM/MS/MM, see §4.3), and search strategy (§5.3). 
+
+## 6.2 Accumulator 
+
+The accumulator persists across iterations: the three point sets, the EKF posterior ( ˆX +
+
+> k−1
+
+, P+
+
+> k−1
+
+), the previous image pair, the focus, and the last timestamp. At the end of each iteration k is pushed into k−1. 
+
+## 6.3 Input and Output 
+
+Input. Per frame: stereo pair ( Lk, R k), timestamp tk, control input uk−1, focus point 
+
+Fk−1 and spread σF,k −1.
+
+Output. 
+
+• Core EKF state ˆX core  
+
+> k
+
+= ⟨T, v, ω, gB , dB ⟩ with Pcore  
+
+> k
+
+∈ R18 ×18 . Feature rows and columns are stripped from the EKF state and covariance before output; internally the EKF retains them. • Solver pose change ∆ ˆTsolver and Σ∆ξ from the joint solver. This is the rec-ommended transform for propagating the downstream world model between frames. 46 • Point cloud Ck tagged by role and stage. Stage-2 points contribute (ˆ pBk 
+
+> i
+
+, ˆvBk 
+
+> i
+
+, ΣBk 
+
+> i
+
+)from the joint solver; stage-1 (stereo-only) points contribute (ˆ pi, Σp,i ) from stereo triangulation; feature points contribute position and covariance from the EKF state. 
+
+## 6.4 Pseudocode 
+
+Initialise ( k = 0 ).  
+
+> 1:
+
+Receive ( L0, R 0, t 0, F−1, σ F, −1) 
+
+> 2:
+
+FAST + Shi-Tomasi on L0, R 0 (§5.1)  
+
+> 3:
+
+Focus-weighted grid selection into I; grid selection into Fpre (§5.1)  
+
+> 4:
+
+NCC stereo match each point; stage-1 stereo triangulation for stereo pairs gives (ˆ pi, Σp,i ) (§5.2)  
+
+> 5:
+
+Initialise EKF: ( ˆX0, P0) with no feature points (§3.2)  
+
+> 6:
+
+Output ( ˆX0, P0, C0); push accumulator k → k−1
+
+Iterate ( k = 1 , 2, . . . ). — Receive and propagate —  
+
+> 1:
+
+Receive ( Lk, R k, t k, uk−1, Fk−1, σ F,k −1); ∆ t = tk − tk−1 
+
+> 2:
+
+Propagate ( ˆX +
+
+> k−1
+
+, P+
+
+> k−1
+
+) → ( ˆX − 
+
+> k
+
+, P− 
+
+> k
+
+) (§3.1, §3.2)  
+
+> 3:
+
+FAST + Shi-Tomasi on Lk, R k; store keypoint pool (§5.1) 
+
+— Pre-update relative pose —  
+
+> 4:
+
+Compute (∆ ˆT −, Σ−
+
+> ∆ξ
+
+) from ˆT +
+
+> k−1
+
+, ˆT − 
+
+> k
+
+(§3.4) 
+
+— Search and track —  
+
+> 5:
+
+For each point with uk−1 
+
+> i
+
+: build candidate set; SSD coarse match; pyramidal LK refinement; forward-backward validation (§5.3)  
+
+> 6:
+
+Track failures: drop from I; marginalise from F (§3.1)  
+
+> 7:
+
+Stereo promotion: NCC search in other camera for mono points at k (§5.1) 
+
+— EKF update —  
+
+> 8:
+
+Per-feature NIS gate at χ2 
+
+> αNIS , ν i
+
+; moving points demoted from F to I (§5.4.1)  
+
+> 9:
+
+Joint consistency check on surviving inliers; if fail: demote all F to I (§5.4.1)  
+
+> 10:
+
+Update on inliers plus gravity pseudo-measurement (§3.1, §3.3) 
+
+— Post-update relative pose —  
+
+> 11:
+
+Recompute (∆ ˆT +, Σ+∆ξ ) from ˆT +
+
+> k−1
+
+, ˆT + 
+
+> k
+
+— this is the pose prior for the joint solver (§3.4) 
+
+— Joint solver —  
+
+> 12:
+
+Stage-2 points in Fpre ∪ I : 
+
+> 13:
+
+Classify correspondence type (SS, SM, MS, MM); MM gated out entirely for now 47 14: Build per-point position priors from stereo triangulation at k−1 and k where available (§4.3)  
+
+> 15:
+
+Solve jointly with pose prior (∆ ˆT +, Σ+∆ξ) (§4.3)  
+
+> 16:
+
+Transform per-point (ˆ pBk 
+
+> i
+
+, ˆvBk 
+
+> i
+
+, ΣBk 
+
+> i
+
+) via T∆,i 
+
+— Feature admission —  
+
+> 17:
+
+Fpre points with first stage-2 solve: velocity consistency test (§5.4.2)  
+
+> 18:
+
+Pass: augment (ˆ pBk 
+
+> i
+
+, ΣBk 
+
+> p,i
+
+) into EKF (§3.1)  
+
+> 19:
+
+Fail: demote to I
+
+— Replenish —  
+
+> 20:
+
+Mark points past their (per-instance jittered) nmax ,i for retirement  
+
+> 21:
+
+Pre-emptive replenish: points reaching nmax ,i next frame get replacements now  
+
+> 22:
+
+Replenish Fpre and I from keypoint pool; NCC stereo match; stage-1 stereo triangulation for new stereo points (§5.1, §5.2) 
+
+— Output —  
+
+> 23:
+
+Extract core EKF state ˆX core  
+
+> k
+
+, Pcore  
+
+> k
+
+(strip feature rows/columns)  
+
+> 24:
+
+Assemble Ck from EKF (for F), joint solver (for stage-2 Fpre , I), and stereo triangulation (for stage-1 Fpre , I) 
+
+> 25:
+
+return ˆX core  
+
+> k
+
+, Pcore  
+
+> k
+
+, ∆ ˆTsolver , Σsolver ∆ξ , Ck 
+
+> 26:
+
+Push accumulator k → k−1 
+
+> 27:
+
+Discard the points marked for retirement; marginalise those in F from the EKF (§3.1) 
+
+Review note. Retirement on age is the intent. The code compares nmax ,i against the global nmax instead of the point’s age, so it never fires. The results below therefore have no maximum point lifetime. 48 7 Evaluation 
+
+## 7.1 Setup 
+
+We have implemented the algorithm in Python and evaluated it on the VID dataset (Zhang et al., 2022), using the sequence indoor_loadless_hovor_3096.1g_79.04s. The sequence is characterised by simple dynamics: no payload, no wind, and dominated by a hover state. These characteristics make the sequence appropriate for first validation. The dataset provides calibration, stereo video sequences and ground truth making it ideal for evaluating dynamics coupled VO systems. 
+
+Figure 1: Representative left-camera frame from the VID indoor sequence. Hangar interior at the start of the bag, quadcopter stationary on the floor. The sequence starts with the quadcopter stationary on the ground, then it takes off and climbs altitude, before it maintains hover, then finally it lands. 49 7.2 State Estimate Accuracy 
+
+Figure 2: All but last 350 frames. Per-frame error magnitudes (translation, rotation, body-frame linear and angular velocity) against Vicon ground truth. Dashed red: RMSE over the full evaluated window. Overall our state estimates appear accurate, but degrade during the transients of take-off and landing, as illustrated by the large changes in error at the beginning and end of the time interval. This is expected due to the discontinuous nature of the normal force, but we could likely alleviate the transient by increasing the process noise associated with the disturbance vector. Measurements observing the disturbance such as an accelerometer would also alleviate the transient. The process noise spectral densities Qu, Qd and Qω are priors, not values validated against data. The filter is likely overconfident as a result: the state collapses when measurements pause for ∼ 10 frames. A NEES sweep on a held-out flight would settle it. We are pleased with the accuracy but recognise the need for tuning and optimisation. For vision-only without IMU, this is reasonable first-implementation performance. Notably we observe a non-zero mean error in the pitch rate ( ωy error) and to a lesser extent in the roll rate ( ωx error), suggesting a bias in our model which could stem from a non-zero displacement between the centre of mass and the geometric centre. 50 Figure 3: All frames. Per-frame error magnitudes (translation, rotation, body-frame linear and angular velocity) against Vicon ground truth. Dashed red: RMSE over the full evaluated window. Above we see the error plots for the entire sequence. This illustrates the sharp increase in error which takes place during landing. Notably the system is able to recover with time. 
+
+Figure 4: All but last 350 frames. Estimated vs ground-truth trajectory. Left: 3D path. Right: per-axis position, body-frame velocity, and angular velocity over time. 51 Quantity RMSE Median p95 
+
+Translation [m] 1.104 0.229 3.964 Rotation [deg] 7.55 2.58 28.25 Velocity magnitude [m/s] 0.502 0.034 0.457 
+
+|vx| error [m/s] 0.065 0.010 0.065 
+
+|vy| error [m/s] 0.273 0.019 0.101 
+
+|vz | error [m/s] 0.417 0.010 0.420 Angular velocity magnitude [rad/s] 0.102 0.075 0.130 
+
+|ωx| error [rad/s] 0.050 0.027 0.092 
+
+|ωy| error [rad/s] 0.082 0.057 0.115 
+
+|ωz | error [rad/s] 0.034 0.013 0.046 Table 1: All frames summary error metrics (4733 frames, 79.0 s), including ground contact, takeoff, flight, and landing. The RMSE figures are dominated by post-landing divergence. The velocity numbers tell a clear story: median ∼1 cm/s, p95 (the 95th percentile) is 0.5 m/s. RMSE ≫ median means the error is highly concentrated in a small fraction of frames. That fraction is the takeoff and landing transient (see below). Angular velocity is the opposite story: RMSE and median sit far closer together than for velocity, which points to a uniform noise floor rather than a transient. The ωy
+
+channel is the worst, which confirms the visible bias in the plots. ωz is the best and 
+
+ωx the middle. The asymmetry suggests, among others: residual RBC misalignment (camera-body extrinsic), Vicon-marker-to-body alignment error, or an intrinsic limita-tion of vision-only rotation rate. Translation median < RMSE ≪ p95, suggests a small persistent offset (alignment or accumulated drift) and a transient spike. 
+
+Window [s] Rot [deg] med |vz | med |vz | p95 Trans med 
+
+0–5 0.19 0.005 0.018 0.002 5–10 0.52 0.277 0.689 0.152 10–20 2.45 0.009 0.048 0.177 20–40 2.51 0.006 0.023 0.154 40–60 2.74 0.007 0.032 0.278 60–70 2.61 0.018 0.063 0.261 70–73 2.23 0.057 0.146 0.318 73–75 20.15 1.697 4.001 3.415 75–79 28.35 0.111 0.276 4.317 Table 2: Error breakdown by time window over all frames. Takeoff occurs at t ≈ 8 s (window 5–10). Landing occurs at t ≈ 72 s (window 70–73). The 73–75 s window contains catastrophic divergence: translation error grows from 0.32 m to 3.4 m and rotation from 2.2° to 20° within 2 s of touchdown. 52 7.3 State Diagnostics 
+
+Figure 5: All frames. Internal state diagnostics. Top: body-frame gravity estimate (per-axis and magnitude; grey dashed: nominal ∥g∥ = 9 .7935 m/s 2). Middle: body-frame disturbance estimate. Bottom: point-set sizes over time — features in the EKF (blue), pre-admission candidates (green), interest points (red). Gravity: ∥g∥ stays locked at 9.79 throughout. The gravity pseudo-measurement is doing its job. Per-axis wandering ( ∼0.5 m/s2) during the manoeuvre phase is gravity correctly being rotated through the body frame as the quadcopter tilts. Disturbance: the most diagnostic plot. The quadcopter sits on the floor for t < −55 s
+
+with d ≈ (0 , 0, −9.8). The normal force exactly cancels gravity. Then the quadcopter lifts off, the filter correctly identifies that the normal force vanishes, and dB transitions to near zero. The transient takes ∼3–5 seconds, during which the filter is splitting the residual acceleration between gravity and disturbance. This is exactly the take-off discontinuity discussed above: the EKF’s Gaussian distur-bance model cannot represent the instantaneous transition. The filter takes seconds to re-converge. With accelerometer integration this would resolve in one frame. Point counts: the retirement bug noted in Section 6 is visible here. Both counts climb step-like to their ceilings and then stay there, F at 50 and I at ∼200. The steps 53 come from points leaving instantly through marginalisation or dropping rather than ageing out, so nothing retires once a ceiling is reached. Fpre ≈ 0 steady state. The one clear departure is during landing, where the NIS gate fires on high residuals between predicted and actual pixel observations. That gate is meant to catch moving points; here it catches a degraded state, marginalising the current feature points so new ones are selected. 
+
+# 8 Future Work 
+
+This is a work in progress and a second version is in preparation. Outstanding items on the system as described are noted in place through the preceding sections rather than collected here. The direction beyond that, in brief. The estimator splits into two processes with a defined interface: an ego-state filter over a trailing window of image poses, taking rotor speed, current, gyroscope and accelerometer alongside the pixel channel, with biases, the inertia and aerodynamic coefficients estimated online; and an environment state owning correspondence, per-point depth, and the gate on what it hands over. Then a C++ port with the vision primitives on programmable hardware under a bounded sensor-to-actuator latency budget, and closed-loop control on top. 54 References 
+
+Yaakov Bar-Shalom, X. Rong Li, and Thiagalingam Kirubarajan. Estimation with Applications to Tracking and Navigation . John Wiley & Sons, New York, NY, 2001. Randal W. Beard and Timothy W. McLain. Small Unmanned Aircraft: Theory and Practice . Princeton University Press, Princeton, NJ, 2012. Jean-Yves Bouguet. Pyramidal implementation of the lucas kanade feature tracker: Description of the algorithm. Technical report, Intel Corporation, Microprocessor Research Labs, 2000. Guillaume Bourmaud, Rémi Mégret, Marc Arnaudon, and Giremus Audrey. Continuous-discrete extended kalman filter on matrix lie groups using concentrated gaussian distributions. Journal of Mathematical Imaging and Vision , 51:209–228, 01 2014. doi: 10.1007/s10851-014-0517-0. John L. Crassidis and John L. Junkins. Optimal Estimation of Dynamic Systems .Chapman and Hall/CRC, Boca Raton, FL, 2nd edition, 2004. Jay L. Devore, Kenneth N. Berk, and Matthew A. Carlton. Modern Mathematical Statistics with Applications . Springer Texts in Statistics. Springer, Cham, Switzerland, 3rd edition, 2021. doi: 10.1007/978-3-030-55156-8. Trym Vegard Haavardsholm. Full bundle adjustment (lecture 11.2), 2026a. URL 
+
+https://www.uio.no/studier/emner/matnat/its/TEK5030/v26/lectures/ 12-multiple-view-geometry/lecture_11_2_full-bundle-adjustment.pdf .University of Oslo, TEK5030 Multiple View Geometry, accessed 2026-04-11. Trym Vegard Haavardsholm. Tek5030 lecture 9: Single-view geometry — nonlin-ear least squares and map estimation. University of Oslo, TEK5030 Computer Vision, 2026b. URL https://www.uio.no/studier/emner/matnat/its/TEK5030/ v26/lectures/09-single-view-geometry/ .Jianzhu Huai and Xiang Gao. A quick guide for the iterated extended kalman filter on manifolds, 2023. URL https://arxiv.org/abs/2307.09237 .Gyubeom Im. Notes on kalman filter (kf, ekf, eskf, iekf, ieskf), 2024. URL https: //arxiv.org/abs/2406.06427 .Bruce D. Lucas and Takeo Kanade. An iterative image registration technique with an application to stereo vision. pages 674–679, 1981. Yi Ma, Stefano Soatto, Jana Kosecka, and S. Shankar Sastry. An Invitation to 3-D Vision: From Images to Geometric Models . Springer, New York, NY, 2004. Anastasios I. Mourikis and Stergios I. Roumeliotis. A multi-state constraint Kalman filter for vision-aided inertial navigation. In IEEE International Conference on Robotics and Automation (ICRA) , pages 3565–3572, 2007. 55 Thomas Opsahl and Trym Vegard Haavardsholm. Two-view geometry: Epipolar geometry. Lecture slides, TEK5030 – Introduction to Robot Vision, University of Oslo, 2023. Available at https://www.uio.no/studier/emner/matnat/its/ TEK5030/v26/lectures/11-two-view-geometry/epipolar-geometry_2023.pdf .Edward Rosten and Tom Drummond. Machine learning for high-speed corner detection. In European Conference on Computer Vision (ECCV) , pages 430–443. Springer, 2006. Jianbo Shi and Carlo Tomasi. Good features to track. pages 593–600, 1994. Joan Solà, Jeremie Deray, and Dinesh Atchuthan. A micro Lie theory for state estimation in robotics. arXiv preprint arXiv:1812.01537 , 2021. Richard Szeliski. Computer Vision: Algorithms and Applications . Springer, Cham, Switzerland, 2nd edition, 2022. Tim Wescott. Why does sequential update of kalman filter work when you have mul-tiple sensors?, 2022. URL https://dsp.stackexchange.com/questions/85223/ why-does-sequential-update-of-kalman-filter-work-when-you-have-multiple-sensors .Accessed: 2026-04-11. William J. Wilkinson, Simo Särkkä, and Arno Solin. Bayes-newton methods for approximate bayesian inference with psd guarantees, 2022. URL https://arxiv. org/abs/2111.01721 .Kunyi Zhang, Tiankai Yang, Ziming Ding, Sheng Yang, Teng Ma, Mingyang Li, Chao Xu, and Fei Gao. The visual-inertial-dynamical multirotor dataset, 2022. URL 
+
+https://arxiv.org/abs/2103.11152 .56

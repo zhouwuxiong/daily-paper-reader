@@ -1,0 +1,443 @@
+Title: KLTNet: Learning Sparse Feature Tracking for Robust and Accurate Monocular Visual-Inertial Odometry
+
+URL Source: https://arxiv.org/pdf/2608.24544v1
+
+Published Time: Wed, 26 Aug 2026 01:09:44 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# KLTNet: Learning Sparse Feature Tracking for Robust and Accurate Monocular Visual-Inertial Odometry 
+
+Renbiao Jin, Danping Zou †, Wenxian Yu 
+
+Abstract — Many feature-based visual-inertial odometry (VIO) systems rely on sparse feature tracking, whose accuracy and robustness directly affect state estimation. Classical KLT trackers rely primarily on local image patches and can become unreliable under rapid motion or in low-texture environments. We propose KLTNet, a lightweight learning-based, plug-and-play sparse feature tracker designed to replace classical KLT trackers in KLT-based VIO front ends. KLTNet follows acoarse-to-fine, dense-to-sparse architecture that combines low-resolution dense optical flow for robust global motion initializa-tion with triplet-patch refinement for accurate and temporally consistent tracking. A fixed reference patch provides a stable anchor throughout each feature track and helps reduce accumu-lated tracking drift. In addition, KLTNet predicts anisotropic confidence weights supervised through differentiable multi-view triangulation, which can be used as observation weights in compatible VIO estimators. Experiments with VINS-Mono and OpenVINS on public benchmarks and a self-collected low-texture dataset demonstrate improved tracking and odometry accuracy over classical KLT, while maintaining real-time per-formance on an embedded platform. 
+
+I. INTRODUCTION Robust and accurate visual-inertial odometry (VIO) is important for applications such as robotics, autonomous driving, and AR/VR. In feature-based VIO systems, sparse feature tracking in the visual front end directly affects the accuracy and robustness of state estimation. The Kanade– Lucas–Tomasi (KLT) [1] tracker is widely used because of its efficiency and high frame-to-frame localization accuracy. However, KLT estimates feature motion mainly from local image patches. Without sufficient image context, tracking can become unreliable under rapid motion or in low-texture environments, such as the challenging corridor example shown in Fig. 1. Recent dense optical flow methods, such as RAFT [2] and SEA-RAFT [3], achieve robust correspondence estimation by exploiting image-wide context. Inspired by these develop-ments, we construct a simple baseline, termed RAFT-Sparse, which propagates sparse feature positions by sampling dense RAFT flow between consecutive frames. However, our exper-iments show that directly replacing KLT with RAFT-Sparse does not consistently improve odometry accuracy. A key limitation is that independently estimated pairwise flow is recursively chained along each feature track, allowing small tracking errors to accumulate over time. These observations suggest that global correspondence robustness alone is in-sufficient for VIO, where accurate and temporally consistent sparse feature tracks are also important. 
+
+> †
+
+Corresponding Author. All authors are with Shanghai Jiao Tong Univer-sity, Shanghai 200240, China. (e-mail: {renbiaojin, dpzou }@sjtu.edu.cn) (c) Weak Texture + Steady Translation (a)   
+
+> (b) Low Texture + Rapid Rotation
+> T1 T2
+> T3 T4
+> KLTNet (ours)
+> KLT
+> GT
+> Start Point
+> End Point
+> x(m)
+> -110
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> y(m)
+
+Fig. 1. Trajectory comparison in a low-texture environment using VINS-Mono with the classical KLT and the proposed KLTNet tracker. (a) KLTNet closely follows ground truth (GT), while classical KLT drifts under challenging scenarios. (b) During rapid rotation (T1-T4) in low-texture regions, KLT exhibits large drift (red dashed circle), but KLTNet remains stable. (c) In steady translation (green dashed box), both perform similarly, demonstrating that KLTNet performs comparably under moderate motion and remains robust when classical KLT degrades. 
+
+Multi-frame learned systems such as DROID-SLAM [4], DPVO [5] and DVI-SLAM [6] reduce temporal drift by jointly considering visual correspondence and state estima-tion across multiple frames. However, these methods are designed as complete odometry or SLAM systems in which the learned visual front end is closely coupled with the back end. They are therefore difficult to use as direct replacements for the sparse tracker in existing KLT-based VIO systems and generally introduce additional computational and memory costs. In this work, we instead focus on a standalone sparse tracker that preserves the track-based interface of conven-tional VIO front ends while improving tracking robustness, accuracy, and temporal consistency. To this end, we propose KLTNet, a lightweight learning-based, plug-and-play sparse feature tracker designed to re-place the classical KLT tracker in KLT-based VIO systems. KLTNet follows a coarse-to-fine, dense-to-sparse architec-ture. It first estimates low-resolution dense optical flow to capture global motion cues and provide robust initialization for sparse feature tracks. The coarse feature positions are then refined using triplet image patches from the refer-ence, previous, and current frames to improve localization accuracy. Fixing the reference patch at track initialization provides a stable reference throughout the lifetime of a track, helping suppress drift accumulation from recursive frame-to-frame tracking. arXiv:2608.24544v1 [cs.CV] 25 Aug 2026 Beyond accurate feature tracking, KLTNet also predicts anisotropic confidence weights trained under multi-view ge-ometric constraints through differentiable triangulation. The learned weights provide relative directional weighting for feature observations and can be used for adaptive observation weighting in compatible VIO estimators. We validate KLTNet by integrating it into VINS-Mono and OpenVINS and evaluating it on multiple public datasets and a self-collected low-texture dataset. Experimental results show improved feature tracking accuracy and robustness, as well as lower odometry errors across both VIO systems. KLTNet also achieves real-time tracking on an NVIDIA Jetson AGX Orin. Our main contributions are summarized as follows:  
+
+> •
+
+We propose KLTNet, a lightweight learning-based, plug-and-play sparse feature tracker with a coarse-to-fine, dense-to-sparse architecture. It combines global dense-flow initialization with triplet-patch refinement to improve tracking robustness, accuracy, and temporal consistency.  
+
+> •
+
+We introduce differentiable multi-view triangulation for learning anisotropic observation weights, enabling adap-tive feature weighting in compatible VIO estimators.  
+
+> •
+
+We integrate KLTNet into VINS-Mono and OpenVINS and demonstrate improved odometry accuracy over the classical KLT tracker. With VINS-Mono, KLTNet re-duces the average absolute trajectory error by 34% on EuRoC and 49% on TUM-VI, while maintaining real-time performance on a resource-constrained platform. II. R ELATED WORK 
+
+Feature-based VIO systems commonly establish visual correspondences through descriptor matching or direct sparse tracking. Descriptor-based systems such as ORB-SLAM3 [7] detect and match local features across images. In contrast, lightweight VIO systems such as OpenVINS [8], MSCKF [9], and VINS-Mono [10] commonly use KLT [1] to propa-gate sparse feature points between consecutive frames. KLT is efficient and accurate for frame-to-frame tracking, making it well suited to lightweight VIO front ends. Several methods improve sparse feature tracking while retaining this formulation. Bouguet [11] introduces a coarse-to-fine pyramid structure to improve the robustness of KLT under larger motion. LET-VINS [12] applies KLT on learned feature maps to relax the brightness constancy assumption. SFVO [13] extracts local patches from dense feature maps and uses CNNs to predict sparse point motion. These meth-ods improve sparse tracking through pyramid processing or learned feature representations. In comparison, KLTNet additionally uses dense optical flow to provide global motion cues before sparse refinement. Dense optical flow exploits global image context and has achieved substantial improvements with learning-based methods. RAFT [2] constructs all-pairs correlations and recurrent refinement to estimate dense flow, while SEA-RAFT [3] further improves flow accuracy and efficiency. These methods estimate dense correspondence between im-age pairs and provide strong global motion cues. In KLTNet, dense flow is used only to initialize sparse feature positions, while the final positions are obtained through triplet-patch refinement with a fixed reference patch to improve tracking accuracy and temporal consistency. Multi-frame visual estimation provides another way to improve temporal consistency. DROID-SLAM [4] jointly op-timizes dense flow and bundle adjustment, while DPVO [5] uses sparse deep feature patches to reduce the scale of fea-ture correspondence and bundle adjustment. DVI-SLAM [6] combines learned visual measurements with visual-inertial estimation. These methods improve temporal consistency through joint front-end and back-end estimation, but their visual front ends are closely coupled with the corresponding estimation systems. In contrast, KLTNet is designed as a standalone sparse tracker that can replace the classical KLT tracker in existing KLT-based VIO systems. Learned observation weighting has also been explored in visual estimation. Uncertainty-aware visual-inertial estima-tion is studied in [14], while [15] learns correspondence uncertainty through differentiable nonlinear least squares for relative pose estimation. MAC-VO [16] predicts metrics-aware covariance for stereo visual odometry. These meth-ods model uncertainty or covariance under their respective estimation formulations. KLTNet instead predicts anisotropic confidence weights for sparse feature observations and super-vises them through differentiable multi-view triangulation. The predicted weights are interpreted as anisotropic observa-tion weights rather than metrically calibrated uncertainty, and can be used for adaptive observation weighting in compatible VIO estimators. III. M ETHOD 
+
+In this section, we introduce KLTNet, a lightweight learning-based, plug-and-play sparse feature tracker designed to replace the classical KLT tracker in KLT-based VIO sys-tems. It consists of a CoarseFlowNet for global robustness and a TriPatchRefiner that improves tracking accuracy. Ad-ditionally, we introduce a differentiable triangulation strategy to learn confidence weights, which can be used for adaptive observation weighting in compatible VIO estimators. 
+
+A. Coarse Dense Flow Initialization 
+
+The classical KLT tracker relies on local image patches, making it susceptible to failure in low-texture environments or rapid motion. In contrast, dense optical flow leverages global image context, providing greater robustness at the expense of higher computational cost. Specifically, the ac-curacy of flow improves with image resolution, yet the computational cost of constructing the cost volume increases quadratically. Since our method follows a coarse-to-fine ar-chitecture, highly accurate flow estimation is not required at the initial stage, allowing us to reduce image resolution and model complexity for efficiency. To this end, we adapt SEA-RAFT into a lightweight network named CoarseFlowNet, specifically designed for low-resolution inputs. We then PriorEnc 
+
+> Feat
+> Enc
+> CxtEnc
+> Corr
+> Enc
+
+TriPatchRefiner 
+
+> FEN
+> CEN
+> cost volume
+> x N
+> bilinear
+> sampling
+> Resize
+
+CoarseFlowNet 
+
+> upsampling
+
+CoarseFlowNet 
+
+TriPatchRefiner 
+
+> c
+> RNN
+> flow prior
+> cost volume
+> Flow
+> Dec
+> Conf
+> Dec
+> concatenate
+
+KLTNet 
+
+> extract patch X
+> around point p
+> from image I
+> add
+> forward flow
+
+(c) 
+
+(b) (a)                                       
+
+> triplet patch
+> wwFig. 2. (a) Overview of the KLTNet tracker for sparse feature tracking, illustrated with a single point for clarity. Given a feature p0with its reference patch
+> X0, and its tracked position pj−1with corresponding patch Xj−1,CoarseFlowNet first estimates a coarse flow fcoarse between previous frame Ij−1and the current frame Ijto predict an initial position pcoarse
+> j. The TriPatchRefiner then processes the triplet image patch (X0,Xj−1,Xj), where Xjis extracted around pcoarse
+> j, along with flow priors to regress a fine offset ∆fjand a confidence weight matrix Wj. The final tracked feature position is obtained by adding the refined offset to the initial prediction. (b) CoarseFlowNet architecture. It downscales input images, extracts features using FEN and CEN, constructs a cost volume, and iteratively refines flow using an RNN, followed by upsampling and bilinear sampling to get the coarse flow at the tracked point. (c) TriPatchRefiner architecture. It utilizes FeatEnc to encode triplet image patches. CorrEnc processes cost volumes constructed between patch features. CxtEnc encodes context from patch Xj, and PriorEnc encodes flow priors. The concatenated features are fed to FlowDec and ConfDec to predict offset and confidence weights, respectively.
+
+extract sparse flow from the resulting coarse dense flow as an initial input for subsequent refinement. Specifically, as shown in Fig. 2(b), given two consecutive input images (Ij−1, Ij), we first downscale them to 1/4 of their original resolution to reduce computational overhead. A Feature Extraction Network (FEN) is then used to extract 128-channel feature maps at 1/16 of original image resolu-tion. Based on these features, we construct a two-level 4D cost volume by pooling Ij’s feature maps at strides of 1 and 2 and computing all-pairs correlations with Ij−1’s feature maps. Meanwhile, a Context Encoder Network (CEN) takes image 
+
+Ij−1 as input and outputs context feature maps, which are injected into a lightweight depthwise-separable convolutional RNN to guide the decoding of the cost volume. The RNN performs four update iterations and outputs the optical flow at 1/16 resolution, which is then upsampled to 1/4 resolution using a learnable convex upsampling module. To initialize feature tracking, we employ bilinear interpolation to extract the sparse optical flow f coarse  
+
+> j
+
+at specified feature positions 
+
+p j−1 from the previous frame Ij−1, providing their initial positions in the current frame Ij.
+
+B. Fine Sparse Triplet-Patch Refinement 
+
+While dense optical flow provides robust frame-to-frame initialization, recursively propagating pairwise flow estimates can accumulate errors over long feature tracks. Inspired by KLT’s local patch alignment, we introduce a triplet-patch refiner that additionally incorporates a fixed reference patch to provide a long-term anchor against drift. Specifically, as shown in Fig. 2(a), when a feature p0 is first detected in frame I0, an r × r image patch X0 centered at p0 is extracted and stored as a reference patch. As tracking progresses, in frame Ij−1, the tracked feature p j−1
+
+is associated with a previous patch Xj−1, extracted in the same manner. For the current frame Ij, the initial estimate of the tracked feature pcoarse  
+
+> j
+
+is predicted as p j−1 + f coarse  
+
+> j
+
+,where f coarse  
+
+> j
+
+is the sparse optical flow from CoarseFlowNet, and a current patch Xj is then extracted around pcoarse  
+
+> j
+
+. The triplet (X0, Xj−1, Xj) is then encoded by a shared feature encoder (FeatEnc) into feature maps (F0, Fj−1, Fj). Two 4D cost volumes are computed between the pairs (F0, Fj−1) and 
+
+(F0, Fj) respectively, which are compressed into a correlation vector zcorr ∈ R64 via a correlation encoder (CorrEnc). Mean-while, local appearance and context from Xj are encoded as a context vector zcxt ∈ R32 through a context encoder (CxtEnc), while the flow priors f coarse  
+
+> j
+
+and f prev  
+
+> j
+
+, where 
+
+f prev  
+
+> j
+
+≜ p j−1 − p j−2 serves as a historical motion prior, are embedded as zprior ∈ R32 . These vectors are concatenated and fed into two parallel MLP-based decoders: FlowDec predicts the offset ∆ f j for the current patch Xj, while ConfDec predicts a positive-definite anisotropic weight matrix Wj
+
+associated with the current feature observation. The final refined feature position is p j = pcoarse  
+
+> j
+
++ ∆ f j.Since feature-based VIO typically assumes that the tracked features correspond to static scene points, we extract X0 at track initialization and keep it fixed throughout the track’s lifetime, rather than continuously updating it as in object tracking. The fixed X0 provides a stable anchor that helps constrain accumulated tracking errors beyond frame-to-frame matching alone. Furthermore, since each feature is tracked independently with its own reference patch, the tracker is compatible with the track-based feature management used by conventional VIO systems. C. Learning Confidence Weights via Differentiable Triangu-lation 
+
+To align with the track-based feature management com-monly used in conventional VIO, KLTNet predicts per-observation confidence weights and supervises them through differentiable multi-view triangulation within each feature track. Observations of the same feature are coupled through a shared 3D point, while the network predicts a positive-definite 2 ×2 matrix W to modulate their relative contribution and directional weighting. During training, the tracker is recursively applied over 
+
+N consecutive frames. For j = 1, . . . , N − 1, the tracked feature forms the triplet (X0, Xj−1, Xj). From each triplet, the TriPatchRefiner parameterized by θ predicts an offset ∆ f j|θ
+
+and a confidence weight matrix Wj|θ , yielding the refined position p j|θ = [ u j|θ , v j|θ ]⊤. For geometric supervision, we convert the refined positions to normalized image coordinates 
+
+x j|θ using the camera intrinsics. Given camera poses (R j,t j),we define the normalized projection matrices Mj = [ R j|t j] ∈
+
+R3×4. We estimate the corresponding 3D point Pθ in two stages. (1) DLT initialization. Each predicted p j|θ defines aviewing ray in 3D space, and rays of the same feature track should intersect at a common point. This multi-view constraint is equivalent to the collinearity condition 
+
+[x⊤ 
+
+> j|θ
+
+, 1]⊤ × (Mj[P⊤ 
+
+> θ
+
+, 1]⊤) = 0. Following the Direct Linear Transform (DLT), expanding the cross product yields two linearly independent constraints. Stacking these equations for all views yields a homogeneous system, which is solved via SVD to obtain an initial estimate P(0) 
+
+> θ
+
+.(2) Confidence-weighted nonlinear refinement. We further refine the 3D point using the weighted reprojection objective: 
+
+E(Pθ ) = 
+
+> N−1
+
+# ∑
+
+> j=1
+
+ x j|θ − Π j(Pθ )⊤ Wj|θ
+
+ x j|θ − Π j(Pθ ) , (1) where Π j(·) denotes perspective projection onto the normal-ized image plane. Starting from the DLT initialization, we perform two damped Gauss–Newton iterations on Eq. (1) and denote the resulting refined point as P∗ 
+
+> θ
+
+. The iterations use the normal matrix ∑ j J⊤ 
+
+> j
+
+Wj|θ Jj + λ I, where Jj is the reprojection Jacobian and λ = 0.1 is fixed for all training samples. With the damping factor λ fixed, globally scaling the predicted weights changes the effective damping of the finite-step solver, making the global scale of the weights identifiable during training. To obtain a positive-definite con-fidence weight matrix Wj|θ , the raw network outputs ( ˜s, ˜α, ˜β )
+
+are mapped to s = ( 1+| ˜s|)sign ( ˜s), α = ˜α, and β = ( 1+e− ˜β )−1
+
+as in [15]. We parameterize the weight matrix as: 
+
+W (s, α, β ) = s R α diag (β , 1 − β ) R⊤ 
+
+> α
+
+, (2) where Rα ∈ SO (2) is the rotation matrix. The predicted con-fidence weights are learned through differentiable multi-view triangulation and are interpreted as anisotropic observation weights rather than metrically calibrated uncertainty. The predicted weights can therefore downweight observations with unreliable local appearance, such as those affected by viewpoint or illumination changes. For downstream VIO, we normalize the predicted scale s by the median scale computed over the training set and discard observations whose normal-ized scale falls below a fixed empirical threshold or whose refined positions lie outside the image bounds. The refined 3D point P∗ 
+
+> θ
+
+is then used to compute the triangulation loss: 
+
+Ltri (θ ) = 1
+
+N − 1
+
+> N−1
+
+# ∑
+
+> j=1
+
+∥x j|θ − Π j(P∗ 
+
+> θ
+
+)∥1. (3) Because both the predicted feature positions and confi-dence weights determine P∗ 
+
+> θ
+
+, backpropagating through the differentiable triangulation jointly supervises both outputs. The shared 3D point couples observations within each track and encourages the network to learn observation weighting that is consistent with multi-view geometry. 
+
+D. Training and Implementation Details 
+
+We train KLTNet on the TartanAir [17] dataset in two stages. First, CoarseFlowNet is trained at 1 /4 image resolu-tion following SEA-RAFT [3] with the Mixture-of-Laplace loss. Second, CoarseFlowNet is frozen and TriPatchRefiner is trained on 24-frame sequences. Features are detected in the first frame using OpenCV’s Good Features to Track (GFTT), and ground-truth feature tracks pgt are generated using depth and camera poses. Tracks with insufficient accumulated parallax are excluded, resulting in approximately 1.3 million valid tracks. During TriPatchRefiner training, the refined feature predic-tions are sequentially propagated throughout the sequence. For each j = 2, . . . , N − 1, the previous prediction p j−1 is detached and used to obtain the coarse position pcoarse  
+
+> j
+
+.A fixed 31 × 31 reference patch X0 is extracted at track initialization, while Xj−1 and Xj are extracted around p j−1
+
+and pcoarse  
+
+> j
+
+, respectively. TriPatchRefiner then predicts the refinement offset ∆ f j|θ and confidence weight Wj|θ . Sequen-tial propagation exposes the refiner to accumulated tracking errors in the forward pass, while detaching p j−1 at each step prevents backpropagation through the full temporal chain. The refinement offset is supervised by Loffset and the overall objective is: 
+
+L (θ ) = 1
+
+N − 1
+
+> N−1
+
+# ∑
+
+> j=1
+
+∥| (pgt  
+
+> j
+
+− pcoarse  
+
+> j
+
+) − ∆ f j|θ || 1
+
+| {z } 
+
+> Loffset (θ)
+
++λtri Ltri (θ ),
+
+(4) where λtri = 320. IV. E XPERIMENTS 
+
+In this section, we first evaluate the feature tracking accu-racy over consecutive multi-frame sequences. Subsequently, we select VINS-Mono and OpenVINS as two representative monocular VIO systems. We integrate KLTNet into both systems by replacing their native KLT trackers. We validate the effectiveness of our method on multiple public datasets and a self-collected low-texture dataset. Threshold(px)                  
+
+> KLTNet (Ours)
+> KLT
+> SEA-RAFT-Sparse
+> RAFT -Sparse
+> Tracking Precision
+> Temporal Tracking  Error  (px)
+> Frame Interval
+> KLTNet (Ours)
+> KLT
+> SEA -RAFT -Sparse
+> RAFT -Sparse
+> GT
+> (a) (c) (b) KLTNet (Ours)
+> KLT
+> SEA -RAFT -Sparse
+> RAFT -Sparse
+> 12345678910 0-40 40 -80 80 -120 120 -160 160 -200
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 5
+> 10
+> 15
+> 20
+> 25 Fig. 3. Feature tracking evaluation on the Replica Dataset. (a) Tracking Precision: the percentage of all evaluated feature observations with tracking error below a specified pixel threshold. KLTNet consistently achieves the highest precision, especially at low error thresholds (1–3 pixels). (b) Temporal Tracking Error: distributions of tracking errors across five equal frame intervals of each 200-frame sub-sequence. Box plots show the median and quartiles of the tracking errors. KLTNet exhibits the slowest error growth over time. (c) Qualitative comparison of tracked feature positions across methods.
+
+All methods were evaluated on a system equipped with an Intel i9-10980X CPU, an NVIDIA A6000 GPU, and Ubuntu 20.04. We also evaluated our method on the embedded platform (NVIDIA Jetson AGX Orin) to assess its resource consumption and runtime efficiency. 
+
+A. Evaluation of feature tracking 
+
+To evaluate feature tracking accuracy and long-term sta-bility, we conduct experiments on the synthetic dataset Replica [18], which comprises 8 indoor scenes with RGB-D sequences of 2000 frames each. For our evaluation, each sequence is divided into 200-frame sub-sequences. Features are initially detected in the first frame of each sub-sequence using the GFTT detector. Ground-truth 2D feature tracks are generated by reprojecting the corresponding 3D points (back-projected using ground-truth depth and camera poses) into each subsequent frame. Ground-truth tracks that become occluded or leave the image boundary are filtered out, resulting in an evaluation set of 5,273 tracks. We compare KLTNet with three baseline methods: (1) classical KLT tracker as implemented in OpenCV; (2) RAFT-Sparse, which samples sparse flow vectors via bi-linear interpolation from the dense flow estimated using the official RAFT checkpoint trained on FlyingChairs and FlyingThings3D; and (3) SEA-RAFT-Sparse, which adopts the same sparse sampling strategy using the official SEA-RAFT [3] checkpoint trained on TartanAir, FlyingChairs, and FlyingThings3D. RAFT and SEA-RAFT operate at full res-olution, whereas KLTNet employs 1/4 resolution for Coarse-FlowNet initialization and full resolution for TriPatchRefiner. At each frame, the tracking error is computed as the Euclidean distance between the feature position propagated by each tracker and its ground-truth position. We evaluate performance using two metrics: (i) Tracking Precision, the percentage of all evaluated feature observations with error below a given pixel threshold; and (ii) Temporal Tracking Error, obtained by dividing each 200-frame sequence into five equal temporal intervals and aggregating the tracking-error distribution within each interval. As shown in Fig. 3(a), KLTNet achieves consistently higher tracking accuracy across all evaluated error thresh-olds. Notably at low error thresholds (1–3 pixels), KLTNet demonstrates a substantially higher percentage of accurately tracked feature positions compared to the baseline methods. While SEA-RAFT-Sparse improves upon RAFT-Sparse due to its enhanced underlying dense optical flow, it exhibits lower precision than the classical KLT tracker at low error thresholds. However, SEA-RAFT-Sparse’s tracking precision begins to surpass that of KLT as the error tolerance is relaxed, suggesting greater robustness against large tracking errors. Fig. 3(b) illustrates the temporal distribution of tracking errors. Because feature positions are propagated recursively, tracking errors can accumulate over time. However, KLTNet exhibits a substantially slower rate of error accumulation than the baseline methods, as demonstrated by its median error remaining low and stable throughout the sequence. We attribute this improved stability to the fixed reference patch 
+
+X0, which helps mitigate accumulated track drift. This is further supported by the reference-patch ablation in Table IV. 
+
+B. Evaluation of monocular VIO 
+
+To evaluate the odometry accuracy of KLTNet integrated into KLT-based visual-inertial odometry frameworks, we conduct controlled experiments on two public datasets: Eu-RoC [20] and TUM-VI [21]. We analyze three baseline tracking methods: classical KLT, RAFT-Sparse, and SEA-RAFT-Sparse. We assess KLTNet by integrating it into two distinct VIO systems, VINS-Mono (optimization-based) and OpenVINS (filter-based), replacing their native KLT trackers with the refined feature positions predicted by KLTNet. For VINS-Mono, the predicted confidence weights are used to weight the 2D visual reprojection residuals in the normal-ized image plane, while retaining the original measurement scaling and replacing only the default fixed isotropic weight-ing. For OpenVINS, we retain its native measurement-noise model and use the predicted confidence only for observation rejection. Loop closure is disabled for all experiments. We report the Absolute Trajectory Error (ATE), calculated as RMSE and averaged over five runs. 
+
+Results on EuRoC. As shown in Table I, KLTNet demonstrates noticeable performance improvements on the EuRoC dataset. In the VINS-Mono framework, it achieves a 34% reduction in average ATE (from 0 .187 to 0 .123) over classical KLT, particularly in challenging sequences such as MH05 and V103. SEA-RAFT-Sparse reduces the average ATE by 11% relative to classical KLT (0 .166 vs. 0 .187), TABLE I ABSOLUTE TRAJECTORY ERROR (ATE) C OMPARISON ON THE EUROC D ATASET . R ESULTS ARE IN METERS . B OLD INDICATES BEST PER BLOCK .
+
+Method Tracker MH01 MH02 MH03 MH04 MH05 V101 V102 V103 V201 V202 V203 Average 
+
+VINS-Mono KLT 0.157 0.179 0.195 0.316 0.302 0.089 0.113 0.188 0.086 0.154 0.277 0.187 RAFT-Sparse 0.218 0.248 0.224 0.369 0.305 0.076 0.089 0.129 0.110 0.089 0.236 0.190 SEA-RAFT-Sparse 0.221 0.158 0.223 0.278 0.324 0.098 0.070 0.100 0.084 0.100 0.166 0.166 KLTNet (Ours) 0.092 0.088 0.162 0.233 0.207 0.075 0.070 0.074 0.089 0.110 0.149 0.123 
+
+OpenVINS KLT 0.099 0.206 0.150 0.188 0.508 0.069 0.058 0.074 0.105 0.060 0.122 0.149 RAFT-Sparse 0.239 0.310 0.235 0.404 0.636 0.073 0.077 0.093 0.112 0.084 0.153 0.219 SEA-RAFT-Sparse 0.238 0.209 0.157 0.399 0.636 0.084 0.068 0.055 0.105 0.074 0.115 0.194 KLTNet (Ours) 0.092 0.099 0.107 0.143 0.187 0.056 0.052 0.062 0.097 0.064 0.125 0.099 
+
+LET-VINS [12] Learned Feature + KLT 0.195 0.113 0.148 0.192 0.352 0.077 0.121 0.115 0.097 0.150 0.296 0.169 DVI-SLAM [6] Dense Flow 0.063 0.083 0.101 0.187 0.163 0.074 0.114 0.083 0.091 0.045 0.072 0.098 TABLE II ABSOLUTE TRAJECTORY ERROR (ATE) C OMPARISON ON THE TUM-VI DATASET . R ESULTS ARE IN METERS . B OLD INDICATES BEST PER BLOCK .                                                                        
+
+> Method Tracker Room1 Room2 Room3 Room4 Room5 Room6 Average
+> VINS-Mono KLT 0.067 0.069 0.121 0.047 0.203 0.075 0.097 RAFT-Sparse 0.120 0.088 0.095 0.074 0.069 0.130 0.096 SEA-RAFT-Sparse 0.067 0.058 0.120 0.047 0.032 0.109 0.072 KLTNet (Ours) 0.052 0.047 0.061 0.029 0.081 0.026 0.049
+> OpenVINS KLT 0.055 0.103 0.081 0.041 0.067 0.086 0.072 RAFT-Sparse 0.116 0.179 0.102 0.098 0.123 0.096 0.119 SEA-RAFT-Sparse 0.086 0.120 0.146 0.029 0.074 0.117 0.095 KLTNet (Ours) 0.047 0.060 0.063 0.017 0.064 0.088 0.057
+> DM-VIO [19] Photometric 0.03 0.13 0.09 0.04 0.06 0.02 0.061
+
+showing the advantage of learning-based dense flow on more challenging sequences. However, RAFT-Sparse and SEA-RAFT-Sparse still underperform KLT on some sequences because, as Fig. 3(a) shows, dense flow is more robust but less precise than KLT at low error thresholds. Since VIO is sensitive to tracking precision, these small per-frame errors can accumulate over long sequences and lead to larger pose errors, especially on MH01, one of the longest-duration EuRoC sequences with slow camera motion. KLTNet com-bines the robustness of dense flow with high-precision refinement, while the learned confidence weights provide additional gains through adaptive observation weighting. Their individual contributions are analyzed in Section IV-C. In the OpenVINS framework, KLTNet outperforms the classical KLT by 33% (from 0 .149 to 0 .099), demonstrating improvements across different VIO systems. When compared with the additional learned VIO base-lines, the monocular OpenVINS integrated with KLTNet demonstrates a favorable balance of accuracy and efficiency. It achieves accuracy comparable to DVI-SLAM—a dense method employing dense optical flow, IMU factors, and bundle adjustment—while outperforming it in computational efficiency (see Sec. IV-E). 
+
+Results on TUM-VI. For the more challenging TUM-VI handheld dataset experiments (Table II), KLTNet further extends its performance advantages. Integrated with VINS-Mono, it achieves 49% lower average ATE than classical KLT, maintaining stable tracking in low-texture environments or rapid motion. Using KLTNet tracker, OpenVINS reduces the average ATE by approximately 20%, whereas using RAFT-Sparse or SEA-RAFT-Sparse leads to performance degradation. 
+
+TABLE III ABLATION STUDY OF KLTN ET COMPONENTS INTEGRATED WITH 
+
+VINS-M ONO ON EUROC. R ESULTS ARE THE AVERAGE ATE IN METERS OVER THE 11 SEQUENCES .                                                            
+
+> No. CoarseFlowNet TriPatchRefiner Observation Weight Weight Supervision Max Points Avg. ATE
+> R1 ✓×Fixed Isotropic -150 0.317 R2 ✓✓Fixed Isotropic -150 0.153 R3 ✓✓Isotropic Reprojection 150 0.139 R4 ✓✓Anisotropic Reprojection 150 0.140 R5 ✓✓Isotropic Triangulation 150 0.131 R6 ✓✓Anisotropic Triangulation 150 0.123 R7 ✓✓Anisotropic Triangulation 100 0.144 R8 ✓✓Anisotropic Triangulation 50 0.158 R9 ✓✓Anisotropic Triangulation 25 0.206
+
+TABLE IV IMPACT OF THE REFERENCE PATCH X0 ON TRACKING ACCURACY 
+
+(R EPLICA ) AND VIO ACCURACY (E UROC). 
+
+Input Patches Median Tracking Error (px) VIO ATE (m) 
+
+Short interval Long interval VINS-Mono OpenVINS two-patch ( Xj−1, Xj ) 0.83 1.22 0.135 0.134 triplet-patch ( X0, Xj−1, Xj ) 0.25 0.59 0.123 0.099 
+
+C. Ablation Study 
+
+To further analyze the contribution of the major compo-nents, we conduct an ablation study on the EuRoC dataset by integrating KLTNet into the VINS-Mono framework. 
+
+Impact of the Patch Refinement. To evaluate the effect of patch refinement, Table III-R1 and Table III-R2 both use VINS-Mono’s default fixed weights. Table III-R1 uses only CoarseFlowNet, which preserves system stability but yields imprecise tracking and a higher ATE. Table III-R2 further incorporates TriPatchRefiner, forming the full KLTNet fea-ture tracker. Adding TriPatchRefiner substantially reduces ATE, demonstrating its substantial contribution to the overall tracking performance. 
+
+Impact of Anisotropic Confidence Weights. We exam-ine how the representation and supervision of confidence weights jointly affect VIO accuracy. An NLL-based baseline (Table III-R3) models the 2D position as a Gaussian with scalar variance supervised by a reprojection-only negative log-likelihood against ground truth. The predicted variance is converted into an isotropic residual weight for bundle adjust-ment, yielding a marginal improvement over fixed weight-ing. Extending the same reprojection-based supervision to an anisotropic weighting formulation (Table III-R4) yields comparable performance, suggesting that the additional di-rectional degrees of freedom do not translate into measurable VIO gains under this training setup. In comparison, using differentiable multi-view triangulation supervision improves TABLE V TRACKER COMPARISON WITHIN VINS-M ONO ON KITTI-360 AND THE ILLUMINATION -CHANGE SUBSET OF UMA-VI. KITTI-360: trel (%) /  
+
+> rrel (◦/100 m); UMA-VI: START -TO -END ERRORS IN METERS . B EST RESULTS ARE IN BOLD .
+
+KITTI-360 UMA-VI Tracker 00 02 03 04 05 06 09 ∗ 10 C1 C2 C3 T1 T2 
+
+KLT 1.17/0.15 1.10/0.22 1.33/ 0.10 1.02/0.21 1.02/0.26 0.99/0.17 1.06/0.14 2.00/0.24 4.50 1.41 0.81 0.24 0.22 SEA-RAFT-Sparse 1.99/0.21 1.30/0.27 1.08/0.15 1.86/0.24 1.09/0.23 1.34/0.21 1.60/0.20 1.88/0.27 7.89 1.07 0.18 0.27 0.41 KLTNet (Ours) 0.72 /0.12 0.65 /0.19 0.78 /0.11 0.82 /0.18 0.88 /0.22 0.81 /0.15 0.69 /0.13 1.65 /0.21 1.93 0.49 0.16 0.18 0.16  
+
+> ∗Only the first 923 s are used due to an IMU data gap. C1–C3: conference-csc1–3; T1–T2: third-floor-csc1–2.
+
+the isotropic formulation (Table III-R5) over its reprojection-based counterpart, while the anisotropic triangulation variant (Table III-R6) achieves the lowest ATE, further improving over the fixed-weight KLTNet configuration in Table III-R2. 
+
+Impact of the Number of Tracked Points. We vary the maximum number of tracked feature points per frame from 150 down to 25 (Table III-R7–R9). As expected, fewer points cause a gradual increase in ATE, but even with as few as 25 points the system still runs reliably and achieves reasonable accuracy, benefiting from KLTNet’s strong tracking precision and confidence weights. 
+
+Impact of the Reference Patch X0. To isolate the con-tribution of X0, we compare the full TriPatchRefiner with a two-patch variant using only Xj−1, Xj (single cost volume, other components unchanged). Table IV reports the median tracking error on Replica (short: 0–40 frames; long: 160–200 frames) and the average EuRoC ATE under VINS-Mono and OpenVINS. Removing X0 raises the tracking error at both intervals, and more markedly so at long intervals, confirming that X0 primarily exposes accumulated tracking errors that are not observable from frame-to-frame matching alone. The improvement in tracking consistency translates to lower VIO ATE on both VIO systems. 
+
+D. Robustness Evaluation 
+
+To evaluate robustness beyond indoor benchmarks, we conduct controlled tracker comparisons within VINS-Mono on KITTI-360 [22] and the illumination-change subset of UMA-VI [23], using the same VINS-Mono configuration as in Section IV-B. As shown in Table V, KLTNet achieves the lowest relative translation error on all eight KITTI-360 sequences and the lowest relative rotation error on seven, reducing the mean trel by 27.8% over KLT. On UMA-VI, where ground truth is available only at the beginning and end of each sequence, KLTNet obtains the lowest start-to-end error on all five sequences. These results demonstrate robust generalization to long outdoor trajectories and abrupt illu-mination changes. We next focus on the low-texture indoor setting, where classical KLT tracking can degrade because local image structure is limited. We collected a dataset in a low-texture indoor corridor with uniform white walls (Fig. 4(a)). Data was acquired using a handheld platform (Fig. 4(b)) equipped with an Intel RealSense D455 camera (monocular + IMU). Ground-truth trajectories were obtained using a total station. We integrated our tracker into VINS-Mono (denoted KLTNet-VINS-Mono) and benchmarked it KLTNet (ours) 
+
+> KLT
+> DM -VIO
+> DPVO
+> GT
+> Start Point
+> End Point
+
+(a)  (b)                         
+
+> (c) seq1
+> (d) seq2
+> (e) seq3
+> (f)
+> seq1 seq2 seq3
+> 01234567
+> 01234567
+> 01234567
+> y(m)
+> y(m)
+> y(m)
+> x(m) x(m) x(m)
+> 0.5
+> 0.0
+> -0.5
+> 0.5
+> 0.0
+> -0.5
+> 0.5
+> 0.0
+> -0.5
+> 0.4
+> 0.3
+> 0.2
+> 0.1
+> 0.0
+> ATE(m)
+> Fig. 4. VIO performance on a self-collected low-texture dataset. (a) A view of the challenging low-texture environment. (b) The handheld data acquisition platform. (c)-(e) Estimated trajectories for KLTNet-VINS-Mono compared against KLT-VINS-Mono, DM-VIO, and DPVO. (f) Absolute Trajectory Error (ATE) in meters. Note that DM-VIO failed to track in seq2.
+
+against the original system (KLT-VINS-Mono), DM-VIO, and DPVO. As shown by the ATE in Fig. 4(f), KLTNet-VINS-Mono consistently achieves the lowest error across all sequences. While most methods perform adequately in the simple back-and-forth motion of seq1 (Fig. 4(c)), the advantages of KLTNet become evident as motion complexity increases. In seq2 (Fig. 4(d)), which involves forward translation with continuous pitch and roll rotations, DM-VIO fails to track, and the baseline KLT-VINS-Mono accumulates substantial drift. Similarly, during the complex serpentine motion with sharp turns in seq3 (Fig. 4(e)), both KLT-VINS-Mono and DPVO exhibit large drift. In contrast, KLTNet-VINS-Mono maintains stable and accurate tracking in all cases. 
+
+E. Resource Consumption 
+
+Practical VIO deployment, especially on embedded plat-forms, demands an efficient visual front end. We therefore evaluate the runtime and GPU memory consumption of the GPU Memory (GB) FPS Fig. 5. Throughput and GPU Memory Comparison. KLTNet, RAFT-Sparse, and SEA-RAFT-Sparse are evaluated within the VINS-Mono visual front end, with throughput measured for the complete front-end pipeline. KLTNet is evaluated on a PC (NVIDIA A6000; LibTorch without TensorRT) and a Jetson AGX Orin (with TensorRT) with maximum track counts of 25, 50, 100, and 150. End-to-end learned odometry systems are shown as system-level reference points. 
+
+VINS-Mono visual front end using KLTNet, RAFT-Sparse, and SEA-RAFT-Sparse as the feature tracker. Fig. 5 reports results for KLTNet on both a PC (NVIDIA A6000) and an embedded Jetson AGX Orin with different maximum track counts. KLTNet runs in C++ with LibTorch on the PC without TensorRT acceleration, while CoarseFlowNet and TriPatchRefiner are accelerated with TensorRT on the Jetson. RAFT-Sparse and SEA-RAFT-Sparse are included as standalone learned tracking baselines. End-to-end learned odometry systems, including DROID-VO (DROID-SLAM in odometry mode), DPVO, and DVI-SLAM, are also shown as system-level reference points rather than direct tracker baselines. KLTNet achieves real-time tracking on the Jetson AGX Orin with low GPU memory consumption, supporting its use in resource-constrained VIO deployments. V. CONCLUSIONS We present KLTNet, a lightweight, learning-based, plug-and-play sparse feature tracker designed to replace the clas-sical KLT tracker. Its coarse-to-fine architecture combines robust dense flow initialization with precise triplet-patch refinement. A differentiable triangulation strategy learns con-fidence weights, which can be used for adaptive observation weighting in compatible KLT-based VIO systems. Experi-ments across multiple datasets and VIO frameworks demon-strate improved accuracy and robustness while maintaining real-time performance on embedded platforms. As a coarse-to-fine tracker, KLTNet relies on the coarse flow to initialize features within the capture range of the local refinement stage, and the current formulation assumes predominantly static scene points. Future work will explore more robust re-initialization and dynamic-scene handling by exploiting the dense motion cues already available from CoarseFlowNet, as well as extending KLTNet to multi-camera systems. REFERENCES [1] C. Tomasi and T. Kanade, “Detection and tracking of point features,” Carnegie Mellon University, Tech. Rep. CMU-CS-91-132, Apr. 1991. [2] Z. Teed and J. Deng, “Raft: Recurrent all-pairs field transforms for optical flow,” in Computer Vision–ECCV 2020: 16th European Conference, Glasgow, UK, August 23–28, 2020, Proceedings, Part II 16 . Springer, 2020, pp. 402–419. [3] Y. Wang, L. Lipson, and J. Deng, “Sea-raft: Simple, efficient, accurate raft for optical flow,” in European Conference on Computer Vision .Springer, 2024, pp. 36–54. [4] Z. Teed and J. Deng, “Droid-slam: Deep visual slam for monocular, stereo, and rgb-d cameras,” Advances in neural information processing systems , vol. 34, pp. 16 558–16 569, 2021. [5] Z. Teed, L. Lipson, and J. Deng, “Deep patch visual odometry,” 
+
+Advances in Neural Information Processing Systems , vol. 36, 2024. [6] X. Peng, Z. Liu, W. Li, P. Tan, S. Y. Cho, and Q. Wang, “Dvi-slam: A dual visual inertial slam network,” in 2024 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2024, pp. 12 020–12 026. [7] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. Montiel, and J. D. Tard´ os, “Orb-slam3: An accurate open-source library for visual, visual–inertial, and multimap slam,” IEEE Transactions on Robotics ,vol. 37, no. 6, pp. 1874–1890, 2021. [8] P. Geneva, K. Eckenhoff, W. Lee, Y. Yang, and G. Huang, “Openvins: A research platform for visual-inertial estimation,” in 2020 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2020, pp. 4666–4672. [9] A. I. Mourikis and S. I. Roumeliotis, “A multi-state constraint kalman filter for vision-aided inertial navigation,” in Proceedings 2007 IEEE international conference on robotics and automation . IEEE, 2007, pp. 3565–3572. [10] T. Qin, P. Li, and S. Shen, “Vins-mono: A robust and versatile monoc-ular visual-inertial state estimator,” IEEE transactions on robotics ,vol. 34, no. 4, pp. 1004–1020, 2018. [11] J.-Y. Bouguet et al. , “Pyramidal implementation of the affine lucas kanade feature tracker description of the algorithm,” Intel corporation ,vol. 5, no. 1-10, p. 4, 2001. [12] Y. Lin, S. Wang, Y. Jiang, and B. Han, “Breaking of brightness consistency in optical flow with a lightweight cnn network,” IEEE Robotics and Automation Letters , 2024. [13] Q. Liu and B. Chen, “Robust visual odometry using sparse optical flow network,” Engineering Applications of Artificial Intelligence , vol. 116, p. 105471, 2022. [14] J. H. Jung, Y. Choe, and C. G. Park, “Photometric visual-inertial navigation with uncertainty-aware ensembles,” IEEE Transactions on Robotics , vol. 38, no. 4, pp. 2039–2052, 2022. [15] D. Muhle, L. Koestler, K. M. Jatavallabhula, and D. Cremers, “Learning correspondence uncertainty via differentiable nonlinear least squares,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , 2023, pp. 13 102–13 112. [16] Y. Qiu, Y. Chen, Z. Zhang, W. Wang, and S. Scherer, “Mac-vo: Metrics-aware covariance for learning-based stereo visual odometry,” in 2025 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2025, pp. 3803–3814. [17] W. Wang, D. Zhu, X. Wang, Y. Hu, Y. Qiu, C. Wang, Y. Hu, A. Kapoor, and S. Scherer, “Tartanair: A dataset to push the limits of visual slam,” in 2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2020, pp. 4909–4916. [18] J. Straub, T. Whelan, L. Ma, Y. Chen, E. Wijmans, S. Green, J. J. Engel, R. Mur-Artal, C. Ren, S. Verma et al. , “The replica dataset: A digital replica of indoor spaces,” arXiv preprint arXiv:1906.05797 ,2019. [19] L. Von Stumberg and D. Cremers, “Dm-vio: Delayed marginalization visual-inertial odometry,” IEEE Robotics and Automation Letters ,vol. 7, no. 2, pp. 1408–1415, 2022. [20] M. Burri, J. Nikolic, P. Gohl, T. Schneider, J. Rehder, S. Omari, M. W. Achtelik, and R. Siegwart, “The euroc micro aerial vehicle datasets,” 
+
+The International Journal of Robotics Research , vol. 35, no. 10, pp. 1157–1163, 2016. [21] D. Schubert, T. Goll, N. Demmel, V. Usenko, J. St¨ uckler, and D. Cre-mers, “The tum vi benchmark for evaluating visual-inertial odometry,” in 2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2018, pp. 1680–1687. [22] Y. Liao, J. Xie, and A. Geiger, “Kitti-360: A novel dataset and benchmarks for urban scene understanding in 2d and 3d,” IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 45, no. 3, pp. 3292–3310, 2022. [23] D. Zu˜ niga-No¨ el, A. Jaenal, R. Gomez-Ojeda, and J. Gonzalez-Jimenez, “The uma-vi dataset: Visual–inertial odometry in low-textured and dynamic illumination environments,” The International Journal of Robotics Research , vol. 39, no. 9, pp. 1052–1060, 2020.
