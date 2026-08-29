@@ -1,0 +1,287 @@
+Title: Contact-Aided Factor-Graph Localization for Underwater Sampling
+
+URL Source: https://arxiv.org/pdf/2608.26932v1
+
+Published Time: Fri, 28 Aug 2026 01:03:41 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Contact-Aided Factor-Graph Localization for Underwater Sampling 
+
+Michele Grimaldi 1, Yosaku Maeda 2, Hitoshi Kakami 2,Ignacio Carlucho 1, Yvan R. Petillot 1, and Tomoya Inoue 2
+
+Abstract — Accurate state estimation for autonomous un-derwater vehicles performing close-range seafloor sampling remains challenging. In low-altitude operation, down-looking cameras over featureless planar seabeds produce scale am-biguity, lateral degeneracy, and inconsistent feature tracking. Meanwhile, inertial–Doppler Velocity Log (DVL) fusion alone provides no mechanism for structural drift correction. We propose a Contact-Aided Factor-Graph Localization framework that treats physical interaction as an informative geometric constraint within a smoothing-based localization formulation. The method tightly fuses suction-based manipulator contact events with adaptive visual odometry, learned object detections and on-board sensors. Visual odometry relative-pose factors and landmark bearing-range factors are uncertainty-scaled according to inlier statistics to prevent visually weak frames from destabilizing the estimator, while contact events are modeled as high-confidence factors that induce implicit loop closures without appearance-based place recognition. Further-more, the system can fully initialize online during motion. Experimental evaluation in tanks, harbor, and simulation environments demonstrates that contact-induced constraints significantly reduce trajectory drift and improve object revisit accuracy compared to filtering-based navigation and contact-free graph formulations. These results highlight the role of embodied physical interaction as a localization primitive in perception-degraded underwater environments. 
+
+I. I NTRODUCTION 
+
+Autonomous underwater vehicles (AUVs) performing close-range seafloor sampling operate in severely perception-degraded conditions. GPS is unavailable, and navigation relies on inertial–DVL dead reckoning, which accumulates drift. Although visual SLAM has shown strong performance in terrestrial robotics, underwater imagery suffers from scat-tering, turbidity, low texture, and photometric distortion [1], [2]. These limitations are amplified in low-altitude, down-looking configurations typical of benthic sampling. The scene is predominantly planar and texture-sparse, rendering monocular visual odometry geometrically ill-conditioned: translation parallel to the seabed is weakly observable, metric scale is ambiguous without reliable altitude cues, and feature tracking is unstable. While visual landmarks can provide constraints, benthic organisms are small, sparsely distributed, and only briefly visible. Monocular range estimates are noisy, and re-identification is unreliable, yielding intermittent constraints that do not ensure persistent global consistency  
+
+> 1School of Engineering & Physical Sciences, Heriot-Watt University, Edinburgh, UK.
+
+m.grimaldi@hw.ac.uk 
+
+> 2Engineering Department, Japan Agency for Marine-Earth Science and Technology, Yokosuka, Japan.
+
+during manipulation. Accurate localization, however, is es-sential for object approach, suction-based grasping, and repeated sampling. The core challenge is therefore how to obtain structurally informative constraints in environments where conventional exteroceptive sensing is weak. We pro-pose to treat physical interaction as a localization primitive. When the AUV establishes suction contact with a ben-thic object, the end-effector creates a metrically grounded, viewpoint-invariant geometric constraint. We model these contact events as factors within a smoothing-based SLAM framework, allowing contact to induce implicit loop closures without appearance-based place recognition, as illustrated in Fig. 1. In perception-degraded underwater settings, physical interaction becomes a mechanism for drift mitigation and global consistency. We introduce a Contact-Aided Factor-Graph Localization framework that tightly fuses IMU, DVL, pressure, and magnetometer measurements with adaptive down-looking visual odometry, learned object detections, and manipulator contact constraints. The system addresses three challenges: 1) Planar visual degeneracy: Adaptive uncertainty scal-ing mitigates estimator inconsistency under weak monocular geometry. 2) Drift without natural loop closures: Suction contact is formulated as a high-confidence geometric factor that induces implicit loop closure. 3) Intermittent visual structure: A hybrid sliding-window strategy alternates between landmark-augmented and pose-only refinement to preserve real-time robustness. The system initializes fully online and runs incremen-tally using an iSAM2-based backend [3]. We validate the approach in physics-based simulation, tanks experiments, and harbor deployments. Results show that contact-induced constraints significantly reduce drift and improve object revisit accuracy compared to filtering-based navigation and contact-free graph formulations. Our main contributions are:  
+
+> •
+
+We formalize suction-based contact as a structurally informative factor that resolves observability limitations in low-texture underwater environments.  
+
+> •
+
+We develop a tightly coupled contact-aided smoothing framework for low-altitude AUV sampling missions.  
+
+> •
+
+We introduce degeneracy-aware visual uncertainty mod-eling and a hybrid real-time optimization strategy for intermittent visual structure. Together, these results demonstrate that deliberate physical arXiv:2608.26932v1 [cs.RO] 27 Aug 2026 Fig. 1: Suction-based implicit loop closure. (a) Visual–inertial odometry accumulates drift over time despite continuous visual and inertial constraints. (b) When the manipulator establishes suction contact, the contact point is modeled as a fixed landmark, anchoring the current pose with a high-confidence constraint. (c) This contact induces an implicit loop closure in the factor graph, propagating corrections through the trajectory and reducing global drift. interaction can substantially enhance localization robustness in perception-limited underwater domains. II. R ELATED WORK 
+
+Underwater state estimation is inherently more challenging than terrestrial SLAM due to the absence of GPS, limited visibility, and degraded proprioceptive sensing. Classical AUV navigation systems fuse inertial, DVL, and depth measurements using filtering or graph-based formulations to reduce dead-reckoning drift [4]. However, without reliable loop closures or strong exteroceptive cues, drift remains unavoidable. Visual SLAM has been widely explored in un-derwater robotics due to its low cost and rich environmental information. Empirical studies and surveys report substantial performance degradation underwater, caused by scattering, turbidity, low texture, and illumination variability [2], [5]. These effects result in unstable feature tracking, ambiguous relative pose estimates, and unreliable loop closure detection. The problem is exacerbated in low-altitude, down-looking configurations, where planar and repetitive seafloor imagery leads to geometric degeneracy and weak observability of lateral motion. Approaches to mitigate these issues include image enhancement, adaptive residual weighting, and tighter visual–inertial–depth coupling [6], [7]. While these methods improve robustness, they remain fundamentally exteroceptive and cannot guarantee persistent global consistency when vi-sual structure is weak or intermittent. To further enhance ro-bustness, several systems integrate additional sensing modal-ities. Tightly coupled acoustic–visual–inertial frameworks combine DVL, stereo cameras, and IMUs to operate under degraded visibility [8], and systems such as SVIn2 incor-porate sonar, visual, inertial, and depth measurements with loop closure and relocalization capabilities [9]. Although multi-modal fusion improves accuracy and consistency, these approaches still depend on environmental perceptual struc-ture and are therefore susceptible to observability limitations in texture-sparse benthic environments [10]. Contact-based SLAM has been explored in terrestrial robotic manipulation, where tactile or force feedback augments state estimation under visual occlusion [11]. These works demonstrate that physical interaction can provide informative geometric con-straints. However, contact has not been leveraged as alocalization primitive in underwater SLAM. In contrast, we introduce a Contact-Aided Factor-Graph Localization frame-work that integrates suction-based contact constraints with adaptive visual and inertial measurements within a unified smoothing formulation. By modeling physical interaction as a metrically grounded factor that induces implicit loop closure, the proposed method directly addresses structural observability limitations in low-texture, down-looking under-water environments. III. M ETHODOLOGY 
+
+Our framework formulates underwater state estimation as a contact-aided smoothing problem on a factor graph, implemented using GTSAM [12], [13]. Vehicle poses, veloc-ities, IMU biases, and environmental landmarks are jointly estimated by fusing proprioceptive navigation measurements, down-looking visual observations, learned object detections, and manipulator contact constraints within a unified prob-abilistic framework. The estimator initializes fully online, without requiring stationarity or a dedicated bootstrapping phase. As soon as IMU, magnetometer, pressure, and DVL data are available, the initial pose is constructed from roll–pitch–yaw and pressure-derived depth, velocity is ini-tialized from DVL measurements, and Gaussian priors are applied to pose, velocity, and bias states. 
+
+A. Inertial Sensors 
+
+The AUV integrates IMU, DVL, pressure sensor, and mag-netometer measurements within a factor-graph framework to estimate 6-DOF pose and velocity. The IMU provides body-frame acceleration ab and angular velocity ωb. Measure-ments are rotated to the vehicle frame via Rimu :
+
+av = Rimu ab, ωv = Rimu ωb. (1) Using standard preintegration over ∆t, relative motion increments are computed as: 
+
+∆Rk+1 = ∆ Rk exp(( ωv − bω )∆ t),
+
+∆vk+1 = ∆ vk + ( av − ba)∆ t, 
+
+∆pk+1 = ∆ pk + ∆ vk∆t + 12 (av − ba)∆ t2.
+
+(2) Biases ba and bω are jointly estimated. The result-ing preintegrated IMU factor links consecutive states 
+
+(xk, vk, bk) and (xk+1 , vk+1 , bk+1 ):
+
+fIMU ∼ N (∆ pk+1 , ΣIMU ). (3) The DVL provides body-frame velocity vdvl , corrected for rotational motion using lever-arm offset rIMU →DVL :
+
+vc = vdvl − ωv × rIMU →DVL , vw = Rimu vc. (4) This is incorporated as a velocity factor: 
+
+fDVL (vk) ∼ N (vw, ΣDVL ). (5) Pressure measurements are converted to depth using a temperature-compensated density model, 
+
+z = P − P0
+
+(ρ − 0.2 T ) g ,
+
+where P is the absolute pressure, P0 atmospheric pressure, 
+
+T the water temperature, ρ the nominal water density, and g
+
+gravity. The depth is fused as a prior on the vertical position: 
+
+fPressure (xk) ∼ N (z, σ 2 
+
+> z
+
+). (6) The magnetometer provides a yaw measurement ψm
+
+(heading about the gravity axis), incorporated as: 
+
+fMag (xk) ∼ N (ψm, σ 2 
+
+> ψ
+
+), (7) where σ2 
+
+> ψ
+
+denotes the yaw variance. Together, these fac-tors provide tightly coupled inertial navigation, constraining inter-node motion, horizontal velocity, vertical position, and heading. This fused inertial backbone ensures stable pose estimation when visual structure is weak or intermittent. 
+
+B. Down-Looking Visual Odometry 
+
+A down-looking monocular camera provides relative mo-tion constraints from the seafloor. In planar, low-texture, low-altitude operation, monocular VO is inherently noisy and scale-ambiguous. We therefore employ a tightly cou-pled pipeline with multi-sensor scale recovery, lever-arm compensation, and adaptive uncertainty modeling. Images are contrast-enhanced (CLAHE) [14]. ORB features [15] are extracted with BRISK fallback [16], and matched using Hamming distance with a ratio test. The essential matrix E
+
+is estimated via RANSAC and decomposed to obtain relative rotation Rc and translation direction ˆtc:
+
+(Rc, ˆtc) = recoverPose (E).
+
+Metric scale s is recovered from auxiliary sensors: DVL or sonar altitude when available, otherwise pressure-derived depth, with IMU-based fallback. The scaled motion is tc =
+
+sˆtc, forming the relative camera pose Tk−1,k c = ( Rc, tc).Using fixed extrinsics Tcb , this is transformed to the body frame: 
+
+Tk−1,k b = T−1 
+
+> cb
+
+Tk−1,k c Tcb . (8) The resulting motion is added as a BetweenFactor: 
+
+fVO (xk−1, xk) ∼ N (Tk−1,k b , ΣVO ). (9) A corresponding velocity constraint is formed from the scaled translation and corrected for the camera–IMU lever arm rcam →imu :
+
+vcorr = tb
+
+∆t − ω × rcam →imu , (10) and incorporated as 
+
+fVO-vel (vk−1, vk) ∼ N (vcorr , ΣVO-vel ). (11) To mitigate visually unreliable updates, covariance is adaptively scaled using the inlier ratio: 
+
+η = Ninliers 
+
+Nmatches 
+
+, (12) smoothed via an exponential moving average and clamped within bounded limits: 
+
+ΣVO = αk diag (σ2 
+
+> t
+
+, σ 2 
+
+> r
+
+). (13) This formulation preserves informative visual constraints when structure is available while downweighting degenerate observations, enabling robust integration of down-looking VO within the factor-graph framework. 
+
+C. Visual Landmark Detections 
+
+Object detections are produced by a YOLOv8-based neu-ral network running on the down-looking camera stream. The detector is trained on a public starfish dataset 1 and provides, for each detection, a class label c, pixel center (u, v ), a confidence score, and a bounding box. A slant range r is estimated from the bounding-box height h using a pinhole 
+
+> 1https://www.kaggle.com/datasets/yusufsyam/ starfish
+
+model and an assumed object size D, such that r = fy Dh ,and is bounded by the DVL altitude when available. The pixel center is back-projected into a normalized camera-frame bearing, 
+
+bc = 1
+
+∥dc∥ dc, dc = (u − cx)/f x (v − cy )/f y 1⊤ .
+
+Using fixed camera–body extrinsics Tcb and the current pose Tbw(k), detections are transformed into the world frame and associated with persistent landmarks. Each detection contributes a bearing–range factor, 
+
+fBR (xk, lj ) ∼ N  (bb, r ), σ 2I3
+
+,
+
+where the measurement uncertainty σ is inflated for low-confidence or small bounding-box detections. This formu-lation enables incremental landmark creation while main-taining geometric consistency between neural detections and vehicle pose. Landmarks are also expressed in the end-effector frame, allowing direct anchoring of visual detections to contact events for contact-consistent mapping and implicit loop closure. 
+
+D. Hybrid Local Bundle Adjustment 
+
+To improve short-term consistency while preserving real-time performance, we employ a sliding-window Local Bundle Adjustment (LBA) over the most recent poses 
+
+{xk−N +1 , . . . , xk}. At each invocation, the factor graph is queried to determine whether visual landmarks are connected to any pose within the window. If so, a landmark-augmented LBA is performed; otherwise, the system falls back to pose-only refinement. 
+
+a) Landmark-Augmented Optimization.: All factors connected to window poses are extracted to form a local subgraph with active variables Xlocal (poses and associated landmarks) and factors Flocal . The optimization solves 
+
+X ⋆ 
+
+> local
+
+= arg min 
+
+> Xlocal
+
+X
+
+> fi∈F local
+
+∥fi(Xlocal )∥2Σi . (14) To prevent gauge freedom, poses outside the window but connected to the subgraph are anchored with strong priors at their current estimates. The resulting nonlinear least-squares problem is solved using bounded Levenberg–Marquardt iter-ations, and optimized values are reintegrated into the global estimate. 
+
+b) Pose-Only Fallback.: If no landmarks are present, only pose-related factors Fpose and variables Xpose are re-tained: 
+
+X ⋆ 
+
+> pose
+
+= arg min 
+
+> Xpose
+
+X
+
+> fi∈F pose
+
+∥fi(Xpose )∥2Σi . (15) This adaptive switching preserves robustness in visu-ally sparse conditions while exploiting landmark constraints when available. The sliding-window refinement reduces short-term drift and improves local smoothness without com-promising incremental iSAM2 performance. 
+
+Fig. 2: Experimental environments. Top: first tank (low light), second tank (natural sunlight), and harbor deployment site. Bottom: representative best-match image pairs illustrating the geometric degeneracy and impracticality of classical Structure-from-Motion and monocular visual SLAM in these conditions. 
+
+E. Manipulator-Based Contact Sensing 
+
+The vehicle-mounted manipulator is treated as an ad-ditional proprioceptive sensor that provides contact-based geometric constraints through a suction end-effector. It is actuated using an acceleration-level inverse-kinematics con-troller [17], [18], ensuring smooth, precise end-effector posi-tioning during contact events and suction-based interactions. Forward kinematics from joint encoders yields the end-effector pose in the world frame, 
+
+Tee w (k) = Tbw(k) Tee b (θk),
+
+where θk are the arm joint angles. When the suction cup engages, a rising-edge event is detected and the current position of the end-effector pee is calculated. This contact event is treated as a point measurement in the environment. If an existing landmark lj lies within a proximity threshold, (∥lj − pee ∥ < ϵ ), a bearing–range factor is added between the current pose xk and the landmark, 
+
+fcontact (xk, lj ) ∼ N  (ˆb, d ), Σc
+
+,
+
+ˆb = lj − pee 
+
+∥lj − pee ∥ ,d = ∥lj − pee ∥.
+
+(16) If no nearby landmark exists, a new landmark is initialized at the contact point, lnew = pee , and a zero-range contact factor is added. In both cases, a tight isotropic noise model 
+
+Σc enforces strong geometric consistency. This mechanism yields an implicit loop closure when the end-effector contacts a previously mapped object, without requiring explicit place recognition. The manipulator thus acts as an active tactile sensor, providing sparse but high-confidence constraints that stabilize the factor graph during prolonged low-visibility operation. IV. E XPERIMENTAL SETUP 
+
+The proposed framework is evaluated in simulation and real-world deployments. Simulation experiments are con-Fig. 3: First tank experiments : (a) T1: straight trajectory; (b) T2: two 180 ◦ rotations; (c) T3: rotations with starfish landmark; (d) T4: rotations with depth variation; (e) T5: depth variation and starfish landmark. Red markers denote the starfish target, and dashed green lines indicate segments with improved estimation accuracy. ducted in Stonefish [19], which provides perfect ground-truth odometry for quantitative validation. Real-world trials are performed in two controlled water tanks and one harbor site, shown in Fig. 2. The tanks measure 100 m × 7.8 m 
+
+× 4.35 m and 40 m × 4 m × 2 m, while the harbor trials cover approximately 10 m × 10 m × 5 m under natural disturbances including turbidity and illumination variability. Trajectories are designed to stress observability in planar, low-texture conditions. In the larger tank, we execute (i) straight motion without rotation, (ii) motion with two 180 ◦
+
+yaw turns, and (iii) combined yaw rotations with depth variation. Additional trials include repeated approaches to a benthic target (starfish) to evaluate revisit consistency under manipulation-like motion. Simulation experiments replicate representative motion patterns, including continuous rota-tions and interaction sequences, enabling direct comparison against ground truth. The vehicle is equipped with a JIMS-80 MEMS IMU, Wayfinder DVL, Paroscientific 8BT11000-I pressure and temperature sensor, magnetometer, and a downward-looking monocular camera. IMU, DVL, pressure, and magnetometer measurements are sampled at 10 Hz, while the camera operates at 2 Hz. IMU noise parameters are identified via Allan variance analysis using over 9 h of stationary data [20]. 
+
+A. Visual Degeneracy Characterization 
+
+All environments exhibit predominantly planar, low-texture seabed structure, creating severe geometric degener-acy for monocular reconstruction. Quantitative feature statis-tics confirm this limitation. In the harbor sequences, an average of 418 keypoints per frame are detected (mini-mum 90 ), with only 42% retained between frames. The first tank yields higher detections (mean 781 .8), yet only 
+
+47% survive temporally, indicating weak feature persistence despite increased raw detections. The second tank further highlights the degeneracy. Across 4078 analyzed frames, an average of 481 .2 keypoints per frame are detected (minimum 
+
+53 , maximum 1000 ), with 288 .0 matches per frame on average (minimum 28 , maximum 688 ). The mean tracking ratio (matches/keypoints) is 0.59 (minimum 0.25 , maximum 
+
+0.79 ). Although this ratio appears moderate, the optical flow median magnitude remains very small (mean 1.24 px ), indi-cating insufficient parallax for stable depth triangulation. The gradient magnitude is similarly low (mean 15 .60 ), reflecting limited photometric structure. Across all sequences, gradient magnitudes remain in the range 9.38 –15 .60 , and optical flow is either insufficient for meaningful parallax ( ≈ 1.24 px )or inconsistent (up to 31 .22 px ), leading to unstable depth estimation. Under these conditions, COLMAP [21], [22] fails to initialize reliable sparse reconstructions. ORB-SLAM3, VINS-MONO, and ROVIO [23] repeatedly lose tracking or diverge. Figure 2 illustrates representative best-match pairs, highlighting the absence of stable multi-view geometry. These results empirically demonstrate that classical monoc-ular SfM and visual SLAM pipelines are fundamentally ill-conditioned in this regime. V. R ESULTS 
+
+We evaluate the proposed framework across two controlled tank environments and a real harbor deployment. The exper-iments are designed to assess (i) estimator behavior under planar degeneracy, (ii) the contribution of landmarks and contact events, and (iii) task-level revisit consistency during repeated benthic interactions. 
+
+A. First Tank: Controlled Observability Analysis 
+
+The first tank experiments isolate observability effects under structured motion, including straight translation, re-peated 180 ◦ yaw rotations, rotations with a starfish landmark, depth variation, and their combination. Fig. 3 shows the five trajectories used, where red markers denote the starfish target, and dashed green segments indicate trajectory portions where additional geometric excitation improves estimation. Quantitative results are summarized in Table I. Under straight motion, the system achieves an ATE of 0.0990 m and yaw RMSE of 0.0524 rad, reflecting well-conditioned local es-timation. Introducing two 180 ◦ rotations increases ATE to 0.2917 m and yaw RMSE to 0.1232 rad, consistent with weak lateral and heading observability in planar, down-looking configurations. Adding a starfish landmark during rotation improves yaw stability (0.0867 rad) but further increases ATE (0.3514 m), indicating that a single visual landmark does not resolve global planar degeneracy. In contrast, in-troducing depth variation reduces ATE to 0.1954 m and yaw RMSE to 0.0639 rad, demonstrating improved conditioning through vertical excitation. The combination of depth varia-tion and landmark constraints yields the best performance (ATE 0.1651 m, yaw RMSE 0.0412 rad), confirming that TABLE I: Trajectory accuracy metrics from the first tank experiments. The upper section reports full-system performance across different motion profiles. The lower section presents the ablation study conducted on Trajectory T1 (No Rotation).                                                                     
+
+> Configuration / Trajectory ATE (m) RPE (m) Yaw RMSE (rad) Yaw RPE (rad)
+> Full System – Different Motion Profiles
+> T1: No Rotation 0.0990 0.0812 0.0524 0.0113 T2: 2×180 ◦Rotations 0.2917 0.0747 0.1232 0.0627 T3: 2×180 ◦Rotations + Starfish Landmark 0.3514 0.0812 0.0867 0.0905 T4: 2×180 ◦Rotations + Depth Change 0.1954 0.0489 0.0639 0.0134 T5: 2×180 ◦Rotations + Depth Change + Starfish Landmark 0.1651 0.0673 0.0412 0.0097
+> Ablation Study – Trajectory T1 (No Rotation)
+> FG-UCAL (LBA, 10-Pose Window) 0.1383 0.0168 0.0790 0.0035 FG-UCAL (LBA, 25-Pose Window) 0.1629 0.0168 0.0920 0.0041 FG-UCAL (IMU Preintegration: 2 Samples) 0.1740 0.0167 0.0925 0.0037 FG-UCAL (No Local Bundle Adjustment) 0.2270 0.0169 0.0929 0.0041 FG-UCAL (No Camera Updates) 0.2798 0.0281 0.1391 0.0077 DVL–IMU–Pressure 0.6780 0.0182 2.2396 0.0033 DVL–IMU–Pressure (with LBA) 0.6763 0.0181 2.3187 0.0033
+
+Fig. 4: Stonefish simulation experiments. Estimated trajectories using the proposed FG-UCAL framework are compared against ground-truth (perfect odometry) for representative motion patterns: S1: forward–lateral motion, S2: multiple rotations, S3: continuous rotations, S4: depth with yaw variation, and a S5: semi-8 trajectory with two starfish dives. TABLE II: Trajectory error metrics in Stonefish simulation relative to ground-truth odometry. ATE and RPE are reported in meters; angular errors in radians.                           
+
+> Trajectory ATE (m) RPE (m) Yaw RMSE (rad) Yaw RPE (rad) S1: Forward and lateral movement 0.0903 0.0039 0.0538 0.0039 S2: Multiple rotations 0.1635 0.0060 0.0315 0.0025 S3: Continuous rotations 0.998 0.0032 0.0886 0.0415 S4: Depth + yaw change 0.0847 0.0052 0.0981 0.0080 S5: Semi 8 shape + 2 starfish dives 0.0847 0.0052 0.0981 0.0080
+> ,→Landmark and Pump – Starfish revisit distance (m) 0.06 m
+
+complementary geometric constraints enhance both global and heading consistency. Across all cases, relative pose errors remain low, indicating stable short-horizon estimation despite variations in global drift. 
+
+1) First Tank: Ablation Study: An ablation study on the no-rotation trajectory evaluated the contribution of sens-ing modalities and local refinement. Starting from the full configuration (IMU, DVL, magnetometer, pressure, camera, sliding-window BA), sensors were selectively removed and key parameters varied, including IMU preintegration aggre-gation and BA window length. Performance was assessed using normalized ATE, RPE, Yaw RMSE , and Yaw RPE . Con-figurations were compared via Pareto-based multi-objective analysis [24], where a solution is Pareto-optimal if no other configuration improves one metric without degrading another: 
+
+mkj ≤ mki ∀k, and mkj < m ki for at least one k. 
+
+Ranking by Euclidean distance to the ideal point shows that the full configuration (FG-UCAL - Full ,0.6909) outperforms FG-UCAL (LBA, 25-Pose Window (0.7603) and FG-UCAL No Local Bundle Adjustment (0.8075). Removing visual refinement or weakening sensor coupling consistently degrades performance, confirming the benefit of tightly coupled multi-sensor fusion with local optimization. 
+
+B. Stonefish Simulation: Ground-Truth Validation 
+
+Absolute accuracy was evaluated in Stonefish simulation, where perfect odometry provides ground-truth trajectories. Figure 4 and Table II report the trajectories along with the ATE, RPE, and yaw errors for representative motion patterns. For well-conditioned motions (forward–lateral and depth–yaw excitation), ATE remains below 0.1 m. Multiple rotations increase ATE moderately (0.1635 m), while relative pose errors remain small, indicating strong local consistency. Fig. 5: Sequence showing the robot detecting the starfish, approaching it and use the suction-cup to interact with it. 
+
+Fig. 6: a) Second tank experiments : left) ST1: 2 starfish - 2 pump activation on the last, center) ST2: 2 starfish - 2 pump activation on the first, right) ST3: 1 starfish - 2 pump activations. b) Harbor experiment , employing semi-circular trajectory plus 2 dives. Red and gold star markers denote two different starfish targets. Two red stars indicate two separate dives starting from different locations; Cyan triangles indicate suction-pump activation events, and dashed green lines highlight trajectory segments with improved estimation accuracy. TABLE III: Trajectory accuracy metrics for the Second Tank and Harbor experiments using the full system configuration. Metrics include Absolute Trajectory Error (ATE), Relative Pose Error (RPE), Yaw RMSE, and Yaw RPE.                                 
+
+> Trajectory ATE (m) RPE (m) Yaw RMSE (rad) Yaw RPE (rad)
+> Second Tank Experiments
+> ST1: 2 starfish – 2 pump activation (last) 1.0158 0.0035 0.1836 0.0059 ST2: 2 starfish – 2 pump activation (first) 0.4985 0.0064 0.2935 0.0303 ST3: 1 starfish – 2 pump activation 0.4464 0.0152 0.1411 0.0045
+> ,→No landmark – Starfish revisit distance (m) 0.58m
+> ,→Landmark – Starfish revisit distance (m) 0.50m
+> ,→Landmark and Pump – Starfish revisit distance (m) 0.45m
+> Harbor Experiment
+> Harbor 0.8223 0.0191 0.2121 0.0751
+> ,→No landmark – Starfish revisit distance (m) 1.23m
+> ,→Landmark – Starfish revisit distance (m) 1.12m
+> ,→Landmark and Pump – Starfish revisit distance (m) 0.90m
+
+Continuous planar rotations produce the largest drift (ATE 0.998 m), consistent with reduced observability under re-peated yaw motion; however, RPE remains low (0.0032 m), confirming stable short-horizon estimation. In the semi-8 trajectory with two starfish dives, global accuracy remains comparable to depth–yaw excitation, and landmark plus pump constraints yield a revisit error of 0.06 m relative to ground truth, demonstrating metrically consistent anchoring at interaction sites. Overall, drift behavior aligns with the expected geometric conditioning of each motion pattern. 
+
+C. Second Tank: Landmark and Contact Evaluation 
+
+Figure 5 shows a representative starfish interaction se-quence in which the vehicle detects the target, approaches it, and activates the suction pump, thereby introducing addi-tional geometric constraints into the factor graph. Figure 6a shows the executed trajectories compared against the INS reference. Quantitative results for repeated interaction pat-terns are summarized in Table III. Global ATE ranges from 0.4464 m to 1.0158 m depending on trajectory length and rotational excitation, while relative pose errors remain low (0.0035 m–0.0152 m), indicating stable short-horizon estima-tion despite global drift. Task-level revisit distance provides a more direct measure of mission-relevant spatial consistency. Without landmarks, revisit error is 0.58 m; adding visual landmark constraints reduces it to 0.50 m; incorporating both landmarks and pump activation further reduces it to 0.45 m. The monotonic decrease confirms that contact-induced con-straints tighten spatial consistency beyond visual landmarks alone, correcting accumulated drift at physically interacted locations. 
+
+D. Harbor Deployment 
+
+The harbor deployment introduces turbidity, illumination variability, and environmental disturbances representative of real-world conditions. The system achieves an ATE of 0.8223 m and yaw RMSE of 0.2121 rad. While global drift increases relative to controlled tank trials, task-level revisit accuracy improves as additional constraints are incorporated. Revisit error decreases from 1.23 m without landmarks to 1.12 m with visual landmarks, and further to 0.90 m when pump activation events are included. This reduction demon-strates that contact-induced constraints provide structurally informative corrections even under visually degraded condi-tions. Improvements are consistent across different dive se-quences and initializations. Figure 6b compares the executed trajectories against the INS reference. VI. D ISCUSSION AND CONCLUSION 
+
+We presented a contact-aided factor-graph framework in which physical interaction helps resolve degeneracy in perception-limited underwater SLAM. Low-altitude, down-looking operation over planar and texture-sparse seabeds is intrinsically ill-conditioned: lateral motion and yaw are weakly observable, scale depends on depth excitation, and visual landmarks are intermittent. Our formulation tightly couples inertial, DVL, pressure, magnetometer, and visual sensing with physically grounded contact constraints. Ex-periments in simulation, two tanks, and a harbor deploy-ment show that planar rotations amplify drift, while vertical excitation improves scale and heading observability. Visual landmarks mainly stabilize orientation, but do not fully remove drift over near-planar surfaces. In contrast, contact constraints consistently reduce revisit error and improve spatial consistency at manipulation sites. This trend also holds in harbor conditions, where turbidity and illumination variability increase global ATE, but relative pose errors remain low and contact events provide repeatable corrections. These results show that drift in perception-limited underwater missions is not only a sensing problem, but an observability problem. Structured motion and deliberate physical interac-tion introduce metrically anchored constraints that improve consistency where manipulation occurs. Future work will ex-tend this framework toward dense, mission-time mapping by coupling contact-aided localization with high-rate volumetric approaches such as FRAGG-MAP [25], enabling drift-aware reconstruction of benthic workspaces for occupancy, frontier, and manipulation planning. REFERENCES [1] M. Ferrera, J. Moras, P. Trouv´ e-Peloux, and V. Creuze, “Real-time monocular visual odometry for turbid and dynamic underwater envi-ronments,” Sensors , vol. 19, no. 3, 2019. [2] M. Grimaldi, D. Nakath, M. She, and K. K¨ oser, “Investigation of the challenges of underwater-visual-monocular-slam,” ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences ,vol. X-1/W1-2023, p. 1113–1121, Dec. 2023. [Online]. Available: http://dx.doi.org/10.5194/isprs-annals-X-1-W1-2023-1113-2023 [3] M. Kaess, H. Johannsson, R. Roberts, V. Ila, J. Leonard, and F. Dellaert, “isam2: Incremental smoothing and mapping with fluid relinearization and incremental variable reordering,” in 2011 IEEE International Conference on Robotics and Automation , 2011, pp. 3281–3288. [4] J. C. Kinsey, R. M. Eustice, and L. L. Whitcomb, “A survey of underwater vehicle navigation : Recent advances and new challenges,” 2006. [5] X. Wang, X. Fan, P. Shi, J. Ni, and Z. Zhou, “An overview of key slam technologies for underwater scenes,” Remote Sensing , 2023. [6] H. Huang, Z. Liu, L. Zhang, D. Wang, and J. Wang, “Via-slam: An underwater visual–inertial–acoustic slam with integrated dvl,” IEEE Transactions on Instrumentation and Measurement , 2025. [7] S. Ding, T. Zhang, Y. Li, S. Xu, and M. Lei, “Underwater multi-sensor fusion localization with visual-inertial-depth using hybrid residuals and efficient loop closing,” Measurement , vol. 238, p. 115245, 2024. [8] S. Xu, K. Zhang, and S. Wang, “Aqua-slam: Tightly-coupled under-water acoustic-visual-inertial slam with sensor calibration,” 2025. [9] S. Rahman, A. Q. Li, and I. Rekleitis, “Svin2: An underwater slam system using sonar, visual, inertial, and depth sensor,” in 2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2019, pp. 1861–1868. [10] S. Archieri, J. Drupt, A. Cinar, M. Grimaldi, I. Carlucho, J. S. Willners, and Y. R. Petillot, “3dssdf: Underwater 3d sonar reconstruction using signed distance functions,” in 2025 IEEE International Conference on Robotics and Automation (ICRA) , 2025, pp. 5306–5312. [11] G. Wang, X. Liu, Z. Ye, Z. Liu, and P. Huang, “Contact slam: An active tactile exploration policy based on physical reasoning utilized in robotic fine blind manipulation tasks,” 2025. [12] F. Dellaert and G. Contributors, “borglab/gtsam,” May 2022. [Online]. Available: https://github.com/borglab/gtsam) [13] F. Dellaert and M. Kaess, Factor Graphs for Robot Perception .Foundations and Trends in Robotics, Vol. 6, 2017. [14] S. Pizer, R. Johnston, J. Ericksen, B. Yankaskas, and K. Muller, “Contrast-limited adaptive histogram equalization: speed and effective-ness,” in [1990] Proceedings of the First Conference on Visualization in Biomedical Computing , 1990, pp. 337–345. [15] C. Campos, R. Elvira, J. J. G. Rodriguez, J. M. M. Montiel, and J. D. Tardos, “Orb-slam3: An accurate open-source library for visual, visual–inertial, and multimap slam,” IEEE Transactions on Robotics ,2021. [16] S. Leutenegger, M. Chli, and R. Y. Siegwart, “Brisk: Binary robust invariant scalable keypoints,” in 2011 International Conference on Computer Vision , 2011, pp. 2548–2555. [17] Y. Maeda, H. Kakami, and T. Aso, “Development of an electric robotic arm for the hadal zone,” in OCEANS 2024 - Halifax , 2024, pp. 1–5. [18] M. Grimaldi, Y. Maeda, H. Kakami, I. Carlucho, Y. Petillot, and T. Inoue, “Towards reliable subsea object recovery: a simulation study of an auv with a suction-actuated end effector,” 2026. [19] M. Grimaldi, P. Cieslak, E. Ochoa, V. Bharti, H. Rajani, I. Carlucho, M. Koskinopoulou, Y. R. Petillot, and N. Gracias, “Stonefish: Sup-porting machine learning research in marine robotics,” 2025. [20] J. A. Barnes, A. R. Chi, L. S. Cutler, D. J. Healey, D. B. Leeson, T. E. McGunigal, J. A. Mullen, W. L. Smith, R. L. Sydnor, R. F. C. Vessot, and G. M. R. Winkler, “Characterization of frequency stability,” IEEE Transactions on Instrumentation and Measurement , 1971. [21] J. L. Sch¨ onberger, E. Zheng, M. Pollefeys, and J.-M. Frahm, “Pixel-wise view selection for unstructured multi-view stereo,” in European Conference on Computer Vision (ECCV) , 2016. [22] J. L. Sch¨ onberger and J.-M. Frahm, “Structure-from-motion revisited,” in Conference on Computer Vision and Pattern Recognition (CVPR) ,2016. [23] M. Bloesch, S. Omari, M. Hutter, and R. Siegwart, “Robust visual inertial odometry using a direct ekf-based approach,” 2015. [24] K. Deb, Multiobjective Optimization Using Evolutionary Algorithms. Wiley, New York , 01 2001. [25] M. Grimaldi, N. Palomeras, I. Carlucho, Y. R. Petillot, and P. R. Rodriguez, “Fragg-map: Frustum accelerated gpu-based grid map,” in 
+
+2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2024, pp. 1138–1144.
