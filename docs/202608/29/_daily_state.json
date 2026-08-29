@@ -1,9 +1,9 @@
 {
   "date": "20260829",
   "date_label": "",
-  "generated_at": "2026-08-29 03:34:51 UTC",
+  "generated_at": "2026-08-29 21:54:36 UTC",
   "recommend_exists": true,
-  "run_count": 1,
+  "run_count": 2,
   "papers": [
     {
       "paper_id": "2608.21175v1",
@@ -13,13 +13,17 @@
       "tags": [
         {
           "kind": "query",
+          "label": "rl-motion"
+        },
+        {
+          "kind": "query",
           "label": "robot-nav"
         }
       ],
       "score": 9.0,
-      "evidence": "面向异构人群安全导航的形状感知强化学习模型预测控制，匹配自主导航与避障要求",
+      "evidence": "强化学习与模型预测控制结合，用于形状感知的安全导航",
       "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
       "paper_id": "2608.23354v1",
@@ -33,9 +37,29 @@
         }
       ],
       "score": 9.0,
-      "evidence": "融合视觉语言模型推理与几何视觉伺服进行室内导航",
+      "evidence": "具身导航结合语义推理与几何控制，支持避障和零样本目标搜索",
       "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "updated_at": "2026-08-29 21:54:36 UTC"
+    },
+    {
+      "paper_id": "2608.25366v1",
+      "route": "202608/29/2608.25366v1-raem-robust-autonomous-exploration-for-multi-floor-environments-with-a-quadruped-robot",
+      "title": "RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        },
+        {
+          "kind": "query",
+          "label": "robot-nav"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "四足机器人多楼层环境中的鲁棒自主探索",
+      "first_seen_at": "2026-08-29 03:34:51 UTC",
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
       "paper_id": "2608.25642v1",
@@ -49,9 +73,9 @@
         }
       ],
       "score": 9.0,
-      "evidence": "基于学习航点与几何感知局部控制的室内导航系统",
+      "evidence": "结合学习路点与几何感知局部控制的分层室内导航，用于避障与鲁棒执行",
       "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
       "paper_id": "2608.25799v1",
@@ -65,9 +89,9 @@
         }
       ],
       "score": 9.0,
-      "evidence": "基于SLAM点云的果园自主导航与路径规划",
+      "evidence": "基于SLAM点云构建拓扑图的果园自主全局导航规划",
       "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
       "paper_id": "2608.26932v1",
@@ -97,9 +121,9 @@
         }
       ],
       "score": 8.0,
-      "evidence": "利用LiDAR和图像的海岸线几何实现无GPS船舶定位，与室外视觉/激光定位相关",
+      "evidence": "利用海岸场景几何实现GPS拒止环境下无人船视觉与激光定位",
       "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
       "paper_id": "2608.21319v1",
@@ -113,9 +137,41 @@
         }
       ],
       "score": 8.0,
-      "evidence": "基于凸集图上的Steiner-TSP分支定界搜索，一种移动机器人轨迹规划方法",
+      "evidence": "凸集上的轨迹优化搜索，可应用于机器人路径规划",
       "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "updated_at": "2026-08-29 21:54:36 UTC"
+    },
+    {
+      "paper_id": "2608.22033v1",
+      "route": "202608/29/2608.22033v1-delta-deformable-elevation-based-local-terrain-attention-encoder-for-sparse-terrain-quadrupedal-locomotion",
+      "title": "DELTA: Deformable Elevation-Based Local Terrain Attention Encoder for Sparse-Terrain Quadrupedal Locomotion",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl-motion"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "用于四足运动的重力学习，结合可变形地形注意力编码器",
+      "first_seen_at": "2026-08-29 21:54:36 UTC",
+      "updated_at": "2026-08-29 21:54:36 UTC"
+    },
+    {
+      "paper_id": "2608.22039v1",
+      "route": "202608/29/2608.22039v1-orbit-benchmarking-sfm-in-the-wild-with-360-video",
+      "title": "ORBIT++: Benchmarking SfM in the Wild with 360° Video",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "利用360°视频在野外出题评估相机位姿估计，覆盖挑战性相机运动",
+      "first_seen_at": "2026-08-29 21:54:36 UTC",
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
       "paper_id": "2608.23055v1",
@@ -129,9 +185,25 @@
         }
       ],
       "score": 8.0,
-      "evidence": "基于强化学习与拓扑地图的导航，融合自身位姿估计",
+      "evidence": "基于强化学习的室内拓扑导航，使用机载视觉与噪声定位",
       "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "updated_at": "2026-08-29 21:54:36 UTC"
+    },
+    {
+      "paper_id": "2608.24026v1",
+      "route": "202608/29/2608.24026v1-neurraft-robot-motion-planning-via-anchor-level-flow-matching-with-clearance-aware-preference-tuning",
+      "title": "NeurRAFT: Robot Motion Planning via Anchor-Level Flow Matching with Clearance-Aware Preference Tuning",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "robot-nav"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "基于锚点级流匹配的机器人运动规划，直接针对导航中的路径规划与避障",
+      "first_seen_at": "2026-08-29 03:34:51 UTC",
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
       "paper_id": "2608.25178v1",
@@ -145,9 +217,25 @@
         }
       ],
       "score": 8.0,
-      "evidence": "单目路径提取与规划用于嵌入式微移动导航",
+      "evidence": "轻量级单目人行道路径提取面向嵌入式微出行导航，直接支持低功耗设备上的路径规划",
       "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "updated_at": "2026-08-29 21:54:36 UTC"
+    },
+    {
+      "paper_id": "2608.26496v1",
+      "route": "202608/29/2608.26496v1-rtnav-towards-real-time-zero-shot-object-navigation",
+      "title": "RTNav: Towards Real-Time Zero-Shot Object Navigation",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "robot-nav"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "真实时零样本物体导航，直接关联自主机器人导航",
+      "first_seen_at": "2026-08-29 21:54:36 UTC",
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
       "paper_id": "2608.25874v1",
@@ -166,6 +254,22 @@
       "updated_at": "2026-08-29 03:34:51 UTC"
     },
     {
+      "paper_id": "2608.21685v1",
+      "route": "202608/29/2608.21685v1-in-situ-reconstruction-of-the-international-space-station-using-3d-gaussian-splatting-and-astrobee",
+      "title": "In-Situ Reconstruction of the International Space Station Using 3D Gaussian Splatting and Astrobee",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "基于Astrobee机器人图像的三维高斯溅射重建与空间站内部建图",
+      "first_seen_at": "2026-08-29 21:54:36 UTC",
+      "updated_at": "2026-08-29 21:54:36 UTC"
+    },
+    {
       "paper_id": "2608.23850v1",
       "route": "202608/29/2608.23850v1-ddms-discriminative-distillation-of-multi-view-foundational-features-into-single-view-models",
       "title": "DDMS: Discriminative Distillation of Multi-view Foundational Features into Single-view Models",
@@ -177,25 +281,25 @@
         }
       ],
       "score": 7.0,
-      "evidence": "将多视图几何知识蒸馏为三维一致的图像特征，可用于SLAM特征匹配",
+      "evidence": "将多视图基础特征蒸馏到单视图模型，得到三维一致的特征，可用于几何估计和SLAM",
       "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
-      "paper_id": "2608.24026v1",
-      "route": "202608/29/2608.24026v1-neurraft-robot-motion-planning-via-anchor-level-flow-matching-with-clearance-aware-preference-tuning",
-      "title": "NeurRAFT: Robot Motion Planning via Anchor-Level Flow Matching with Clearance-Aware Preference Tuning",
+      "paper_id": "2608.25401v1",
+      "route": "202608/29/2608.25401v1-pivot-a-multi-trajectory-dataset-and-testbed-for-pose-intrinsics-and-novel-viewpoint-evaluation-in-real-world-3d-reconstruction",
+      "title": "PIVOT: A Multi-Trajectory Dataset and Testbed for Pose, Intrinsics, and Novel Viewpoint Evaluation in Real-World 3D Reconstruction",
       "section": "quick",
       "tags": [
         {
           "kind": "query",
-          "label": "robot-nav"
+          "label": "d-slam"
         }
       ],
       "score": 7.0,
-      "evidence": "用于无碰撞机器人导航的生成式神经运动规划框架",
-      "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "evidence": "多轨迹数据集和试验台，用于评估真实世界三维重建中的位姿、内参和新视角",
+      "first_seen_at": "2026-08-29 21:54:36 UTC",
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
       "paper_id": "2608.24101v1",
@@ -214,9 +318,9 @@
       "updated_at": "2026-08-29 03:34:51 UTC"
     },
     {
-      "paper_id": "2608.25366v1",
-      "route": "202608/29/2608.25366v1-raem-robust-autonomous-exploration-for-multi-floor-environments-with-a-quadruped-robot",
-      "title": "RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot",
+      "paper_id": "2608.22740v1",
+      "route": "202608/29/2608.22740v1-seeing-the-unseen-semantic-in-gaussian-for-sparse-view-3d-generalization",
+      "title": "Seeing the Unseen: Semantic-in-Gaussian for Sparse-View 3D Generalization",
       "section": "quick",
       "tags": [
         {
@@ -224,10 +328,10 @@
           "label": "d-slam"
         }
       ],
-      "score": 7.0,
-      "evidence": "面向多楼层环境的鲁棒自主探索与建图，应用于四足机器人",
-      "first_seen_at": "2026-08-29 03:34:51 UTC",
-      "updated_at": "2026-08-29 03:34:51 UTC"
+      "score": 6.0,
+      "evidence": "语义高斯稀疏视角3D泛化，可用于三维映射与稠密重建的方法迁移",
+      "first_seen_at": "2026-08-29 21:54:36 UTC",
+      "updated_at": "2026-08-29 21:54:36 UTC"
     },
     {
       "paper_id": "2608.26490v1",

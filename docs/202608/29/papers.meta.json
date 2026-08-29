@@ -1,8 +1,8 @@
 {
   "label": "2026-08-29",
   "date": "2026-08-29",
-  "generated_at": "2026-08-29T03:34:54",
-  "count": 17,
+  "generated_at": "2026-08-29T21:54:38",
+  "count": 23,
   "papers": [
     {
       "paper_id": "202608/29/2608.21175v1-srl-mpc-shape-aware-reinforcement-learned-model-predictive-control",
@@ -31,6 +31,21 @@
       "tldr": "室内自主导航需兼顾语义理解与几何控制。OptiSight提出混合框架，将VLM推理与确定性视觉伺服结合，通过有限状态链式思维架构，利用Grounded-SAM定位开放词汇目标，借助相机投影几何直接生成导航指令。仅在关键决策点查询VLM，降低计算开销。在AI Habitat中实现零样本导航，支持避障与语义模糊场景，且显存占用低于8GB。",
       "tags": "query:robot-nav",
       "abstract_en": "Autonomous indoor navigation requires both semantic understanding and precise geometric control. We propose OptiSight, a hybrid framework that combines Vision-Language Model reasoning with deterministic visual servoing through a finite-state Chain-of-Thought architecture. Grounded-SAM localizes open-vocabulary targets, while camera projection geometry converts visual observations into navigation commands without requiring dense mapping. The VLM is queried only at key decision points, reducing computational overhead while geometric control handles continuous navigation. Experiments in AI Habitat demonstrate reliable zero-shot navigation across diverse indoor scenarios, including obstacle avoidance and semantic ambiguity, while operating within an 8~GB VRAM budget. The source code is available at https://github.com/avanalperen/OptiSight-Python-Multimodal-CoT-for-Visual-Reasoning.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202608/29/2608.25366v1-raem-robust-autonomous-exploration-for-multi-floor-environments-with-a-quadruped-robot",
+      "section": "deep",
+      "title_en": "RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot",
+      "authors": "Zikang Yuan, Yuan Ren, Yian Wang, Yixue Wang, Enze Fang, Xuewei Zhang, Junda Cheng, Chi Chen, Chin-Pang Ho, Lijun Zhu, Shaohang Xu, Kwang-Ting Cheng, Xin Yang",
+      "date": "2026-08-26",
+      "pdf": "https://arxiv.org/pdf/2608.25366v1",
+      "score": "7.0",
+      "evidence": "面向多楼层环境的鲁棒自主探索与建图，应用于四足机器人",
+      "tldr": "现有基于平面可通行性表示的地面机器人探索方法难以处理多楼层重叠结构与跨楼层连通问题。RAEM提出混合局部-全局可通行性表示：局部断层图和局部3D网格图负责在线地形分析与连通性评估，高程感知的全局拓扑图由局部空间表示增量构建，支持高效跨楼层探索规划。针对楼梯场景，引入楼梯中心对齐策略与双路径搜索机制，分别缓解攀爬时偏航突变和拓扑局部断连。仿真和真实实验表明，该方法能够稳健完成五层楼梯连续探索，计算开销稳定。",
+      "tags": "query:d-slam",
+      "abstract_en": "In this paper, we propose RAEM, a robust autonomous exploration framework for quadruped robots operating in multi-floor environments. Most existing ground-robot exploration approaches rely on planar traversability representations, which cannot adequately represent the overlapping structures and cross-floor connectivity of multi-floor buildings. Although tomography-based representations provide effective traversability modeling for multi-floor navigation, maintaining a global tomography map incurs substantial computational overhead for online exploration with frequent replanning. Moreover, sparse and fragmented LiDAR observations in stairwells can degrade local traversability estimation, leading to irregular viewpoint placement and temporary topological disconnections. To address these challenges, RAEM adopts a hybrid local-global traversability representation, in which a local tomography map and an explicitly categorized local 3D grid map are used for online terrain analysis and connectivity evaluation, while an elevation-aware global topological graph is incrementally constructed from these local spatial representations for efficient cross-floor exploration planning. We further introduce a staircase center alignment strategy to reduce abrupt yaw variations during climbing and a dual path searching mechanism to recover guidance paths when the global topology is locally disconnected. Extensive simulation and real-world experiments demonstrate robust and computationally stable autonomous exploration across multi-floor structures, including continuous exploration of a five-floor stairwell.",
       "source": "arxiv",
       "selection_source": "fresh_fetch"
     },
@@ -75,7 +90,7 @@
       "evidence": "接触辅助的因子图定位融合视觉里程计与几何约束",
       "tldr": "水下近底采样时，平坦海床导致视觉里程计出现尺度模糊与横向退化，惯导-DVL融合又无法修正结构漂移，致使定位不可靠。为此提出接触辅助因子图定位，将吸盘机械臂接触事件作为高置信几何约束融入因子图，并按内点统计数据自适应缩放视觉相对位姿与地标因子。在坦克、港口及仿真实验中，相比滤波导航和无接触图优化，轨迹漂移大幅降低，目标重访精度显著提升，证明物理交互可成为感知退化环境中的有效定位原语。",
       "tags": "query:d-slam",
-      "abstract_en": "Accurate state estimation for autonomous underwater vehicles performing close-range seafloor sampling remains challenging. In low-altitude operation, down-looking cameras over featureless planar seabeds produce scale ambiguity, lateral degeneracy, and inconsistent feature tracking. Meanwhile, inertial-Doppler Velocity Log (DVL) fusion alone provides no mechanism for structural drift correction. We propose a Contact-Aided Factor-Graph Localization framework that treats physical interaction as an informative geometric constraint within a smoothing-based localization formulation. The method tightly fuses suction-based manipulator contact events with adaptive visual odometry, learned object detections, and on-board sensors. Visual odometry relative-pose factors and landmark bearing-range factors are uncertainty-scaled according to inlier statistics to prevent visually weak frames from destabilizing the estimator, while contact events are modeled as high-confidence factors that induce implicit loop closures without appearance-based place recognition. Furthermore, the system can fully initialize online during motion. Experimental evaluation in tanks, harbor, and simulation environments demonstrates that contact-induced constraints significantly reduce trajectory drift and improve object revisit accuracy compared to filtering-based navigation and contact-free graph formulations. These results highlight the role of embodied physical interaction as a localization primitive in perception-degraded underwater environments",
+      "abstract_en": "Accurate state estimation for autonomous underwater vehicles performing close-range seafloor sampling remains challenging. In low-altitude operation, down-looking cameras over featureless planar seabeds produce scale ambiguity, lateral degeneracy, and inconsistent feature tracking. Meanwhile, inertial-Doppler Velocity Log (DVL) fusion alone provides no mechanism for structural drift correction. We propose a Contact-Aided Factor-Graph Localization framework that treats physical interaction as an informative geometric constraint within a smoothing-based localization formulation. The method tightly fuses suction-based manipulator contact events with adaptive visual odometry, learned object detections, and on-board sensors. Visual odometry relative-pose factors and landmark bearing-range factors are uncertainty-scaled according to inlier statistics to prevent visually weak frames from destabilizing the estimator, while contact events are modeled as high-confidence factors that induce implicit loop closures without appearance-based place recognition. Furthermore, the system can fully initialize online during motion. Experimental evaluation in tanks, harbor, and simulation environments demonstrates that contact-induced constraints significantly reduce trajectory drift and improve object revisit accuracy compared to filtering-based navigation and contact-free graph formulations. These results highlight the role of embodied physical interaction as a localization primitive in perception-degraded underwater environments\n\n---",
       "source": "arxiv",
       "selection_source": "fresh_fetch"
     },
@@ -95,6 +110,21 @@
       "selection_source": "fresh_fetch"
     },
     {
+      "paper_id": "202608/29/2608.22039v1-orbit-benchmarking-sfm-in-the-wild-with-360-video",
+      "section": "deep",
+      "title_en": "ORBIT++: Benchmarking SfM in the Wild with 360° Video",
+      "authors": "Sara Sabour, Linyi Jin, Richard Tucker, Amir Hertz, Marcus Brubaker, Saurabh Saxena, Junhwa Hur, Andrea Tagliasacchi, Deqing Sun, David J. Fleet, Richard Szeliski, Noah Snavely",
+      "date": "2026-08-22",
+      "pdf": "https://arxiv.org/pdf/2608.22039v1",
+      "score": "8.0",
+      "evidence": "利用360°视频在野外出题评估相机位姿估计，覆盖挑战性相机运动",
+      "tldr": "现有SfM方法在相机运动剧烈或动态场景的视频中常常失效，而领域内又缺乏针对此类困难场景的可靠基准。我们巧妙地利用在线全景360°视频的丰富视觉上下文，通过完整轨迹跟踪与裁剪重投影，生成带有精确真值位姿的挑战性透视片段。在构建的ORBIT基准上，COLMAP以及最新优化式、前馈式SfM方法均难以准确估计相机位姿，凸显了其难度。ORBIT填补了真实世界困难SfM评估的空白，为研究者提供了可靠的测试平台，有助于推动算法在实际复杂场景中的进步。",
+      "tags": "query:d-slam",
+      "abstract_en": "Structure-from-Motion (SfM) is a cornerstone of 3D perception, yet current methods often fail when applied to complex videos involving challenging camera motions or dynamic scenes. Compounding the problem, the field lacks reliable ground-truth benchmarks for such difficult scenarios, making it hard to gauge real-world progress or to pinpoint where improvements are most needed. To address this gap, we introduce a new benchmark for evaluating camera pose estimation. Our key insight is to leverage online panoramic 360° video as a source of data from which to construct challenging clips, while still enabling robust ground-truth trajectory recovery. The panoramic nature of these videos provides richer visual context for tracking camera motion, even when parts of the view are affected by blur, motion, or dynamic objects. After tracking camera motion across full 360° videos, we crop and reproject selected portions to generate perspective-view clips that serve as our benchmark, called ORBIT. Experiments show that COLMAP, as well as recent optimization-based and feed-forward SfM methods struggle to accurately estimate camera poses on our benchmark. Hence, ORBIT provides a valuable testbed where researchers can meaningfully measure progress on truly challenging, real-world SfM problems.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
       "paper_id": "202608/29/2608.21319v1-unified-branch-and-bound-search-for-the-steiner-traveling-salesman-problem-on-graphs-of-convex-sets",
       "section": "quick",
       "title_en": "Unified Branch-and-Bound Search for the Steiner Traveling Salesman Problem on Graphs of Convex Sets",
@@ -106,6 +136,21 @@
       "tldr": "针对凸集图上的Steiner旅行商问题，需在连续空间中求穿过若干凸集的最短闭环，并允许重访和可选中间点。提出统一的分支定界搜索，用加性下界约束已走前缀，用割分离连通流松弛估计剩余代价，在均匀正成本下可保证有限终止。两种遍历策略均在30秒内解决所有基准实例，平均认证间隙约28-30%，优于仅半数成功的基线。该框架支持LTL_f动作前置约束，适用于移动机械臂的联合感知与路径规划。",
       "tags": "query:robot-nav",
       "abstract_en": "We formalize the Steiner Traveling Salesman Problem (Steiner-TSP) on Graphs of Convex Sets (GCS), which seeks a minimum-cost closed trajectory through required convex sets while allowing optional transit vertices and revisits. To explore the resulting infinite solution space, we propose a unified branch-and-bound search over rooted walk prefixes. Additive lower-bound-graph costs bound committed prefixes, while a cut-separated connected-flow relaxation lower-bounds the residual cost of visiting every remaining target and returning to the root. Under a uniform positive-cost assumption, best-first traversal terminates after finitely many expansions on every feasible instance without an initial incumbent, whereas depth-first traversal does so once a finite incumbent is available. For a user-specified factor $ε\\geq1$, a global lower bound certifies that either strategy's incumbent cost is at most $ε$ times the global optimum. We further demonstrate joint sensing-mode, visitation-order, and continuous-trajectory selection for a mobile-manipulator inspection task, including action precedences expressed in linear temporal logic over finite traces (LTL$_f$). Both traversal strategies find feasible solutions on all benchmark instances within 30s with mean certified optimality gaps of 28.1% and 29.7%, respectively, whereas two recent baselines succeed on only about half of the instances",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202608/29/2608.22033v1-delta-deformable-elevation-based-local-terrain-attention-encoder-for-sparse-terrain-quadrupedal-locomotion",
+      "section": "quick",
+      "title_en": "DELTA: Deformable Elevation-Based Local Terrain Attention Encoder for Sparse-Terrain Quadrupedal Locomotion",
+      "authors": "Sanghyun Park, Moonkyu Jung, Jemin Hwangbo",
+      "date": "2026-08-22",
+      "pdf": "https://arxiv.org/pdf/2608.22033v1",
+      "score": "8.0",
+      "evidence": "用于四足运动的重力学习，结合可变形地形注意力编码器",
+      "tldr": "稀疏地形下四足机器人需要精确落足点，端到端强化学习常采用注意力地图编码，但其计算成本随地图分辨率上升而增长。为此提出DELTA，一种基于可变形高程的局部地形注意力编码器，通过状态条件采样生成地形令牌并仅关注固定大小集合，使编码成本独立于分辨率。实验表明，在标准分辨率下DELTA获得与AME相当的性能且学习效率更高，利用固定成本可扩展到高分辨率地图，从而提升细粒度稀疏地形的穿越成功率。同时，DELTA无需落足标签或注意力监督，能够学习采样可踏足区域并关注未来落足点，成功实现仿真到真实RAIBO2的迁移。",
+      "tags": "query:rl-motion",
+      "abstract_en": "Stable quadrupedal locomotion on sparse terrain requires selecting state-relevant terrain evidence for precise foot placement. Model-based foothold planners provide precise foothold selection but rely heavily on explicit model assumptions. Recent attention-based map encoding (AME) studies show that end-to-end reinforcement learning (RL) can learn implicit foothold guidance. However, the computational cost of dense AME encoding grows with map resolution, limiting its scalability to fine-grained sparse terrain. We propose DELTA, a Deformable Elevation-Based Local Terrain Attention encoder. DELTA predicts state-conditioned sampling locations, forms terrain evidence tokens from adaptive local elevation patches, and attends only to a fixed-size token set. With fixed sampling and patch settings, DELTA's encoder cost is independent of map resolution. Experiments show that DELTA achieves final traversal performance comparable to AME at the standard resolution while improving learning efficiency. This fixed encoder cost enables the use of higher-resolution terrain maps, improving traversal on fine-grained sparse terrain. DELTA also demonstrates strong generalization to unseen mixed evaluation courses composed of continuous and discrete terrain elements. Beyond simulation, DELTA demonstrates successful sim-to-real transfer on RAIBO2. Analysis of the learned sampling offsets and attention weights shows that DELTA samples steppable regions and attends to terrain evidence relevant to future touchdowns without foothold labels or attention supervision.",
       "source": "arxiv",
       "selection_source": "fresh_fetch"
     },
@@ -125,6 +170,21 @@
       "selection_source": "fresh_fetch"
     },
     {
+      "paper_id": "202608/29/2608.24026v1-neurraft-robot-motion-planning-via-anchor-level-flow-matching-with-clearance-aware-preference-tuning",
+      "section": "quick",
+      "title_en": "NeurRAFT: Robot Motion Planning via Anchor-Level Flow Matching with Clearance-Aware Preference Tuning",
+      "authors": "Sibo Tian, Chang Liu, Minghui Zheng, Xiao Liang",
+      "date": "2026-08-25",
+      "pdf": "https://arxiv.org/pdf/2608.24026v1",
+      "score": "7.0",
+      "evidence": "用于无碰撞机器人导航的生成式神经运动规划框架",
+      "tldr": "端到端神经运动规划器在杂乱环境下易生成近碰撞轨迹。NeurRAFT采用锚点级流匹配，以雅可比加权损失训练紧凑锚点，推理时两步积分加样条插值恢复平滑轨迹。结合直接偏好优化，将分布移向更大障碍间隙的安全解，无需推理时修正。实验超越现有方法，并零样本迁移至Franka机器人。",
+      "tags": "query:robot-nav",
+      "abstract_en": "Recent end-to-end neural motion planners generate trajectories from raw sensor observations, avoiding the privileged geometric models required by classical planners. However, collision-free planning in cluttered environments remains challenging. We present NeurRAFT, a generative planning framework based on anchor-level flow matching and clearance-aware preference tuning. Unlike prior neural planners that model dense waypoint sequences and spend capacity on redundant local details and smoothness, NeurRAFT operates on compact anchor waypoints. We train the planner using a Jacobian-weighted loss that accounts for the task-space impact of each anchor. At inference, the anchors are generated in two integration steps, followed by cubic-spline interpolation to recover a smooth, full-resolution trajectory. Since imitation learning from positive demonstrations cannot distinguish collision-free from near-collision trajectories, collision-prone behaviors persist at test time. Rather than relying on post-hoc corrections, we directly reshape the pretrained planner's distribution toward safer solutions without augmenting inference. Specifically, Direct Preference Optimization shifts probability mass toward trajectories with larger obstacle clearance, with the resulting improvement directly absorbed into the planner parameters. Experiments show substantial improvements over state-of-the-art planners, while real-world experiments demonstrate zero-shot transfer to a Franka robot under noisy and partially occluded depth observations. Video results available at https://neurraft.github.io/.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
       "paper_id": "202608/29/2608.25178v1-lightweight-machine-learning-driven-monocular-sidewalk-path-extraction-for-embedded-micromobility-navigation",
       "section": "quick",
       "title_en": "Lightweight Machine Learning-Driven Monocular Sidewalk Path Extraction for Embedded Micromobility Navigation",
@@ -136,6 +196,21 @@
       "tldr": "针对微移动系统在人行道级路径提取中对低功耗可靠感知与规划的需求，构建单目视觉管道，历经骨架图基线、距离变换走廊至轻量图像空间三次迭代，并以紧凑分割模型经半监督蒸馏优化。在标注帧比较中，图像空间中点规划用时两毫秒，横向误差十四像素，较鸟瞰距离变换快四百余倍且对齐相似。在二万二千余帧回放中，时间不稳定性由百分之一点四六降至零点三三。最终推荐的图像空间主备方案在中央处理器上五十毫秒内完成全栈，适用嵌入式微移动。",
       "tags": "query:robot-nav",
       "abstract_en": "Sidewalk-scale path extraction demands perception and planning that run reliably on compact, low-power hardware in cluttered, map-sparse environments. We present a monocular vision pipeline for sidewalk path extraction in micromobility systems that progresses through three design iterations, from a skeleton-graph baseline through distance-transform corridor planning to a lightweight image-space architecture, and provides a systematic comparison of five path-planning methods across both bird's-eye-view (BEV) and image-space domains. A compact SegFormer-B0 student model, trained with a semi-supervised teacher-student framework using OneFormer Swin-L pseudo-labels, achieves a hand-annotated IoU of 0.946 at 11.7 ms per frame, improving over the baseline checkpoint (IoU 0.758, 18.9 ms). In a controlled planner comparison on 32 hand-labeled frames, image-space midpoint planning achieves the lowest lateral center error (14.3 px) at 2.2 ms, a 421x speedup over BEV distance-transform planning (926.8 ms, 65.0 px center error), while maintaining comparable mask-path alignment (98.5% versus 98.6%). A full-video replay across six campus sequences (22,679 frames) confirms that the improved segmentation reduces temporal instability from 1.46% to 0.33% and increases template-path availability from 73.7% to 79.3%. We further show that BEV-only path extraction is fragile in monocular settings: in one profiled run, 99.3% of frames produced no valid BEV path. The final recommended architecture, image-space midpoint primary, image-space distance-transform fallback, and BEV reserved for visualization, runs the full perception-to-path stack in under 50 ms per frame on CPU, making it suitable for embedded pedestrian-speed micromobility systems.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202608/29/2608.26496v1-rtnav-towards-real-time-zero-shot-object-navigation",
+      "section": "quick",
+      "title_en": "RTNav: Towards Real-Time Zero-Shot Object Navigation",
+      "authors": "Easop Lee, Lingyu Zhang, Boyuan Chen",
+      "date": "2026-08-27",
+      "pdf": "https://arxiv.org/pdf/2608.26496v1",
+      "score": "8.0",
+      "evidence": "真实时零样本物体导航，直接关联自主机器人导航",
+      "tldr": "实时零样本目标导航面临视觉语言模型推理延迟的挑战，现有方法在同步模拟器中忽视墙钟时间，导致真实执行时性能下降。本文提出RTNav，将推理延迟、异步环境步进和有界计算作为显式设计约束，在HM3D实时基准上成功率最高提升11%，SPL提升5.1点，验证了实时导航架构设计的有效性。",
+      "tags": "query:robot-nav",
+      "abstract_en": "Navigation in unknown environments to find unforeseen objects has become increasingly feasible with capable vision and language foundation models. However, these models also introduce non-negligible inference latency, which becomes an important concern when agents must operate continuously in the real world. Most state-of-the-art methods are still developed in synchronous simulators, where the environment waits for the agent to act and inference time is effectively free. As a result, agents are often designed around the sequential execution of perception, reasoning, and action, with little regard for time constraints. Under real-time execution, where wall-clock time counts towards the task budget, the inefficiencies of these architectures become clear. We show that recent zero-shot object navigation methods suffer consistent performance degradation under such realistic timing conditions. Motivated by this observation, we propose RTNav, a simple but effective architecture that treats inference latency, asynchronous environment stepping, and bounded compute as explicit design considerations. Evaluated on real-time variants of HM3D-v1, HM3D-v2, and HM3D-OVON, RTNav improves the success rate by up to 11% and the Success weighted by Completion Time by up to 5.1 points over prior work.",
       "source": "arxiv",
       "selection_source": "fresh_fetch"
     },
@@ -155,6 +230,21 @@
       "selection_source": "fresh_fetch"
     },
     {
+      "paper_id": "202608/29/2608.21685v1-in-situ-reconstruction-of-the-international-space-station-using-3d-gaussian-splatting-and-astrobee",
+      "section": "quick",
+      "title_en": "In-Situ Reconstruction of the International Space Station Using 3D Gaussian Splatting and Astrobee",
+      "authors": "Hudson Kim, Ryan Soussan, Brian Coltin, Jordan Kam",
+      "date": "2026-08-21",
+      "pdf": "https://arxiv.org/pdf/2608.21685v1",
+      "score": "7.0",
+      "evidence": "基于Astrobee机器人图像的三维高斯溅射重建与空间站内部建图",
+      "tldr": "针对国际空间站内部三维重建的需求，提出利用Astrobee自由飞行机器人的灰度导航相机图像，结合3D高斯泼溅技术构建日本实验舱的高保真地图。该方法在仅500张图像下实现比Nerfacto和TensoRF更优的场景质量与渲染速度，为舱内自由飞行器快速建图更新提供新方案。",
+      "tags": "query:d-slam",
+      "abstract_en": "This article presents a novel 3D reconstruction and mapping of the interior of the International Space Station (ISS) using 3D Gaussian Splatting (3DGS). Using existing grayscale images from the Astrobee free-flying robot dataset, we construct a full 3D splat of the ISS' Kibō or Japanese Experiment Module (JEM). 3DGS has in recent years shown promise in providing novel view synthesis of scenes captured from many images or videos, this article applies this approach to human spaceflight systems. We compare our 3DGS architecture to existing methods such as Nerfacto and TensoRF and show that reconstruction improves the state-of-the-art in both scene quality and rendering speed. We show that with as little as 500 in-situ images, a high-fidelity map can be constructed using Astrobee's Navigation Camera (NavCam) during free-flight in the JEM. These reconstructions could enable free-flyers to rapidly create and update interior maps for intra-vehicular habitats like the ISS.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
       "paper_id": "202608/29/2608.23850v1-ddms-discriminative-distillation-of-multi-view-foundational-features-into-single-view-models",
       "section": "quick",
       "title_en": "DDMS: Discriminative Distillation of Multi-view Foundational Features into Single-view Models",
@@ -170,17 +260,17 @@
       "selection_source": "fresh_fetch"
     },
     {
-      "paper_id": "202608/29/2608.24026v1-neurraft-robot-motion-planning-via-anchor-level-flow-matching-with-clearance-aware-preference-tuning",
+      "paper_id": "202608/29/2608.25401v1-pivot-a-multi-trajectory-dataset-and-testbed-for-pose-intrinsics-and-novel-viewpoint-evaluation-in-real-world-3d-reconstruction",
       "section": "quick",
-      "title_en": "NeurRAFT: Robot Motion Planning via Anchor-Level Flow Matching with Clearance-Aware Preference Tuning",
-      "authors": "Sibo Tian, Chang Liu, Minghui Zheng, Xiao Liang",
-      "date": "2026-08-25",
-      "pdf": "https://arxiv.org/pdf/2608.24026v1",
+      "title_en": "PIVOT: A Multi-Trajectory Dataset and Testbed for Pose, Intrinsics, and Novel Viewpoint Evaluation in Real-World 3D Reconstruction",
+      "authors": "Mary Raymond",
+      "date": "2026-08-26",
+      "pdf": "https://arxiv.org/pdf/2608.25401v1",
       "score": "7.0",
-      "evidence": "用于无碰撞机器人导航的生成式神经运动规划框架",
-      "tldr": "端到端神经运动规划器在杂乱环境下易生成近碰撞轨迹。NeurRAFT采用锚点级流匹配，以雅可比加权损失训练紧凑锚点，推理时两步积分加样条插值恢复平滑轨迹。结合直接偏好优化，将分布移向更大障碍间隙的安全解，无需推理时修正。实验超越现有方法，并零样本迁移至Franka机器人。",
-      "tags": "query:robot-nav",
-      "abstract_en": "Recent end-to-end neural motion planners generate trajectories from raw sensor observations, avoiding the privileged geometric models required by classical planners. However, collision-free planning in cluttered environments remains challenging. We present NeurRAFT, a generative planning framework based on anchor-level flow matching and clearance-aware preference tuning. Unlike prior neural planners that model dense waypoint sequences and spend capacity on redundant local details and smoothness, NeurRAFT operates on compact anchor waypoints. We train the planner using a Jacobian-weighted loss that accounts for the task-space impact of each anchor. At inference, the anchors are generated in two integration steps, followed by cubic-spline interpolation to recover a smooth, full-resolution trajectory. Since imitation learning from positive demonstrations cannot distinguish collision-free from near-collision trajectories, collision-prone behaviors persist at test time. Rather than relying on post-hoc corrections, we directly reshape the pretrained planner's distribution toward safer solutions without augmenting inference. Specifically, Direct Preference Optimization shifts probability mass toward trajectories with larger obstacle clearance, with the resulting improvement directly absorbed into the planner parameters. Experiments show substantial improvements over state-of-the-art planners, while real-world experiments demonstrate zero-shot transfer to a Franka robot under noisy and partially occluded depth observations. Video results available at https://neurraft.github.io/.",
+      "evidence": "多轨迹数据集和试验台，用于评估真实世界三维重建中的位姿、内参和新视角",
+      "tldr": "现有3D重建评测多在理想轨迹和优化位姿下进行，难以反映真实机器人场景。为此提出PIVOT数据集与测试平台，包含多种相机轨迹、实测与优化位姿及标定与优化内参。定义三个基准任务，并引入位姿空间Chamfer距离。实验显示未见轨迹与已见轨迹存在明显质量差距，且对位姿和内参来源敏感。",
+      "tags": "query:d-slam",
+      "abstract_en": "Neural radiance fields (NeRFs), 3D Gaussian Splatting (3DGS), and related novel-view synthesis methods are commonly evaluated under capture and reconstruction conditions cleaner than those encountered by robots, drones, and autonomous systems. Benchmarks often rely on reconstruction-friendly trajectories, optimized camera poses and intrinsics, and held-out views sampled from trajectories represented during training. These assumptions can obscure performance with measured poses, reusable camera calibration, and structurally different camera paths.   We introduce PIVOT (Pose, Intrinsics and Viewpoint Oriented Testbed), a multi-trajectory dataset, processing pipeline, and evaluation framework for independently studying these factors. PIVOT captures each scene using diverse camera trajectories and retains, where available, both sensor-derived measured poses and COLMAP-optimized poses, together with calibrated and optimized camera intrinsics. It defines three benchmark families: (1) seen versus unseen trajectory novel-view generalization, (2) measured versus optimized pose sensitivity, and (3) calibrated versus optimized intrinsics sensitivity. We also introduce a directed pose-space Chamfer distance to quantify how well training poses cover an evaluation trajectory.   PIVOT v1 contains five real-world scenes captured with a DJI Mini 4 Pro and provides an open processing and Nerfstudio-based evaluation toolchain. Benchmark results show a consistent quality gap between held-out views on represented trajectories and unseen trajectories, as well as substantial sensitivity to pose source and camera intrinsics.",
       "source": "arxiv",
       "selection_source": "fresh_fetch"
     },
@@ -200,17 +290,17 @@
       "selection_source": "fresh_fetch"
     },
     {
-      "paper_id": "202608/29/2608.25366v1-raem-robust-autonomous-exploration-for-multi-floor-environments-with-a-quadruped-robot",
+      "paper_id": "202608/29/2608.22740v1-seeing-the-unseen-semantic-in-gaussian-for-sparse-view-3d-generalization",
       "section": "quick",
-      "title_en": "RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot",
-      "authors": "Zikang Yuan, Yuan Ren, Yian Wang, Yixue Wang, Enze Fang, Xuewei Zhang, Junda Cheng, Chi Chen, Chin-Pang Ho, Lijun Zhu, Shaohang Xu, Kwang-Ting Cheng, Xin Yang",
-      "date": "2026-08-26",
-      "pdf": "https://arxiv.org/pdf/2608.25366v1",
-      "score": "7.0",
-      "evidence": "面向多楼层环境的鲁棒自主探索与建图，应用于四足机器人",
-      "tldr": "现有基于平面可通行性表示的地面机器人探索方法难以处理多楼层重叠结构与跨楼层连通问题。RAEM提出混合局部-全局可通行性表示：局部断层图和局部3D网格图负责在线地形分析与连通性评估，高程感知的全局拓扑图由局部空间表示增量构建，支持高效跨楼层探索规划。针对楼梯场景，引入楼梯中心对齐策略与双路径搜索机制，分别缓解攀爬时偏航突变和拓扑局部断连。仿真和真实实验表明，该方法能够稳健完成五层楼梯连续探索，计算开销稳定。",
+      "title_en": "Seeing the Unseen: Semantic-in-Gaussian for Sparse-View 3D Generalization",
+      "authors": "Zeyang Bai, Yunpeng Wang, Yunbiao Wang, Jun Xiao",
+      "date": "2026-08-24",
+      "pdf": "https://arxiv.org/pdf/2608.22740v1",
+      "score": "6.0",
+      "evidence": "语义高斯稀疏视角3D泛化，可用于三维映射与稠密重建的方法迁移",
+      "tldr": "可泛化3D高斯泼溅在稀疏视图下受限于像素级高斯估计，难以处理遮挡与不完整结构。为此提出SeeU框架，引入语义条件下的高斯细化，通过跨视图熵感知模块聚合多视图语义几何线索，并利用条件高斯Transformer修正粗略高斯。在多个基准上显著提升渲染质量与结构完整性，尤其在挑战性的外推场景中平均PSNR提高2.44dB。",
       "tags": "query:d-slam",
-      "abstract_en": "In this paper, we propose RAEM, a robust autonomous exploration framework for quadruped robots operating in multi-floor environments. Most existing ground-robot exploration approaches rely on planar traversability representations, which cannot adequately represent the overlapping structures and cross-floor connectivity of multi-floor buildings. Although tomography-based representations provide effective traversability modeling for multi-floor navigation, maintaining a global tomography map incurs substantial computational overhead for online exploration with frequent replanning. Moreover, sparse and fragmented LiDAR observations in stairwells can degrade local traversability estimation, leading to irregular viewpoint placement and temporary topological disconnections. To address these challenges, RAEM adopts a hybrid local-global traversability representation, in which a local tomography map and an explicitly categorized local 3D grid map are used for online terrain analysis and connectivity evaluation, while an elevation-aware global topological graph is incrementally constructed from these local spatial representations for efficient cross-floor exploration planning. We further introduce a staircase center alignment strategy to reduce abrupt yaw variations during climbing and a dual path searching mechanism to recover guidance paths when the global topology is locally disconnected. Extensive simulation and real-world experiments demonstrate robust and computationally stable autonomous exploration across multi-floor structures, including continuous exploration of a five-floor stairwell.",
+      "abstract_en": "Generalizable 3D Gaussian Splatting (G-3DGS) has emerged as a promising approach for novel view synthesis undersparse-view settings. However, existing frameworks remain restricted by pixel-aligned Gaussian estimation, whichstruggles in partially observed or occluded regions and often leads to incomplete surfaces or structural collapse. Toaddress these challenges, we propose SeeU (Seeing the Unseen), a novel G-3DGS framework. We frame its core design asSemantic-in-Gaussian: semantic-conditioned refinement in Gaussian space. Specifically, we introduce a Cross-viewEntropy-Aware (CEA) module that aggregates multi-view semantic and geometric cues into compact embeddings. Theseembeddings guide the Conditional Gaussian Transformer, which applies residual updates to coarse Gaussians, helpingrecover under-constrained regions of partially observed structures while preserving surface consistency. Comprehensiveexperiments on multiple benchmarks demonstrate that SeeU consistently improves rendering quality and structuralcompleteness while retaining efficient feed-forward inference. Especially under challenging extrapolation settings,SeeU achieves an average improvement of 2.44 dB in PSNR compared to recent SOTA G-3DGS methods.",
       "source": "arxiv",
       "selection_source": "fresh_fetch"
     },

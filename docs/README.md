@@ -44,14 +44,14 @@
       <span class="dpr-home-dashboard-kicker">2026-08-29</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 17 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 23 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
-    <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>11</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>2 次</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>8</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>15</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-08-29 03:34:51 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-08-29 21:54:36 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,7 +62,7 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日共处理17篇论文，精读6篇，速读11篇，重点聚焦具身智能与机器人导航方向。最值得关注的是两项9分工作：形状感知的强化学习模型预测控制（SRL-MPC）与结合语义推理的具身导航系统（OptiSight），均在复杂交互任务中展现突破。建议普通读者优先浏览这两篇精读论文的摘要与图表，快速把握具身智能的前沿技术趋势。</p>
+<p>今日精读聚焦具身智能与机器人控制，两篇高分论文分别突破形状感知的强化学习MPC与语义-几何融合导航。最值得关注的是SRL-MPC的形状感知控制方案，以及OptiSight连接语义推理与几何控制的导航范式。建议普通读者优先浏览OptiSight，其思路对理解未来机器人自主决策更具启发。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -71,12 +71,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">6 篇</strong>
+    <strong class="dpr-home-dashboard-count">8 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="SRL-MPC: Shape-Aware Reinforcement Learned Model Predictive Control">SRL-MPC: Shape-Aware Reinforcement Learned Model Predictive Control</span></li><li><span class="dpr-home-dashboard-paper-title" title="OptiSight: Bridging Semantic Reasoning and Geometric Control for Embodied Navigation">OptiSight: Bridging Semantic Reasoning and Geometric Control for Embodied Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="EgoNav: Bridging Learned Waypoints and Geometry-Aware Local Control for Robust Indoor Navigation">EgoNav: Bridging Learned Waypoints and Geometry-Aware Local Control for Robust Indoor Navigation</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="SRL-MPC: Shape-Aware Reinforcement Learned Model Predictive Control">SRL-MPC: Shape-Aware Reinforcement Learned Model Predictive Control</span></li><li><span class="dpr-home-dashboard-paper-title" title="OptiSight: Bridging Semantic Reasoning and Geometric Control for Embodied Navigation">OptiSight: Bridging Semantic Reasoning and Geometric Control for Embodied Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot">RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>4</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>2</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>5</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>4</strong></span><span class="dpr-home-dashboard-tag">rl-motion <strong>1</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -84,12 +84,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">速读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">11 篇</strong>
+    <strong class="dpr-home-dashboard-count">15 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Unified Branch-and-Bound Search for the Steiner Traveling Salesman Problem on Graphs of Convex Sets">Unified Branch-and-Bound Search for the Steiner Traveling Salesman Problem on Graphs of Convex Sets</span></li><li><span class="dpr-home-dashboard-paper-title" title="Macro-Action Topological Navigation under Noisy Localization using Reinforcement Learning">Macro-Action Topological Navigation under Noisy Localization using Reinforcement Learning</span></li><li><span class="dpr-home-dashboard-paper-title" title="Lightweight Machine Learning-Driven Monocular Sidewalk Path Extraction for Embedded Micromobility Navigation">Lightweight Machine Learning-Driven Monocular Sidewalk Path Extraction for Embedded Micromobility Navigation</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Unified Branch-and-Bound Search for the Steiner Traveling Salesman Problem on Graphs of Convex Sets">Unified Branch-and-Bound Search for the Steiner Traveling Salesman Problem on Graphs of Convex Sets</span></li><li><span class="dpr-home-dashboard-paper-title" title="DELTA: Deformable Elevation-Based Local Terrain Attention Encoder for Sparse-Terrain Quadrupedal Locomotion">DELTA: Deformable Elevation-Based Local Terrain Attention Encoder for Sparse-Terrain Quadrupedal Locomotion</span></li><li><span class="dpr-home-dashboard-paper-title" title="Macro-Action Topological Navigation under Noisy Localization using Reinforcement Learning">Macro-Action Topological Navigation under Noisy Localization using Reinforcement Learning</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>6</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>5</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>8</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>6</strong></span><span class="dpr-home-dashboard-tag">rl-motion <strong>1</strong></span></div>
 </section>
 </div>
 
