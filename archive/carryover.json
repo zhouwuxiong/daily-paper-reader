@@ -1,95 +1,12 @@
 {
-  "generated_at": "2026-08-29T21:50:29.911194+00:00",
-  "updated_date": "20260829",
+  "generated_at": "2026-08-30T22:14:11.355253+00:00",
+  "updated_date": "20260830",
   "carryover_days": 9,
   "tag_states": {
     "d-slam": {
-      "updated_date": "20260829",
+      "updated_date": "20260830",
       "carryover_days": 9,
-      "items": [
-        {
-          "id": "2608.26589v1",
-          "source": "arxiv",
-          "title": "DPA-I2P: Depth-Guided Projective Alignment for Image-to-Point-Cloud Registration in Autonomous Driving",
-          "abstract": "Image-to-Point Cloud Registration aims to estimate the camera pose of a given image within a 3D scene point cloud, which is a fundamental task in autonomous driving and large-scale outdoor localization. Recent implicit correspondence learning methods have improved registration performance by learning cross-modal alignment in an end-to-end framework, leading to more accurate camera pose estimation. However, due to the inherent modality discrepancy between images and sparse LiDAR point clouds, reliable cross-modal correspondence learning remains challenging. To address this issue, we propose Depth-Guided Projective Alignment for Image-to-Point-Cloud Registration (DPA-I2P). Unlike naive depth or feature concatenation, Ray-Conditioned Metric Depth Encoding (RMDE) and Projection-Consistent Vision Lifting (PVL) exploit depth and visual cues in a structured, geometry-aware manner. In addition, Cross-Modal Query Pruning (CQP) suppresses unreliable queries during early refinement to improve matching stability. Experiments on KITTI and nuScenes demonstrate the effectiveness of the proposed method. On KITTI, DPA-I2P reduces RTE and RRE by 45.0% and 55.6% over the strongest implicit baseline, respectively. On nuScenes, DPA-I2P also improves registration accuracy over the evaluated baselines, suggesting better transferability to different driving scenes.",
-          "authors": [
-            "Wenxin Zhang",
-            "Hang Li",
-            "Zhiwei Xu",
-            "Qiankun Dong",
-            "Gang Wang",
-            "Tao Li"
-          ],
-          "primary_category": "cs.CV",
-          "categories": [
-            "cs.CV"
-          ],
-          "published": "2026-08-27T04:01:15+00:00",
-          "link": "https://arxiv.org/pdf/2608.26589v1",
-          "tags": [
-            "keyword:d-slam",
-            "query:d-slam"
-          ],
-          "llm_score": 8.0,
-          "llm_evidence_en": "camera pose estimation for autonomous driving localization, a core component of SLAM for navigation",
-          "llm_evidence_cn": "面向自动驾驶的大规模户外定位中的图像到点云配准，实现相机位姿估计，是SLAM与自主导航的核心技术",
-          "llm_evidence": "面向自动驾驶的大规模户外定位中的图像到点云配准，实现相机位姿估计，是SLAM与自主导航的核心技术",
-          "canonical_evidence": "面向自动驾驶的大规模户外定位中的图像到点云配准，实现相机位姿估计，是SLAM与自主导航的核心技术",
-          "llm_tldr_en": "DPA-I2P addresses image-to-point-cloud registration for camera pose estimation in autonomous driving by proposing depth-guided projective alignment, improving cross-modal correspondence learning and registration accuracy.",
-          "llm_tldr_cn": "针对自动驾驶中图像与稀疏LiDAR点云之间的跨模态配准难题，DPA-I2P提出深度引导的投影对齐方法，通过利用深度信息约束特征匹配，提升了大场景下的相机位姿估计精度。实验表明该方法在基准数据集上取得了优于已有隐式对应学习方法的配准效果，为视觉定位与SLAM系统提供了关键技术支撑。",
-          "llm_tldr": "针对自动驾驶中图像与稀疏LiDAR点云之间的跨模态配准难题，DPA-I2P提出深度引导的投影对齐方法，通过利用深度信息约束特征匹配，提升了大场景下的相机位姿估计精度。实验表明该方法在基准数据集上取得了优于已有隐式对应学习方法的配准效果，为视觉定位与SLAM系统提供了关键技术支撑。",
-          "llm_tags": [
-            "query:d-slam"
-          ],
-          "matched_query_tag": "query:d-slam",
-          "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
-          "matched_requirement_id": "req-2",
-          "selection_source": "carryover_cache",
-          "paper_id": "2608.26589v1",
-          "carry_days": 1
-        },
-        {
-          "id": "2608.26932v1",
-          "source": "arxiv",
-          "title": "Contact-Aided Factor-Graph Localization for Underwater Sampling",
-          "abstract": "Accurate state estimation for autonomous underwater vehicles performing close-range seafloor sampling remains challenging. In low-altitude operation, down-looking cameras over featureless planar seabeds produce scale ambiguity, lateral degeneracy, and inconsistent feature tracking. Meanwhile, inertial-Doppler Velocity Log (DVL) fusion alone provides no mechanism for structural drift correction. We propose a Contact-Aided Factor-Graph Localization framework that treats physical interaction as an informative geometric constraint within a smoothing-based localization formulation. The method tightly fuses suction-based manipulator contact events with adaptive visual odometry, learned object detections, and on-board sensors. Visual odometry relative-pose factors and landmark bearing-range factors are uncertainty-scaled according to inlier statistics to prevent visually weak frames from destabilizing the estimator, while contact events are modeled as high-confidence factors that induce implicit loop closures without appearance-based place recognition. Furthermore, the system can fully initialize online during motion. Experimental evaluation in tanks, harbor, and simulation environments demonstrates that contact-induced constraints significantly reduce trajectory drift and improve object revisit accuracy compared to filtering-based navigation and contact-free graph formulations. These results highlight the role of embodied physical interaction as a localization primitive in perception-degraded underwater environments",
-          "authors": [
-            "Michele Grimaldi",
-            "Yosaku Maeda",
-            "Hitoshi Kakami",
-            "Ignacio Carlucho",
-            "Yvan R. Petillot",
-            "Tomoya Inoue"
-          ],
-          "primary_category": "cs.RO",
-          "categories": [
-            "cs.RO"
-          ],
-          "published": "2026-08-27T10:34:22+00:00",
-          "link": "https://arxiv.org/pdf/2608.26932v1",
-          "tags": [
-            "keyword:d-slam",
-            "query:d-slam"
-          ],
-          "llm_score": 8.0,
-          "llm_evidence_en": "Factor-graph localization fusing contact events with visual odometry for drift correction",
-          "llm_evidence_cn": "融合接触事件与视觉里程计的因子图定位，实现漂移校正",
-          "llm_evidence": "融合接触事件与视觉里程计的因子图定位，实现漂移校正",
-          "canonical_evidence": "融合接触事件与视觉里程计的因子图定位，实现漂移校正",
-          "llm_tldr_en": "Contact-Aided Factor-Graph Localization fuses suction-manipulator contact events with adaptive visual odometry in a smoothing framework, providing structural drift correction for underwater close-range sampling where cameras and DVL are unreliable.",
-          "llm_tldr_cn": "自主水下机器人在近底采样时，面对无特征平坦海床会出现尺度模糊与横向退化，惯性-DVL融合又无法修正结构漂移。为此提出接触辅助因子图定位框架，将吸盘式机械臂接触事件作为几何约束，与自适应视觉里程计、目标检测和机载传感器紧耦合。该方法可有效抑制视觉里程计漂移，提高水下近距离采样的状态估计精度，为水下定位引入新的约束来源。",
-          "llm_tldr": "自主水下机器人在近底采样时，面对无特征平坦海床会出现尺度模糊与横向退化，惯性-DVL融合又无法修正结构漂移。为此提出接触辅助因子图定位框架，将吸盘式机械臂接触事件作为几何约束，与自适应视觉里程计、目标检测和机载传感器紧耦合。该方法可有效抑制视觉里程计漂移，提高水下近距离采样的状态估计精度，为水下定位引入新的约束来源。",
-          "llm_tags": [
-            "query:d-slam"
-          ],
-          "matched_query_tag": "query:d-slam",
-          "matched_query_text": "pose graph optimization methods for global consistency in simultaneous localization and mapping",
-          "matched_requirement_id": "req-5",
-          "selection_source": "carryover_cache",
-          "paper_id": "2608.26932v1",
-          "carry_days": 1
-        }
-      ]
+      "items": []
     },
     "robot-nav": {
       "updated_date": "20260815-20260824",
