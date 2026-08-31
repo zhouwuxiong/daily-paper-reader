@@ -1,0 +1,782 @@
+Title: Switched Turn-based Adaptive Source Seeking Strategy using Estimation and Information-driven Direction of Improvement
+
+URL Source: https://arxiv.org/pdf/2608.23068v1
+
+Published Time: Tue, 25 Aug 2026 01:54:51 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Switched Turn-based Adaptive Source Seeking Strategy using Estimation and Information-driven Direction of Improvement 
+
+Shubhra Banerjee 1 and Satadal Ghosh 2
+
+Abstract — Source seeking is a fundamental problem in ap-plications such as gas leak localization, radiation monitoring, and environmental surveillance, where the source location must be inferred from noisy scalar measurements. In agent-based settings, estimation and motion are tightly coupled: the trajectory influences measurement quality, while measurements refine the source estimate. This paper proposes a switched turn-based adaptive source-seeking strategy that integrates Extended Kalman Filter (EKF) estimation with Fisher Information Matrix (FIM)-based direc-tion selection within a loop-based motion framework. Measure-ments are accumulated over each loop, and direction updates are performed at loop boundaries using both estimation uncer-tainty and predicted information gain, enabling a principled balance between exploration and exploitation. Theoretical analysis and simulation results for stationary and moving sources show that the proposed joint strategy achieves lower estimation error and more effective distance reduction compared to purely information-driven and estimate-driven approaches, particularly under dynamic conditions. 
+
+I. I NTRODUCTION 
+
+Source seeking refers to the problem of estimating the unknown origin of a signal field from measurements by on-board sensors of unmanned vehicle(s) a.k.a. agent(s) at different locations and steering the agent toward the source region. The source location is not directly observable and needs to be inferred from noisy measurements collected during the motion of agent(s). This problem plays a critical role in several real-world applications, such as determining the deepest regions of a water body [1], locating sources of pollutants [2], and radiation [3]. The problem of robotic source seeking has been addressed in literature following several methods that include control-theoretic ones, estimation and information-theoretic ones, and geometric ones. Among the control-theoretic methods, extremum-seeking control methods [4] have been exten-sively utilized, where small motion perturbations are used to extract gradient information from signal variations and guide the agent toward the source. Different implementations following this method include schemes that modulate both speed and heading [5] as well as approaches that regulate only the heading while maintaining constant speed [6], with stochastic variants proposed to improve robustness under uncertainty [7]. Besides, an adaptive feedback control-based source seeking scheme was presented in [8] by adjusting 
+
+> 1Shubhra Banerjee is a Ph.D. Scholar in the Department of Aerospace Engineering, Indian Institute of Technology Madras, Chennai 600036, India.
+
+ae21d022@smail.iitm.ac.in 
+
+> 2Satadal Ghosh is an Associate Professor, Department of Aerospace Engineering, Indian Institute of Technology Madras, Chennai 600036, India.
+
+satadal@iitm.ac.in 
+
+control inputs using online source estimates to handle un-certainties, while a sliding mode control-based strategy has been presented in [9] for robust convergence toward the source. While control-theoretic methods are mathematically well-grounded, their command structure often involves states that are hard to measure and estimate. Also, in some of the formulations, signum-based commands lead to very sharp turn in the robot’s motion. These problems are mitigated by leveraging geometry-based strategies that focus on simple and implementable motion patterns. Two geometric strategies, named as ’Full Circle’ and ’Half Circle’, were presented in [10], which inherently provided the opportunity of zigzagging for effective exploration, and also as the direction estimate to the source improved over nominal circular loops, it was exploited simultaneously. This notion was subsequently further advanced in formulating switched turn strategies, in which the agent follows a nominal circular loop unless a turn switching event occurs in that loop. The turn switching event was first characterized as passage through the maximum signal point of the loop in Maxima-Turn-Switching (MTS) framework [11], [12], and crossing the local gradient estimate direction in Gradient-Direction-Turn-Switching (GDTS) [13]. A local gradient estimate-based augmentation of MTS was also presented in [14]. These strategies are computationally efficient and produce smooth trajectories suitable for real systems. How-ever, in most of the control-theoretic methods except [7] and geometry-based methods uncertainties associated with scalar field, on-board sensing and estimation are usually not directly included. In contrast, estimation-based and information-theoretic methods leverage underlying probabilistic and / or statistical properties of the uncertainties involved in source localization. An info-taxis scheme was presented in [15], following which robot actions were chosen such that information about the source location gets improved, thus making them effective even when measurements are limited or unreliable. In [16], a biased sampling-based iterative motion planning of arobot was presented with major weightage on the updated confidence interval of source location estimate. EKF-based source location estimate and gradient-following on the trace of FIM were presented in [17], [18] for a multi-robot source seeking problem. Particle filter was leveraged in [19], [20] to explicitly account for uncertainty and nonlinear measure-ment. Trajectory with maximal information gain was planned for source localization using model predictive control [21] and sampling-based method [22]. While these approaches are statistically well-founded, they often command highly arXiv:2608.23068v1 [cs.RO] 24 Aug 2026 zigzagging robot trajectories, which are kinodynamically infeasible. In order to obviate the limitations of different methodolo-gies, in this paper, a turn switching strategy is presented, in which the agent follows nominal circular loops, while turn switching event gets triggered as the agent crosses a specific direction in that loop. Three such directions are explored - one of them is toward the EKF-based source estimate, while the second one is toward a direction governed by the gradient of trace of FIM (indicating maximum information gain), and the last one being a adaptive linear combination of the first two directions. The adaptive weights facilitate balanced exploration and exploitation strategies during this source seeking. Thus, the amalgamation of geometric method with estimation and information-based methods is the salient feature of the source localization method presented in this paper. Note that leveraging the switched turn strategy over nominal circular loops in the agent’s motion, in one hand, ensures kino-dynamic feasibility of the agent’s motion as it progresses toward the source, and on the other hand, it also ensures an inherent feature of systematic zigzagging, thereby facilitating the exploration process. Moreover, the effective use of EKF-based source estimate direction and FIM-based direction of information gain in triggering the turn switching event in any nominal loop facilitates efficient handling the uncertainties involved in environment and sens-ing. Theoretical analysis and simulation results are presented to demonstrate the effectiveness of the proposed source seeking approach for both stationary and moving sources. The remainder of this paper is organized as follows. Section II presents the problem formulation, including the source, agent, and measurement models. Section III describes the proposed loop-based source-seeking strategy and differ-ent direction update mechanisms along with the theoretical analysis. Section IV provides simulation results and compar-ative analysis for different source motion. Finally, Section V provides a few concluding remarks. II. P ROBLEM FORMULATION 
+
+Fig. 1: Planar source-seeking scenario. A sensor-mounted agent operates in a two-dimensional workspace and collects scalar field measurements generated by an unknown source. As illustrated in Fig. 1, This paper considers a single agent operating in a planar workspace to localize a signal source, which is prior unknown, using noisy scalar measurements by on-board sensors collected during the agent’s motion. 
+
+A. Source and Its Generated Scalar Field 
+
+Let s(t) = [ sx(t) sy (t)] T ∈ R2 denote the true source location at time t. The source may be stationary or time-varying. The source evolution is modeled in general form as 
+
+˙s(t) = f (s(t), t ) + w(t), (1) where f (·) defines the source kinematics and is assumed to be continuously differentiable, and w(t) ∼ N (μ, Q) rep-resents Gaussian process noise with mean μ and covariance 
+
+Q. The structure of f (·) is assumed known, while the true trajectory remains unknown. The source is considered as generating a smooth scalar field, whose intensity attains a maximum at s(t) and de-creases with distance from the source. Here, the spatial distribution of the signal field is modeled as a smooth symmetric and radially monotonically decreasing function centered at the source location, given by 
+
+h(x(t), s(t)) = A exp 
+
+
+
+− ∥x(t) − s(t)∥2
+
+2σ2
+
+
+
+, (2) where A > 0 denotes the source intensity and σ > 0 denotes the spatial spread of the field. 
+
+B. Agent Motion Model 
+
+The agent position at time t is denoted as x(t) =[x(t) y(t)] T ∈ R2 with heading angle ψ(t) ∈ R. The agent is considered to follow unicycle kinematics with forward speed 
+
+u(t) > 0 and turn rate ω(t).
+
+˙x(t) = 
+
+u(t) cos ψ(t)
+
+u(t) sin ψ(t)
+
+
+
+; ˙ψ(t) = ω(t), (3) 
+
+C. Measurement Model 
+
+At time t, the agent obtains a scalar measurement 
+
+z(t) = h(x(t), s(t)) + v(t), (4) where h(·) as given in (2) is a nonlinear function that models the spatial field generated by the source. The structure of h(·)
+
+is considered as known, however s(t) is unknown a-priori .And, v(t) ∼ N (μv , R ) represents Gaussian measurement noise with mean μv and variance R.
+
+D. Problem Objective 
+
+Given the source motion model in (1) and the mea-surement model in (4), the objective is to devise a kino-dynamically feasible motion strategy for the agent such that it steers the agent toward a small neighborhood about the source based on estimate of source location and information gain direction obtained from on-board sensor measurements. The agent motion is regulated using the current estimate 
+
+ˆs, the associated uncertainty, and an information measure derived from the Fisher Information Matrix, ensuring pro-gressive improvement in localization performance. Fig. 2: Loop-based source-seeking strategy with direction updated at the end of each loop (switching point). III. M ETHODOLOGY 
+
+To address the problem, a loop-based exploration strategy is proposed, wherein the agent gathers spatially distributed measurements by traversing along constant-curvature trajec-tories. By accumulating measurements over each loop, high-frequency noise effects are attenuated, yielding more reliable directional information than instantaneous sampling. This underlying principle is also leveraged in existing methods such as MTS [11] and GDTS [13]. At the end of each loop, the collected data is used to infer the source direction, which is subsequently used to switch the direction of the constant-curvature motion for the next loop. In existing approaches, this update is typically obtained via local gradient estimation of the signal field, which is highly sensitive to uncertainty. In contrast, the proposed method avoids explicit gradient estimation. The direction update is instead derived from the estimated source location provided by an EKF, together with a scalar information metric constructed from the measure-ments accumulated over the current loop. In the proposed strategy, the motion evolves as a sequence of constant-curvature loops indexed by i = 1 , 2, . . . . Let the i-th loop consist of Ni measurement steps, with the agent position at step k denoted by xi,k , and the terminal (switching) point given by xi,N i . Within loop i, for each measurement step k ∈ { 0, 1, . . . , N i}, the agent acquires scalar measurement zi,k . These measurements along the loop are accumulated and used to compute a reference direction 
+
+d(i) for the subsequent loop. The overall source-seeking strategy is outlined in the following section. 
+
+A. Overall Strategy 
+
+Initial Loop: The agent initiates the exploration from an initial position x0 by executing a purely exploratory loop, as illustrated in Fig. 2. During this loop, no prior directional information is available. The loop is therefore terminated at the point corresponding to the maximum measured signal, which is denoted as the first switching point x1,N 1 . Using the measurements collected along the trajectory, a direction 
+
+d(1) is estimated, which determines the average direction of motion for the subsequent loop. In this paper, d(i) is computed based on one of the following strategies. (i) an estimate-based strategy (see Section III-B), (ii) a Fisher information-based strategy (see Section III-C), or (iii) a joint strategy (see Section III-D), which balances estimation accuracy and information gain. The agent then switches the direction of its motion ac-cordingly and the loop counter i is incremented. 
+
+Subsequent Loops: Given the direction d(i−1) at the previous switching point xi−1,N i−1 , the agent executes the next constant-curvature loop. The loop is terminated when the agent trajectory intersects the ray originating at xi−1,N i−1
+
+along direction d(i−1) . This intersection determines the next switching point xi,N i , where a new direction d(i)
+
+is estimated based on the accumulated measurements. The direction of agent’s motion changes and the loop counter i
+
+is incremented. 
+
+Stopping Criterion: The iterative process continues until the measured signal at the switching points ceases to ex-hibit improvement across successive loops. Specifically, the algorithm is terminated when 
+
+zi,N i < z i−1,N i−1 , (5) indicating convergence to the vicinity of the source. 
+
+B. Estimation-Based Direction 
+
+As described in the overall strategy, a direction d(i) is computed at each switching point using the measurements accumulated over the preceding loop. In the estimation-based approach, this direction is denoted as d(i)est and is derived from the estimate of the source location obtained from an EKF. 
+
+Extended Kalman Filter: From (1) and (4), at each discrete measurement step k within loop i, the source evolution model and measurement model are given as 
+
+si,k = f (si,k −1) + wi,k −1, wi,k −1 ∼ N (0, Q), (6) 
+
+zi,k = h(xi,k , si,k ) + vi,k , vi,k ∼ N (0 , R ). (7) Let ˆsi,k and Pi,k denote the estimate of the source location and its associated covariance at step k of loop i. Given the nonlinear process and measurement models, EKF proceeds through the following prediction and update steps. 
+
+Prediction: 
+
+ˆsi,k |k−1 = f (ˆ si,k −1), (8) 
+
+Pi,k |k−1 = Fi,k −1Pi,k −1F⊤ 
+
+> i,k −1
+
++ Q, (9) 
+
+Update: 
+
+Ki,k = Pi,k |k−1H⊤
+
+> i,k
+
+ Hi,k Pi,k |k−1H⊤ 
+
+> i,k
+
++ R−1 , (10) 
+
+ˆsi,k = ˆ si,k |k−1 + Ki,k 
+
+ zi,k − h(Xi,k , ˆsi,k |k−1) , (11) 
+
+Pi,k = ( I − Ki,k Hi,k )Pi,k |k−1, (12) where Fi,k −1 is the Jacobian of f (·) evaluated at ˆsi,k −1,and Hi,k is the Jacobian of h(·) with respect to the source state, evaluated at (xi,k , ˆsi,k |k−1), and Ki,k denotes the Kalman gain at step k of loop i and xi,k represents the agent’s position. Estimate-Based Direction d(i)est : At the switching point 
+
+xi,N i , the direction d(i)est is defined based on the relative geometry between the agent the estimated source location. Define the true relative position vector and its estimate as 
+
+ri,N i ≜ si,N i − xi,N i , ˆri,N i ≜ ˆsi,N i − xi,N i . (13) The estimation error is given by 
+
+ei,N i = ˆ si,N i − si,N i , (14) which implies 
+
+ˆri,N i = ri,N i + ei,N i . (15) The estimate-based direction for loop i is then given by 
+
+d(i) 
+
+> est
+
+= ˆri,N i
+
+∥ˆri,N i ∥ = ˆsi,N i − xi,N i
+
+∥ˆsi,N i − xi,N i ∥ . (16) This d(i)est will be used to terminate the subsequent loop and switch the agent’s motion. 
+
+Results: The estimate-based direction defined in (16) depends explicitly on the EKF estimate at the switching points. This section characterize how d(i) 
+
+> est
+
+evolves across loops as the estimation improves. 
+
+Lemma 1 (Loop-wise Improvement): The estimate-based direction improves monotonically across loops 
+
+E
+
+h
+
+∥d(i+1)  
+
+> est
+
+− d∗(i+1) ∥2i
+
+< E
+
+h
+
+∥d(i) 
+
+> est
+
+− d∗(i)∥2i
+
+. (17) where d∗(i) denotes the true direction toward the source at the end of loop i, defined as 
+
+d∗(i) = ri,N i
+
+∥ri,N i ∥ , ri,N i = si,N i − xi,N i . (18) 
+
+Proof: Using a first-order approximation of the nor-malized vector, 
+
+d(i) 
+
+> est
+
+− d∗(i) ≈ 1
+
+∥ri,N i ∥ P⊥ei,N i , (19) where P⊥ = I − ri,N i r⊤  
+
+> i,N i
+> ∥ri,N i∥2
+
+.Thus, 
+
+E
+
+h
+
+∥d(i) 
+
+> est
+
+− d∗(i)∥2i
+
+= 1
+
+∥ri,N i ∥2 tr( P⊥Pi,N i ) . (20) From the EKF information update, 
+
+Pi+1 ,N i+1 ⪯ Pi,N i , (21) Since P⊥ ⪰ 0 and the measurements provide non-zero information, the inequality is strict, which implies 
+
+tr( P⊥Pi+1 ,N i+1 ) < tr( P⊥Pi,N i ). (22) Since ∥ri+1 ,N i+1 ∥ ≤ ∥ ri,N i ∥ as shown in Section III-E, the result follows. 
+
+Lemma 2 (Loop-wise Exponential Convergence): 
+
+Assume the EKF estimation error satisfies the mean-square exponential bound 
+
+E∥ek∥2 ≤ C0ρk, 0 < ρ < 1, (23) for all k = 0, 1, 2, . . . , where C0 > 0 is a constant determined by the initial estimation error and noise statistics. Then, at the loop level, there exists a constant C1 ≥ C0
+
+such that 
+
+E∥ei,N i ∥2 ≤ C1ρi, (24) where ei,N i = eki denotes the estimation error at the switch-ing point of loop i, and ki = Pij=1 Nj is the cumulative time index. The direction error then satisfies 
+
+E
+
+h
+
+∥d(i) 
+
+> est
+
+− d∗(i)∥2i
+
+≤ 4C1
+
+∥ri,N i ∥2 ρi. (25) 
+
+Proof: From the definition of the switching index, 
+
+ei,N i = eki , ki =
+
+> i
+
+X
+
+> j=1
+
+Nj , N j ≥ 1. (26) Using the EKF bound, 
+
+E∥ei,N i ∥2 = E∥eki ∥2 ≤ C0ρki . (27) Since ki ≥ i and 0 < ρ < 1, it follows that 
+
+ρki ≤ ρi, (28) which implies 
+
+E∥ei,N i ∥2 ≤ C0ρi. (29) Thus, there exists a loop-level constant C1 ≥ C0 such that 
+
+E∥ei,N i ∥2 ≤ C1ρi. (30) Next, using the bound on normalized vectors, 
+
+∥d(i) 
+
+> est
+
+− d∗(i)∥ ≤ 2∥ei,N i ∥∥ri,N i ∥ , (31) we obtain 
+
+∥d(i) 
+
+> est
+
+− d∗(i)∥2 ≤ 4∥ei,N i ∥2
+
+∥ri,N i ∥2 . (32) Assuming ∥ri,N i ∥ ≥ rmin > 0, the bound remains well-defined. Taking expectation and substituting the loop-level bound, 
+
+E
+
+h
+
+∥d(i) 
+
+> est
+
+− d∗(i)∥2i
+
+≤ 4C1
+
+∥ri,N i ∥2 ρi. (33) Lemmas 1 and 2 establish that d(i)est becomes progressively more accurate across loops, with the direction error decreas-ing monotonically and exhibiting exponential convergence under standard EKF assumptions. 
+
+C. Fisher Information-Based Direction 
+
+While the estimation-based strategy exploits the current source estimate to guide motion, it does not explicitly account for the information content of future measurements. To address this, an information-driven strategy is proposed, wherein the agent motion is regulated to maximize the information gained about the source location. Fisher Information and Direction Definition: At each measurement step, the FIM associated with the source es-timate is given by [23] 
+
+Ji,k = H⊤
+
+> i,k
+
+R−1Hi,k , (34) where Hi,k is the measurement Jacobian evaluated at 
+
+(xi,k , ˆsi,k ). Over loop i, the accumulated information is 
+
+J(i) = PNi 
+
+> k=0
+
+H⊤
+
+> i,k
+
+R−1Hi,k .
+
+At the switching point xi,N i , the information-based direc-tion is defined as 
+
+d(i) 
+
+> info
+
+= ∇x tr( J(xi,N i , ˆsi,N i )) 
+
+∥∇ x tr( J(xi,N i , ˆsi,N i )) ∥ . (35) The gradient is evaluated numerically at xi,N i using ˆsi,N i .
+
+D. Direction Estimation Using Joint Strategy 
+
+To balance exploitation (estimation) and exploration (in-formation gain), a joint direction is defined as 
+
+d(i) 
+
+> joint
+
+= (1 − λi)d(i) 
+
+> info
+
++ λid(i) 
+
+> est
+
+, 0 ≤ λi ≤ 1, (36) where the weighting factor λi is chosen as 
+
+λi = tr( Pi,N i )tr( Pi,N i ) + c , (37) with c > 0 being a tuning parameter. This choice ensures that when the estimation uncertainty is large (i.e., tr( Pi,N i ) is large), the strategy prioritizes information gathering, whereas as the estimate becomes more accurate, the direction increasingly aligns with the estimate-based strategy. The following result characterizes the advantage of incor-porating Fisher information into the direction selection. 
+
+Lemma 3: The joint direction d(i+1)  
+
+> joint
+
+yields strictly smaller expected direction error compared to d(i+1)  
+
+> est
+
+.
+
+E
+
+h
+
+∥d(i+1)  
+
+> joint
+
+− d∗(i+1) ∥2i
+
+< E
+
+h
+
+∥d(i+1)  
+
+> est
+
+− d∗(i+1) ∥2i
+
+. (38) 
+
+Proof: From the estimate-based analysis, 
+
+E
+
+h
+
+∥d(i) 
+
+> est
+
+− d∗(i)∥2i
+
+= 1
+
+∥ri,N i ∥2 tr( P⊥Pi,N i ) . (39) The EKF information update satisfies 
+
+P−1 
+
+> i+1 ,N i+1
+
+= P−1 
+
+> i,N i
+
++ J(i+1) , (40) where J(i+1) depends on the chosen motion direction. Since the information-driven direction maximizes the Fisher information, it yields 
+
+J(i+1)  
+
+> info
+
+⪰ J(i+1)  
+
+> est
+
+. (41) Thus, 
+
+Pinfo  
+
+> i+1 ,N i+1
+
+⪯ Pest  
+
+> i+1 ,N i+1
+
+, (42) which implies 
+
+tr 
+
+
+
+P⊥Pinfo 
+
+> i+1 ,N i+1
+
+
+
+< tr 
+
+
+
+P⊥Pest 
+
+> i+1 ,N i+1
+
+
+
+, (43) and hence a smaller direction error. Since the joint direc-tion includes a non-zero information-driven component, it achieves strictly greater information gain than the estimate-only strategy, thereby inheriting this improvement. 
+
+E. Convergence 
+
+This subsection establishes that the proposed loop-based motion leads to progressive reduction in distance to the source, and provides insight into the role of different di-rection strategies. 
+
+Lemma 4 (Loop-wise Distance Reduction): The distance to the source decreases across successive switching points: 
+
+∥ri+1 ,N i+1 ∥ ≤ ∥ ri,N i ∥, (44) where ri,N i = si,N i − xi,N i .
+
+Proof: Define the displacement between successive switching points as 
+
+∆x(i) = xi+1 ,N i+1 − xi,N i , (45) and the source variation as 
+
+∆s(i) = si+1 ,N i+1 − si,N i . (46) Then, 
+
+ri+1 ,N i+1 = ri,N i + ∆ s(i) − ∆x(i). (47) Expanding the squared norm, 
+
+∥ri+1 ,N i+1 ∥2 = ∥ri,N i ∥2 − 2r⊤ 
+
+> i,N i
+
+∆x(i) + ∥∆x(i)∥2
+
++ 2 r⊤ 
+
+> i,N i
+
+∆s(i) − 2(∆ s(i))⊤∆x(i) + ∥∆s(i)∥2.
+
+(48) The loop is oriented along the estimate-based direction 
+
+d(i) 
+
+> est
+
+= ri,N i + ei,N i
+
+∥ri,N i + ei,N i ∥ , (49) which satisfies 
+
+r⊤ 
+
+> i,N i
+
+d(i) 
+
+> est
+
+> 0, (50) for sufficiently small estimation error. By construction of the loop motion, 
+
+d(i)⊤ 
+
+> est
+
+∆x(i) > 0 ⇒ r⊤ 
+
+> i,N i
+
+∆x(i) > 0. (51) Thus, the dominant term −2r⊤ 
+
+> i,N i
+
+∆x(i) is strictly negative. Assuming slow source variation, 
+
+∥∆s(i)∥ ≤ ϵ∥ri,N i ∥, ϵ ≪ 1, (52) the remaining terms are higher-order and do not dominate. Hence, 
+
+∥ri+1 ,N i+1 ∥2 < ∥ri,N i ∥2, (53) which implies 
+
+∥ri+1 ,N i+1 ∥ ≤ ∥ ri,N i ∥. (54) 
+
+Remark 1 (Convergence under Joint Strategy): From Lemma 3, the joint strategy achieves smaller direction error than the estimate-based direction, resulting in improved alignment with the true source direction. From Lemma 4, the estimate-based strategy ensures monotonic reduction in distance to the source and eventual convergence. Since the joint strategy provides better directional align-ment while inheriting the convergence property of the EKF, it yields a greater reduction in distance per loop. Hence, as the EKF converges, the joint strategy also guarantees convergence to the source, with faster progression compared to estimate-only and information-only strategies. IV. S IMULATION RESULTS 
+
+In this section, the proposed algorithm is validated through numerical simulations performed in the Google Colab en-vironment. The simulations were executed on a system equipped with an Intel(R) Core(TM) i5-10500 CPU (3.10 GHz) processor. All simulation experiments have been car-ried out using Python-based implementations. A Gaussian scalar field is considered as below. 
+
+h(xi,k , si,k ) = A exp 
+
+
+
+− ∥xi,k − si,k ∥2
+
+2σ2
+
+
+
+, (55) where xi,k , si,k ∈ R2 denote the agent and source positions, respectively. The source intensity is A = 12 .0 unit, and the spatial spread parameter is σ = 14 .0 m. Measurement noise is Gaussian, vi,k ∼ N (0 , R ) with R = 0 .01 . The true initial source location is s0 = [23 , 23] ⊤ m, and the EKF is initialized at ˆs0 = [15 , 15] ⊤ m with covariance 
+
+P0 = 30 I2. The agent follows constant-curvature motion with constant forward speed u = 0 .6 m/s and constant turn rate ω = 0 .6 rad/s, yielding a nominal loop radius of 1.0 m. While considering the motion regulation strategies, three different directions are considered for the initiation of turn switching at every nominal loop: (i) FIM-only , where the direction d(i) 
+
+> info
+
+is selected to maximize the information gain; (ii) Estimate-only , where the direction d(i) 
+
+> est
+
+is selected to-wards the estimated source location; and, (iii) joint strategy ,where the direction d(i) 
+
+> joint
+
+in (36) combines d(i) 
+
+> info
+
+and d(i)
+
+> est
+
+using the adaptive weight λi defined in (37) that facilitates a balance between exploitation and exploration during the source localization process. Three types of source motion are considered: (1) stationary source at s0; (2) straight-line motion with velocity vsource =0.10 m/s along the x-direction; (3) circular motion with 
+
+vsource = 0 .10 m/s and angular rate ωsource = 0 .01 rad/s, giving a turn radius of R as Rsource = 10 m. 
+
+A. Trajectory Comparison 
+
+It is evident from Fig. 3 that the turn switching strategy based on both d(i)
+
+> info
+
+, d(i) 
+
+> est
+
+and d(i) 
+
+> joint
+
+initially for a long duration steers the agent toward the source in cases of both stationary and dynamic source scenarios. However, as the information saturates after the agent’s passage through the circular loops during that period, d(i) 
+
+> info
+
+starts oscillating with large deviation, thus resulting in poor performance in convergence toward the source at the end. On the other hand, as the source estimate improves over the circular loops, d(i) 
+
+> est
+
+gradually converges toward the source, thus leading the agent following 
+
+d(i) 
+
+> est
+
+-based turn switching strategy also converge sufficiently close to the source at the end. However, as d(i) 
+
+> est
+
+is a linear combination of both d(i) 
+
+> info
+
+and d(i) 
+
+> est
+
+, it also oscillates, but with a less deviation w.r.t. d(i)
+
+> info
+
+. Moreover, as the weightage of 
+
+d(i) 
+
+> est
+
+is more significant on d(i) 
+
+> joint
+
+at the end, it also finally converges toward the source with mild oscillatory pattern. This leads the agent driven by d(i)
+
+> joint
+
+-based turn switching strategy approach sufficiently close to the source. TABLE I: Terminal estimation error (m) for different source types using turn-switching directions.             
+
+> Source Type Turn-switching direction dinfo (i) dest (i) djoint (i)
+> Stationary 1.569 0.457 0.366
+> Straight-line 1.507 2.033 0.265
+> Circular 4.761 2.946 1.010
+
+In case of dynamic source scenarios, this pattern remains same for d(i) 
+
+> info
+
+and d(i) 
+
+> est
+
+-based turn switching strategies. However, unlike stationary source scenario, the information about the source and its generated scalar field do not get saturated in dynamic source cases. Thus, the adaptive linear combination of d(i) 
+
+> info
+
+and d(i) 
+
+> est
+
+in d(i) 
+
+> joint
+
+facilitates in simultane-ously exploring and exploiting even at the second half of the source localization mission, thus improving the convergence performance of the agent to the dynamic source’s closer proximity over individual d(i) 
+
+> info
+
+and d(i) 
+
+> est
+
+-based turn switching strategies. 
+
+B. Estimation Error Evolution 
+
+As observed in Fig. 4, across all source dynamics, the joint strategy achieves the lowest terminal estimation error. For the stationary case, the error reduces to 0.366 m , compared to 
+
+1.569 m for d(i) 
+
+> info
+
+and 0.457 m for d(i) 
+
+> est
+
+. Under straight-line motion, it attains 0.265 m , outperforming d(i) 
+
+> info
+
+(1.507 m )and d(i) 
+
+> est
+
+(2.033 m ). For circular motion, the joint strategy achieves 1.01 m , whereas d(i) 
+
+> info
+
+and d(i) 
+
+> est
+
+result in higher residual errors. These results indicate that the joint strategy improves estimation accuracy across both stationary and dynamic source scenarios. 
+
+C. Distance-to-Source Evolution 
+
+Fig. 5 compares the agent–source Euclidean distance (m) for all strategies. Across all source dynamics, the joint strategy d(i) 
+
+> joint
+
+shows a consistently faster reduction in dis-tance. For all source scenarios, the d(i)
+
+> info
+
+-based turn switching strategy suffers at the end in terms of convergence, while both the d(i) 
+
+> est
+
+-based and d(i)
+
+> joint
+
+-based strategies converge to sufficiently small neighborhood about the source. Moreover, across both stationary and dynamic source scenarios, the joint strategy exhibits not only a faster convergence to the source proximity, but also a closer approach toward the source. These results indicate improved distance reduction per-formance with the joint strategy across both stationary and dynamic scenarios. V. C ONCLUSION 
+
+This paper presented a loop-based source-seeking frame-work that integrates EKF-based estimation with information-driven motion. The proposed joint strategy combines ex-ploration and exploitation through an adaptive weighting, enabling reliable convergence toward the source. The loop-based formulation enables direction updates based on aggregated information rather than noisy instan-taneous data, ensuring smooth, curvature-bounded motion. (a) Stationary source — d(i) 
+
+> info
+
+(b) Stationary source — d(i) 
+
+> est
+
+(c) Stationary source — d(i)
+
+> joint
+
+(d) Non-maneuvering source — d(i) 
+
+> info
+
+(e) Non-maneuvering source — d(i) 
+
+> est
+
+(f) Non-maneuvering source — d(i)
+
+> joint
+
+(g) Maneuvering source — d(i) 
+
+> info
+
+(h) Maneuvering source — d(i) 
+
+> est
+
+(i) Maneuvering source — d(i)
+
+> joint
+
+Fig. 3: Trajectory comparison across three source dynamics (rows) and motion regulation strategies (columns). The information-driven d(i) 
+
+> info
+
+promotes exploration, while the estimate-driven d(i) 
+
+> est
+
+exploits the current source estimate. The joint strategy d(i) 
+
+> joint
+
+balances both, resulting in improved convergence, reduced tracking lag, and more stable trajectories across stationary and dynamic scenarios. This leads to stable and consistent progression toward the source. Simulation results for both stationary and moving sources show that the joint strategy achieves lower terminal estimation error and more effective distance reduction com-pared to d(i) 
+
+> info
+
+and d(i) 
+
+> est
+
+, particularly in dynamic scenarios. Future work will focus on extending the framework to 3D scenarios and validating the approach through real-world experiments on agent platforms. REFERENCES [1] E. Burian, D. Yoerger, A. Bradley, and H. Singh, “Gradient search with autonomous underwater vehicles using scalar measurements,” in Proceedings of Symposium on Autonomous Underwater Vehicle Technology . IEEE, 1996, pp. 86–98. [2] N. M. Yungaicela-Naula, Y. Zhang, L. E. Garza-Casta˜ non, and L. I. Minchala, “Uav-based air pollutant source localization using gradi-ent and probabilistic methods,” in 2018 International conference on unmanned aircraft systems (ICUAS) . IEEE, 2018, pp. 702–707. [3] F. Mascarich, T. Wilson, C. Papachristos, and K. Alexis, “Radiation source localization in gps-denied environments using aerial robots,” in 2018 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2018, pp. 6537–6544. [4] K. B. Ariyur and M. Krstic, Real-Time Optimization by Extremum-Seeking Control . Wiley, 2003, see Chapters 1–3 for extremum seeking formulation and analysis. [5] N. Ghods and M. Krstic, “Speed regulation in steering-based source seeking,” Automatica , vol. 46, no. 2, pp. 452–459, 2010. (a) Stationary source (b) Non-maneuvering source (c) Maneuvering source 
+
+Fig. 4: Estimation error ∥ˆsi,N i − si,N i ∥ evaluated at switching points for stationary, non-maneuvering and maneuvering source source dynamics. The joint strategy achieves faster convergence and lower terminal error across all cases. 
+
+(a) Stationary Source (b) Non-maneuvering source (c) Maneuvering source 
+
+Fig. 5: Distance to source ∥ri,N i ∥ versus loop index i for stationary, non-maneuvering and maneuvering source source dynamics. The joint strategy d(i) 
+
+> joint
+
+consistently yields faster convergence and reduced tracking lag compared to the information-driven d(i) 
+
+> info
+
+and estimate-driven d(i) 
+
+> est
+
+strategies. 
+
+[6] J. Cochran and M. Krstic, “Nonholonomic source seeking with tuning of angular velocity,” IEEE Transactions on Automatic Control , vol. 54, no. 4, pp. 717–731, 2009. [7] J. Lin, S. Song, K. You, and M. Krstic, “Stochastic source seeking with forward and angular velocity regulation,” Automatica , vol. 83, pp. 378–386, 2017. [8] M. Greiff, M. Deghat, Z. Sun, and A. Robertsson, “Target localization and circumnavigation with integral action in r 2,” IEEE Control Systems Letters , vol. 6, pp. 1250–1255, 2021. [9] A. S. Matveev, H. Teimoori, and A. V. Savkin, “Navigation of a unicycle-like mobile robot for environmental extremum seeking,” 
+
+Automatica , vol. 47, no. 1, pp. 85–91, 2011. [10] A. Kashyap and D. Ghose, “Pursuing a time varying and moving source signal using a sensor equipped uav,” in ICUAS , 2017, pp. 506– 515. [11] R. Upasana and S. Ghosh, “Maxima-turn-switching strategy of sensor-equipped uavs for target localization,” in ICCA , 2019, pp. 610–615. [12] ——, “Collaborative maxima-turn-switching for source seeking in 2-d environment with two sensor-equipped uavs,” in 2019 Sixth Indian Control Conference (ICC) . IEEE, 2019, pp. 140–145. [13] S. P. Manoj Gowda and S. Ghosh, “Gradient direction turn switching strategy for source localization,” in CDC , 2022, pp. 3754–3759. [14] A. Kamthe and S. Ghosh, “Gradient-based augmentation to maxima turn switching strategy,” in ICUAS , 2020, pp. 1525–1532. [15] M. Vergassola, E. Villermaux, and B. I. Shraiman, “Infotaxis as a strategy for searching without gradients,” Nature , vol. 445, pp. 406– 409, 2007. [16] E. Rolf, D. Fridovich-Keil, M. Simchowitz, B. Recht, and C. Tomlin, “A successive-elimination approach to adaptive robotic source seek-ing,” IEEE Transactions on Robotics , vol. 37, no. 1, pp. 34–47, 2020. [17] T. Zhang, V. Qin, Y. Tang, and N. Li, “Source seeking by dynamic source location estimation,” in IROS , 2021, pp. 2598–2605. [18] T. Zhang et al. , “Distributed information-based source seeking,” IEEE Transactions on Robotics , vol. 39, no. 6, pp. 4749–4767, 2023. [19] A. T. Hayes, A. Martinoli, and R. M. Goodman, “Distributed odor source localization,” Autonomous Robots , vol. 12, no. 1, pp. 65–80, 2002. [20] P. P. Neumann et al. , “Gas source localization with a micro-drone using bio-inspired and particle filter-based algorithms,” Advanced Robotics ,vol. 27, no. 9, pp. 725–738, 2013. [21] N. Atanasov et al. , “Information acquisition with sensing robots: Algorithms and error bounds,” in ICRA , 2014, pp. 6447–6454. [22] G. A. Hollinger and G. S. Sukhatme, “Sampling-based robotic infor-mation gathering algorithms,” IJRR , vol. 33, no. 9, pp. 1271–1287, 2014. [23] D. Simon, Optimal state estimation: Kalman, H infinity, and nonlinear approaches . John Wiley & Sons, 2006.

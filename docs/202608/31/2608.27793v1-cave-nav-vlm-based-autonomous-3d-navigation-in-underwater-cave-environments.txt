@@ -1,0 +1,216 @@
+Title: CAVE-NAV: VLM-Based Autonomous 3D Navigation in Underwater Cave Environments
+
+URL Source: https://arxiv.org/pdf/2608.27793v1
+
+Published Time: Mon, 31 Aug 2026 00:21:16 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# CAVE-NAV: VLM-Based Autonomous 3D Navigation in Underwater Cave Environments 
+
+Zhenqi Wu 1, Yuanjie Lu 2, Yisheng Zhang 3, Miao Yu 3, Xuesu Xiao 2, Jaejeong Shin 4, and Xiaomin Lin 1
+
+Abstract —Autonomous navigation in underwater cave environ-ments is essential for search-and-rescue operations, scientific ex-ploration, and emergency egress. Traditional navigation systems commonly depend on dense visual features for localization and mapping. In underwater caves, however, visual degradation can undermine feature-based localization, sonar-based mapping may yield overly conservative obstacle representations, and communi-cation constraints preclude real-time human guidance. To address these limitations, we propose an autonomous underwater cave navigation framework that leverages a vision-language model (VLM) with Chain-of-Thought (CoT) reasoning to infer navigable directions from environmental cues, including light intensity gra-dients, passage morphology, and geometric complexity, captured through multimodal inputs comprising RGB imagery, depth maps, and sonar-based vertical-clearance measurements, thereby supporting safe 3D navigation through confined cave passages. High-fidelity simulations across multiple cave topologies demon-strate that the proposed framework completes all evaluated end-to-end traversals without collisions while maintaining safe clearance from cave boundaries. 
+
+I. INTRODUCTION Underwater cave navigation presents one of the most chal-lenging environments for autonomous robotics. Such capa-bilities are essential for search-and-rescue missions, where human divers face significant risks, and scientific expeditions to previously inaccessible cave networks [1]–[3]. These ap-plications highlight the critical need for robust autonomous navigation in these extreme environments. Unlike terrestrial or open-water scenarios, underwater cave environments exhibit severe perceptual and operational challenges, including visual degradation from suspended sediment [3], communication blackouts due to signal attenuation, and highly constrained three-dimensional passages that demand spatial reasoning [2]. Traditional navigation systems rely on extracting dense visual features for SLAM-based localization and hierarchi-cal planning [4]–[6].However, these systems fail to operate reliably in underwater caves, where fundamental perceptual challenges render visual feature extraction ineffective [3]: suspended sediment scatters light, low-texture rock surfaces provide insufficient feature correspondences, and reliance on onboard illumination violates the brightness-constancy as-sumption that feature tracking depends on [7], [8]. As these conditions compound, tracking failures and accumulated drift      
+
+> 1Embodied Robotics and Automation Lab, University of South Florida, Tampa, FL 33620, USA. {zhenqi, xlin2 }@usf.edu
+> 2Computer Science Department, George Mason University, Fairfax, VA 22032, USA.
+> 3Department of Mechanical Engineering, University of Maryland, College Park, MD 20742, USA. {yiszhang, mmyu }@umd.edu
+> 4Naval Architecture and Ocean Engineering at the Seoul National Univer-sity, Seoul 08826, South Korea {janeshin }@snu.ac.kr
+
+Fig. 1: Real-world BlueROV operation in a representative underwater cave environment at Blue Grotto, Florida. make purely feature-based localization unreliable precisely where the margins for error are smallest. To mitigate these challenges, several studies have developed cave navigation systems in underwater cave environments. For example, prior work on underwater cave mapping [7] has ex-plored stereo vision approaches that leverage artificial lighting geometry to reconstruct cave boundaries. However, the method depends on a calibrated illumination geometry that is difficult to maintain in the field, and it delineates cave structure only where that illumination reaches [7]. More recently, CavePI [1] demonstrated semantic-guided navigation by detecting and following pre-installed cavelines using real-time segmentation. Both approaches therefore depend on conditions supplied to the cave rather than read from it. Recent advances in Vision-Language Models (VLMs) offer a promising alternative. Unlike traditional methods, VLMs can interpret high-level environmental semantics through language-guided reasoning [9], and this capability has begun to reach underwater settings [10]–[12]. Inspired by these ca-pabilities, we propose CAVE-NAV, a VLM-driven navigation framework for previously unexplored underwater caves. Our contributions are threefold:  
+
+> •
+
+We present a VLM-based navigation framework for underwater caves that infers navigable directions from passage morphology, illumination patterns, and struc-tural complexity, using only RGB, depth, and vertical-clearance observations.  
+
+> •
+
+We encode clearance requirements as reasoning con-straints in the prompt and pair them with zero-shot Chain-arXiv:2608.27793v1 [cs.RO] 28 Aug 2026 of-Thought prompting, so that the model reasons through the active constraints before outputing the 3D motion command.  
+
+> •
+
+We demonstrate collision-free traversal across five cave topologies spanning constrictions, vertical undulations, sharp bends, and cluttered geometry, and show that the same prompt transfers to real imagery captured at Blue Grotto, Florida. II. RELATED WORK Autonomous underwater navigation has long centered on metric state estimation and geometric environment representa-tion. Visual SLAM and visual–inertial odometry estimate vehi-cle motion through feature tracking and nonlinear state estima-tion [4], and underwater variants add depth measurements to improve scale and reduce drift [8]. Such correspondence-based estimation remains sensitive to light attenuation, suspended particles, low-texture surfaces, and non-uniform illumination, all of which reduce feature repeatability [3]. Acoustic sensing offers a complement, with Doppler velocity log (DVL) and ultra-short baseline (USBL) providing velocity and external positioning [13], [14] and sonar supporting obstacle perception under poor visibility [15], though multipath and the range– resolution tradeoff limit fine-scale reconstruction [3]. Surface-assisted schemes using a USV as an acoustic reference im-prove open-water positioning [16], [17], but such references vanish once the vehicle enters overhead-obstructed passages. These limitations have driven underwater SLAM toward tight multi-sensor integration, jointly optimizing visual, in-ertial, sonar, and pressure measurements [5], [18]. Such ap-proaches improve metric estimation under degraded sensing, but their objective remains geometric estimation rather than interpreting which structures are navigable. Decision-making has also been learned end to end via offline reinforcement learning [19], though the resulting policies are tied to their training distribution and expose no inspectable rationale. Cave environments compound these difficulties in modality-specific ways: narrow passages induce acoustic multipath, irregular rock surfaces lack the texture feature extraction requires, and the absence of ambient light makes every ob-servation dependent on the vehicle’s own illumination [20]. Cave-specific research has broadened from geometric re-construction [7] toward navigation-relevant semantics, with CaveSeg [2] parsing markers, obstacles, and open regions, and CavePI [1] pairing semantic perception with visual servoing for caveline-guided navigation. Both remain tied to predefined categories or explicit guidance cues, leaving the cave’s broader structure underexplored as a navigation signal. Foundation models offer a more flexible basis for such inter-pretation, though they differ in what they can be asked to do. Contrastive models learn aligned visual–semantic embeddings: CLIP [21] maps images and text into a shared space for zero-shot recognition, and BLIP [22] adds a generative captioning objective. Such models return a similarity score or a caption; they do not accept a task specification and deliberate over it. Generative multimodal models make that possible: GPT-4V [9] inherits the instruction-following and multi-step reasoning of large language models and applies it to visual observations, so a single query can carry the mission, the sensor semantics, and the safety requirements and return an action with its justification. Their advantage in degraded conditions lies not in eliminating sensing limitations, but in exploiting semantic and structural context when low-level correspondences become unreliable. In robotics, this capability has been taken up at different layers of the autonomy stack. At the perception layer, CLIP-Nav [23], VLMaps [24], and LM-Nav [25] exploit pretrained representations for zero-shot, open-vocabulary, and language-guided navigation, but target terrestrial settings rich in recognizable landmarks. Underwater work has clustered at the control layer, tuning S-surface controllers or learning sim-to-real attitude policies [26], [27], which suits open water where actuation dominates the difficulty. Perception-layer applications are now emerging: DREAM [10] applies domain-aware reasoning to autonomous inspection, CORAL [11] organizes contextual reasoning and local planning hierarchically, and UnderwaterVLA [12] pairs chain-of-thought reasoning with a hydrodynamics-informed model predictive controller in open-water field trials. All operate where the vehicle can retreat freely and hold station. An unmapped cave removes both affordances, and low-level tracking is comparatively tractable at cave speeds, so the binding question becomes which direction is admissible at all. Our work therefore shifts from object-centric grounding to environment-centric reasoning, resolving semantic intent and clearance within a single inference pass over RGB, depth, and vertical-clearance observations to interpret passage morphology, illumination patterns, and structural complexity. III. APPROACH Our framework drives the vehicle through a closed-loop perception–planning–execution cycle. At each step the simu-lator renders a set of visual and depth channels, a VLM reads them alongside a fixed system prompt and returns a motion command, and that command is applied directly to the vehicle pose before the next observation is rendered. Fig. 2 
+
+A. Perception Module 
+
+The perception module processes multimodal sensor inputs to build a comprehensive representation of the cave environ-ment. The AUV is equipped with a forward-facing RGB-D camera and two single-beam echo sounders. At each timestep 
+
+t, the system acquires: 
+
+Visual observations. The RGB-D camera captures a color image Irgb ∈ RH×W ×3 and a depth image Draw ∈ RH×W ,where each pixel encodes the distance to the corresponding point in the scene. The raw depth data is stored in OpenEXR format, which must be converted to a format interpretable by the VLM. We normalize the depth values to the range [0 , 1] 
+
+via 
+
+Dnorm (u, v ) = Draw (u, v ) − Dmin 
+
+Dmax − Dmin 
+
+(1) 1. BlueROV2 & Sensing  2. Multimodal Perception                                          
+
+> & Preprocessing
+> Front Camera
+> (RGB -D)
+> RGB Image Irgb
+> Depth Image Draw
+> Vertical Clearance
+> dtop (ceiling distance)
+> dbottom (floor distance)
+> Depth Normalization
+> Draw →Dnorm
+> Normalized Depth Dnorm
+> 4. Navigation Output & Execution
+> VLM Outputs
+> Textual Reasoning
+> Ladder
+> Forward 1.0 m
+> Yaw right 10 °
+> Down 0.2 m
+> Why this action
+> •Bright opening slightly right and low: navigable
+> •Ceiling / floor 7.6 m / 8.9 m > 2 m clearance
+> •Ladder on the left: slight right turn keeps it clear
+> •1.0 m step + small descent recentres on the opening
+> Discrete Navigation Action
+> Forward 0 / 0.1 / 0.2 /
+> 0.5 / 1.0 m Lateral 0 / 0.1 / 0.2 /
+> 0.5 / 1.0 m
+> Yaw 5°–180 °
+> (8 levels) Vertical 0.1 –2.0 m
+> (continuous)
+> Selected Action
+> Vertical Clearance Sensing
+> dtop ：distance to ceiling
+> dbottom : distance to floor
+> Example
+> 3. VLM -Based Environment -Centric Reasoning
+> Chain -of -Thought Reasoning
+> Inputs to VLM
+> RGB Image
+> Irgb
+> Normalized
+> Depth Dnorm
+> dtop ,dbottom Task Prompt
+> (Explore safely
+> & reach goal)
+> 2Constraint Analysis
+> •Measure dtop /dbottom
+> •Check wall distances
+> •Flag collision risks
+> Decision & Justification
+> •Pick the safest action
+> •Maximize progress
+> •Output action + rationale
+> Situation Assessment
+> •Read the current view
+> •Estimate open space
+> •Spot obstacles ahead
+> 3
+> 1
+
+Fig. 2: Overview of the proposed framework. Multimodal observations are rendered at each step, interpreted by a VLM under Chain-of-Thought prompting, and converted into a parameterized motion command that is applied directly to the vehicle pose. where Dmin and Dmax are the minimum and maximum depth values set by user. The normalized depth map is then encoded as an 8-bit PNG image for VLM input. 
+
+Vertical clearance. In addition to forward-facing percep-tion, maintaining safe vertical separation from cave bound-aries is critical. Two single-beam echo sounders measure the distances dtop and dbottom to the ceiling and floor, respectively. These measurements enable the robot to avoid vertical colli-sions and maintain adequate clearance in narrow passages. 
+
+B. Planning Module 
+
+The planning module employs a VLM to generate high-level navigation actions based on the fused sensory inputs. At each decision step, the VLM receives: the current RGB image 
+
+Irgb , the normalized depth image Dnorm , the vertical clearance measurements (dtop , d bottom ), and a task-specific navigation prompt ptask .The VLM processes these inputs through a CoT reasoning process and outputs both a discrete navigation action a ∈ A 
+
+and a textual explanation of its decision-making process. The action space A includes basic motion primitives such as {move forward, turn left, turn right, ascend, descend }. The reasoning explanation enables human operators to verify the robot’s decision logic. 
+
+C. Vision-Language Model Prompting 
+
+To enable the VLM to reason about navigation decisions, we design a structured prompt that provides task context, sensory interpretation guidance, and decision-making strategies. The prompt consists of four components: mission specification, input interpretation, strategic guidance, and reasoning scaf-folding. 
+
+1) Mission Specification and Input Interpretation: The VLM receives a textual description of the navigation objective (e.g., “explore the cave passage while avoiding collisions”) together with the current front-facing RGB image, depth image, and vertical clearance measurements (dtop , d bottom ).To ensure the model correctly interprets these multimodal inputs, the prompt explicitly defines the semantics of each sensor modality and the cues each one carries. The RGB image supplies visual appearance and scene context, from which the model is asked to judge where the passage appears to continue. The forward depth image represents the spatial layout of visible surfaces: under the normalized encoding, darker regions correspond to nearby obstacles, while brighter regions indicate larger measured distances and thus locally open passage directions. The distances to the ceiling and floor provide complementary information about vertical free space. Using these observations together, the VLM is prompted to identify locally visible openings, constricted regions, and di-rections offering greater manoeuvring room, that is, to read the passage morphology directly from the observations rather than relying on discrete object landmarks that caves do not contain. This explicit specification grounds the model’s understanding of the sensory inputs and their relevance to navigation. 
+
+2) Strategic Decision-Making: To guide the VLM toward safe and efficient navigation, we encode three core strategies in the prompt. 
+
+Priority ordering. The prompt establishes a decision hier-archy that prioritizes collision avoidance over task completion efficiency. In constrained underwater environments, conserva-tive maneuvering is essential: the VLM is instructed to favor safety margins even at the cost of slower progress. This priority structure is critical in caves, where confined passages and poor visibility make recovery from collisions difficult or impossible. 
+
+Obstacle avoidance protocol. At each decision step, the VLM analyzes the front RGB image along with forward, upward, and downward clearance to identify nearby surfaces and open directions, aiming to maintain a 2.0 m standoff from walls, ceiling, and floor. When clearance is reduced, it selects a conservative command, reducing forward displace-ment, adjusting yaw toward open space, or shifting laterally or vertically. Below the nominal safety distance, forward motion is capped at 0.1–0.2 m and combined with a turn or vertical adjustment. Within 1.5 m of an obstacle ahead, the VLM avoids forward motion entirely and instead maneuvers toward the clearest visible direction. 
+
+Goal-directed exploration. After applying the prompt-encoded safety guidance, the VLM is instructed to favor locally visible open passage directions that support continued cave traversal. When more than one visually plausible open direction is available, the prompt encourages the model to select the direction that appears to extend the current passage and avoids immediate reversal of the recent motion direction. This exploration behavior is based on the current multimodal observation and short-term image history. 
+
+3) Chain-of-Thought Reasoning: Standard VLMs may struggle with the complex spatial reasoning required for navi-gation. To elicit structured decision-making, we employ Chain-of-Thought (CoT) prompting [28]: the prompt instructs the model to ”think step by step” before selecting a navigation action. This zero-shot reasoning approach encourages the VLM to generate an explicit inference path, breaking down the decision into three intermediate steps: 1) Situation assessment : Describe the current environment (e.g., ”narrow passage ahead, obstacle on left”) 2) Constraint analysis : Identify active constraints (e.g., ”insufficient clearance to ascend”) 3) Action selection : Propose and justify a navigation com-mand (e.g., ”turn right to avoid obstacle while maintain-ing forward progress”) This structured reasoning not only improves decision quality but also provides interpretability: human operators can review the VLM’s logic and identify failure modes. 
+
+D. Action Parsing and Kinematic Execution 1) Output format: The model conveys its decision as a dictionary holding a single key–value pair. The key is an action string that names the movement type and carries its magnitude; the value is a short justification citing the perceived clearance, the alternatives weighed, and the reason for the choice. Constraining the reply to this single pair keeps parsing deterministic and bounds the token cost of each step, while the retained justification makes the decision sequence auditable after a run, so that failures can be traced to the reasoning that produced them rather than inferred from the trajectory alone. Parsing the action string yields the rigid-body increment 
+
+at =  ∆ft, ∆rt, ∆zt, ∆ψt
+
+, (2) in which ∆ft and ∆rt are forward and rightward displace-ments in the vehicle body frame, ∆zt is a vertical displace-ment, and ∆ψt is a yaw increment. A single response there-fore determines all four components at once. The admissible magnitudes are 
+
+|∆ft| ∈ { 0, 0.1, 0.2, 0.5, 1.0} m, (3) 
+
+|∆rt| ∈ { 0, 0.1, 0.2, 0.5, 1.0} m, (4) 
+
+|∆ψt| ∈ { 0, 5, 10 , 15 , 20 , 30 , 45 , 90 , 180 }◦, (5) 
+
+|∆zt| ∈ [0 .1, 2.0] m . (6) The first three are discrete option sets stated in the prompt, whereas the vertical increment is specified as a continuous range from which the model chooses avalue. The bound on |∆ft| is deliberately half the 
+
+2 m standoff threshold, so that a single forward com-mand cannot consume the nominal clearance margin. The parsed action string is converted to the command tu-ple (linear_x , linear_y , linear_z , angular_z ); re-sponses that cannot be parsed or that fall outside these sets trigger a re-query, and persistent failures terminate the run. 
+
+2) Pose update: The accepted action is applied directly to the vehicle pose in the simulator: 
+
+ψt+1 = ψt + ∆ ψt, (7) 
+
+xt+1 = xt + ∆ ft sin ψt+1 − ∆rt cos ψt+1 , (8) 
+
+yt+1 = yt − ∆ft cos ψt+1 − ∆rt sin ψt+1 , (9) 
+
+zt+1 = zt + ∆ zt, (10) where the reference heading is defined such that ψ = 0
+
+corresponds to a heading along the −y axis of the world frame, with ∆rt displacing the vehicle to the right of that heading. IV. EXPERIMENTS AND RESULTS 
+
+A. Experimental Setup 1) Simulation Environment: We conduct experiments in high-fidelity cave environments generated using Blender. To systematically evaluate navigation capabilities across diverse geometric challenges, we design five cave scenarios with dis-tinct topological features: S1: a narrow passage with multiple constrictions testing clearance-aware planning; S2: combined narrow passages and vertical undulations evaluating 3D ma-neuvering; S3: a straight passage with frontal and lateral obstacles assessing collision avoidance; S4: a sharp 90-degree turn requiring anticipatory reasoning and course adjustment; and S5: a complex topology with irregular geometry and distributed obstacles. These scenarios collectively test the framework’s ability to handle confined spaces, vertical maneuvering, sharp turns, and cluttered environments representative of real underwater cave conditions. All environments feature realistic rock textures, variable lighting conditions, and irregular boundary geometry to simulate the visual characteristics of natural caves. Y
+
+X
+
+Z
+
+YFig. 3: Navigation trajectories in 5 simulated cave scenarios (S1–S5): first row is top-down views and second row is side views; orange: AUV trajectories. 
+
+2) AUV Configuration: We employ a simulated BlueROV2 configuration as the vehicle model. The vehicle is equipped with a multimodal perception suite consisting of: Visual sen-sors: A forward-facing RGB camera (resolution: 640 × 480 
+
+pixels) captures visual scene context, while a co-located depth camera provides distance measurements to obstacles within the field of view. Vertical clearance sensing: To emulate single-beam sonar for measuring distances to the cave ceiling and floor, we deploy an upward-facing and downward-facing depth camera. At each timestep, we extract the minimum depth value from each camera’s output, yielding dtop and dbottom —the closest vertical distances to the upper and lower cave boundaries, respectively. This configuration provides the clearance information neces-sary for maintaining safe vertical separation during navigation. 
+
+3) Implementation Details: All navigation decisions are produced by CAVE-NAV, accessed through the OpenAI API with default sampling parameters. One query is issued per decision step, conditioned on the two most recent observations (K = 2 ), with a budget of Tmax = 150 steps per trial. All image channels are rendered at 640 × 480 pixels, the forward camera using a focal length of 36 mm and a sensor width of 
+
+36 mm for a horizontal field of view of 53 .1◦. Depth passes are normalized over Dmin = 0 m to Dmax = 20 m before encoding, and the prompt specifies a nominal standoff of 2 mfrom all surfaces. 
+
+B. Results 
+
+We visualize navigation performance through two com-plementary perspectives: a top-down view demonstrating the robot’s 3D obstacle avoidance capability, and a side view providing an overview of the cave structure and trajectory. Fig. 3 summarizes the trajectories in the five simulated cave scenarios adapted from [29]–[33]. Each column corresponds to one scenario, with the upper and lower panels showing the top-down and side views, respectively. The orange trajectory consistently remains near the center of each cave, demonstrat-ing collision-free navigation with appropriate clearance from walls, ceiling, and floor. 
+
+Narrow passages (S1, S2). The AUV identifies the con-stricted regions and passes through them on a central tra-jectory, maintaining clearance from walls, ceiling, and floor throughout. Move forward 0.2 m, turn right 5 °, and go up 1.0 m  
+
+> {“1. RGB shows a high-contrast cyan circular opening at the
+> top of the frame, indicating a cave entrance/navigable pass that must be recentered;
+> 2. The rocky seabed occupies the lower FOV with clear texture, suggesting the camera is pitched down and floor clearance may be tight, so ascent is required before
+> committing to exploration;
+> 3. A dark vertical structure on the left indicates a nearer wall, so a small right yaw increases lateral standoff and centers the opening;
+> 4. A 1.0 m rise both restores likely floor margin and aligns the vehicle with the overhead opening for subsequent entry.."}
+> Action and Reasoning from VLM
+> RGB Images
+
+Fig. 4: VLM inference on a real image captured by aBlueROV2 at Blue Grotto 
+
+3D obstacle avoidance (S3). Starting at the altitude of a frontal obstacle and close to a lateral wall, the vehicle detects both hazards and combines a vertical ascent with lateral displacement, holding the resulting clearance for the remainder of the traversal. 
+
+Sharp turn (S4). The VLM reads the exit direction before entering the bend and issues turning commands that carry the vehicle through the curved section and out of the cave. 
+
+Complex topology (S5). Despite irregular geometry and distributed obstacles, the vehicle traverses the full cave while avoiding every obstacle and preserving the prescribed standoff. To probe transfer beyond simulation, we queried the same prompt on RGB frames captured by a BlueROV2 at Blue Grotto, Florida (Fig. 4). The model identified the bright overhead opening, noted the near wall on the left, and proposed a combined ascent, right yaw, and short forward step consistent with the observed geometry. Across all five environments, the AUV achieved 100% task completion with zero collisions, validating the framework’s ability to generalize across diverse cave topologies. V. CONCLUSION We present an autonomous navigation framework for un-derwater cave environments that leverages VLMs to interpret environmental semantics without relying on dense visual fea-tures, pre-built maps, or human-placed infrastructure. By cou-pling a VLM with CoT reasoning and multimodal perception, CAVE-NAV interprets passage geometry, illumination gradi-ents, and structural complexity to generate safe navigation decisions in visually degraded environments. Comprehensive evaluation across five diverse cave topolo-gies, including straight passages, curved sections, vertical un-dulations, and complex three-dimensional geometries, demon-strates robust autonomous navigation. The system successfully completed end-to-end traversals in all scenarios, maintaining central trajectories that maximize clearance from cave walls. These results validate that semantic reasoning, when combined with geometric perception and clearance-aware planning, pro-vides a viable approach for autonomous navigation in feature-denied underwater environments where traditional SLAM-based methods fail. This work provides an initial framework for VLM-guided underwater cave navigation, opening several concrete direc-tions for future work. First, transitioning from high-fidelity simulation to field deployment will require validation under real-world conditions, including turbidity, backscatter, variable currents, and non-uniform illumination. Second, extending the framework to incorporate persistent mapping capabilities and energy-aware planning will enable long-duration exploration missions. Finally, developing compressed VLMs optimized for resource-constrained hardware will facilitate onboard de-ployment, thereby reducing communication dependencies and improving response latency. By demonstrating that VLMs can reason about environmen-tal structure to navigate caves autonomously, and clearance margins alone, this work takes a step toward autonomous exploration of cave systems that today require human divers to enter. ACKNOWLEDGMENT 
+
+The authors would like to thank Andres Pulido, Nikhil Iyer, Cayman Christ, and Cheryl Thacker for their help with diving, and Blue Grotto Dive Resort for the facilities for data collection. This work was supported by New Faculty Startup Fund from Seoul National University, CRADA22-0034-J003, NVIDIA Academic Grant Program, and the United States Department of Agriculture (USDA) National Institute of Food and Agriculture (NIFA) Sustainable Agricultural Systems (SAS) Program under Grant 2020-68012-31805. REFERENCES [1] A. Gupta, A. Abdullah, X. Li, V. Ramesh, I. Rekleitis, and M. J. Islam, “Demonstrating cavepi: Autonomous exploration of underwater caves by semantic guidance,” arXiv preprint arXiv:2502.05384 , 2025. [2] A. Abdullah, T. Barua, R. Tibbetts, Z. Chen, M. J. Islam, and I. Rek-leitis, “Caveseg: Deep semantic segmentation and scene parsing for autonomous underwater cave exploration,” in 2024 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2024, pp. 3781–3788. [3] S. Watson, D. A. Duecker, and K. Groves, “Localisation of unmanned underwater vehicles (uuvs) in complex and confined environments: A review,” Sensors , vol. 20, no. 21, 2020. [Online]. Available: https://www.mdpi.com/1424-8220/20/21/6203 [4] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. Montiel, and J. D. Tard´ os, “Orb-slam3: An accurate open-source library for visual, visual– inertial, and multimap slam,” IEEE transactions on robotics , vol. 37, no. 6, pp. 1874–1890, 2021. [5] S. Rahman, A. Quattrini Li, and I. Rekleitis, “Svin2: A multi-sensor fusion-based underwater slam system,” The International Journal of Robotics Research , vol. 41, no. 11-12, pp. 1022–1042, 2022. [6] Y. Lu, T. Xu, L. Wang, N. Hawes, and X. Xiao, “Decremental dy-namics planning for robot navigation,” in 2025 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2025, pp. 4559–4565. [7] N. Weidner, S. Rahman, A. Q. Li, and I. Rekleitis, “Underwater cave mapping using stereo vision,” in 2017 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2017, pp. 5709–5715. [8] S. Ding, T. Ma, Y. Li, S. Xu, and Z. Yang, “Rd-vio: Relative-depth-aided visual-inertial odometry for autonomous underwater vehicles,” Applied Ocean Research , vol. 134, p. 103532, 2023. [9] OpenAI, “GPT-4V(ision) system card,” https://openai.com/contributions/ gpt-4v/, 2023. [10] Z. Wu, A. Modi, A. Mavrogiannis, K. Joshi, N. Chopra, Y. Aloimonos, N. Karapetyan, I. Rekleitis, and X. Lin, “DREAM: Domain-aware reasoning for efficient autonomous underwater monitoring,” 2025. [11] Z. Wu, Y. Lu, X. Xiao, and X. Lin, “CORAL: COntextual reasoning and local planning in a hierarchical VLM framework for underwater monitoring,” 2026. [12] Z. Wang, Y. Zhu, Y. Yan, X. Tian, X. Shao, M. Li, W. Li, G. Su, W. Cui, and D. Fan, “The UnderwaterVLA dual-brain vision-language-action architecture enables robust autonomous underwater navigation,” 
+
+Scientific Reports , 2026. [13] N. Cohen and I. Klein, “Seamless underwater navigation with limited doppler velocity log measurements,” IEEE Transactions on Intelligent Vehicles , 2024. [14] Q. Luo, X. Yan, C. Ju, Y. Chen, and Z. Luo, “An ultra-short baseline underwater positioning system with kalman filtering,” Sensors , vol. 21, no. 1, p. 143, 2020. [15] T. Zhang, S. Liu, X. He, H. Huang, and K. Hao, “Underwater target tracking using forward-looking sonar for autonomous underwater vehi-cles,” Sensors , vol. 20, no. 1, p. 102, 2019. [16] J. Xu, G. Xie, J. Tang, Y. Ding, W. Liu, J. Huang, S. Zhang, and Y. Li, “Never too cocky to cooperate: An fim and rl-based usv-auv collaborative system for underwater tasks in extreme sea conditions,” 
+
+IEEE Transactions on Mobile Computing , vol. 25, no. 7, pp. 11 016– 11 031, 2026. [17] J. Xu, G. Xie, X. Wang, Y. Ding, and S. Zhang, “Usv-auv collaboration framework for underwater tasks under extreme sea conditions,” in 
+
+ICASSP 2025 - 2025 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP) , 2025, pp. 1–5. [18] J. Zhang, F. Han, D. Han, J. Yang, W. Zhao, and H. Li, “Integration of sonar and visual–inertial systems for slam in underwater environments,” 
+
+IEEE Sensors Journal , vol. 24, no. 10, pp. 16 792–16 804, 2024. [19] J. Xu, Z. Zhang, J. Wang, Z. Han, and Y. Ren, “Multi-AUV pursuit-evasion game in the Internet of Underwater Things: An efficient training framework via offline reinforcement learning,” IEEE Internet of Things Journal , vol. 11, no. 19, pp. 31 273–31 286, 2024. [20] M. Ferrera, V. Creuze, J. Moras, and P. Trouv´ e-Peloux, “Aqualoc: An underwater dataset for visual–inertial–pressure localization,” The International Journal of Robotics Research , vol. 38, no. 14, p. 1549–1559, Oct. 2019. [Online]. Available: http://dx.doi.org/10.1177/ 0278364919883346 [21] A. Radford, J. W. Kim, C. Hallacy, A. Ramesh, G. Goh, S. Agarwal, G. Sastry, A. Askell, P. Mishkin, J. Clark et al. , “Learning transferable visual models from natural language supervision,” in International conference on machine learning . PmLR, 2021, pp. 8748–8763. [22] J. Li, D. Li, C. Xiong, and S. Hoi, “Blip: Bootstrapping language-image pre-training for unified vision-language understanding and generation,” in International conference on machine learning . PMLR, 2022, pp. 12 888–12 900. [23] V. S. Dorbala, G. Sigurdsson, R. Piramuthu, J. Thomason, and G. S. Sukhatme, “Clip-nav: Us-ing clip for zero-shot vision-and-language navigation,” 2022. [Online]. Available: https://www.amazon.science/publications/ clip-nav-using-clip-for-zero-shot-vision-and-language-navigation [24] C. Huang, O. Mees, A. Zeng, and W. Burgard, “Visual language maps for robot navigation,” in Proceedings of the IEEE International Conference on Robotics and Automation (ICRA) , London, UK, 2023, pp. 10 608– 10 615. [25] D. Shah, B. Osi´ nski, B. Ichter, and S. Levine, “Lm-nav: Robotic navigation with large pre-trained models of language, vision, and action,” in Proceedings of The 6th Conference on Robot Learning . PMLR, 2023, pp. 492–504. [26] G. Xie, J. Xu, Y. Ding, Z. Zhang, S. Zhang, and Y. Li, “Never too prim to swim: An LLM-enhanced RL-based adaptive S-surface controller for AUVs under extreme sea conditions,” in 2025 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2025, pp. 8990– 8997. [27] G. Xie, J. Xu, J. Tang, Y. Huang, Z. Wang, S. Zhang, D. Ma, J. Qu, and X. Li, “EasyUUV: An LLM-enhanced universal and lightweight sim-to-real reinforcement learning framework for UUV attitude control,” 2025. [28] J. Wei, X. Wang, D. Schuurmans, M. Bosma, F. Xia, E. Chi, Q. V. Le, D. Zhou et al. , “Chain-of-thought prompting elicits reasoning in large language models,” Advances in neural information processing systems ,vol. 35, pp. 24 824–24 837, 2022. [29] b nealie, “Sea Cave,” Sketchfab, 2019, [On-line]. Available: https://sketchfab.com/3d-models/ sea-cave-14773139954740e48be1fa1861d01eb7. [30] ——, “Sea Cave 2,” Sketchfab, 2019, [On-line]. Available: https://sketchfab.com/3d-models/ sea-cave-2-3be79c6a956c423d9b05fa67ce559ee9. [31] ——, “Sea Cave 4,” Sketchfab, 2019, [On-line]. Available: https://sketchfab.com/3d-models/ sea-cave-4d38ef92a2794f16bac9fce9b986d35d. [32] M. Caine, “Burial cave Kidron valley,” Sketchfab, 2023, [Online]. Available: https://sketchfab.com/3d-models/ burial-cave-kidron-valley541c59ffccda49548ab702e21c05644c. [33] cave-dive-make, “Bageshawe Resurgence Dry Passage,” Sketchfab, 2022, [Online]. Available: https://sketchfab.com/3d-models/ bageshawe-resurgence-dry-passage1183fc2d392e4eee9ebe74d07af0361c.
