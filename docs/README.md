@@ -41,17 +41,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-08-31</span>
+      <span class="dpr-home-dashboard-kicker">2026-09-01</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 19 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 17 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
     <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>8</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
     <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>11</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-08-31 23:44:21 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-09-01 23:09:56 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,9 +62,9 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日精读19篇论文，聚焦运动规划与具身导航两大前沿方向。</p>
-<p>最值得看的是两篇9分工作：图凸集运动规划的连通性恢复，以及噪声定位下的强化学习宏观动作拓扑导航。</p>
-<p>建议在此基础上，重点关注面向巡检的无人机视觉语言导航与多楼层机器人自主探索的实际落地应用。</p>
+<p>今日17篇论文中精读6篇，重点聚焦动态单目SLAM与具身导航两大方向。</p>
+<p>最值得关注的是满分论文《RoSe-SLAM》，实现动态单目视频下的鲁棒语义感知高斯溅射SLAM，以及《OptiSight》，打通语义推理与几何控制的导航新范式。</p>
+<p>建议优先精读这两篇，再速读轻量级人行道提取与四足机器人多楼层探索等应用型工作。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -73,12 +73,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">8 篇</strong>
+    <strong class="dpr-home-dashboard-count">6 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="GCS-Bridging: Restoring Connectivity of Disconnected Convex Sets for Graph-of-Convex-Sets Motion Planning">GCS-Bridging: Restoring Connectivity of Disconnected Convex Sets for Graph-of-Convex-Sets Motion Planning</span></li><li><span class="dpr-home-dashboard-paper-title" title="Macro-Action Topological Navigation under Noisy Localization using Reinforcement Learning">Macro-Action Topological Navigation under Noisy Localization using Reinforcement Learning</span></li><li><span class="dpr-home-dashboard-paper-title" title="NeurRAFT: Robot Motion Planning via Anchor-Level Flow Matching with Clearance-Aware Preference Tuning">NeurRAFT: Robot Motion Planning via Anchor-Level Flow Matching with Clearance-Aware Preference Tuning</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="RoSe-SLAM: Robust Semantic-Aware Gaussian Splatting SLAM from Dynamic Monocular Videos">RoSe-SLAM: Robust Semantic-Aware Gaussian Splatting SLAM from Dynamic Monocular Videos</span></li><li><span class="dpr-home-dashboard-paper-title" title="OptiSight: Bridging Semantic Reasoning and Geometric Control for Embodied Navigation">OptiSight: Bridging Semantic Reasoning and Geometric Control for Embodied Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="EgoNav: Bridging Learned Waypoints and Geometry-Aware Local Control for Robust Indoor Navigation">EgoNav: Bridging Learned Waypoints and Geometry-Aware Local Control for Robust Indoor Navigation</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>6</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>2</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>3</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>3</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -89,9 +89,9 @@
     <strong class="dpr-home-dashboard-count">11 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="RACO: Reliability-Aware Coarse-Goal Optimization for Inspection-Oriented UAV Vision-Language Navigation">RACO: Reliability-Aware Coarse-Goal Optimization for Inspection-Oriented UAV Vision-Language Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="OptiSight: Bridging Semantic Reasoning and Geometric Control for Embodied Navigation">OptiSight: Bridging Semantic Reasoning and Geometric Control for Embodied Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot">RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Lightweight Machine Learning-Driven Monocular Sidewalk Path Extraction for Embedded Micromobility Navigation">Lightweight Machine Learning-Driven Monocular Sidewalk Path Extraction for Embedded Micromobility Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot">RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot</span></li><li><span class="dpr-home-dashboard-paper-title" title="AGRO-Nav: Autonomous Graph-based Orchard Navigation">AGRO-Nav: Autonomous Graph-based Orchard Navigation</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>7</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>3</strong></span><span class="dpr-home-dashboard-tag">rl-motion <strong>1</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>6</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>5</strong></span></div>
 </section>
 </div>
 

@@ -1,0 +1,425 @@
+Title: VeloBins: Learning Velocity and Its Uncertainty via Bins and Error-Conditioned Gaussian Labels for Aerial Inertial Odometry
+
+URL Source: https://arxiv.org/pdf/2608.29720v1
+
+Published Time: Tue, 01 Sep 2026 01:18:18 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# VeloBins: Learning Velocity and Its Uncertainty via Bins and Error-Conditioned Gaussian Labels for Aerial Inertial Odometry 
+
+Maulana Bisyir Azhari, Seungwook Lee, Donghun Han, Sung Jun Park, and David Hyunchul Shim 
+
+Abstract — Inertial odometry (IO) is critical for aerial robots, where aggressive maneuvers and poor lighting degrade visual sensors. Recent learning-based IO methods improve traditional integration-based approaches by learning motion priors from IMU and platform-specific sensors, then fusing the predictions within an extended Kalman filter. However, learning velocity through regression is difficult, while jointly estimating un-certainty with a separate decoder and negative log-likelihood (NLL) loss further complicates training and can lead to over-confident estimates. We introduce VeloBins, which reformulates velocity regression as classification over discretized velocity bins. We decode both the velocity from the bin distribution’s expectation and the uncertainty from its variance, removing the need for a separate uncertainty decoder. We further supervise the uncertainty explicitly using an error-conditioned Gaussian label centered at the ground-truth velocity, with a standard deviation set to the velocity error. We evaluate VeloBins on four aerial datasets, ranging from free-form aggressive flights and a 27 g nano-quadrotor to drone racing at over 21 m/s. VeloBins achieves the lowest average errors on all four datasets, reducing velocity, relative trajectory, and absolute trajectory errors by 3–27%, 8–40%, and 6–53%, respectively, compared with the strongest baseline. Notably, the proposed supervision achieves the lowest NLL and best filter consistency despite never optimizing an NLL loss. The code will be released upon acceptance. Supplementary Video: https://youtu.be/QkZY0So3myw 
+
+I. I NTRODUCTION 
+
+Inertial Odometry (IO) estimates a robot’s trajectory us-ing an Inertial Measurement Unit (IMU), a sensor that is ubiquitous, cost-effective, and lightweight[1]. Unlike vision, it is unaffected by poor lighting, motion blur, or textureless scenes[2], [3], [4], [5]. These properties make IO critical for aerial robots, which must estimate their state through aggres-sive maneuvers and low light, both of which degrade visual sensing[5], [6]. However, traditional IO directly integrates raw IMU measurements, where the inherent noise and biases accumulate unboundedly. This “curse of drift”[7] renders the estimate unusable within seconds. Learning-based IO overcomes this by learning a motion prior that maps a window of IMU data to a displacement or velocity[2], [3], [7]. The prediction is fused with IMU propagation in an extended Kalman filter (EKF), where each update is weighted by a per-sample uncertainty that the 
+
+This research was financially supported by the Institute of Civil Mili-tary Technology Cooperation funded by the Defense Acquisition Program Administration, and the Ministry of Trade, Industry, and Energy of Korean Government under Grant UM22206RD3. All authors are with the Unmanned Systems Research Group (USRG), School of Electrical Engineering, Korea Advanced Institute of Science and Technology (KAIST), Daejeon 34141, South Korea. {mbazhari, seungwook1024, donghun.han, sjpark, hcshim }@kaist.ac.kr Encoder Decoder Decoder Encoder      
+
+> ,,,
+> Accel, Gyro, RPM/PWM
+> ,,,,
+> Decoder Velocity and Uncertainty from Regression
+> Velocity and Uncertainty from Bin Distribution
+> EKF EKF
+> VeloBins Prior Method
+> More Accurate Better-Calibrated Less Accurate Over-Confident
+
+Fig. 1: Top: Prior IO method [8] regresses the velocity and its uncertainty from two separate decoders, supervised by an NLL loss. VeloBins predicts a distribution over velocity bins, decoding the velocity as its expectation and the uncertainty as its variance, supervised with our error-conditioned Gaussian labels, yielding more accurate and better-calibrated estimates. Bottom: EKF-fused trajectories on a 21 m/s racing flight, where VeloBins follows the ground truth closely while the regression baseline drifts. 
+
+network also predicts[3], [5]. Yet this formulation has two limitations. First, existing IO methods regress the velocity or displacement directly[2], [5], [8], and scalar regression losses can be difficult to train[9], [10]. Velocity regression is even harder for aerial robots, whose highly dynamic and non-linear flight differs from the pedestrian motion on which most learned priors are trained[5], [6]. Second, the measurement covariance comes from a separate uncertainty decoder trained by a negative log-likelihood (NLL) loss[3], [5], [8], an objective that is difficult to optimize and may yield over-confident variances[11] that degrade filter consistency[12]. Both stem from representing the velocity and its un-certainty as point estimates, so we explore reformulat-ing velocity regression as classification over velocity bins (Fig. 1). Such bin-based formulations outperform direct regression in computer vision tasks such as monocular depth estimation[13], [14] and human pose estimation[15], [16]. arXiv:2608.29720v1 [cs.RO] 30 Aug 2026 The same reformulation improves value-based reinforcement learning[17], [18]. The advantage is attributed to the clas-sification objective, which provides more stable gradients and higher-entropy feature representations than a scalar error loss[9], [10]. In this study, we investigate whether the same advantage holds for inertial odometry, where a network must predict the body-frame velocity of a dynamic platform. Additionally, the bin distribution potentially offers the velocity uncertainty through its variance, which removes the need for a separate uncertainty decoder. However, a velocity target alone supervises the distribution only through its expectation[14], [19], leaving the variance unconstrained and therefore the uncertainty measure unreliable. Prior work supervises the distribution explicitly with a maximum-likelihood objective that again needs a separate decoder[16], or with a Gaussian label of fixed standard deviation that cannot reflect the per-sample uncertainty[9], [20], [21]. We therefore condition the label width on the current velocity error, so the supervision reflects the per-sample uncertainty. To summarize, our contributions are:  
+
+> •
+
+VeloBins , a novel inertial odometry framework that predicts velocity as a distribution over discretized bins, decoding both the velocity and its uncertainty from the same distribution.  
+
+> •
+
+An error-conditioned Gaussian label whose standard deviation is the current velocity error, supervising the velocity uncertainty explicitly without a separate uncer-tainty decoder or NLL loss.  
+
+> •
+
+An extensive evaluation on four aerial datasets, from a 27 g nano-quadrotor to 21 m/s drone racing, where VeloBins achieves the lowest average errors against five baselines and better filter consistency than the regression and likelihood-supervised variants. II. R ELATED WORK 
+
+A. Inertial Odometry 
+
+Traditional IO estimates the trajectory by integrating IMU measurements through a strapdown process[22], where the gyroscope is integrated once for the orientation and the accelerometer twice for the velocity and the position. The bias and noise of a low-cost IMU are amplified at every in-tegration stage, rendering long-term estimates unreliable[7]. Classical systems suppress this drift with motion constraints such as zero-velocity conditions[23], which a UAV in con-tinuous flight does not offer. Learning-based IO instead learns a motion prior directly from data. Seminal works such as IONet[7] and RoNIN[2] used temporal networks to regress motion from IMU win-dows and sharply reduce long-term drift. Because a raw network estimate is still noisy, a parallel line fuses it with IMU propagation in a probabilistic filter. TLIO[3] feeds the network output and its predicted uncertainty into an EKF. AI-IMU[24] learns to adapt the noise covariances of the filter itself, while EqNIO[25] improves generalization through rotation equivariance. These methods target pedes-trian or ground-robot motion, with limited vertical dynamics compared to unmanned aerial vehicles (UAVs). Learning-based IO for UAVs adapts these ideas to the platform. DIDO[26] feeds the network the measured rotor speeds of a quadrotor, while IMO[6] feeds the collective thrust, both alongside the IMU. DIVE[27] fuses a learned velocity into an inertial-only filter for quadrotors. AirIO[5] shows that keeping the IMU in its native body-frame repre-sentation lets the network capture the highly dynamic motion of drones. AI-IO[8] adds rotor-speed measurements to this body-frame formulation, motivated by quadrotor aerodynam-ics. TartanIMU[28] generalizes across robotics platforms with a foundation model and platform-specific decoders. These methods nonetheless frame velocity estimation as direct regression and take the measurement covariance from a separate decoder trained apart from the estimate. We instead predict a probability distribution over discrete velocity bins, inspired by recent successes in monocular depth estimation (MDE)[14], [19]. 
+
+B. Regression as a Hybrid Classification-Regression Task 
+
+Bin-based methods reformulate a continuous target as clas-sification over discretized bins[10]. DORN[13] discretizes the depth range of MDE into ordered bins with an ordinal objective, while AdaBins[14] adapts the bin width per image and decodes the depth as an expectation over bin cen-ters. BinsFormer[19] and IEBins[29] refine the same design for MDE. SimCC[15] and RTMPose[21] apply the same coordinate-classification view to human pose estimation. Deep reinforcement learning models the value function as a categorical distribution[17], where classification outperforms regression at scale[18]. Another important aspect of bin-based methods is the supervision of the bin distribution. Earlier works place no target on the distribution and supervise it through the de-coded value, which leaves the variance unconstrained[14], [19]. SimCC[15] and RTMPose[21] supervise the distribu-tion with a soft label of fixed width, which cannot reflect the per-sample uncertainty. Distributional losses also set the target width heuristically, both in regression [9] and in reinforcement learning [18]. RTMO[16] instead learns the target variance through a maximum-likelihood objective, which requires a separate decoder. In this work, we explore the bin-based formulation for aerial inertial odometry, where an error-conditioned Gaussian label trains the bin variance to reflect the per-sample uncertainty without needing a separate decoder. III. M ETHODOLOGY 
+
+As depicted in Fig. 2, VeloBins reformulates velocity regression for inertial odometry as a hybrid classification-regression problem. A single distribution over discretized velocity bins provides both the velocity and its uncertainty predictions. An error-conditioned Gaussian label supervises the bin variance explicitly, so the uncertainty is learned rather than left unconstrained. The EKF then consumes the two decoded quantities as its measurement and measurement covariance. Velocity GT 
+
+Gyro RPM Accel SPE 
+
+> Encoder
+
+SSS            
+
+> Input Buffer
+> Error-Conditioned Gaussian Labels Explicit Supervision
+> Implicit Supervision Bin Encoding
+> Inner Product Subtraction KL-Divergence
+> Predicted Velocity and Uncertainty Fig. 2: Overview of the VeloBins Architecture. A window of accelerometer, gyroscope, and rotor speed measurements is encoded into a per-axis bin distribution πi, whose logits pair the encoder query with a learnable bin encoding (Sec. III-B.1). The velocity ˆ viand its uncertainty ˆ σ2
+> iare decoded from πi(Sec. III-A). During training, the velocity error ve,isets the width of the error-conditioned Gaussian label qi, which supervises πiexplicitly through a KL-divergence loss (Sec. III-C), while a Huber loss on ˆ visupervises it implicitly (Sec. III-D).
+
+A. Velocity and Uncertainty from Bins 
+
+For each velocity axis i ∈ { x, y, z}, we define an operating range [vmin , vmax ] and discretize it into N bins. Let b =(b0, b1, . . . , bn, . . . , bN−1) be the vector of bin centers. Each bin n covers a continuous range of velocities defined by its lower and upper boundaries, [b− 
+
+> n
+
+, b+ 
+
+> n
+
+]. These boundaries are set at the midpoint between adjacent centers, such that b+ 
+
+> n
+
+= 
+
+> 12
+
+(bn + bn+1) and b− 
+
+> n
+
+= 12 (bn−1 + bn), with the boundaries of the first and last bins extending to vmin and vmax , respectively. The velocity decoder predicts a per-axis distribution πi =
+
+{πi,0, . . . , πi,N−1} over the bins and decodes the velocity as the expectation of this distribution over bin centers, ˆvi∈{ x,y,z} =
+
+> N−1
+
+# ∑
+
+> n=0
+
+πi,n bn. (1) Unlike prior learning-based IO methods that regress the uncertainty with a separate covariance decoder [3], [5], [8], VeloBins decodes the velocity uncertainty from the same bin distribution, taking it as the variance about the decoded velocity ˆ vi,ˆσ 2 
+
+> i∈{ x,y,z}
+
+=
+
+> N−1
+
+# ∑
+
+> n=0
+
+πi,n (bn − ˆvi)2. (2) 
+
+B. VeloBins Network Architecture 
+
+The architecture of VeloBins , as shown in Fig. 2, follows the encoder-decoder design of AI-IO [8] and replaces its velocity and covariance decoders with a single bin decoder. Per-modality 1-D convolutions and a two-layer transformer encoder map the input window of accelerometer, gyroscope, and per-rotor actuation signals to a last-step feature h ∈ RDh .We use the measured rotor speed where the platform provides ESC telemetry [8], [30], and the commanded motor signal otherwise [31], [32]. A rotor follows its command through a first-order response and a platform-dependent map [30], which the encoder learns per dataset. 
+
+1) Bin Encoding: Rather than mapping h to N logits with a linear layer [14], [19], [21], we build each bin’s classifier from an encoding of its coordinate [16], preserving the ordinal structure of the velocity range at a parameter count independent of N. We encode each bin center with a learnable sine positional encoding (SPE) [33], scaling the fixed base by a learnable per-channel frequency γ,SPE (b) = sin (γPE (b)) ∈ RN×C, (3) where PE (b) is the fixed positional encoding of the bin cen-ters b and C is its channel dimension. A learned linear map 
+
+φ then projects each bin’s encoding to a lower dimension 
+
+D < C, which forms the representation of that bin’s classifier. 
+
+2) Bin Classification: For each velocity axis i ∈ { x, y, z},a fully-connected layer θ projects h into a query θ i(h) ∈ RD,which is matched against the projected encoding of each bin and normalized by a softmax [16], 
+
+πi,n = exp (θ i(h) · φ (SPE (bn))) 
+
+∑N−1 
+
+> m=0
+
+exp (θ i(h) · φ (SPE (bm))) . (4) The resulting πi is then decoded into the velocity and its uncertainty by (1) and (2). Building each classifier from a bin coordinate also keeps the decoder small compared to an unconstrained linear layer, whose parameter count grows with the number of bins N. With Dh = 48, C = 64, and D =
+
+32, it needs C + D(C + 1) + 3D(Dh + 1) = 6.8 k parameters at any N, whereas the unconstrained layer needs 3 N(Dh + 1) = 
+
+75 .3 k at N = 512. The decoder therefore adds 9.8% to the 69.8 k parameters of the encoder. 
+
+C. Error-Conditioned Gaussian Labels 
+
+A regression loss such as L1, L2, or Huber on the decoded velocity ˆ vi of (1) leaves the bin distribution variance unconstrained as many possible distributions share the same expected value. To supervise the uncertainty explicitly, we construct an error-conditioned Gaussian ¯qi for each axis 
+
+i, centered at the ground-truth velocity vi with a standard deviation σi set by the velocity error ve,i = | ˆvi − vi| (Fig. 3), ¯qi = N  vi, σ 2
+
+> i
+
+ , σi = ve,i, (5) We detach ve,i when building the label, so no gradient flows through σi. The velocity error ve,i is the per-sample stationary point of the Gaussian likelihood, and a zero-mean error gives 
+
+E[σ 2 
+
+> i
+
+] = E[v2
+
+> e,i
+
+] = Var [ ˆvi − vi], so the label variance is an unbiased target for the marginal error variance. The EKF instead consumes the error variance conditioned on the input, b0 b1 b2 b3 b4 b5 b6 b7         
+
+> .27 .64 .08
+> b0b1b2b3b4b5b6b7
+> .03 .12 .26 .31 .20 .07 .01
+
+Fig. 3: Visualization of error-conditioned Gaussian label construc-tion. A smaller velocity error ve,i gives a sharp Gaussian label (left) and a larger one gives a label of larger standard deviation (right). The bottom panels show the resulting label qi over the bins. 
+
+so we verify per update whether the bin variance matches the error it incurs in Sec. V-C. The discrete label qi integrates the continuous density ¯ qi
+
+over each bin’s support [b− 
+
+> n
+
+, b+ 
+
+> n
+
+],
+
+qi,n = 1
+
+Zi
+
+
+
+Φ
+
+ b+ 
+
+> n
+
+− vi
+
+σi
+
+
+
+− Φ
+
+ b− 
+
+> n
+
+− vi
+
+σi
+
+ 
+
+, (6) where Φ is the standard normal CDF and Zi normalizes the N bins to sum to one. Following the histogram loss of HL-Gauss [9], [18], each bin is assigned the probability 
+
+mass over its support rather than the density evaluated at its center, so adjacent bins retain non-zero mass and the ordinal structure of the velocity range is preserved. However, the decoded mean of (6) has a discretization bias [34] that grows as the label sharpens. We therefore tilt qi to the closest distribution in Kullback–Leibler (KL) divergence whose expectation is exactly vi [35], 
+
+qi,n ← 1˜Zi
+
+qi,n exp (ηi bn) , (7) where the per-axis scalar ηi is fixed by the mean constraint and solved outside the autograd graph, and ˜ Zi renormalizes the tilted label. The correction changes the standard deviation 
+
+σi only to second order and vanishes ( ηi = 0) when the decoded mean of (6) is already exact. 
+
+D. Training Objective 
+
+The bin distribution is supervised by the KL divergence from the error-conditioned label to the prediction, 
+
+LKL ,i = KL (qi ∥ πi) . (8) With σi set by (5), matching this label brings the bin variance of (2) toward σ 2 
+
+> i
+
+, so the velocity uncertainty is supervised explicitly rather than left as a by-product of training. Since (8) is linear in the detached label qi, its per-input optimum is the conditional mean of the labels, thereby encouraging the predicted distribution to reflect the input-conditioned prediction error. We also retain a Huber loss LH,i on the decoded velocity ˆvi [3], [8], which supervises πi implicitly through (1). The KL divergence of (8) gives the decoded mean no special weight 
+
+TABLE I: Dataset details. Len and Dur are the trajectory length and duration of the held-out test sequences.                                                 
+
+> Dataset Rotor Sequences v[m/s] Len [m] Dur [s] input Train Val Test ¯vvmax mean total mean total AI-IO [8] RPM 12 12 22 1.5 13.6 65 1430 44 969 NanoBench [31] PWM 81 422 0.5 2.0 19 411 41 909 TII-RATM [32] PWM 9363.5 21.8 110 661 31 188 NeuroBEM [30] RPM 47 16 13 5.1 17.7 215 2791 41 539
+
+among the bins, whereas the Huber term with transition point 
+
+δ penalizes a displaced mean directly, 
+
+LH,i =
+
+( 12 v2
+
+> e,i
+
+, ve,i < δ ,
+
+δ  ve,i − 12 δ  , otherwise . (9) The total objective is 
+
+L = ∑
+
+> i∈{ x,y,z}
+
+(λH LH,i + λKL LKL ,i) , (10) where λH and λKL weight the Huber and KL terms. 
+
+E. Extended Kalman Filter 
+
+We fuse the VeloBins prediction with the error-state EKF of AI-IO [8], retaining its state definition, IMU propagation, and measurement-update formulation. The filter state is Xk =(Rk, Gvk, Gpk, bak , bgk ), where Rk is the body-to-global rotation, Gvk and Gpk are the global-frame velocity and position, and ba,k and bg,k are the IMU biases. We refer the reader to [8] for the complete propagation and EKF update equations. At each network update, VeloBins provides the decoded body-frame velocity ˆ vk of (1) as the measurement. Its obser-vation model and covariance are 
+
+zk = ˆvk, h(Xk) = RTk · Gvk, (11) ˆΣk = diag   ˆσ 2 
+
+> x
+
+, ˆσ 2 
+
+> y
+
+, ˆσ 2
+
+> z
+
+ , (12) where ˆ σ 2 
+
+> i,k
+
+is the bin variance decoded by (2). Thus, unlike AI-IO [8], which predicts the velocity and covariance using separate regression decoders, VeloBins obtains both from the same bin distribution. The predicted covariance is directly used as the EKF measurement covariance without rescaling or innovation gating. IV. E XPERIMENTS 
+
+A. Experimental Setup 1) Datasets: We evaluate on four public UAV datasets (Table I), namely the AI-IO [8], NanoBench [31], TII-RATM [32], and NeuroBEM [30] datasets. The platforms range from a 27 g Crazyflie to a 5-inch racing quadrotor, and supply either measured rotor speed or a commanded pulse-width modulation (PWM) signal. The four test splits together contain 63 sequences of 5.3 km and 43 min of flight. 
+
+2) Baselines: We compare against five learning-based IO methods, all trained on the same data as VeloBins. TLIO [3] and EqNIO [25] are pedestrian displacement regressors, and for EqNIO we use the SO(2) equivariant-frame variant on the TLIO backbone. IMO [6] regresses displacement from gyroscope and collective thrust for drone racing, while AirIO [5] and AI-IO [8] predict body-frame velocity with a separate covariance decoder. TABLE II: Inertial Odometry AVE [m/s], RTE [m], and ATE [m] across the four datasets. Cells are shaded by rank across the six methods within each row and metric (green = best → red = worst). All results are EKF-fused. 
+
+Dataset / Shape TLIO EqNIO IMO AirIO AI-IO VeloBins AVE RTE ATE AVE RTE ATE AVE RTE ATE AVE RTE ATE AVE RTE ATE AVE RTE ATE AI-IO circle ×2 0.898 4.278 7.673 0.790 3.973 5.315 5.509 8.155 13.056 0.320 1.278 6.685 0.162 0.653 2.456 0.163 0.669 2.111 
+
+eight ×2 1.005 3.512 8.702 0.993 3.668 9.056 5.034 6.900 17.926 0.469 2.022 13.111 0.240 1.034 6.284 0.204 0.786 4.723 
+
+man/high ×4 0.888 4.349 5.669 0.706 3.427 3.710 4.732 8.307 7.139 0.854 2.324 3.984 0.340 1.106 1.684 0.342 1.032 1.270 
+
+man/low ×4 0.837 4.137 4.949 0.733 3.813 3.861 4.470 7.264 8.909 0.552 1.424 2.605 0.243 0.718 1.365 0.232 0.657 1.272 
+
+man/med ×4 0.983 4.030 5.056 0.862 3.223 3.749 6.049 11.833 12.423 0.566 1.466 2.584 0.263 0.758 1.379 0.258 0.677 1.131 
+
+random ×2 0.882 2.739 6.098 0.756 2.474 7.560 4.476 6.215 13.528 0.361 1.030 5.173 0.193 0.727 3.979 0.205 0.815 4.710 ud/circ ×2 1.053 4.475 10.831 0.983 4.061 6.619 5.193 6.625 11.992 0.375 1.478 8.219 0.201 0.839 4.766 0.191 0.762 4.094 
+
+ud/eight ×2 0.815 2.954 6.398 0.765 3.231 6.920 4.366 8.496 23.319 0.314 1.167 6.753 0.186 0.613 2.930 0.161 0.485 1.631 AVG 0.916 3.908 6.459 0.808 3.485 5.283 5.007 8.291 12.433 0.526 1.582 5.299 0.243 0.821 2.661 0.235 0.750 2.238 
+
+> NanoBench
+
+circle ×3 3.280 8.782 9.421 2.604 5.272 5.611 0.649 0.934 1.431 0.785 3.708 7.201 0.246 0.596 0.598 0.232 0.613 0.661 figure8 ×3 1.617 8.035 8.394 1.541 6.769 6.166 0.441 0.828 1.143 0.590 2.190 3.332 0.147 0.469 0.631 0.128 0.382 0.562 
+
+helix ×3 0.653 1.684 2.293 0.608 1.555 1.902 0.357 0.905 2.045 0.492 2.168 7.055 0.145 0.532 1.636 0.112 0.401 1.179 
+
+oval ×3 1.272 2.998 3.246 1.220 2.942 2.574 0.414 0.473 1.132 0.524 1.871 6.295 0.112 0.215 0.327 0.092 0.159 0.351 star ×3 2.902 5.954 10.765 2.814 6.041 8.379 0.473 0.579 1.274 0.809 3.971 11.194 0.150 0.326 0.824 0.115 0.279 0.823 
+
+trefoil ×3 1.084 2.861 2.860 0.921 2.358 2.260 0.329 0.715 1.374 0.614 2.810 8.649 0.161 0.600 1.478 0.117 0.412 0.923 
+
+other ×4 5.647 36.042 48.353 3.910 33.080 33.860 1.768 1.609 3.973 0.662 3.107 19.604 0.356 0.907 2.716 0.321 0.734 1.972 AVG 2.501 10.687 13.834 2.035 9.415 9.823 0.685 0.897 1.868 0.640 2.845 9.527 0.196 0.538 1.243 0.167 0.440 0.972 
+
+> TII-RATM
+
+ellipse ×2 1.012 4.888 4.122 0.944 4.591 3.606 0.422 0.832 0.899 0.775 1.980 3.259 0.153 0.338 0.863 0.119 0.214 0.335 
+
+lemniscate ×2 0.916 5.017 3.261 0.730 4.475 3.102 0.334 0.516 0.781 0.358 0.630 1.007 0.130 0.219 0.395 0.095 0.173 0.269 
+
+trackRATM ×2 1.539 9.282 12.963 1.707 9.246 8.387 0.478 0.951 2.390 0.642 1.948 4.788 0.189 0.468 1.212 0.127 0.229 0.553 AVG 1.156 6.396 6.782 1.127 6.104 5.032 0.411 0.766 1.357 0.592 1.519 3.018 0.157 0.342 0.823 0.114 0.206 0.386 
+
+> NeuroBEM
+
+3D circle ×2 2.422 3.328 6.124 2.335 3.066 3.808 1.294 3.478 7.767 0.616 2.103 4.787 0.443 1.040 4.870 0.378 0.815 3.542 
+
+lemniscate ×4 1.621 6.057 9.841 1.704 5.361 6.468 2.153 4.964 7.113 1.077 3.132 8.876 0.585 1.124 4.198 0.496 0.889 3.081 
+
+pow climb ×2 2.393 9.029 10.522 2.448 6.340 8.732 1.091 2.353 2.240 1.148 3.193 8.205 0.542 0.807 2.784 0.544 0.983 3.843 satellite ×2 5.865 8.696 23.419 4.739 7.323 8.887 1.172 2.306 3.571 1.024 4.140 9.155 0.511 0.968 2.811 0.514 0.977 2.944 other ×3 1.297 5.901 11.227 1.291 5.524 11.000 2.065 5.289 13.148 1.293 3.097 12.140 0.719 1.134 7.357 0.726 1.117 7.736 
+
+AVG 2.441 6.465 11.783 2.287 5.498 7.825 1.686 4.000 7.312 1.059 3.130 8.940 0.576 1.041 4.599 0.541 0.958 4.322 
+
+3) Metrics: We report the mean absolute velocity error (AVE, m/s) and the root mean square relative (RTE, m) and absolute (ATE, m) trajectory errors, with RTE evaluated over ∆t = 5 s. We also report the negative log-likelihood (NLL) [36] to evaluate the predicted uncertainty, penalizing inaccurate estimates and over- or under-confident uncer-tainty together. The median per-update velocity normalized estimation error squared (NEES) [12] then evaluates filter consistency after EKF fusion, whether the covariance the filter reports matches the error it incurs. 
+
+4) Implementation Details: We implement the network in PyTorch and train on an RTX 4090 with an i9-12900K CPU, using Adam at a constant learning rate of 3 × 10 −4 for 100 epochs at batch size 128. We use N = 512 bins per axis over a symmetric range [−R, R] shared by all three axes, with 
+
+R ≈ 1.1× each training set’s axis-wise maximum velocity. The Huber transition point is δ = 0.1 m/s and λH = λKL = 1on every dataset. We further clamp σi to a minimum of one tenth of a bin width. 
+
+5) Inference and Runtime: Following AI-IO [8], the net-work takes a one-second window of 100 Hz inputs and supplies the EKF with velocity updates at 20 Hz. On a single Cortex-A78AE CPU thread of an Orin NX computer, a forward pass takes 5.10 ms against 4.36 ms for the regression baseline, a 17% overhead. However, the bin encoding of (4) are input-independent and can be precomputed once, which reduces the overhead to only 9% (4.73 ms). 
+
+B. Inertial Odometry Accuracy 
+
+Table II reports EKF-fused results. VeloBins achieves the lowest average AVE, RTE, and ATE on all four datasets. Compared to the strongest baseline, AI-IO [8], VeloBins lowers AVE by 3–27%, RTE by 8–40% and ATE by 6– 53% across datasets, with the largest gains on TII-RATM. Since AI-IO and VeloBins share the same encoder, EKF modules, and training data, the improvements are attributable to the proposed bin reformulation and its error-conditioned Gaussian label supervision. Against the remaining baselines, the margins are larger. TLIO [3] and EqNIO [25] are the least accurate on NanoBench, TII-RATM, and NeuroBEM, since their global-frame formulation does not capture the highly dynamic motion of aerial robots [5]. IMO [6] is competitive on NanoBench and TII-RATM thanks to its quadrotor-specific actuation inputs, but fails on the AI-IO dataset, where the free-form maneuvers reveal the overfitting of its data-intensive actuation-driven formulation. AirIO [5] remains less accurate than AI-IO and VeloBins on every dataset, owing to its sensitivity to orientation errors and online windowed inference [8]. Fig. 4 visualizes the estimated trajectories on one test sequence per dataset. On these sequences, VeloBins drifts least and matches the ground truth most closely. Fig. 4: Qualitative comparison of VeloBins against the baselines. Each column shows one method’s estimated trajectory on one held-out sequence per dataset, covering AI-IO, NanoBench, TII-RATM, and NeuroBEM datasets, against ground truth. TABLE III: Supervision strategy ablation. Net and EKF columns are the raw network and the fused outputs, respectively. vs Reg. counts the metrics beating the regression baseline out of 20, and rank is the average rank, lower being better. Cells are shaded by rank within each column, best in bold. The proposed VeloBins with G+H B ranks best overall.                                                                                                                                                                                                                                                                                    
+
+> Loss †
+> AI-IO NanoBench TII-RATM NeuroBEM Overall Net EKF Net EKF Net EKF Net EKF vs Reg. rank AVE NLL AVE RTE ATE AVE NLL AVE RTE ATE AVE NLL AVE RTE ATE AVE NLL AVE RTE ATE Reg. (H+N) C0.263 -0.11 0.243 0.821 2.661 0.158 -0.78 0.196 0.539 1.243 0.206 -1.15 0.157 0.342 0.823 0.607 0.63 0.576 1.041 4.599 7.2 VeloBins HB0.257 2.62 0.336 0.865 2.684 0.118 0.30 0.293 0.517 1.101 0.173 2.05 0.532 1.944 5.211 0.570 2.91 0.763 1.302 6.242 6/20 7.6 MB0.259 0.15 0.243 0.788 2.523 0.126 0.11 0.201 0.495 1.107 0.176 3.08 0.145 0.324 0.686 0.605 3.56 0.587 1.010 4.489 13/20 7.0 MC0.259 2.71 0.241 0.813 2.499 0.126 12.4 0.138 0.445 1.096 0.176 -0.59 0.127 0.237 0.507 0.605 3.38 0.576 0.991 4.277 15/20 5.5 MB+C0.259 -0.31 0.235 0.760 2.429 0.126 -0.66 0.202 0.496 1.107 0.176 -1.13 0.127 0.232 0.493 0.605 0.60 0.567 0.992 4.286 17/20 4.8 M+H B0.277 0.77 0.261 0.862 2.992 0.122 -0.35 0.196 0.455 1.076 0.161 -0.57 0.134 0.299 0.759 0.602 3.15 0.578 0.985 4.456 10/20 6.3 M+H C0.277 4.25 0.260 0.877 2.956 0.122 7.11 0.136 0.420 1.074 0.161 -0.94 0.125 0.266 0.670 0.602 3.38 0.568 0.961 4.255 12/20 5.5 M+H B+C0.277 0.01 0.255 0.851 2.904 0.122 -1.00 0.197 0.458 1.078 0.161 -1.25 0.124 0.233 0.573 0.602 0.49 0.556 0.960 4.268 14/20 4.5 GB0.275 -0.43 0.233 0.772 2.447 0.123 -1.26 0.183 0.463 1.018 0.134 -1.22 0.105 0.176 0.365 0.633 0.33 0.558 0.942 3.987 18/20 3.0
+> G+H B0.265 -0.45 0.235 0.750 2.238 0.121 -1.30 0.167 0.440 0.972 0.133 -1.29 0.114 0.206 0.386 0.590 0.33 0.541 0.958 4.322 19/20 2.0
+> †Supervision strategy , where His the Huber loss, Gthe KL-divergence loss with error-conditioned Gaussian labels (8), Mthe maximum likelihood estimation with a bin mixture [16], and Nthe negative log-likelihood with a covariance decoder. Mand Gare also evaluated with the Huber term added ( +H ).
+> B/C/B+CUncertainty source used in fusion, where Bis the bin variance (2), Cthe covariance decoder, and B+Cthe sum of the two variances. Note that, Reg. ,M, and M+H
+> use a separate covariance decoder.
+
+V. A BLATION STUDY 
+
+The ablations investigate the source of the improvements and measure how the supervision strategies and the bin-decoder design affect the velocity and uncertainty estimates, and in turn the fused trajectory errors and the filter consis-tency. We examine four questions. Does estimating velocity over bins yield a more accurate velocity estimate than direct regression ( Q1 )? How do the supervision strategies affect the network accuracy and the bin variance ( Q2 )? How does the predicted uncertainty affect the fused accuracy and the filter consistency ( Q3 )? How do the bin encoding and the bin resolution affect the estimate ( Q4 )? For Q1 –Q3 , Table III compares five bin-supervision vari-ants against the regression baseline of AI-IO [8]. They supervise the bin distribution with the Huber loss ( H), the MLE loss of RTMO [16] ( M), or our error-conditioned Gaussian labels of Sec. III-C ( G), the latter two also with the Huber term added ( +H ). The superscript gives the un-certainty source used in fusion, either the bin variance ( B), the covariance decoder ( C), or their sum ( B+C). 
+
+A. Regression vs. Classification 
+
+To answer Q1 , we compare the regression baseline against the bin-based formulation with Huber supervision (H). Using bins with H lowers the network AVE on all four datasets, by 2% on the AI-IO dataset up to 25% on NanoBench. 
+
+B. Supervision Strategies 
+
+To answer Q2 , we compare the network AVE and NLL across the supervision strategies in Table III. The implicit supervision by H improves accuracy over the regression baseline, but its NLL is far worse than the regression baseline on every dataset, as it does not explicitly shape the uncertainty. For the MLE supervision M and M+H ,either source alone yields a higher NLL than the regression baseline, and only combining both ( ◦B+C) approaches it. In contrast, the proposed GB and G+H B achieve a better-calibrated bin variance, with G+H B attaining the lowest NLL on all four datasets. Reg. , M, and M+H all supervise their 3 6 9 12 15 18 
+
+Time [s]       
+
+> 10 −2
+> 10 −1
+> 10 0
+> 10 1
+> state-velocity NEES
+> ideal median (2.37) 95%
+> Reg. (H+N) C[median 5.83, 61% in 95% bounds] HB[median 0.22, 49% in 95% bounds] M+H B+C[median 5.14, 64% in 95% bounds] G+H B(Ours) [median 3.08, 73% in 95% bounds]
+
+Fig. 5: Per-update velocity NEES over the 63 test sequences across the datasets, showing the median and interquartile band against the ideal median and the 95% bounds. The VeloBins with the proposed 
+
+G+H B achieves the closest median NEES to the ideal and the most consistent filter updates with 73% inside the 95% bounds. TABLE IV: Bin-encoding ablation on the raw network AVE [m/s], RTE [m], and NLL [nats], varying only the bin embedding. SPE 
+
+is our learnable sine positional encoding of (3).                             
+
+> Encoding AI-IO NanoBench TII-RATM NeuroBEM AVE RTE NLL AVE RTE NLL AVE RTE NLL AVE RTE NLL Reg. 0.263 0.709 -0.11 0.158 0.517 -0.78 0.206 0.365 -1.15 0.607 0.921 0.63 VeloBins Direct 0.308 0.843 -0.36 0.122 0.396 -1.32 0.123 0.314 -1.08 0.610 0.858 0.35 PE 0.264 0.715 -0.44 0.127 0.385 -1.20 0.163 0.292 -0.94 0.586 0.860 0.36
+> SPE 0.265 0.700 -0.45 0.121 0.361 -1.30 0.133 0.280 -1.29 0.590 0.835 0.33
+
+covariance with an NLL loss, yet they remain worse than the proposed variants that never optimize one. The Huber term improves the proposed supervision, as 
+
+G+H achieves a lower network AVE than G on all four datasets and also lowers the NLL on all four, whereas for M
+
+it helps neither consistently. 
+
+C. Filter Accuracy and Consistency 
+
+To answer Q3 , we evaluate the fused accuracy and the filter consistency of each variant. After fusion, the network-AVE ordering reverses, as G
+
+and G+H attain the lowest fused AVE on three of the four datasets, with G+H attaining the lowest ATE on the AI-IO dataset and NanoBench. This is attributable to the velocity uncertainty, since the EKF weights each update by it. While 
+
+H predicts an accurate velocity, its over-spread bin variance leads the filter to discard its updates. The M and M+H 
+
+variants are over-confident, like the regression baseline, while the proposed G+H is better-calibrated and ranks best overall. Fig. 5 reports the per-update velocity NEES. The regres-sion baseline and M+H B+C are over-confident and HB is under-confident. G+H B is the closest to the ideal, with a median NEES of 3.08 against the ideal 2.37 and 73% of updates inside the 95% bounds, against 64% for M+H B+C,61% for the regression baseline, and 49% for HB. The bin variance of G+H B therefore supplies the measurement covariance without a separate covariance decoder or an NLL loss. 
+
+D. Bin-Decoder Design 
+
+To answer Q4 , we ablate the two structural choices of the bin decoder, which are the bin encoding and the bin resolution. 0.258  0.264  0.270      
+
+> AI-IO
+> 0.12  0.14  0.16
+> NanoBench
+> 16 32 64 128 256 512 1024 2048
+> bins N
+> 0.12  0.16  0.20
+> TII-RATM
+> 16 32 64 128 256 512 1024 2048
+> bins N
+> 0.58  0.60  0.62
+> NeuroBEM
+> −0.6  0.0  0.6
+> −1.2  −0.8
+> −1.5  0.0  1.5
+> 0.4  0.8  1.2
+> VeloBins AVE VeloBins NLL Reg. AVE Reg. NLL
+
+Fig. 6: Bin-resolution ablation of the network AVE and NLL across varied bins N, per dataset, against the regression baseline. Accuracy varies little with N, while the NLL is better at N > 64 and improves until N = 512. 
+
+1) Bin Encoding: We vary how the logits are formed, comparing a Direct bin prediction [14], [15], the fixed positional encoding [16] ( PE ), and learnable sine positional encoding SPE of (3). As shown in Table IV, SPE attains the lowest RTE on every dataset and the lowest NLL on three of the four. Note that, on TII-RATM, only SPE improves the NLL over the regression baseline [8]. Direct discards the ordinal structure that a coordinate encoding preserves, while PE keeps the frequencies of its fixed base, and only the learnable γ of SPE (3) adapts the ordinal structures of the bins to the data [33]. The margin is largest on TII-RATM, where the highest speeds give the widest bin range and the error-conditioned label therefore spans the fewest bins. 
+
+2) Bin Resolution: Fig. 6 sweeps the bin number N from 16 to 2048 against the regression baseline. VeloBins achieves a lower network AVE at every N on NanoBench and TII-RATM and stays within 0.01 m/s of the baseline on the other two datasets, so the velocity estimate does not need a fine grid. However, the NLL consistently falls below the regression baseline for N = 64 or above on three of the four datasets, and saturates by N =512, beyond which it changes little. On TII-RATM the NLL stays higher than the regression baseline until N = 512. Once the velocity error becomes sufficiently small, the error-conditioned label collapses onto too few bins to supervise the bin variance reliably, leaving an under-confident uncertainty. However, for EKF fusion, under-confidence is preferable to over-confidence, as over-confidence can lead to filter divergence [12]. VI. C ONCLUSION AND DISCUSSION 
+
+We presented VeloBins, which reformulates body-frame velocity estimation in inertial odometry as a distribution over discretized velocity bins. The uncertainty is decoded from the same distribution, and supervised explicitly with error-conditioned Gaussian labels. It achieves the lowest average velocity, relative, and absolute trajectory errors on four aerial datasets, reducing ATE by up to 53% over the strongest baseline [8]. We also demonstrated that VeloBins provides better-calibrated uncertainty than the evaluated alternatives, improving the consistency of downstream EKF fusion. While our implementation and evaluation focused on aerial robots, we believe the formulation and its supervi-sion are applicable to other platforms. Humanoids [37], quadrupeds [38], ground [24] and underwater vehicles [39] each provide their own platform-specific modalities, or the method could be made cross-platform [28]. VeloBins has two limitations. The bin grid is fixed per dataset with a known operational range, and once the velocity error becomes sufficiently small, the label collapses onto too few bins to supervise the variance reliably (Sec. V-D.2). REFERENCES [1] C. Chen and X. Pan, “Deep learning for inertial positioning: A survey,” 
+
+IEEE Transactions on Intelligent Transportation Systems , vol. 25, no. 9, pp. 10506–10523, 2024. [2] S. Herath, H. Yan, and Y. Furukawa, “RoNIN: Robust neural inertial navigation in the wild: Benchmark, evaluations, & new methods,” in 2020 IEEE International Conference on Robotics and Automation (ICRA) , pp. 3146–3152, IEEE, 2020. [3] W. Liu, D. Caruso, E. Ilg, J. Dong, A. I. Mourikis, K. Daniilidis, V. Kumar, and J. Engel, “TLIO: Tight learned inertial odometry,” IEEE Robotics and Automation Letters , vol. 5, no. 4, pp. 5653–5660, 2020. [4] R. Buchanan, M. Camurri, F. Dellaert, and M. Fallon, “Learning inertial odometry for dynamic legged robot state estimation,” in 
+
+Conference on robot learning , pp. 1575–1584, PMLR, 2022. [5] Y. Qiu, C. Xu, Y. Chen, S. Zhao, J. Geng, and S. Scherer, “AirIO: Learning inertial odometry with enhanced IMU feature observability,” 
+
+IEEE Robotics and Automation Letters , vol. 10, no. 9, pp. 9368–9375, 2025. [6] G. Cioffi, L. Bauersfeld, E. Kaufmann, and D. Scaramuzza, “Learned inertial odometry for autonomous drone racing,” IEEE Robotics and Automation Letters , vol. 8, no. 5, pp. 2684–2691, 2023. [7] C. Chen, X. Lu, A. Markham, and N. Trigoni, “IONet: Learning to cure the curse of drift in inertial odometry,” in Proceedings of the AAAI Conference on Artificial Intelligence , vol. 32, 2018. [8] J. Cui, F. Yu, L. Zhang, Y. Hu, and D. Zou, “AI-IO: An aerodynamics-inspired real-time inertial odometry for quadrotors,” 2026. [9] E. Imani and M. White, “Improving regression performance with dis-tributional losses,” in International Conference on Machine Learning (ICML) , 2018. [10] S. Zhang, L. Yang, M. B. Mi, X. Zheng, and A. Yao, “Improving deep regression with ordinal entropy,” in International Conference on Learning Representations (ICLR) , 2023. [11] M. Seitzer, A. Tavakoli, D. Antic, and G. Martius, “On the pitfalls of heteroscedastic uncertainty estimation with probabilistic neural networks,” in International Conference on Learning Representations (ICLR) , 2022. [12] Y. Bar-Shalom, X. R. Li, and T. Kirubarajan, Estimation with Appli-cations to Tracking and Navigation: Theory, Algorithms and Software .John Wiley & Sons, 2001. [13] H. Fu, M. Gong, C. Wang, K. Batmanghelich, and D. Tao, “Deep ordinal regression network for monocular depth estimation,” in Pro-ceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , June 2018. [14] S. F. Bhat, I. Alhashim, and P. Wonka, “AdaBins: Depth estimation using adaptive bins,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 4009–4018, June 2021. [15] Y. Li, S. Yang, P. Liu, S. Zhang, Y. Wang, Z. Wang, W. Yang, and S.-T. Xia, “SimCC: A simple coordinate classification perspective for human pose estimation,” in European Conference on Computer Vision (ECCV) , 2022. [16] P. Lu, T. Jiang, Y. Li, X. Li, K. Chen, and W. Yang, “RTMO: Towards high-performance one-stage real-time multi-person pose estimation,” in IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2024. [17] M. G. Bellemare, W. Dabney, and R. Munos, “A distributional per-spective on reinforcement learning,” in International Conference on Machine Learning (ICML) , 2017. [18] J. Farebrother, J. Orbay, Q. Vuong, A. A. Ta¨ ıga, Y. Chebotar, T. Xiao, A. Irpan, S. Levine, P. S. Castro, A. Faust, A. Kumar, and R. Agar-wal, “Stop regressing: Training value functions via classification for scalable deep reinforcement learning,” in International Conference on Machine Learning (ICML) , 2024. [19] Z. Li, X. Wang, X. Liu, and J. Jiang, “BinsFormer: Revisiting adaptive bins for monocular depth estimation,” IEEE Transactions on Image Processing , vol. 33, pp. 3964–3976, 2024. [20] B.-B. Gao, H.-Y. Zhou, J. Wu, and X. Geng, “Age estimation using expectation of label distribution learning,” in International Joint Con-ference on Artificial Intelligence (IJCAI) , 2018. [21] T. Jiang, P. Lu, L. Zhang, N. Ma, R. Han, C. Lyu, Y. Li, and K. Chen, “RTMPose: Real-time multi-person pose estimation based on MMPose,” arXiv preprint arXiv:2303.07399 , 2023. [22] P. D. Groves, Principles of GNSS, Inertial, and Multisensor Integrated Navigation Systems . Artech House, 2nd ed., 2013. [23] M. Brossard, A. Barrau, and S. Bonnabel, “Rins-w: Robust inertial navigation system on wheels,” in 2019 IEEE/RSJ International Con-ference on Intelligent Robots and Systems (IROS) , pp. 2068–2075, 2019. [24] M. Brossard, A. Barrau, and S. Bonnabel, “AI-IMU dead-reckoning,” 
+
+IEEE Transactions on Intelligent Vehicles , vol. 5, no. 4, pp. 585–595, 2020. [25] R. K. Jayanth, Y. Xu, Z. Wang, E. Chatzipantazis, K. Daniilidis, and D. Gehrig, “EqNIO: Subequivariant neural inertial odometry,” in 
+
+International Conference on Learning Representations (ICLR) , 2025. [26] K. Zhang, C. Jiang, J. Li, S. Yang, T. Ma, C. Xu, and F. Gao, “DIDO: Deep inertial quadrotor dynamical odometry,” IEEE Robotics and Automation Letters , vol. 7, no. 4, pp. 9083–9090, 2022. [27] A. Bajwa, C. C. Cossette, M. A. Shalaby, and J. R. Forbes, “DIVE: Deep inertial-only velocity aided estimation for quadrotors,” IEEE Robotics and Automation Letters , vol. 9, no. 4, pp. 3728–3734, 2024. [28] S. Zhao, S. Zhou, R. Blanchard, Y. Qiu, W. Wang, and S. Scherer, “Tartan IMU: A light foundation model for inertial positioning in robotics,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 22520–22529, 2025. [29] S. Shao, Z. Pei, X. Wu, Z. Liu, W. Chen, and Z. Li, “IEBins: Iterative elastic bins for monocular depth estimation,” Advances in Neural Information Processing Systems , vol. 36, pp. 53025–53037, 2023. [30] L. Bauersfeld, E. Kaufmann, P. Foehn, S. Sun, and D. Scaramuzza, “NeuroBEM: Hybrid aerodynamic quadrotor model,” in Robotics: Science and Systems (RSS) , 2021. [31] S. I. Ullah and J. Baca, “NanoBench: A multi-task benchmark dataset for nano-quadrotor system identification, control, and state estimation,” 2026. [32] M. Bosello, D. Aguiari, Y. Keuter, E. Pallotta, S. Kiade, G. Caminati, F. Pinzarrone, J. Halepota, J. Panerati, and G. Pau, “Race against the machine: A fully-annotated, open-design dataset of autonomous and piloted high-speed flight,” IEEE Robotics and Automation Letters ,vol. 9, no. 4, pp. 3799–3806, 2024. [33] C. Sun, Z. Yuan, K. Xu, L. Mai, N. Siddharth, S. Chen, and M. K. Marina, “Learning high-frequency functions made easy with sinusoidal positional encoding,” in International Conference on Machine Learn-ing (ICML) , 2024. [34] E. Imani, K. Luedemann, S. Scholnick-Hughes, E. Elelimy, and M. White, “Investigating the histogram loss in regression,” Journal of Machine Learning Research , vol. 27, pp. 1–54, 2026. [35] I. Csisz´ ar, “I-divergence geometry of probability distributions and minimization problems,” The Annals of Probability , vol. 3, no. 1, pp. 146–158, 1975. [36] A. Loquercio, M. Segu, and D. Scaramuzza, “A general framework for uncertainty estimation in deep learning,” IEEE Robotics and Automation Letters , vol. 5, no. 2, pp. 3153–3160, 2020. [37] M. Baumgartner, D. M¨ uller, A. Serifi, R. Grandia, E. Knoop, M. Gross, and M. B¨ acher, “CoCo-InEKF: State estimation with learned contact covariances in dynamic, contact-rich scenarios,” in Robotics: Science and Systems (RSS) , 2026. [38] D. Youm, H. Oh, S. Choi, H. Kim, S. Jeon, and J. Hwangbo, “Legged robot state estimation with invariant extended kalman filter using neural measurement network,” in 2025 IEEE International Conference on Robotics and Automation (ICRA) , pp. 670–676, 2025. [39] M. Singh and K. Alexis, “DeepVL: Dynamics and inertial measurements-based deep velocity learning for underwater odometry,” in 2025 IEEE International Conference on Robotics and Automation (ICRA) , 2025.
