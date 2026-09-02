@@ -1,0 +1,710 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-09-02T22:48:39.189245+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 12,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 13,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2608.25642v1",
+      "source": "arxiv",
+      "title": "EgoNav: Bridging Learned Waypoints and Geometry-Aware Local Control for Robust Indoor Navigation",
+      "abstract": "Image-goal navigation using lightweight topological maps is a practical paradigm for indoor robot deployment: the map requires only geotagged images, and localization relies on visual matching rather than precise pose estimation. However, learned waypoint predictors can produce targets that violate geometric constraints or deviate from the global path. Executing these waypoints safely further requires a local planner capable of collision avoidance, yet existing systems either lack one or rely on fixed parameters that cannot adapt to confined spaces. To address these limitations while retaining the navigational intuition of the learned predictor, we present EgoNav, a hierarchical system that implements this idea by generating candidates from semantically segmented traversable regions and scoring them alongside the learned waypoint for geometric safety, directional coherence, and fidelity to the learned prior. An adaptive local path planner then executes the refined waypoint with parameters modulated based on the refinement outcome. Experiments in Habitat-sim and on a physical humanoid robot show that EgoNav consistently outperforms contemporary baselines in both success rate and path efficiency.",
+      "authors": [
+        "Jing Wang",
+        "Shiqi Zhao",
+        "Hairong Qu",
+        "Peng Yin"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-26T11:13:07+00:00",
+      "link": "https://arxiv.org/pdf/2608.25642v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Image-goal indoor navigation with learned waypoints and geometry-aware local control for collision-free robot deployment",
+      "llm_evidence_cn": "基于图像目标的室内导航，结合学习路径点与几何感知局部控制以保障避障",
+      "llm_evidence": "基于图像目标的室内导航，结合学习路径点与几何感知局部控制以保障避障",
+      "canonical_evidence": "基于图像目标的室内导航，结合学习路径点与几何感知局部控制以保障避障",
+      "llm_tldr_en": "EgoNav combines learned waypoint prediction with a geometry-aware local controller in a hierarchical system for robust indoor navigation and collision avoidance.",
+      "llm_tldr_cn": "在轻量拓扑地图支持的室内机器人部署中，学习式路径点可能违背几何约束或偏离全局路径，且缺乏安全避障的局部规划器。EgoNav采用分层系统，上层生成学习路径点，下层通过几何感知的局部控制器执行目标并避开障碍，同时适应受限空间。该方法保留了学习器的导航感知直觉，同时保证轨迹可执行与防碰撞，适合用于无精确位姿估计的图像目标导航。",
+      "llm_tldr": "在轻量拓扑地图支持的室内机器人部署中，学习式路径点可能违背几何约束或偏离全局路径，且缺乏安全避障的局部规划器。EgoNav采用分层系统，上层生成学习路径点，下层通过几何感知的局部控制器执行目标并避开障碍，同时适应受限空间。该方法保留了学习器的导航感知直觉，同时保证轨迹可执行与防碰撞，适合用于无精确位姿估计的图像目标导航。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.25799v1",
+      "source": "arxiv",
+      "title": "AGRO-Nav: Autonomous Graph-based Orchard Navigation",
+      "abstract": "Orchards form semi-structured environments in which parallel tree rows create natural driving corridors, yet narrow inter-row clearance and dense foliage lead geometry-agnostic grid planners to drift off the row center and risk trunk or canopy contact. We present AGRO-Nav, an automated framework for static graph-based global planning in orchards. From tree-row lines fitted to trunk clusters in a SLAM point cloud, it builds, without any manual waypoints, a sparse topological graph of intra- and inter-row connectivity; a global route is then found by Dijkstra search on this graph, connected to the start and goal by any-angle Theta* segments, and smoothed with a cubic B-spline. In real-orchard trials, AGRO-Nav follows the row center with a mean error of about 0.08 m, far below the A* (0.31 m) and Theta* (0.43 m) shortest-path baselines, while planning roughly four to five times faster. In Isaac Sim, it attains the lowest error among A*, Theta*, and a reproduced RANSAC midline baseline and remains stable as tree density drops to 70%, where the RANSAC baseline degrades. The resulting trajectories---straight row-centered segments joined by controlled turns---suit differential-drive and four-wheel-steering platforms.",
+      "authors": [
+        "Ho Young Yun",
+        "Jaemin Yu",
+        "Duksu Kim"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-26T13:50:04+00:00",
+      "link": "https://arxiv.org/pdf/2608.25799v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Autonomous graph-based navigation and global path planning in orchards using SLAM point cloud",
+      "llm_evidence_cn": "利用SLAM点云构建果园拓扑图并实现自主导航与全局路径规划",
+      "llm_evidence": "利用SLAM点云构建果园拓扑图并实现自主导航与全局路径规划",
+      "canonical_evidence": "利用SLAM点云构建果园拓扑图并实现自主导航与全局路径规划",
+      "llm_tldr_en": "AGRO-Nav automates orchard navigation by fitting tree-row lines to SLAM point clouds, building a sparse topological graph, and performing Dijkstra search with Theta* and B-spline smoothing, achieving 0.08 m mean row-center error in real trials.",
+      "llm_tldr_cn": "果园通常是半结构化环境，树行形成自然通道，但行间间隙窄、枝叶茂密，几何无关的网格规划器容易偏离行中心。AGRO-Nav从SLAM点云拟合树行线，无需人工航点即可自动构建行内与行间连接的稀疏拓扑图，利用Dijkstra搜索全局路径，并用任意角度Theta*连接起止点，最后以三次B样条平滑。在真实果园试验中，系统沿行中心的平均误差约为0.08米，较基线显著更优，为果园机器人提供免人工航点的自主导航方案。",
+      "llm_tldr": "果园通常是半结构化环境，树行形成自然通道，但行间间隙窄、枝叶茂密，几何无关的网格规划器容易偏离行中心。AGRO-Nav从SLAM点云拟合树行线，无需人工航点即可自动构建行内与行间连接的稀疏拓扑图，利用Dijkstra搜索全局路径，并用任意角度Theta*连接起止点，最后以三次B样条平滑。在真实果园试验中，系统沿行中心的平均误差约为0.08米，较基线显著更优，为果园机器人提供免人工航点的自主导航方案。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.28995v1",
+      "source": "arxiv",
+      "title": "Hydra: A Navigation World Action Model with Discrete Latent Planning and Continuous Flow-Matching Execution",
+      "abstract": "World models let robots imagine possible futures, but exploiting this capability for real-time control is bottlenecked by a representation misalignment: the generative model and the planner operate on decoupled manifolds, so the planner has no shared structure to search over and must instead decode every candidate back into high-dimensional pixel space to evaluate it. This decoding step is a major obstacle to real-time control on physical hardware. In this paper, we present Hydra, a discrete World Action Model that closes this gap by moving the planner, both the sampler and the evaluator, inside the model. Hydra establishes a unified latent manifold over visual states, physical poses, and control actions, then compresses this manifold through modality-specific Vector-Quantized bottlenecks into discrete vocabularies of kinodynamic intents and visual states. Because candidates are now drawn directly from this shared manifold, sampling is informed by the model's own understanding of the observation rather than proposed blind, and evaluation happens natively within the discrete space: candidates are ranked by a Kinematic-Perceptual Cost, without ever decoding to pixels. We term this Discrete Latent Planning (DLP). Because planning over discrete intents alone cannot supply the smooth, continuous commands physical actuation requires, Hydra pairs DLP with conditional Flow Matching, which maps each selected intent to a continuous trajectory for execution. Evaluated on two physical robotic platforms, Hydra outperforms state-of-the-art world models in goal-directed planning, while matching or exceeding the closed-loop execution capabilities of leading reactive foundation policies.",
+      "authors": [
+        "Mohammad Nazeri",
+        "Alexandyr Card",
+        "Samira Huber",
+        "Anuj Pokhrel",
+        "Yujun Wang",
+        "Ruben Hammele",
+        "Daeun Song",
+        "Sören Pirk",
+        "Xuesu Xiao"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "published": "2026-08-29T01:58:19+00:00",
+      "link": "https://arxiv.org/pdf/2608.28995v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "World action model for navigation planning and execution, a latest robot navigation advance",
+      "llm_evidence_cn": "面向导航的世界动作模型与规划执行框架，属于机器人导航前沿进展",
+      "llm_evidence": "面向导航的世界动作模型与规划执行框架，属于机器人导航前沿进展",
+      "canonical_evidence": "面向导航的世界动作模型与规划执行框架，属于机器人导航前沿进展",
+      "llm_tldr_en": "Hydra aligns visual states, poses and actions in a unified latent World Action Model, moving planner sampling and evaluation inside the model to avoid pixel-space decoding, enabling real-time navigation planning and continuous flow-matching execution.",
+      "llm_tldr_cn": "现有世界模型中生成器与规划器运行在相互分离的流形，机器人需把每个候选决策解码回像素空间才能评估，严重阻碍实时控制。Hydra提出离散世界动作模型，将视觉状态、物理位姿与控制动作统一到共享隐空间，使采样器与评估器都在模型内部工作。实验证明这能克服解码瓶颈并支持在物理硬件上的实时导航规划。该工作为世界模型驱动的机器人导航与运动控制提供了统一的实时解决方案。",
+      "llm_tldr": "现有世界模型中生成器与规划器运行在相互分离的流形，机器人需把每个候选决策解码回像素空间才能评估，严重阻碍实时控制。Hydra提出离散世界动作模型，将视觉状态、物理位姿与控制动作统一到共享隐空间，使采样器与评估器都在模型内部工作。实验证明这能克服解码瓶颈并支持在物理硬件上的实时导航规划。该工作为世界模型驱动的机器人导航与运动控制提供了统一的实时解决方案。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2608.29315v1",
+      "source": "arxiv",
+      "title": "SGE: Semantically-Guided Exploration for Unstructured Environments via Image-Space Waypoint Sampling",
+      "abstract": "This work introduces Semantically-Guided Exploration (SGE), a modular exploration framework for ground vehicles that integrates pixel-level semantic segmentation into sampling-based waypoint selection and receding-horizon route optimization. Unlike conventional geometric exploration methods, SGE evaluates candidate exploration goals directly in the image space using a semantic-aware utility function that accounts for terrain traversability, obstacle proximity, objects of interest, and depth-based exploration reward. Sampled waypoints are projected into 3D and ordered through a real-time Traveling Salesman Problem (TSP) formulation, enabling receding-horizon goal selection. To address real-world navigation uncertainty, the framework introduces mechanisms, including temporary taboo regions to handle navigation failures and a graph-based relocation strategy for efficient backtracking across explored areas. We evaluate SGE in standardized simulation benchmarks against state-of-the-art exploration planners and demonstrate competitive performance in volumetric coverage, while enabling semantic task biasing that cannot be achieved by purely geometric methods. The framework is further validated through real-world experiments using multiple robotic platforms in indoor campus buildings and in limestone and coal mines. Results show consistent performance and adaptability across platforms and domains.",
+      "authors": [
+        "Christopher Tatsch",
+        "Yu Gu"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "published": "2026-08-29T14:58:22+00:00",
+      "link": "https://arxiv.org/pdf/2608.29315v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Semantically-guided exploration with image-space waypoint sampling and TSP route optimization for autonomous ground vehicles",
+      "llm_evidence_cn": "面向自主地面车辆的非结构化环境语义引导探索与路径点规划",
+      "llm_evidence": "面向自主地面车辆的非结构化环境语义引导探索与路径点规划",
+      "canonical_evidence": "面向自主地面车辆的非结构化环境语义引导探索与路径点规划",
+      "llm_tldr_en": "SGE integrates semantic segmentation into exploration for ground vehicles by scoring image-space waypoints and using receding-horizon TSP route optimization to navigate unstructured environments safely.",
+      "llm_tldr_cn": "非结构化环境中的自主探索仅用几何信息难以判断地形可通行性与障碍物语义。SGE构建模块化探索框架，在图像空间内使用语义感知效用函数评估候选探索目标，综合考虑地形可通行性、障碍接近度、感兴趣目标与深度探索收益，并将采样路径点经TSP排序实现滚动时域规划。在真实导航不确定性下，该方法提升了地面车辆在复杂环境中的探索效率和安全性。",
+      "llm_tldr": "非结构化环境中的自主探索仅用几何信息难以判断地形可通行性与障碍物语义。SGE构建模块化探索框架，在图像空间内使用语义感知效用函数评估候选探索目标，综合考虑地形可通行性、障碍接近度、感兴趣目标与深度探索收益，并将采样路径点经TSP排序实现滚动时域规划。在真实导航不确定性下，该方法提升了地面车辆在复杂环境中的探索效率和安全性。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.00775v1",
+      "source": "arxiv",
+      "title": "VOIM: Training-Free Open-Vocabulary 3D Instance Mapping for RGB-D and Monocular SLAM",
+      "abstract": "We present Voxel-Grounded Online Instance Manager (VOIM), a training-free voxel-grounded instance manager that builds open-vocabulary 3D instance maps from RGB-D or from monocular RGB alone, a regime no prior training-free system addresses. Online systems typically segment object instances and label them at first detection, committing when evidence is weakest. VOIM instead defers label and instance decisions until soft evidence from unmodified, off-the-shelf perception has accumulated per voxel across views. We show that the mapping stage, rather than the particular perception models, carries the result: across four perception configurations on ScanNet++, varying the region descriptor, the detector label prior and the mask source, the map exceeds the strongest online RGB-D system, OVO-SLAM, by between 4.8 and 11.7 mIoU. Perception is not neutral, and substituting that baseline's own descriptor family costs 4.1 of the margin, yet the baseline carries the marginally better 2D descriptor (33.7 vs. 31.5 mIoU over three scenes) and still realizes the weaker map. Under a like-for-like protocol VOIM reaches 44.07 mIoU on ScanNet++ against 32.37, winning all ten scenes and both aggregations (pooled 33.31 vs. 25.97), and the same system runs unchanged to fully monocular RGB, matching that baseline pooled on Replica (27.80 vs. 27.50). The advantage is regime-specific: under Replica's all-classes scoring, matched inputs give a split result, 28.60 vs. 27.50 pooled against 24.59 vs. 30.11 on the per-scene mean. Room scale is label-limited and building scale drift-limited. Labeling does not run in real time, dominated by per-class detection over the full vocabulary. The maps export occupancy grids and resolve free-form queries to object instances.",
+      "authors": [
+        "Sangmin Song",
+        "Sarath Kodagoda",
+        "Marc G. Carmichael",
+        "Karthick Thiyagarajan",
+        "Amal Gunatilake",
+        "Kelly Prentice",
+        "Jodi Martin"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-09-01T06:07:25+00:00",
+      "link": "https://arxiv.org/pdf/2609.00775v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "open-vocabulary 3D instance mapping designed for RGB-D and monocular SLAM",
+      "llm_evidence_cn": "面向RGB-D与单目SLAM的开放词汇三维实例建图",
+      "llm_evidence": "面向RGB-D与单目SLAM的开放词汇三维实例建图",
+      "canonical_evidence": "面向RGB-D与单目SLAM的开放词汇三维实例建图",
+      "llm_tldr_en": "VOIM is a training-free voxel-grounded instance manager that builds open-vocabulary 3D instance maps from RGB-D or monocular SLAM by deferring labels until cross-view evidence accumulates; mapping dominates results.",
+      "llm_tldr_cn": "在线实例地图系统往往在首次检测即提交对象标签，证据不足时易出错。VOIM基于体素存储跨视图的软证据，推迟标签和实例归属决策，允许在RGB-D或纯单目输入下直接构建开放词表三维实例地图，无需训练。实验在ScanNet++上改变区域描述符、检测标签先验和掩码来源等四种感知配置，证明建图阶段才是决定结果的主导因素。该工作为RGB-D和单目SLAM提供可靠、开放的语义实例建图新路径。",
+      "llm_tldr": "在线实例地图系统往往在首次检测即提交对象标签，证据不足时易出错。VOIM基于体素存储跨视图的软证据，推迟标签和实例归属决策，允许在RGB-D或纯单目输入下直接构建开放词表三维实例地图，无需训练。实验在ScanNet++上改变区域描述符、检测标签先验和掩码来源等四种感知配置，证明建图阶段才是决定结果的主导因素。该工作为RGB-D和单目SLAM提供可靠、开放的语义实例建图新路径。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.01384v1",
+      "source": "arxiv",
+      "title": "Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots",
+      "abstract": "Long-duration outdoor coverage with autonomous platforms remains challenging beyond classical planning: deployments face localization drift in open spaces, obstacles in cluttered sites, controller feasibility in turn-heavy maneuvers, and persistent autonomy with energy management. We propose a unified ROS 2 architecture for outdoor coverage that combines coverage planning, robust localization, and Nav2-based execution. A dual-antenna RTK-GNSS fused in an EKF keeps the robot pose, both position and heading, accurate across long missions; three controller-aware refinements are added to a mature coverage planner; a Behavior-Tree mission manager coordinates multi-goal execution, layered recovery, cost-aware goal management, and autonomous docking for return-to-charge. We validate the stack through simulation and real-world trials across multiple outdoor areas with varying geometries and obstacle densities. Overall, these results show that the proposed stack can reliably complete outdoor coverage missions across varied areas, sweeping 93.1% to 96.1% of the planned coverage area.",
+      "authors": [
+        "Leonardo Gargani",
+        "Matteo Frosi",
+        "Matteo Matteucci"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-01T15:15:45+00:00",
+      "link": "https://arxiv.org/pdf/2609.01384v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "outdoor coverage navigation with path planning, obstacles, and localization",
+      "llm_evidence_cn": "户外机器人的覆盖导航、路径规划、避障与定位",
+      "llm_evidence": "户外机器人的覆盖导航、路径规划、避障与定位",
+      "canonical_evidence": "户外机器人的覆盖导航、路径规划、避障与定位",
+      "llm_tldr_en": "A unified ROS 2 architecture for obstacle-aware outdoor coverage navigation, combining RTK-GNSS and EKF localization, controller-aware coverage planning, Nav2 execution, and behavior-tree mission and energy management for long-duration autonomous missions.",
+      "llm_tldr_cn": "长时间户外覆盖任务面临定位漂移、障碍、转弯机动下控制器极限和能量制约，本文提出覆盖规划、鲁棒定位与Nav2执行统一的ROS 2架构。双天线RTK-GNSS与EKF融合维护高精度机器人在长期任务中的位置和航向，对覆盖规划器加入控制器感知改进并用行为树管理多目标执行与自动充电对接。在室外杂散场景中实现了避障覆盖与持久自主运行。该工作将系统集成与算法设计结合，为户外机器人大范围覆盖导航提供了完整参考。",
+      "llm_tldr": "长时间户外覆盖任务面临定位漂移、障碍、转弯机动下控制器极限和能量制约，本文提出覆盖规划、鲁棒定位与Nav2执行统一的ROS 2架构。双天线RTK-GNSS与EKF融合维护高精度机器人在长期任务中的位置和航向，对覆盖规划器加入控制器感知改进并用行为树管理多目标执行与自动充电对接。在室外杂散场景中实现了避障覆盖与持久自主运行。该工作将系统集成与算法设计结合，为户外机器人大范围覆盖导航提供了完整参考。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2608.24026v1",
+      "source": "arxiv",
+      "title": "NeurRAFT: Robot Motion Planning via Anchor-Level Flow Matching with Clearance-Aware Preference Tuning",
+      "abstract": "Recent end-to-end neural motion planners generate trajectories from raw sensor observations, avoiding the privileged geometric models required by classical planners. However, collision-free planning in cluttered environments remains challenging. We present NeurRAFT, a generative planning framework based on anchor-level flow matching and clearance-aware preference tuning. Unlike prior neural planners that model dense waypoint sequences and spend capacity on redundant local details and smoothness, NeurRAFT operates on compact anchor waypoints. We train the planner using a Jacobian-weighted loss that accounts for the task-space impact of each anchor. At inference, the anchors are generated in two integration steps, followed by cubic-spline interpolation to recover a smooth, full-resolution trajectory. Since imitation learning from positive demonstrations cannot distinguish collision-free from near-collision trajectories, collision-prone behaviors persist at test time. Rather than relying on post-hoc corrections, we directly reshape the pretrained planner's distribution toward safer solutions without augmenting inference. Specifically, Direct Preference Optimization shifts probability mass toward trajectories with larger obstacle clearance, with the resulting improvement directly absorbed into the planner parameters. Experiments show substantial improvements over state-of-the-art planners, while real-world experiments demonstrate zero-shot transfer to a Franka robot under noisy and partially occluded depth observations. Video results available at https://neurraft.github.io/.",
+      "authors": [
+        "Sibo Tian",
+        "Chang Liu",
+        "Minghui Zheng",
+        "Xiao Liang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-25T03:31:24+00:00",
+      "link": "https://arxiv.org/pdf/2608.24026v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "End-to-end generative robot motion planning with collision avoidance from raw sensor observations",
+      "llm_evidence_cn": "从原始传感观测直接生成无碰撞轨迹的生成式机器人运动规划",
+      "llm_evidence": "从原始传感观测直接生成无碰撞轨迹的生成式机器人运动规划",
+      "canonical_evidence": "从原始传感观测直接生成无碰撞轨迹的生成式机器人运动规划",
+      "llm_tldr_en": "NeurRAFT applies anchor-level flow matching with clearance-aware preference tuning to generate collision-free robot trajectories from raw sensor observations compactly and efficiently.",
+      "llm_tldr_cn": "端到端神经运动规划器能从原始传感器数据直接生成轨迹，但常将计算浪费在稠密路径点的冗余细节上。NeurRAFT采用紧凑的锚点路径点表示，用雅可比加权损失训练各锚点对任务空间的影响，并借助间隙感知偏好调优提升清障能力。推理时仅需两步积分即可生成锚点，在杂乱环境中高效获得无碰撞轨迹，为实时机器人运动规划提供了轻量生成式方案。",
+      "llm_tldr": "端到端神经运动规划器能从原始传感器数据直接生成轨迹，但常将计算浪费在稠密路径点的冗余细节上。NeurRAFT采用紧凑的锚点路径点表示，用雅可比加权损失训练各锚点对任务空间的影响，并借助间隙感知偏好调优提升清障能力。推理时仅需两步积分即可生成锚点，在杂乱环境中高效获得无碰撞轨迹，为实时机器人运动规划提供了轻量生成式方案。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2608.25178v1",
+      "source": "arxiv",
+      "title": "Lightweight Machine Learning-Driven Monocular Sidewalk Path Extraction for Embedded Micromobility Navigation",
+      "abstract": "Sidewalk-scale path extraction demands perception and planning that run reliably on compact, low-power hardware in cluttered, map-sparse environments. We present a monocular vision pipeline for sidewalk path extraction in micromobility systems that progresses through three design iterations, from a skeleton-graph baseline through distance-transform corridor planning to a lightweight image-space architecture, and provides a systematic comparison of five path-planning methods across both bird's-eye-view (BEV) and image-space domains. A compact SegFormer-B0 student model, trained with a semi-supervised teacher-student framework using OneFormer Swin-L pseudo-labels, achieves a hand-annotated IoU of 0.946 at 11.7 ms per frame, improving over the baseline checkpoint (IoU 0.758, 18.9 ms). In a controlled planner comparison on 32 hand-labeled frames, image-space midpoint planning achieves the lowest lateral center error (14.3 px) at 2.2 ms, a 421x speedup over BEV distance-transform planning (926.8 ms, 65.0 px center error), while maintaining comparable mask-path alignment (98.5% versus 98.6%). A full-video replay across six campus sequences (22,679 frames) confirms that the improved segmentation reduces temporal instability from 1.46% to 0.33% and increases template-path availability from 73.7% to 79.3%. We further show that BEV-only path extraction is fragile in monocular settings: in one profiled run, 99.3% of frames produced no valid BEV path. The final recommended architecture, image-space midpoint primary, image-space distance-transform fallback, and BEV reserved for visualization, runs the full perception-to-path stack in under 50 ms per frame on CPU, making it suitable for embedded pedestrian-speed micromobility systems.",
+      "authors": [
+        "Lkhanaajav Mijiddorj",
+        "Yang Yan",
+        "Tyler Beringer",
+        "Bilguunzaya Mijiddorj",
+        "Alex N. Ho",
+        "Bin Xu",
+        "Binbin Weng"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-08-25T21:49:18+00:00",
+      "link": "https://arxiv.org/pdf/2608.25178v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Monocular sidewalk path extraction and lightweight planning comparison for embedded micromobility navigation",
+      "llm_evidence_cn": "面向嵌入式微出行导航的单目人行道路径提取与轻量规划方法",
+      "llm_evidence": "面向嵌入式微出行导航的单目人行道路径提取与轻量规划方法",
+      "canonical_evidence": "面向嵌入式微出行导航的单目人行道路径提取与轻量规划方法",
+      "llm_tldr_en": "A lightweight monocular sidewalk path extraction pipeline using a compact SegFormer-B0 teacher-student model and comparing five planning methods for low-power micromobility navigation.",
+      "llm_tldr_cn": "微出行设备在低算力、无地图环境下需要轻量可靠的视觉路径识别与规划。该文设计了从骨架图基线到距离变换走廊再到轻量图像空间架构的单目流程，并系统比较五种路径规划方法在鸟瞰与图像空间中的表现。采用OneFormer Swin-L伪标签半监督训练紧凑SegFormer-B0学生模型，手标注IoU达0.946且单帧仅11.7毫秒，适合嵌入式微出行导航需求。",
+      "llm_tldr": "微出行设备在低算力、无地图环境下需要轻量可靠的视觉路径识别与规划。该文设计了从骨架图基线到距离变换走廊再到轻量图像空间架构的单目流程，并系统比较五种路径规划方法在鸟瞰与图像空间中的表现。采用OneFormer Swin-L伪标签半监督训练紧凑SegFormer-B0学生模型，手标注IoU达0.946且单帧仅11.7毫秒，适合嵌入式微出行导航需求。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.26789v1",
+      "source": "arxiv",
+      "title": "Online Joint Calibration of Steering Offset and Planar LiDAR Extrinsics for Wheeled Mobile Robots",
+      "abstract": "Accurate steering sensing and LiDAR-to-vehicle extrinsics are crucial for reliable path tracking in warehouse mobile robots (WMRs); miscalibration often leads to snaking, weaving, and elevated cross-track error (CTE). In practice, steering ``zero'' is commonly set manually (e.g., eyeballing straightness via a PS4 joystick), while LiDAR extrinsics are assumed from CAD and may drift after maintenance. Such static, manual procedures frequently cause miscalibration in safety-critical environments. This paper presents an Extended Kalman Filter (EKF)--based method for online estimation of steering offset and planar LiDAR extrinsics within a bicycle-kinematics model, providing a principled alternative to manual calibration. Experiments on real datasets show that correcting steering offset reduces CTE substantially, validating the effectiveness of the proposed approach.",
+      "authors": [
+        "Subodh Mishra",
+        "Arindam Dhar",
+        "Suprotim Majumdar",
+        "Naveen Arulselvan"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-27T08:19:06+00:00",
+      "link": "https://arxiv.org/pdf/2608.26789v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Online calibration of steering and LiDAR extrinsics supporting reliable mobile-robot path tracking and navigation",
+      "llm_evidence_cn": "在线标定转向偏移与LiDAR外参，提升移动机器人路径跟踪与导航可靠性",
+      "llm_evidence": "在线标定转向偏移与LiDAR外参，提升移动机器人路径跟踪与导航可靠性",
+      "canonical_evidence": "在线标定转向偏移与LiDAR外参，提升移动机器人路径跟踪与导航可靠性",
+      "llm_tldr_en": "This paper develops an EKF-based online joint calibration of steering offset and planar LiDAR extrinsics within a bicycle-kinematics model for warehouse mobile robots, replacing manual static procedures and reducing path-tracking errors.",
+      "llm_tldr_cn": "仓库移动机器人的路径跟踪常因转向零点不准或LiDAR外参漂移出现蛇行和横摆，手动标定不仅耗时且难以保证安全。本文提出基于扩展卡尔曼滤波的在线联合标定方法，在自行车运动学模型中同时估计转向偏移与平面LiDAR外参。实验结果表明该方法降低了横向跟踪误差并抑制行驶不稳。作为手动标定的原理性替代，它能提高移动机器人自主导航系统在长期运行中的准确性与安全性。",
+      "llm_tldr": "仓库移动机器人的路径跟踪常因转向零点不准或LiDAR外参漂移出现蛇行和横摆，手动标定不仅耗时且难以保证安全。本文提出基于扩展卡尔曼滤波的在线联合标定方法，在自行车运动学模型中同时估计转向偏移与平面LiDAR外参。实验结果表明该方法降低了横向跟踪误差并抑制行驶不稳。作为手动标定的原理性替代，它能提高移动机器人自主导航系统在长期运行中的准确性与安全性。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.25366v1",
+      "source": "arxiv",
+      "title": "RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot",
+      "abstract": "In this paper, we propose RAEM, a robust autonomous exploration framework for quadruped robots operating in multi-floor environments. Most existing ground-robot exploration approaches rely on planar traversability representations, which cannot adequately represent the overlapping structures and cross-floor connectivity of multi-floor buildings. Although tomography-based representations provide effective traversability modeling for multi-floor navigation, maintaining a global tomography map incurs substantial computational overhead for online exploration with frequent replanning. Moreover, sparse and fragmented LiDAR observations in stairwells can degrade local traversability estimation, leading to irregular viewpoint placement and temporary topological disconnections. To address these challenges, RAEM adopts a hybrid local-global traversability representation, in which a local tomography map and an explicitly categorized local 3D grid map are used for online terrain analysis and connectivity evaluation, while an elevation-aware global topological graph is incrementally constructed from these local spatial representations for efficient cross-floor exploration planning. We further introduce a staircase center alignment strategy to reduce abrupt yaw variations during climbing and a dual path searching mechanism to recover guidance paths when the global topology is locally disconnected. Extensive simulation and real-world experiments demonstrate robust and computationally stable autonomous exploration across multi-floor structures, including continuous exploration of a five-floor stairwell.",
+      "authors": [
+        "Zikang Yuan",
+        "Yuan Ren",
+        "Yian Wang",
+        "Yixue Wang",
+        "Enze Fang",
+        "Xuewei Zhang",
+        "Junda Cheng",
+        "Chi Chen",
+        "Chin-Pang Ho",
+        "Lijun Zhu",
+        "Shaohang Xu",
+        "Kwang-Ting Cheng",
+        "Xin Yang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-26T04:40:34+00:00",
+      "link": "https://arxiv.org/pdf/2608.25366v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "robust autonomous exploration for quadruped in multi-floor environments, connected to robot navigation and mapping",
+      "llm_evidence_cn": "面向多楼层环境的四足机器人自主探索与可通行图表示，属于机器人导航系统",
+      "llm_evidence": "面向多楼层环境的四足机器人自主探索与可通行图表示，属于机器人导航系统",
+      "canonical_evidence": "面向多楼层环境的四足机器人自主探索与可通行图表示，属于机器人导航系统",
+      "llm_tldr_en": "Presents RAEM, a robust autonomous exploration framework for quadruped robots in multi-floor buildings, tackling limitations of planar traversability maps and costly global tomography while coping with degraded stairwell LiDAR to enable stable online exploration and replanning.",
+      "llm_tldr_cn": "多楼层环境需要表达重叠结构与跨楼层连通，平面可通行图无能为力，全局断层图在频繁重规划时开销大，楼梯间点云又稀疏退化。本文提出RAEM四足机器人鲁棒自主探索框架，改进了多楼层可通行建模与在线重规划策略。它能在退化观测下维持稳定视点规划，完成长时间多楼层探索。该框架直接支撑未知环境中的自主导航与地图构建任务。",
+      "llm_tldr": "多楼层环境需要表达重叠结构与跨楼层连通，平面可通行图无能为力，全局断层图在频繁重规划时开销大，楼梯间点云又稀疏退化。本文提出RAEM四足机器人鲁棒自主探索框架，改进了多楼层可通行建模与在线重规划策略。它能在退化观测下维持稳定视点规划，完成长时间多楼层探索。该框架直接支撑未知环境中的自主导航与地图构建任务。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2608.30471v1",
+      "source": "arxiv",
+      "title": "HorizonNet for visual terrain navigation",
+      "abstract": "This paper investigates the problem of position estimation of unmanned surface vessels (USVs) operating in coastal areas or in the archipelago. We propose a position estimation method where the horizon line is extracted in a 360 degree panoramic image around the USV. We design a CNN architecture to determine an approximate horizon line in the image and implicitly determine the camera orientation (the pitch and roll angles). The panoramic image is warped to compensate for the camera orientation and to generate an image from an approximately level camera. A second CNN architecture is designed to extract the pixelwise horizon line in the warped image. The extracted horizon line is correlated with digital elevation model (DEM) data in the Fourier domain using a MOSSE correlation filter. Finally, we determine the location of the maximum correlation score over the search area to estimate the position of the USV. Comprehensive experiments are performed in a field trial in the archipelago. Our approach provides promising results by achieving position estimates with GPS-level accuracy.",
+      "authors": [
+        "Bertil Grelsson",
+        "Andreas Robinson",
+        "Michael Felsberg",
+        "Fahad Shahbaz Khan"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.RO"
+      ],
+      "published": "2026-08-31T08:58:13+00:00",
+      "link": "https://arxiv.org/pdf/2608.30471v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "horizon-based USV visual terrain navigation; matches robot visual navigation theme",
+      "llm_evidence_cn": "基于地平线的无人艇视觉地形导航，符合机器人视觉导航主题",
+      "llm_evidence": "基于地平线的无人艇视觉地形导航，符合机器人视觉导航主题",
+      "canonical_evidence": "基于地平线的无人艇视觉地形导航，符合机器人视觉导航主题",
+      "llm_tldr_en": "HorizonNet estimates unmanned surface vessel position by extracting horizon lines from 360-degree images with two CNNs, correcting camera orientation, and correlating the level image to digital elevation models in the Fourier domain for terrain navigation.",
+      "llm_tldr_cn": "论文针对沿海或群岛中无人艇的无GNSS定位问题提出视觉地形导航算法。第一级CNN先用全景图像确定地平线并估计相机俯仰与滚转，再通过图像补偿得到近似水平相机视角；第二级CNN从该视角中提取精细像素级地平线。随后，地平线在傅里叶域与数字高程模型做相关匹配，从而确定船只位置。实验表明该方法在真实水面环境中能够实现有效的视觉定位导航，展示了视觉特征与高程地图匹配的导航思路。",
+      "llm_tldr": "论文针对沿海或群岛中无人艇的无GNSS定位问题提出视觉地形导航算法。第一级CNN先用全景图像确定地平线并估计相机俯仰与滚转，再通过图像补偿得到近似水平相机视角；第二级CNN从该视角中提取精细像素级地平线。随后，地平线在傅里叶域与数字高程模型做相关匹配，从而确定船只位置。实验表明该方法在真实水面环境中能够实现有效的视觉定位导航，展示了视觉特征与高程地图匹配的导航思路。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2608.30821v1",
+      "source": "arxiv",
+      "title": "Lucida: Parse, Generate, and Place for Composable Real-to-Sim Scene Modeling",
+      "abstract": "Composable scene modeling aims to recover a real indoor scene as complete, editable object assets arranged as observed, giving robot simulation and embodied AI a simulation-ready replica of the real environment whose objects can be manipulated individually. Existing pipelines decompose the task into three steps---parse the observations into instances, generate an asset for each, and place each asset back---but every step presumes an input that a cluttered capture rarely provides: accurate instance geometry, unoccluded views, and assets that accurately match the observations. We propose Lucida, which keeps this order but redistributes the requirements, so each step consumes only what a real capture reliably provides and precision is reached at the end of the pipeline rather than demanded at its start. Lucida parses the video into a scene graph whose nodes carry per-instance multi-view evidence, generates a complete asset for each instance from its evidence, and places assets with GizmoAct, a VLM policy that casts placement as multi-turn GUI interaction, manipulating the object's gizmo in a closed loop and deciding itself when alignment is reached. Across scene-level 3D object detection, object pose estimation, and scene reconstruction, Lucida improves mAP over Boxer by 69% on R2S-Scene, raises ADD-SB@0.05 from 57.8% to 83.4% on CA-1M, and increases scene F-Score from 0.794 for SAM3D to 0.924.",
+      "authors": [
+        "Minghan Qin",
+        "Yuang Wang",
+        "Xiuyu Yang",
+        "Yushi Long",
+        "Yujian Zhang",
+        "Ruihuan Wang",
+        "Kai Ye",
+        "Yangang Zhang",
+        "Hang Li"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-08-31T14:03:20+00:00",
+      "link": "https://arxiv.org/pdf/2608.30821v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Recovers editable real indoor scenes as composable object assets for robot simulation, closely tied to 3D mapping and reconstruction for robotics.",
+      "llm_evidence_cn": "恢复可编辑的真实室内场景用于机器人仿真，与面向机器人的三维建图和重建密切关联。",
+      "llm_evidence": "恢复可编辑的真实室内场景用于机器人仿真，与面向机器人的三维建图和重建密切关联。",
+      "canonical_evidence": "恢复可编辑的真实室内场景用于机器人仿真，与面向机器人的三维建图和重建密切关联。",
+      "llm_tldr_en": "Lucida keeps the parse-generate-place ordering for composable real-to-sim scene modeling but redistributes each stage's input requirements so it can rely only on reliable information from cluttered captures, producing editable object-level scene replicas for robot simulation and embodied AI.",
+      "llm_tldr_cn": "可组合场景建模旨在将真实室内场景恢复为可按观察位置摆放、能独立编辑的对象资产，供机器人仿真和具身智能使用。现有解析、生成、放置三步流程均依赖精确实例几何、无遮挡视角和高保真资源，而杂乱捕获难以提供。Lucida 保持三步顺序，但重新分配各阶段所需信息，使每步只消费真实采集可靠提供的信息并在最终放置达到精度，从而提升真实场景重建的可实现性。",
+      "llm_tldr": "可组合场景建模旨在将真实室内场景恢复为可按观察位置摆放、能独立编辑的对象资产，供机器人仿真和具身智能使用。现有解析、生成、放置三步流程均依赖精确实例几何、无遮挡视角和高保真资源，而杂乱捕获难以提供。Lucida 保持三步顺序，但重新分配各阶段所需信息，使每步只消费真实采集可靠提供的信息并在最终放置达到精度，从而提升真实场景重建的可实现性。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.28279v1",
+      "source": "arxiv",
+      "title": "STEGNav: Spatio-Temporal Event Graph Reasoning for Multimodal Lifelong Object Navigation",
+      "abstract": "Multimodal lifelong navigation requires an agent to autonomously explore unseen environments while sequentially completing navigation tasks specified by object categories, language descriptions, or reference images. Existing methods primarily accomplish these tasks by constructing state-centric semantic scene graphs. By treating scene graphs as persistent repositories of semantic observations, these methods struggle to distinguish similar instances, jointly represent semantic targets and exploration frontiers, and effectively exploit navigation memory and trajectory experience. To address these limitations, we propose Spatio-Temporal Event Graph Navigation (STEGNav), a training-free framework that extends conventional scene graphs into spatio-temporal event graphs along complementary spatial and temporal axes. The spatial axis performs query-conditioned instance grounding and jointly represents semantic targets and occupancy-aware exploration frontiers characterized by reachability, path cost, and exploration utility. The temporal axis employs trajectory-aware dual-window memory to retain recent decision--trajectory events and verified cross-subtask navigation outcomes. A VLM-based navigation agent reasons over the resulting spatio-temporal event graph and selects either a target instance or an exploration frontier as its next navigation goal. STEGNav achieves 66.3% SR and 39.7 SPL on GOAT-Bench, as well as SR scores of 64.0% and 69.4% on HM3Dv1 and HM3Dv2, respectively. Ablation studies and error analyses validate the complementary effects of the two axes, demonstrating that event-driven spatio-temporal representations improve navigation reliability and cross-subtask experience reuse.",
+      "authors": [
+        "Yang Chen",
+        "Zhenyu Huang",
+        "Wenbo Fu",
+        "Danyang Peng",
+        "Shi-Yu Tian",
+        "Kun-Yang Yu",
+        "Lan-Zhe Guo"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-28T12:42:16+00:00",
+      "link": "https://arxiv.org/pdf/2608.28279v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Multimodal lifelong object navigation in unseen environments with spatio-temporal event graph reasoning, a new robot navigation framework.",
+      "llm_evidence_cn": "面向未知环境的多模态终身物体导航，属于新型机器人导航框架与趋势。",
+      "llm_evidence": "面向未知环境的多模态终身物体导航，属于新型机器人导航框架与趋势。",
+      "canonical_evidence": "面向未知环境的多模态终身物体导航，属于新型机器人导航框架与趋势。",
+      "llm_tldr_en": "STEGNav extends conventional semantic scene graphs into spatio-temporal event graphs, enabling a training-free multimodal lifelong object navigation agent to explore unseen environments, distinguish similar instances, and jointly represent semantic targets and exploration frontiers for sequential tasks.",
+      "llm_tldr_cn": "多模态终身导航要求智能体在未知环境中自主探索，并依次完成由目标类别、语言描述或参考图像指定的导航任务。现有语义场景图方法难以区分相似实例，难以联合表达语义目标与探索边界，也不能充分利用导航记忆和轨迹经验。STEGNav 将常规场景图扩展到时空事件图，以训练无关方式利用事件变化和轨迹经验完成多模态物体导航，在未知环境中更好地处理实例判别与目标探索。",
+      "llm_tldr": "多模态终身导航要求智能体在未知环境中自主探索，并依次完成由目标类别、语言描述或参考图像指定的导航任务。现有语义场景图方法难以区分相似实例，难以联合表达语义目标与探索边界，也不能充分利用导航记忆和轨迹经验。STEGNav 将常规场景图扩展到时空事件图，以训练无关方式利用事件变化和轨迹经验完成多模态物体导航，在未知环境中更好地处理实例判别与目标探索。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.00923v1",
+      "source": "arxiv",
+      "title": "On-the-Fly3R: Towards Robust Online 3D Reconstruction with Feed-Forward 3R Models for Large-Scale UAV Scenarios",
+      "abstract": "While feed-forward 3D reconstruction (3R) offers efficient end-to-end modeling, its application in large-scale UAV mapping is hindered by the prohibitive memory cost of Transformer attention. Current scalable streaming 3R methods assume temporally and spatially continuous inputs, rendering them ineffective for the weakly ordered or unordered image streams common in cross-strip UAV operations. To address this, we propose On-the-Fly3R, a training-free, progressive online 3D reconstruction framework for large-scale UAV images that upgrades various 3R backbones for large-scale UAV scenarios. Our method enables reconstruction from unordered inputs via retrieval-guided dynamic subset construction, which adaptively selects spatially relevant images. To further improve the robustness, a validation-rejection-retry mechanism is designed to guarantee global consistency, performing a pre-integration consistency check and automatically rejecting misaligned images and retrying with alternative subset. Finally, inspired by VSLAM, pose graph optimization based on the retrieval loop closure is employed to mitigate camera drift. Evaluations on several UAV benchmarks show that our On-the-Fly3R successfully scales various 3R models to over 5,000 images across square-kilometer UAV scenes, delivering substantially superior accuracy compared to several SOTA streaming 3R methods. Code is available at https://github.com/Sh1nZzz/On_the_Fly3R",
+      "authors": [
+        "Zhe Shen",
+        "Liyuan Lou",
+        "Yifei Yu",
+        "Guanbo Wang",
+        "Quanjian Ji",
+        "Xin Wang",
+        "Zongqian Zhan"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-01T08:47:58+00:00",
+      "link": "https://arxiv.org/pdf/2609.00923v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "progressive online 3D reconstruction framework for unordered large-scale UAV image streams",
+      "llm_evidence_cn": "面向无序大规模无人机影像流的渐进在线三维重建框架",
+      "llm_evidence": "面向无序大规模无人机影像流的渐进在线三维重建框架",
+      "canonical_evidence": "面向无序大规模无人机影像流的渐进在线三维重建框架",
+      "llm_tldr_en": "On-the-Fly3R is a training-free progressive online 3D reconstruction framework enabling various feed-forward 3R models to handle unordered large-scale UAV imagery via retrieval-guided dynamic subsets.",
+      "llm_tldr_cn": "前馈三维重建在大型UAV航拍场景中受限于Transformer注意力的内存开销，现有可扩展流式3R方法还要求输入时间空间连续。On-the-Fly3R提出无训练的渐进在线重建流程，通过检索引导的动态子集构建，把多个现有3R骨干升级到弱排序或无排序的UAV图像流，实现跨条带采集的大场景重建。该方法可以直接复用成熟的前馈重建模型，降低大规模航空测绘在线重建的部署门槛，拓展了实时稠密建图的应用范围。",
+      "llm_tldr": "前馈三维重建在大型UAV航拍场景中受限于Transformer注意力的内存开销，现有可扩展流式3R方法还要求输入时间空间连续。On-the-Fly3R提出无训练的渐进在线重建流程，通过检索引导的动态子集构建，把多个现有3R骨干升级到弱排序或无排序的UAV图像流，实现跨条带采集的大场景重建。该方法可以直接复用成熟的前馈重建模型，降低大规模航空测绘在线重建的部署门槛，拓展了实时稠密建图的应用范围。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.00111v1",
+      "source": "arxiv",
+      "title": "Qwen-Drive-1.0: An Initial Step towards a Vision-Language Foundation Model for Autonomous Driving",
+      "abstract": "We present Qwen-Drive-1.0, an initial step towards a vision-language foundation model for autonomous driving. Qwen-Drive-1.0 retains the architecture of the pretrained vision-language model (VLM) and integrates 3D perception, visual question answering, and motion planning within a unified framework. An external bird's-eye-view (BEV) perception head jointly performs 3D object detection, semantic occupancy prediction, and BEV map segmentation. It serves as a probe of the 3D information accessible from the shared representations and provides an explicit, inspectable interface to 3D scene structure. A Planning Expert conditions on shared VLM representations to generate future ego trajectories. A staged training recipe combines driving supervision with general-purpose vision-language data to acquire driving-specific competence while helping preserve broad visual understanding and instruction-following capabilities. Experiments demonstrate strong 3D perception and driving scene understanding while largely preserving general vision-language capability. Comprehensive evaluations across open-loop, pseudo-closed-loop, and closed-loop settings further show highly competitive motion-planning performance.",
+      "authors": [
+        "Xin Zhou",
+        "Zongchuang Zhao",
+        "Zhibo Yang",
+        "Mingsheng Li",
+        "Humen Zhong",
+        "Shuai Bai",
+        "Du Chu",
+        "Ruizhe Chen",
+        "Zhaohai Li",
+        "Jun Tang",
+        "Qiuyue Wang",
+        "Mingkun Yang",
+        "Jiazhao Zhang",
+        "Dayiheng Liu",
+        "Dingkang Liang",
+        "Xiang Bai"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-31T17:59:54+00:00",
+      "link": "https://arxiv.org/pdf/2609.00111v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "autonomous driving motion planning and BEV 3D perception via a vision-language model",
+      "llm_evidence_cn": "通过视觉语言模型实现自动驾驶运动规划与BEV三维感知，属于自主导航范畴",
+      "llm_evidence": "通过视觉语言模型实现自动驾驶运动规划与BEV三维感知，属于自主导航范畴",
+      "canonical_evidence": "通过视觉语言模型实现自动驾驶运动规划与BEV三维感知，属于自主导航范畴",
+      "llm_tldr_en": "Qwen-Drive-1.0 integrates 3D perception, visual QA, and motion planning in one vision-language model, using a BEV perception head for explicit 3D structure and a Planning Expert for future ego trajectories.",
+      "llm_tldr_cn": "当前端到端自动驾驶模型缺少统一三维场景理解与规划的接口，本文推出视觉语言基础模型Qwen-Drive-1.0。保留VLM主干的同时增加外部鸟瞰图感知头，联合输出3D目标检测、语义占用和BEV地图分割以提供可检查的三维结构；规划专家利用共享表征生成未来自车轨迹。分阶段训练让不同目标稳定收敛。该工作为以视觉语言模型驱动自动驾驶感知和运动规划提供了一个统一框架，对自主导航研究有借鉴价值。",
+      "llm_tldr": "当前端到端自动驾驶模型缺少统一三维场景理解与规划的接口，本文推出视觉语言基础模型Qwen-Drive-1.0。保留VLM主干的同时增加外部鸟瞰图感知头，联合输出3D目标检测、语义占用和BEV地图分割以提供可检查的三维结构；规划专家利用共享表征生成未来自车轨迹。分阶段训练让不同目标稳定收敛。该工作为以视觉语言模型驱动自动驾驶感知和运动规划提供了一个统一框架，对自主导航研究有借鉴价值。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2608.28733v1",
+      "source": "arxiv",
+      "title": "Generation of High-Level Concepts in 3D Scene Graphs via Autoregressive Diffusion",
+      "abstract": "Indoor 3D Scene Graphs (3DSGs) represent environments as multi-layer hierarchies that connect observed geometric primitives (e.g., planes) to higher-level metric-semantic concepts (e.g., rooms, floors, buildings), enabling incremental spatial reasoning for robotic perception and SLAM. However, classical high-level concept generation approaches rely on hand-crafted rules for specific concept classes, while learning-based methods require separate models for graph structure and spatial node features (e.g., centroids), which limits scalability to novel classes and more complex hierarchies. We propose a unified autoregressive diffusion-based graph generative model that jointly learns structure and features, constructing complete 3DSGs bottom-up from observed vertical planes across arbitrary hierarchy depths. Our method consistently surpasses all learning-based and random baselines across 3DSG datasets spanning synthetic scenes, real architectural floor plans, and robotic sensor data, with varying layout complexity and hierarchy depth, and surpasses a one-shot model with oracle access to the target graph size on the largest hierarchy and on real single-floor data. Finally, we propose an adaptation of the Fused Gromov--Wasserstein distance for principled graph-level evaluation of generated 3DSGs against ground truth.",
+      "authors": [
+        "Jose Andres Millan-Romera",
+        "Samuel Cognolato",
+        "Holger Voos",
+        "Jose Luis Sanchez-Lopez",
+        "Luciano Serafini"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.LG"
+      ],
+      "published": "2026-08-28T17:41:37+00:00",
+      "link": "https://arxiv.org/pdf/2608.28733v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Autoregressive diffusion generation of 3D scene graph high-level concepts, framed for robotic perception and SLAM",
+      "llm_evidence_cn": "面向机器人感知和SLAM的三维场景图高层概念扩散生成，属SLAM最新进展",
+      "llm_evidence": "面向机器人感知和SLAM的三维场景图高层概念扩散生成，属SLAM最新进展",
+      "canonical_evidence": "面向机器人感知和SLAM的三维场景图高层概念扩散生成，属SLAM最新进展",
+      "llm_tldr_en": "This paper proposes a unified autoregressive diffusion graph generative model for joint structure and feature learning to construct 3D scene graphs bottom-up, enabling more scalable spatial reasoning for robotic perception and SLAM.",
+      "llm_tldr_cn": "室内3D场景图能将几何基元与房间等高层语义概念连接以支持SLAM与机器人感知，但其生成常依赖人工规则或分离模型，难扩展。该文提出统一的基于自回归扩散的图生成模型，联合学习图结构与节点空间特征，自底向上构建完整3D场景图。实验表明它能生成合理的高层概念并适应更复杂层级。这种生成方式为SLAM系统中的增量空间推理提供了一条可扩展的新路径。",
+      "llm_tldr": "室内3D场景图能将几何基元与房间等高层语义概念连接以支持SLAM与机器人感知，但其生成常依赖人工规则或分离模型，难扩展。该文提出统一的基于自回归扩散的图生成模型，联合学习图结构与节点空间特征，自底向上构建完整3D场景图。实验表明它能生成合理的高层概念并适应更复杂层级。这种生成方式为SLAM系统中的增量空间推理提供了一条可扩展的新路径。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "What are the latest advances in simultaneous localization and mapping algorithms for robots?",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2608.29211v1",
+      "source": "arxiv",
+      "title": "Ground-to-Satellite Localization in Unconstrained Image Collections for 3D Scene Reconstruction",
+      "abstract": "Ground image localization with respect to satellite imagery is a key enabler for metrically-accurate, geo-localized 3D scene reconstruction from unconstrained image collections. Existing cross-view localization methods have strict requirements such as panoramic imagery or known initial locations, limiting their applicability for in-the-wild reconstruction settings. We propose a robust hierarchical cross-view localization framework that leverages geometric constraints from Structure-from-Motion (SfM) models derived from unconstrained ground image collections. Our method generates coarse-to-fine pose hypotheses through a cross-view matching approach and aggregates noisy predictions across SfM model(s) using Kernel Density Estimation to recover consensus alignments while filtering outliers. Experiments demonstrate reliable localization performance from challenging image collections. Empirically we found satellite-referenced alignment enables accurate metric scale estimation, doppelgänger detection, and merging of disjoint SfM reconstructions, resulting in more complete, geo-localized site models than are possible with SfM alone.",
+      "authors": [
+        "Angel Daruna",
+        "Ben Southall",
+        "Niluthpol Chowdhury Mithun",
+        "Kshitij Minhas",
+        "Nicholas Meegan",
+        "Qiao Wang",
+        "Bogdan Matei",
+        "Supun Samarasekera",
+        "Rakesh Kumar"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-08-29T11:52:21+00:00",
+      "link": "https://arxiv.org/pdf/2608.29211v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Ground-to-satellite localization using SfM constraints enabling geo-localized 3D scene reconstruction in unconstrained collections",
+      "llm_evidence_cn": "利用SfM约束的地面-卫星定位实现无约束图像集的地理定位三维重建",
+      "llm_evidence": "利用SfM约束的地面-卫星定位实现无约束图像集的地理定位三维重建",
+      "canonical_evidence": "利用SfM约束的地面-卫星定位实现无约束图像集的地理定位三维重建",
+      "llm_tldr_en": "A robust hierarchical cross-view localization framework that uses SfM geometric constraints to localize ground images against satellite imagery, enabling metrically accurate 3D scene reconstruction from unconstrained collections.",
+      "llm_tldr_cn": "从无约束地面图像集合生成带地理尺度的三维场景重建，需要鲁棒的卫星-地面定位。现有跨视图定位常要求全景图或已知初始位置，适用性有限。该文提出分层跨视角定位框架，利用由图像集合重建的SfM模型提供几何约束，通过跨视图匹配粗到细生成位姿假设并用核密度估计聚合噪声预测。该方法降低了对成像方式和初始位置的限制，提升了野外三维重建中的定位与重建精度。",
+      "llm_tldr": "从无约束地面图像集合生成带地理尺度的三维场景重建，需要鲁棒的卫星-地面定位。现有跨视图定位常要求全景图或已知初始位置，适用性有限。该文提出分层跨视角定位框架，利用由图像集合重建的SfM模型提供几何约束，通过跨视图匹配粗到细生成位姿假设并用核密度估计聚合噪声预测。该方法降低了对成像方式和初始位置的限制，提升了野外三维重建中的定位与重建精度。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "recent progress in simultaneous localization and mapping with 3D scene reconstruction",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    }
+  ]
+}

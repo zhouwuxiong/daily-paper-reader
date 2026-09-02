@@ -1,0 +1,360 @@
+Title: Online Joint Calibration of Steering Offset and Planar LiDAR Extrinsics for Wheeled Mobile Robots
+
+URL Source: https://arxiv.org/pdf/2608.26789v1
+
+Published Time: Fri, 28 Aug 2026 00:42:17 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Online Joint Calibration of Steering Offset and Planar LiDAR Extrinsics for Wheeled Mobile Robots 
+
+Subodh Mishra, Arindam Dhar, Suprotim Majumdar, Naveen Arulselvan 
+
+Abstract —Accurate steering sensing and LiDAR-to-vehicle ex-trinsics are crucial for reliable path tracking in warehouse mobile robots (WMRs); miscalibration often leads to snaking, weaving, and elevated cross-track error (CTE). In practice, steering “zero” is commonly set manually (e.g., eyeballing straightness via a PS4 joystick), while LiDAR extrinsics are assumed from CAD and may drift after maintenance. Such static, manual procedures frequently cause miscalibration in safety-critical environments. This paper presents an Extended Kalman Filter (EKF)–based method for online estimation of steering offset and planar LiDAR extrinsics within a bicycle-kinematics model, providing a principled alternative to manual calibration. Experiments on real datasets show that correcting steering offset reduces CTE substantially, validating the effectiveness of the proposed approach. 
+
+Index Terms —Extrinsic Calibration, Extended Kalman Filter (EKF), LiDAR, Wheel Odometry. 
+
+I. I NTRODUCTION 
+
+Accurate and safe control response is fundamental to reliable operation of autonomous warehouse mobile robots (WMRs) that rely on fusion of wheel-encoder kinematics, steering angle sensing, and LiDAR-based odometry to estimate their motion in real time. Sensor fusion depends on: (i) the mapping between measured and true steering angle, and (ii) the planar extrinsic transform between the LiDAR and the kinematic control point. Imperfections in either can intro-duce systematic drift, trajectory/map distortion, and elevated cross-track error (CTE) during closed loop control which are unacceptable in safety-critical warehouse environments. Our current industrial practice remains largely manual. Steering “zero” is typically aligned visually by using a PS4 joystick to center the wheels and/or by manually driving the robot forward and backward to approximate straightness. The full planar LiDAR extrinsics are typically fixed to CAD or one-time measurements, even though the vehicle’s kinematic center lies on the body while the LiDAR is mounted on the chassis; mounting flex, vibration, or re-assembly can cause relative mo-tion between these structures and thus alter the true extrinsics over time. To overcome these limitations, we propose an Extended Kalman Filter (EKF) based method for online estimation of steering angle offset and full planar LiDAR extrinsic calibration within a bicycle-model vehicle. We augment the state with the LiDAR extrinsics (xoff , y off , θ off ) and an additive steering bias δof f , and continuously estimate these parameters by fusing bicycle model kinematics with LiDAR odometry. We 
+
+All authors are with ATI Motors, Bangalore, India 
+
+demonstrate that the proposed approach correctly detects steer-ing miscalibration, converges to reliable values of extrinsics and improves Cross Track Error during closed loop control. 
+
+(a) Tugger WMR (b) Nano WMR Fig. 1: Experimental WMR Platforms . (a) An autonomous tugger that hauls trailers/payloads in industrial sites. (b) Experimental platform used for validation and benchmarking of autonomy algorithms. Both platforms use an Ouster 32-channel LiDAR running at 10 Hz. The 3D point cloud is converted to 2D range scan after filtering out moving objects, the floor and the ceiling and then by setting the z of all the remaining points to zero. Encoder-derived longitudinal velocity and steering angle arrive at 100 Hz. 
+
+II. R ELATED WORK 
+
+[1] introduced one of the earliest systematic procedures for detecting and correcting kinematic biases in an offline fashion in differential drive mobile robots via the bi-directional “UMBmark” test. By analyzing return-position errors from clockwise and counter-clockwise square-path runs, they iso-lated turning and curvature biases and compensated them through corrected differential-drive kinematics. [2] proposed one of the first online self-calibration approaches, estimating systematic odometric drift (and not robot parameters) in dif-ferential drive robots by aligning consecutive laser scans and updating a linear drift model under a maximum-likelihood framework. [3] present an approach to estimate both sys-tematic and non-systematic odometry errors by combining an Augmented Kalman Filter (AKF) with an Observable Filter (OF). Systematic terms such as wheel-radius mismatches, wheelbase uncertainty, and rotation or steering scale factors are estimated online, while non-systematic disturbances from slip or surface irregularities are inferred through observables derived from consecutive pose estimates. Their framework supports differential and synchronous drives but is evaluated only in simulation. [4] propose to learn a probabilistic motion model by cou-pling a particle-filter SLAM algorithm with an EM procedure. Although effective, this method is computationally intensive and cannot operate online. [5] introduce an EKF-based method arXiv:2608.26789v1 [cs.RO] 27 Aug 2026 to estimate the extrinsic pose of an onboard omnidirectional vision sensor on a differential-drive robot using only wheel odometry and bearing measurements to a fixed landmark. [6] present a batch optimization technique for estimating the full 6-DoF extrinsic pose of a range sensor by driving around a known calibration structure (vertical pole and ground plane) and minimizing geometric residuals. Their method relies on a known environment and global pose measurements. [7] provide a closed-form batch/offline maximum-likelihood technique for simultaneously calibrating differential-drive odometry parameters (wheel radii and wheel baseline) and planar LiDAR extrinsics using only wheel encoder velocities and scan-matching–derived relative motions. [8] extend graph-based SLAM to jointly estimate the robot trajectory, the map, LiDAR extrinsics, and differential-drive odometry parameters by treating calibration variables as nodes in a hyper-graph. Their sliding-window optimization supports online adaptation to parameter drift (e.g., load-dependent wheel radii) paving the path for long term calibration, localization and mapping. While the methods so far focussed primarily on differential drive systems, [9] present an intrinsic–extrinsic calibration framework for industrial tricycle (bicycle-equivalent) AGVs, jointly estimating steering offset, driving scale, and planar LiDAR pose using encoder data and landmark-based LiDAR egomotion. This work comes closest to our problem setting. However, it relies on batch, quasi–closed-form estimation from repeated constant-curvature trajectories and requires an externally referenced navigation scanner. 
+
+Contributions. In contrast to prior work targeting differential-drive platforms [1]–[4], [7], [8] or relying on con-trolled circular paths and external navigation references [9], our method performs online joint estimation of steering offset and planar LiDAR extrinsics on a bicycle-modelled WMR during natural motion, without any external aids. Although no pre-scripted trajectory is required, sufficient motion excitation remains necessary due to inherent unobservabilities. A further contribution is the use of motion-based calibration constraint within the state-estimation formulation; while similar ideas have appeared in manipulator [10], LiDAR–camera [11], and LiDAR–IMU [12] calibration, we are not aware of prior work applying them to jointly calibrate steering and planar LiDAR extrinsics on a WMR. Finally, we quantify how the recovered steering offset improves cross-track error (CTE) - a critical evaluation often omitted in calibration literature, thus validating the complete calibration–to–control pipeline. III. B ICYCLE KINEMATIC MODEL 
+
+We consider our WMR modeled using the standard planar bicycle kinematic model. Let the robot state at time k include the vehicle pose (xk, y k, θ k) expressed in a global frame, where xk and yk denote the position of the rear axle center and θk denotes the vehicle heading, at time tk. The robot is actuated through a longitudinal velocity vk obtained from wheel-encoder measurements and a measured steering input 
+
+δmeas  
+
+> k
+
+obtained from the steering encoder. 
+
+A. Steering Bias and Motion Model 
+
+The measured steering angle is typically corrupted by a slowly varying bias arising from mechanical misalignment, wear, or encoder inconsistencies. We model the true steering angle as 
+
+δtrue  
+
+> k
+
+= δmeas  
+
+> k
+
+− δof f,k , (1) where δof f,k is an unknown constant (or slow varying) offset to be estimated. Under the bicycle-kinematics assumption and small-slip conditions, the vehicle pose evolves as ( [13]) 
+
+˙x(t) = v(t) cos θ(t),
+
+˙y(t) = v(t) sin θ(t),
+
+˙θ(t) = v(t)
+
+L tan  δtrue (t),
+
+(2) where L is the wheelbase. Applying a zero-order hold on the inputs over sampling time of ∆tk yields the discrete-time update 
+
+xk+1 = xk + vk cos θk ∆tk,yk+1 = yk + vk sin θk ∆tk,θk+1 = θk + vk
+
+L tan  δmeas  
+
+> k
+
+− δof f,k 
+
+∆tk.
+
+(3) This formulation makes the steering offset directly influence the predicted curvature. While many implementations treat bicycle-type vehicles as unicycles by using the yaw rate ω as the control input, thus bypassing the v tan( δ)/L relation and yielding a control-affine model, this simplification obscures the coupling between steering miscalibration and trajectory curva-ture, making the bias unobservable. Retaining the full bicycle model preserves this coupling and maintains observability of the steering offset. 
+
+B. State Augmentation 
+
+To enable online calibration, the state vector is augmented to include the planar LiDAR-to-vehicle extrinsic parameters 
+
+e = xoff yoff θoff 
+
+⊤ and the steering bias δof f . These quantities evolve according to a random-walk model, 
+
+ek+1 = ek + wex  
+
+> k
+
+,δof f, k +1 = δof f, k + wδk. (4) where wex  
+
+> k
+
+and wδk denote small process noise terms that allow slow adaptation to mechanical drift or reassembly-induced changes. The augmented state vector becomes sk =xk yk θk e⊤ 
+
+> k
+
+δof f 
+
+⊤.
+
+C. Process Model Jacobian 
+
+Fk = ∂f ∂s (ˆ sk ,uk )
+
+, Gk = ∂f ∂u (ˆ sk ,uk )
+
+. (5) For EKF propagation, the motion model f (sk, uk) is lin-earized about the current estimate ˆsk, yielding the state and input Jacobians Fk and Gk respectively (Equation 5). The derivation skipped in the interest of space. IV. M EASUREMENT MODEL 
+
+The measurement model relates measurements to state vari-ables. LiDAR odometry provides the measurement that is used to update the state variables. The motion based calibration constraint [11], [12] is utilized to formulate the measurement model. 
+
+A. LiDAR Odometry 
+
+2D LiDAR odometry is performed by estimating the sen-sor’s pose through scan–to–map alignment using a discrete grid search around the sensor’s pose at the last timestamp. Starting from an initial pose prediction seeded by a known lo-cation in the map, the algorithm conducts a discrete grid search over a bounded neighborhood in x, y, and θ. A set of candidate transformations based on the expected max speed and direction is applied to the filtered and randomly sampled incoming scan, and each candidate is evaluated by computing an alignment score that measures how well the transformed scan points agree with the occupied regions of the map. The best-scoring pose is selected as the pose that maximizes the alignment score, yielding a robust and repeatable scan-matching solution suitable for real-time localization and mapping. 
+
+B. Motion Based Calibration Constraint 
+
+> Fig. 2: Motion-Based Calibration Constraint.
+
+The motion-based calibration constraint (Figure 2, Equation 6, [11], [12]) establishes a relationship between the motions of two coordinate frames rigidly attached to the body, using the extrinsic calibration ( T BL ) that connects them. 
+
+T Bi 
+
+> Bj
+
+T BL = T BL T Li 
+
+> Lj
+
+(6) Note that T AB ∈ SE (2) is a transformation matrix that stores the rotation and translation between frames A and B. In the present context T Bi 
+
+> Bj
+
+is the motion estimated by vehicle kinematic model, T Li 
+
+> Lj
+
+is the LiDAR motion that can be estimated using LiDAR odometry. 
+
+C. Measurement Model 
+
+We use the relative LiDAR odometry estimate T Li 
+
+> Lj
+
+as the measurement. Starting from the motion constraint in (6), setting i = 0 and j = k gives the EKF measurement model 
+
+T L0 
+
+> Lk
+
+= ( T BL )−1(T WB0 )−1T WBk T BL , (7) where T BL = f (xof f , y of f , θ of f ) and T WBk = f (xk, y k, θ k),and T L0 
+
+> Lk
+
+= f (xLk , y Lk , θ Lk ). Equation (7) is therefore a function of the state sk. and can be written compactly as 
+
+zk = h(sk), where zk = T L0 
+
+> Lk
+
+. Here T WB0 is the fixed reference pose. Expanding (7) yields the planar relative transform 
+
+xLk = (1 − cos ∆ θk )xof f + sin ∆ θk yof f 
+
++ cos( θof f − θ0)∆ xk − sin( θof f − θ0)∆ yk ,yLk = − sin ∆ θk xof f + (1 − cos ∆ θk )yof f 
+
++ sin( θof f − θ0)∆ xk + cos( θof f − θ0)∆ yk ,θLk = ∆ θk .
+
+with ∆xk = xk − x0, ∆yk = yk − y0 and ∆θk = θk − θ0.The measurement Jacobian is derived as 
+
+Hk =
+
+
+
+> ∂x Lk
+> ∂x k
+> ∂x Lk
+> ∂y k
+> ∂x Lk
+> ∂θ k
+> ∂x Lk
+> ∂x of f
+> ∂x Lk
+> ∂y of f
+> ∂x Lk
+> ∂θ of f
+> ∂x Lk
+> ∂δ of f
+> ∂y Lk
+> ∂x k
+> ∂y Lk
+> ∂y k
+> ∂y Lk
+> ∂θ k
+> ∂y Lk
+> ∂x of f
+> ∂y Lk
+> ∂y of f
+> ∂y Lk
+> ∂θ of f
+> ∂y Lk
+> ∂δ of f
+> ∂θ Lk
+> ∂x k
+> ∂θ Lk
+> ∂y k
+> ∂θ Lk
+> ∂θ k
+> ∂θ Lk
+> ∂x of f
+> ∂θ Lk
+> ∂y of f
+> ∂θ Lk
+> ∂θ of f
+> ∂θ Lk
+> ∂δ of f
+
+
+
+(8) 
+
+The model (7) and Jacobian Hk are used in the EKF update step to minimize the innovation between the observed LiDAR relative pose and its prediction. V. EKF F ORMULATION 
+
+> Fig. 3: Full EKF pipeline.
+
+Given the process model (Section III) and the measurement model (Section IV) derived from the motion based calibration constraint (Section IV-B), online calibration is posed as an Extended Kalman Filter (EKF) over the augmented state containing vehicle pose, planar LiDAR extrinsics, and steering bias. The EKF maintains a Gaussian belief (ˆ sk, Pk).
+
+A. Nonlinear Process Model 
+
+uk = [ vk, δ meas  
+
+> k
+
+]⊤ denotes the control input. The dynamics are 
+
+sk+1 = f (sk, uk) + wk, (9) with process noise wk ∼ N (0, Qk) capturing velocity and steering uncertainty as well as slow drift of the calibra-tion parameters. Small random-walk noise is injected into 
+
+(xoff , y off , θ off , δ off ) to allow gradual adaptation. B. State Prediction 
+
+Using the current estimate ˆsk|k , the input uk, and the process Jacobians Fk and Gk as described earlier in Section III-C. The predicted state and covariance are 
+
+ˆsk+1 |k = f (ˆ sk|k, uk),
+
+Pk+1 |k = Fk Pk|k F⊤ 
+
+> k
+
++ Gk Qk G⊤
+
+> k
+
+(10) 
+
+Qk is tunable, block-diagonal process covariance matrix. 
+
+C. Measurement Update 
+
+Whenever a LiDAR-odometry pose is available, the EKF performs a correction using the measurement model in (7) – 
+
+zk = h(sk) – which predicts the relative LiDAR pose implied by the current state estimate. Using the most recent (ˆ sk, Pk),the measurement Jacobian Hk and the tunable measurement covariance matrix Rk, the innovation rk, its covariance Sk,and the Kalman gain Kk are computed 
+
+rk = zk − h(ˆ sk+1 |k),
+
+Sk = Hk Pk+1 |k H⊤ 
+
+> k
+
++ Rk,
+
+Kk = Pk+1 |k H⊤ 
+
+> k
+
+S−1 
+
+> k
+
+.
+
+(11) leading to the corrected estimates 
+
+ˆsk+1 |k+1 = ˆ sk+1 |k + Kk rk,
+
+Pk+1 |k+1 = ( I − KkHk) Pk+1 |k. (12) The measurement noise Rk is obtained statistics of the LiDAR odometry. VI. E XPERIMENTAL EVALUATION 
+
+We evaluate the proposed online calibration method on two WMRs (Figure 1) over several days. During this period, the platforms were actively used by other teams for daily testing and frequent re-assembly, naturally introducing unmodelled mechanical variations across datasets. In the absence of ex-ternal ground-truth systems (e.g., GPS or total stations), we structure our empirical study around five validation tasks: (a) assessing convergence of the steering-bias and planar LiDAR extrinsic estimates under different load and initial conditions; (b) evaluating cross-platform generalization by deploying the algorithm on a second robot; (c) quantifying the estimator’s sensitivity to deliberately induced steering miscalibration; (d) examining the effect of re-applying and compensating the estimated steering offset on cross-track error (CTE); and (e) studying the influence of steering-offset correction on the LiDAR odometry trajectory. The robot used for tasks (a), (c), (d), and (e) is shown in Figure 1a, while task (b) uses the platform in Figure 1b. In all experiments, unless specified otherwise, the LiDAR extrinsics are initialized to reference values obtained from tape measurements or CAD, and the steering offset is initialized to zero. Empirically, we observe that the onboard LiDAR odometry remains accurate to within approximately 10 cm over the evaluated operating regions. 
+
+A. Estimator Convergence 
+
+We first evaluate the estimator on repeated autonomous “figure-eight” trajectories (eg. Figure 7b) executed under two payload tugging conditions (no load and 500 Kg load). Across both cases, the EKF converges to stable estimates of 
+
+(xoff , y off , θ off , δ of f ). The results are summarized in Table I and Figures 4a & 4b. To evaluate the robustness of the esti-
+
+Trial xoff [m] yoff [m] θoff [°] δoff [°] Unladen 0.43 0.0046 0.72 0.92 Laden (500 kg) 0.44 0.0055 0.73 0.92 TABLE I: Converged estimates under different load conditions. The known reference for the extrinsics is [0 .434 m, 0.0, 0.0] . Comparison of calibration results for (a) unladen and (b) laden (500 kg) conditions. A consistent ∼ 1 cm shift in the x-component of the estimated extrinsics is observed, which may be attributed to LiDAR–odometry noise or load-induced mechanical drift between the vehicle body (kinematics frame) and the chassis where the LiDAR is mounted.     
+
+> (a) Unladen test
+> (b) Laden test with 500 kg payload Fig. 4: Estimator convergence. In both load conditions, the estimator was initialized at CAD-provided values and converges to the steady-state values in Table I. Note that the θaxis is on the right.
+
+mator in the absence of prior information, we repeat the above experiments with both the LiDAR extrinsics and steering offset initialized to zero, with correspondingly inflated initial covariances. Even in the absence of prior information, the filter reliably converges to the same neighbourhood of steady-state values as observed with tape/CAD-derived initialization, demonstrating that the method remains effective without any prior extrinsic knowledge. The results are reported in Table II and Figure 5. A comparison between Table I and Table II shows that both initialization strategies yield closely matching estimates. Having studied convergence in depth, we do not present convergence plots going forward and only provide the final converged value as results. 
+
+Trial xoff [m] yoff [m] θoff [°] δoff [°] Unladen 0.43 0.0052 0.72 0.91 Laden (500 kg) 0.44 0.0056 0.73 0.91 TABLE II: Converged estimates under circumstances similar to I. The known reference for the extrinsics is [0 .434 m, 0.0, 0.0] . The filter was intialized to          
+
+> 0for all the states under consideration.
+> (a) Unladen test
+> (b) Laden test with 500 kg payload Fig. 5: Estimator convergence. With zero initialization, the estimator begins at 0and converges to the steady–state values listed in Table II. The initial covariance (faded 3σbounds) is intentionally relaxed to allow recovery of the true extrinsic parameters. Note that the θaxis is on the right.
+
+B. Cross-Platform Generalization 
+
+We additionally evaluated the algorithm on a smaller robot from the same platform family (Figure 1b). The estimated LiDAR extrinsics converged to [0 .2597 m , 0.0101 m , −1.29 ◦]
+
+against the reference [0 .26 m , 0.0 m , 0.0◦], and the steering bias converged to −1.11 ◦. These degree-level deviations are consistent with the body-on-frame construction of the plat-form, where small geometric shifts between the chassis and sensor mount commonly introduce such offsets. 
+
+C. Physically induced Steering Offset 
+
+To evaluate the algorithm inte absence of absolute ground truth, we manually introduced steering offsets by physically misaligning the steering mechanism in both positive and negative directions and drove the robot while running the EKF. The filter reliably detected these induced offsets and produced stable estimates of both steering bias and LiDAR extrinsics. As shown in Table III, the EKF recovers the induced steering offsets with sub-degree accuracy, the worst-case error is 0.27 ◦
+
+(encoder resolution 0.25 ◦), and three independent 5◦ trials yield a standard deviation of only 0.03 ◦. The LiDAR extrinsics remain close to the tape-measured/CAD reference, with xoff 
+
+varying by 1.7 cm, yoff within 3.3 cm, and θoff within 0.22 ◦,consistent with scan-matching noise and day-to-day variability due to routine mechanical and electrical testing.                                            
+
+> Dataset Estimated δoff [°] xoff [m] yoff [m] θoff [°] Induced δoff =−9◦−8.73 ◦0.4259 -0.0239 0.67 Induced δoff = 7 .4◦7.23 ◦0.4359 -0.0146 0.79 Induced δoff = 5 ◦4.87 ◦0.4185 -0.0034 0.88 Induced δoff = 5 ◦4.87 ◦0.4212 0.0100 0.81 Induced δoff = 5 ◦4.92 ◦0.4235 0.0135 0.66 TABLE III: Detecting physically induced steering offset. The known reference for the extrinsics is [0 .434 m, 0.0,0.0] .
+
+D. Impact of Steering Offset on Cross Track Error 
+
+We evaluated the influence of steering offset on the global CTE, which quantifies how closely the vehicle tracks the planned path. For each trial, we first performed a calibration run to estimate the steering offset, followed by two validation runs: one in which the estimated offset was added to the steer-ing command to exaggerate the miscalibration, and another in which the offset was subtracted to compensate for it. We conducted three such sets of experiments, and the resulting CTE behavior is summarized in Table IV and visualized in Figure 6. Across all three run sets, adding the estimated steering offset (thus exaggerating the miscalibration) consistently increased the CTE-RMSE, while subtracting it reduced the CTE-RMSE below the calibration baseline (ref. Table IV). The worst-case degradation occurred in Run Set 3, where CTE-RMSE rose from 0.071 m to 0.174 m, whereas compensation lowered it to 0.059 m. The smaller-offset cases (Run Sets 1 and 2) exhibited proportionally smaller improvements, reflecting the direct relationship between the degree of miscalibration and the achievable reduction in tracking error. These trials were conducted over several days of normal robot operation, yet the LiDAR extrinsics remained stable (ranges: xoff within 0.5 cm, 
+
+yoff within 1 cm, and θoff within 0.08 ◦). Overall, the results demonstrate that steering offset directly impacts the CTE and eliminating the offset improves path-tracking performance. While the CTE–RMSE values in Table IV summarize the overall trend, they compress a system-level error influenced by controller tuning, wheel slip, floor conditions, and transient disturbances. Thus, modest 10–20% changes in RMSE may not fully expose the effect of miscalibration. Moreover, these tests were performed in a constrained indoor area allowing only a few tens of meters of motion; in real deployments with trajectories spanning hundreds of meters, the impact of steering bias becomes far more pronounced. To provide a more complete picture, Figure 6 visualizes the full distribution of absolute CTE for each run. These his-tograms show consistent shifts: adding the estimated steering offset yields broader, right-shifted, heavy-tailed distributions indicative of exaggerated curvature errors, whereas subtracting (a) Runset 1: Calibration Run (b) Runset 2: Calibration Run (c) Runset 3: Calibration Run 
+
+(d) Runset 1: Offset Added (e) Runset 2: Offset Added (f) Runset 3: Offset Added 
+
+(g) Runset 1: Offset Removed (h) Runset 2: Offset Removed (i) Runset 3: Offset Removed Fig. 6: Comprehensive evaluation across three experimental conditions: (i) calibration run, (ii) physically added steering offset, (iii) physically removed steering offset. Columns correspond to Runsets 1–3; rows correspond to the three test scenarios.                                                                       
+
+> Run δoff [◦]xoff [m] yoff [m] θoff [◦]RMSE-CTE [m]
+> Run Set 1
+> Calibration run -1.25 0.4393 -0.0088 0.71 0.14
+> δoff =−1.25 ◦added -2.53 0.4383 -0.0132 0.68 0.20
+> δoff =−1.25 ◦subtracted -0.07 0.4394 -0.0119 0.69 0.09
+> Run Set 2
+> Calibration run -0.41 0.4356 -0.0158 0.75 0.09
+> δoff =−0.41 ◦added -0.78 0.4400 -0.0184 0.71 0.10
+> δoff =−0.41 ◦subtracted -0.01 0.4400 -0.0190 0.75 0.07
+> Run Set 3
+> Calibration run 2.92 0.4382 -0.0158 0.76 0.071
+> δoff = 2 .92 ◦added 5.84 0.4357 -0.0140 0.76 0.174
+> δoff = 2 .92 ◦subtracted -0.03 0.4382 -0.0158 0.76 0.059
+
+TABLE IV: Effect of Estimated Steering Offset on Cross-Track Error (CTE) Across Three Experimental Run Sets. The known reference for the extrinsics is [0 .434 m, 0.0, 0.0] . The topmost row contains labels for the estimated steering offset, the extrinsics, and RMSE-CTE. 
+
+the offset produces concentrated distributions with few large-error outliers. This distribution-level view confirms that the estimated steering offset induces a systematic and physically meaningful change in path-tracking behavior that cannot be fully captured by the RMSE alone. 
+
+E. Impact of Steering Offset on Odometry 
+
+Figure 7 compares the trajectory traces for two experiments: manual teleoperation (Figure 7a) and autonomous navigation (Figure 7b). In both cases, the uncompensated bicycle model diverges rapidly from the true motion, whereas the bias-compensated model remains tightly aligned with the EKF estimate. This indicates that even in the absence of LiDAR-odometry updates such as in narrow corridors or low-structure regions where LiDAR odometry often fails the compensated bicycle propagation provides a reliable standalone local state estimate. VII. C ONCLUSION AND FUTURE WORK 
+
+In this work, we presented an online automatic method to jointly estimate the planar LiDAR extrinsics and the steering-angle offset of a bicycle-type wheeled mobile robot using an Extended Kalman Filter whose measurement model uses LiDAR-odometry pose under the motion-based calibration (a) Manual teleoperation run showing EKF trajectory, uncompensated bicycle propagation, and bias-corrected propagation. The RMSE between EKF and uncompensated trajectory is 15.316 m, whereas between EKF and compensated trajectory is 1.359 m. 
+
+(b) Autonomous run showing a similar comparison between EKF, uncom-pensated, and bias-corrected propagation. The RMSE between EKF and uncompensated trajectory is 14.02 m, whereas between EKF and compensated trajectory is 1.65 m. Fig. 7: Comparison of EKF-estimated trajectory with uncompensated and steering-bias-corrected bicycle propagation across (a) manual teleoperation and (b) autonomous navigation trials. In both cases, the compensated model closely follows the EKF estimate, whereas the uncompensated model exhibits significant drift. 
+
+framework [11] to jointly estimate vehicle pose and calibration parameters. Although LiDAR odometry is used as the pose source in this implementation, the modular EKF structure [14] allows any pose-generating sensor (e.g., visual odometry, GPS) to be plugged in, enabling steering and extrinsic calibration across different sensing stacks. The proposed formulation enables continual estimation of calibration, thereby improving the accuracy of the propagated vehicle state (Figure 7). We demonstrated the convergence properties of the estimator across multiple experimental conditions, including evaluations on two distinct platforms with different mechanical dimen-sions. In the absence of ground truth, we physically induced steering offsets to validate that the filter can reliably track changes in real time. Furthermore, we evaluated the influ-ence of the estimated steering offset on downstream control metrics, particularly cross-track error (CTE), and provided a statistical analysis of how steering bias affects the distribu-tion of absolute CTE. Across all experiments, the estimated LiDAR extrinsics consistently converged to values close to the expected reference. Future work will investigate four main directions. First, we aim to deploy the filter fully online on the robot and perform closed-loop evaluations where steering-offset correction is applied continuously within the controller. Second, we plan to study the sensitivity of the system to LiDAR extrinsics, including their impact on localization and control in more complex environments. Third, we will extend the EKF formulation to jointly refine key vehicle parameters such as wheelbase, wheel radius, and track width to account for model uncertainty and mechanical drift. Finally, we will conduct a detailed observability analysis of the joint cali-bration problem to identify informative excitation conditions and design trajectories that ensure all states remain well observable. REFERENCES [1] J. Borenstein and L. Feng, “Measurement and correction of systematic odometry errors in mobile robots,” IEEE Transactions on Robotics and Automation , vol. 12, no. 6, pp. 869–880, 1996. [2] N. Roy and S. Thrun, “Online self-calibration for mobile robots,” in Proceedings 1999 IEEE International Conference on Robotics and Automation (Cat. No.99CH36288C) , vol. 3, 1999, pp. 2292–2297 vol.3. [3] A. Martinelli and R. Siegwart, “Estimating the odometry error of a mobile robot during navigation,” 01 2003. [4] A. I. Eliazar and R. Parr, “Learning probabilistic motion models for mobile robots,” in Proceedings of the Twenty-First International Conference on Machine Learning , ser. ICML ’04. New York, NY, USA: Association for Computing Machinery, 2004, p. 32. [Online]. Available: https://doi.org/10.1145/1015330.1015413 [5] A. Martinelli, D. Scaramuzza, and R. Siegwart, “Automatic self-calibration of a vision system during robot motion,” in Proceedings 2006 IEEE International Conference on Robotics and Automation, 2006. ICRA 2006. , 2006, pp. 43–48. [6] J. Underwood, A. Hill, and S. Scheding, “Calibration of range sensor pose on mobile platforms,” in 2007 IEEE/RSJ International Conference on Intelligent Robots and Systems , 2007, pp. 3866–3871. [7] A. Censi, L. Marchionni, and G. Oriolo, “Simultaneous maximum-likelihood calibration of odometry and sensor parameters,” in 2008 IEEE International Conference on Robotics and Automation , 2008, pp. 2098– 2103. [8] R. K¨ ummerle, G. Grisetti, and W. Burgard, “Simultaneous calibration, localization, and mapping,” in 2011 IEEE/RSJ International Conference on Intelligent Robots and Systems , 2011, pp. 3716–3721. [9] F. Kallasi, D. Lodi Rizzini, F. Oleari, M. Magnani, and S. Caselli, “A novel calibration method for industrial agvs,” Robotics and Autonomous Systems , vol. 94, pp. 75–88, 2017. [Online]. Available: https://www.sciencedirect.com/science/article/pii/S0921889016303025 [10] R. Horaud and F. Dornaika, “Hand-eye calibration,” The International Journal of Robotics Research , vol. 14, no. 3, pp. 195–210, 1995. [Online]. Available: https://doi.org/10.1177/027836499501400301 [11] Z. Taylor and J. Nieto, “Motion-based calibration of multimodal sensor extrinsics and timing offset estimation,” IEEE Transactions on Robotics ,vol. 32, no. 5, pp. 1215–1229, 2016. [12] S. Mishra, G. Pandey, and S. Saripalli, “Target-free extrinsic calibration of a 3d-lidar and an imu,” in 2021 IEEE International Conference on Multisensor Fusion and Integration for Intelligent Systems (MFI) , 2021, pp. 1–7. [13] A. D. Luca and G. Oriolo, Modelling and Control of Nonholonomic Mechanical Systems . Vienna: Springer Vienna, 1995, pp. 277–342. [Online]. Available: https://doi.org/10.1007/978-3-7091-4362-9 7 [14] S. Lynen, M. W. Achtelik, S. Weiss, M. Chli, and R. Siegwart, “A robust and modular multi-sensor fusion approach applied to mav navigation,” in 2013 IEEE/RSJ International Conference on Intelligent Robots and Systems , 2013, pp. 3923–3929.
