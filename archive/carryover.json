@@ -1,52 +1,12 @@
 {
-  "generated_at": "2026-09-02T22:48:39.190953+00:00",
-  "updated_date": "20260902",
+  "generated_at": "2026-09-03T22:52:47.581975+00:00",
+  "updated_date": "20260903",
   "carryover_days": 9,
   "tag_states": {
     "d-slam": {
-      "updated_date": "20260902",
+      "updated_date": "20260903",
       "carryover_days": 9,
-      "items": [
-        {
-          "id": "2609.01089v1",
-          "source": "arxiv",
-          "title": "Adaptive Depth-Map-Guided Bundle Adjustment for Correspondence-Free Multi-View Point Cloud Registration",
-          "abstract": "Robotic processing of irregular steel scrap requires dense 3-D measurement to replace manual visual assessment in hazardous cutting workcells. The reconstructed map is used to estimate piece dimensions, boundary geometry, feasible preheating and cutting regions, and collision-aware torch paths. The reconstruction errors therefore propagate directly to downstream measurement and planning. Existing multi-view registration methods commonly rely on feature extraction and data association to establish correspondences between views. In workcells with smooth metallic surfaces, repeated structures, occlusions, and partial overlaps, however, wrong correspondences may be established, leading to inaccurate pose estimation and distorted reconstruction. This paper presents an adaptive layered depth-map-guided bundle adjustment framework for correspondence-free multi-view point cloud registration. The scene is represented by a global 2.5-D grid, where each cell can adaptively maintain multiple depth hypotheses. Raw depth observations are directly projected into the global map to form depth constraints without explicit feature correspondences. At grid cells where multiple surfaces produce conflicting depths, a softmax-based layer assignment links each observation to compatible depth hypotheses. The resulting nonlinear least-squares formulation jointly refines sensor poses and the layered depth map, with correspondences implicitly induced by the depth-map representation and projection model. Experiments on self-collected industrial datasets show that the proposed method achieves consistently competitive reconstruction accuracy while maintaining robustness and low computational cost in challenging industrial scenarios. We release the open-source code implementation at: https://github.com/YiranZhou-Robotics/ADM-BA.git",
-          "authors": [
-            "Yiran Zhou",
-            "Yingyu Wang",
-            "Shoudong Huang",
-            "Liang Zhao"
-          ],
-          "primary_category": "cs.RO",
-          "categories": [
-            "cs.RO"
-          ],
-          "published": "2026-09-01T11:28:46+00:00",
-          "link": "https://arxiv.org/pdf/2609.01089v1",
-          "tags": [
-            "keyword:d-slam",
-            "query:d-slam"
-          ],
-          "llm_score": 8.0,
-          "llm_evidence_en": "multi-view 3D point cloud registration and bundle adjustment for dense robotic mapping",
-          "llm_evidence_cn": "多视图点云配准与束调整，服务机器人稠密三维建图",
-          "llm_evidence": "多视图点云配准与束调整，服务机器人稠密三维建图",
-          "canonical_evidence": "多视图点云配准与束调整，服务机器人稠密三维建图",
-          "llm_tldr_en": "Proposes correspondence-free multi-view point cloud registration guided by adaptive depth maps via bundle adjustment, reducing wrong matches for dense 3D measurement and map construction in complex metallic workcells.",
-          "llm_tldr_cn": "金属废钢切割工位需要稠密三维重建，但光滑表面和重复结构使传统多视图配准容易建立错误对应并导致位姿误差，本文提出自适应深度图引导的无对应多视图点云配准。利用深度图先验与束调整直接对齐点云，不依赖显式特征对应，从源头避免误配准。验证实验表明其提升了复杂金属构件的位姿估计与三维重建精度。该方法可直接用于机器人场景的高精度三维制图与后续自动规划。",
-          "llm_tldr": "金属废钢切割工位需要稠密三维重建，但光滑表面和重复结构使传统多视图配准容易建立错误对应并导致位姿误差，本文提出自适应深度图引导的无对应多视图点云配准。利用深度图先验与束调整直接对齐点云，不依赖显式特征对应，从源头避免误配准。验证实验表明其提升了复杂金属构件的位姿估计与三维重建精度。该方法可直接用于机器人场景的高精度三维制图与后续自动规划。",
-          "llm_tags": [
-            "query:d-slam"
-          ],
-          "matched_query_tag": "query:d-slam",
-          "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
-          "matched_requirement_id": "req-6",
-          "selection_source": "carryover_cache",
-          "paper_id": "2609.01089v1",
-          "carry_days": 1
-        }
-      ]
+      "items": []
     },
     "robot-nav": {
       "updated_date": "20260815-20260824",

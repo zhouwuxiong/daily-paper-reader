@@ -41,17 +41,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-09-02</span>
+      <span class="dpr-home-dashboard-kicker">2026-09-03</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 17 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 14 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
     <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
     <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>11</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>8</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-09-02 22:56:51 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-09-03 23:00:50 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,7 +62,7 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日共读17篇论文，精读6篇，其中室内导航《EgoNav》与果园导航《AGRO-Nav》均获9.0高分。最值得关注的是自主导航领域：EgoNav融合路标与几何感知实现稳健室内导航，AGRO-Nav则提出基于图结构的果园自主导航方案。若时间有限，建议优先精读这两篇高分论文，并辅以速读中的多楼层探索与多模态对象导航研究。</p>
+<p>今日更新14篇论文，精读6篇、速读8篇，聚焦具身导航与自主探索；最值得关注的是《EgoNav》（9.0）与《RAEM》（8.0），前者打通学习路点与几何感知的室内导航，后者实现四足机器人多楼层鲁棒探索。后续可深入对比速读中地平线导航与户外覆盖方案的适用场景。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -74,7 +74,7 @@
     <strong class="dpr-home-dashboard-count">6 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="EgoNav: Bridging Learned Waypoints and Geometry-Aware Local Control for Robust Indoor Navigation">EgoNav: Bridging Learned Waypoints and Geometry-Aware Local Control for Robust Indoor Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="AGRO-Nav: Autonomous Graph-based Orchard Navigation">AGRO-Nav: Autonomous Graph-based Orchard Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="Hydra: A Navigation World Action Model with Discrete Latent Planning and Continuous Flow-Matching Execution">Hydra: A Navigation World Action Model with Discrete Latent Planning and Continuous Flow-Matching Execution</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="EgoNav: Bridging Learned Waypoints and Geometry-Aware Local Control for Robust Indoor Navigation">EgoNav: Bridging Learned Waypoints and Geometry-Aware Local Control for Robust Indoor Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot">RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot</span></li><li><span class="dpr-home-dashboard-paper-title" title="AGRO-Nav: Autonomous Graph-based Orchard Navigation">AGRO-Nav: Autonomous Graph-based Orchard Navigation</span></li></ul>
   </div>
   <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>5</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>1</strong></span></div>
 </section>
@@ -84,12 +84,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">速读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">11 篇</strong>
+    <strong class="dpr-home-dashboard-count">8 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="NeurRAFT: Robot Motion Planning via Anchor-Level Flow Matching with Clearance-Aware Preference Tuning">NeurRAFT: Robot Motion Planning via Anchor-Level Flow Matching with Clearance-Aware Preference Tuning</span></li><li><span class="dpr-home-dashboard-paper-title" title="RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot">RAEM: Robust Autonomous Exploration for Multi-Floor Environments with a Quadruped Robot</span></li><li><span class="dpr-home-dashboard-paper-title" title="STEGNav: Spatio-Temporal Event Graph Reasoning for Multimodal Lifelong Object Navigation">STEGNav: Spatio-Temporal Event Graph Reasoning for Multimodal Lifelong Object Navigation</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="HorizonNet for visual terrain navigation">HorizonNet for visual terrain navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots">Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots</span></li><li><span class="dpr-home-dashboard-paper-title" title="Hydra: A Navigation World Action Model with Discrete Latent Planning and Continuous Flow-Matching Execution">Hydra: A Navigation World Action Model with Discrete Latent Planning and Continuous Flow-Matching Execution</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>7</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>4</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>5</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>3</strong></span></div>
 </section>
 </div>
 
