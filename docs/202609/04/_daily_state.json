@@ -1,0 +1,249 @@
+{
+  "date": "20260904",
+  "date_label": "",
+  "generated_at": "2026-09-04 22:37:53 UTC",
+  "recommend_exists": true,
+  "run_count": 1,
+  "papers": [
+    {
+      "paper_id": "2608.28995v1",
+      "route": "202609/04/2608.28995v1-hydra-a-navigation-world-action-model-with-discrete-latent-planning-and-continuous-flow-matching-execution",
+      "title": "Hydra: A Navigation World Action Model with Discrete Latent Planning and Continuous Flow-Matching Execution",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "robot-nav"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "机器人导航世界动作模型，支持实时潜在规划与控制执行",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.01384v1",
+      "route": "202609/04/2609.01384v1-obstacle-aware-autonomous-coverage-and-navigation-for-outdoor-robots",
+      "title": "Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "robot-nav"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向室外机器人的障碍感知覆盖导航，融合路径规划、Nav2与鲁棒定位",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.03630v1",
+      "route": "202609/04/2609.03630v1-local-path-planning-and-obstacle-avoidance-for-an-omnicopter-platform",
+      "title": "Local Path Planning and Obstacle Avoidance for an Omnicopter Platform",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "robot-nav"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向全向无人机的实时局部路径规划与避障，直接对应机器人导航与路径规划主题。",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2608.28279v1",
+      "route": "202609/04/2608.28279v1-stegnav-spatio-temporal-event-graph-reasoning-for-multimodal-lifelong-object-navigation",
+      "title": "STEGNav: Spatio-Temporal Event Graph Reasoning for Multimodal Lifelong Object Navigation",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "robot-nav"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "多模态终身目标导航中的时空事件图推理，支持自动探索与导航决策",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2608.29315v1",
+      "route": "202609/04/2608.29315v1-sge-semantically-guided-exploration-for-unstructured-environments-via-image-space-waypoint-sampling",
+      "title": "SGE: Semantically-Guided Exploration for Unstructured Environments via Image-Space Waypoint Sampling",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "robot-nav"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "面向地面车辆自主导航的语义引导路点采样与滚动时域路径规划",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.03222v1",
+      "route": "202609/04/2609.03222v1-following-a-unique-path-a-fast-certifier-applied-to-outlier-robust-pose-registration",
+      "title": "Following a Unique Path: A Fast Certifier Applied to Outlier-Robust Pose Registration",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "面向离群鲁棒位姿配准的快速最优性证明器，可服务SLAM位姿图优化与全局一致性",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.03720v1",
+      "route": "202609/04/2609.03720v1-roughsense-lightweight-terrain-induced-rover-vibration-prediction-using-point-clouds-and-imu-feedback",
+      "title": "RoughSense: Lightweight Terrain-Induced Rover Vibration Prediction Using Point Clouds and IMU Feedback",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "robot-nav"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "基于LiDAR点云与IMU的振动感知通行性建图，直接服务于未知地形的行星车导航",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.03891v1",
+      "route": "202609/04/2609.03891v1-a-hybrid-pipeline-for-dynamic-ontology-based-semantic-mapping",
+      "title": "A hybrid pipeline for dynamic ontology-based semantic mapping",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "结合几何SLAM、目标检测跟踪与本体知识的语义建图管道，服务机器人的导航与交互",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.04026v1",
+      "route": "202609/04/2609.04026v1-stable-and-scalable-bundle-adjustment-of-holistic-3d-structures",
+      "title": "Stable and Scalable Bundle Adjustment of Holistic 3D Structures",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "束调整联合优化相机位姿与三维结构，是SLAM全局一致性核心优化方法",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.02798v1",
+      "route": "202609/04/2609.02798v1-autocompass-accurate-visual-localization-on-public-maps-by-learning-from-weak-labels",
+      "title": "AutoCompass: Accurate Visual Localization on Public Maps by Learning from Weak Labels",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "利用SLAM/SfM相对位姿作为弱标注来训练神经地图匹配器，与视觉定位和地图匹配紧密结合，属于SLAM相关研究主题。",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.03447v1",
+      "route": "202609/04/2609.03447v1-stars-gs-structure-aware-regularized-gaussian-splatting-for-large-scale-aerial-surface-reconstruction",
+      "title": "STARS-GS: Structure-Aware Regularized Gaussian Splatting for Large-Scale Aerial Surface Reconstruction",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "面向大规模航拍影像的稠密三维地表重建与制图,方法可迁移到机器人/自动驾驶的3D地图构建",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.03561v1",
+      "route": "202609/04/2609.03561v1-trail-odom-tightly-coupled-continuous-time-radar-imu-lidar-odometry-with-adaptive-doppler-weighting",
+      "title": "TRaIL-Odom: Tightly Coupled Continuous Time Radar-IMU-LiDAR Odometry with Adaptive Doppler Weighting",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "面向增量位姿估计的雷达-IMU-激光紧耦合里程计，与视觉里程计的目标方法等价",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2608.26789v1",
+      "route": "202609/04/2608.26789v1-online-joint-calibration-of-steering-offset-and-planar-lidar-extrinsics-for-wheeled-mobile-robots",
+      "title": "Online Joint Calibration of Steering Offset and Planar LiDAR Extrinsics for Wheeled Mobile Robots",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "robot-nav"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "在线标定转向偏移与LiDAR外参以减小轮式移动机器人路径跟踪横向误差",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.00713v1",
+      "route": "202609/04/2609.00713v1-efficient-and-robust-absolute-pose-estimation-via-gravity-prior-driven-transformation-decoupling-and-pose-refinement",
+      "title": "Efficient and Robust Absolute Pose Estimation via Gravity-Prior-Driven Transformation Decoupling and Pose Refinement",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "利用重力先验进行高效鲁棒的6自由度位姿估计，可迁移到视觉SLAM/里程计的相机跟踪",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    },
+    {
+      "paper_id": "2609.01899v1",
+      "route": "202609/04/2609.01899v1-tapvid-mv-a-benchmark-for-tracking-any-point-in-3d-across-multiple-views",
+      "title": "TAPVid-MV: A Benchmark for Tracking Any Point in 3D Across Multiple Views",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "d-slam"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "多视角三维点跟踪基准可为视觉SLAM与匹配研究提供评测数据资源",
+      "first_seen_at": "2026-09-04 22:37:53 UTC",
+      "updated_at": "2026-09-04 22:37:53 UTC"
+    }
+  ]
+}

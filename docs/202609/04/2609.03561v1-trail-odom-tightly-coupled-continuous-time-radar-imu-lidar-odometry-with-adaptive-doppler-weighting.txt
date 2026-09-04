@@ -1,0 +1,556 @@
+Title: TRaIL-Odom: Tightly Coupled Continuous Time Radar-IMU-LiDAR Odometry with Adaptive Doppler Weighting
+
+URL Source: https://arxiv.org/pdf/2609.03561v1
+
+Published Time: Fri, 04 Sep 2026 00:44:48 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+> IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. ACCEPTED AUGUST, 2026 1
+
+# TRaIL-Odom: Tightly Coupled Continuous Time Radar-IMU-LiDAR Odometry with Adaptive Doppler Weighting 
+
+Chiyun Noh 1, Turcan Tuna 2, William Talbot 2, Marco Hutter 2, Laurent Kneip 3∗, and Ayoung Kim 1∗
+
+Abstract —Existing radar-LiDAR fusion methods rely on fixed residual weights, even though the informativeness of radar Doppler and LiDAR geometry is scan- and direction-dependent, leading to uniform radar weighting that misallocates Doppler information across translational directions. To address this lim-itation, we propose two degeneracy-aware Doppler reweighting modules within a tightly coupled Radar-IMU-LiDAR odometry framework: per-point radar reweighting and scan-wise radar gain scheduling. Since geometric degeneracy is directional, we first identify weak translational directions from the LiDAR geometry and reweight individual radar Doppler constraints based on their alignment with the weak subspace. We fur-ther adjust the overall radar contribution using LiDAR geo-metric anisotropy such that radar is emphasized when LiDAR observability is poor and suppressed when LiDAR constraints are already reliable. Across 13 evaluated sequences, TRaIL-Odom achieves state-of-the-art overall performance, with clear advantages in geometrically degenerate scenes. In ablation ex-periments on three degenerate sequences, combining the two adaptive weighting modules reduces RMSE ATE and RTE by 86.0% and 78.5% relative to the fixed-weight baseline. We make our code and an accompanying dataset publicly available at https://github.com/ChiyunNoh/TRaIL-Odom. 
+
+Index Terms —SLAM, Localization, Range Sensing 
+
+I. I NTRODUCTION 
+
+# RADAR has emerged as a promising complementary sens-ing modality due to its ability to provide direct ra-dial velocity measurements. Building on these advantages, prior work [1–4] incorporate radar Doppler information into LiDAR-Inertial Odometry (LIO) to improve robustness in ge-ometrically uninformative environments where LiDAR con-straints become weak. However, most of these approaches still rely on fixed residual weights based on sensor noise models, leaving open the question of how radar contribution should be modulated under scene-dependent geometric degradation. Rigid frameworks often require substantial tuning and show limited generalization across varied scenarios, because simpli-fying assumptions ( e.g. , Gaussian measurement noise and re-
+
+Manuscript received: April 21, 2026; Revised July 12, 2026; Accepted August 23, 2026. This paper was recommended for publication by Editor Javier Civera upon evaluation of the Associate Editor and Reviewers’ comments. This work was supported by the NRF grant (No. RS-2023-00241758) and KIAT (P0020536), and in part by the Robotics and AI (RAI) Institute. ( Corresponding authors: Laurent Kneip and Ayoung Kim.) 
+
+> 1
+
+C. Noh and A. Kim are with the Department of Mechani-cal Engineering, Seoul National University, S. Korea. [gch06208, ayoungk]@snu.ac.kr 
+
+> 2
+
+T. Tuna, W. Talbot and M. Hutter are with the Robotic Systems Lab (RSL), ETH Z¨ urich, 8092 Z¨ urich, Switzerland. [tutuna, wtalbot, mahutter]@ethz.ch 
+
+> 3
+
+L. Kneip is with the Robotics and AI Institute (RAI), Z¨ urich, Switzerland. 
+
+lkneip@rai-inst.com 
+
+Digital Object Identifier (DOI): see top of this page. GT RESPLE DR-LRIO Ours 
+
+> 10 m
+
+(a) 
+
+> 10 m
+
+(b) 
+
+> Open space
+> Tunnel xyxy
+
+?? ?LIO Fails: 
+
+> Incorrect backward prediction
+
+Fig. 1: Results of RESPLE (LIO), DR-LRIO (LIO + radar), and 
+
+Ours in degenerate environments: (a) Airfield1 and (b) BikeTunnel2 .While RESPLE is unstable in Airfield1 and fails in BikeTunnel2 ,
+
+Ours remains stable in both. Zoomed views and inset images show local details and environments. Circles and crosses denote the start and end points, which overlap in the return-to-start trajectories. 
+
+dundancy averaging) can break down under degenerate condi-tions, and corrupted measurements may dominate certain state directions [5]. Ideally, if the true scene-dependent uncertainty of each residual block were known, uncertainty-based weight-ing would provide a principled way to balance modalities. In practice, this information is not available a priori , motivating adaptive reweighting driven by measurable signals such as scan geometry and observability. More importantly, geometric degeneracy is often directional rather than uniform across all directions [6]. This means that, even within a scan, only a subset of translational directions are weakly constrained, while the remaining directions are al-ready supported by LiDAR geometry. This suggests that radar should not be weighted uniformly. It should primarily reinforce weakly constrained directions, while its influence should be limited along directions that are already well constrained by LiDAR. This calls for an adaptive mechanism that modulates radar contribution both per measurement and per scan, rather than applying a single fixed weight throughout the trajectory. To address this, we propose TRaIL-Odom , a tightly cou-pled Radar-IMU-LiDAR optimization framework based on continuous time B-splines for fusing asynchronous measure-arXiv:2609.03561v1 [cs.RO] 3 Sep 2026 2 IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. ACCEPTED AUGUST, 2026 
+
+ments. First, for each LiDAR scan, geometric information is analyzed to identify a weak translational subspace. Then, constraints from radar Doppler measurements are reweighted to reinforce this subspace, without unnecessarily emphasizing radar along directions already well constrained by LiDAR. In addition, a scan-level radar gain is scheduled based on the severity of geometric degeneracy to adjust the overall Doppler contribution, improving stability and limiting unnecessary in-fluence in well-constrained scenes. The main contributions of this work are as follows:  
+
+> •
+
+We present TRaIL-Odom, a tightly coupled Radar-IMU-LiDAR optimization-based odometry approach us-ing continuous time B-splines, designed for diverse real-world environments.  
+
+> •
+
+We propose a degeneracy-aware per-point radar reweight-ing scheme that reallocates Doppler contribution toward weak translational directions identified from pointcloud geometry, while avoiding unnecessary radar influence along directions already well constrained.  
+
+> •
+
+We further introduce a scan-wise radar gain scheduling strategy that adjusts the Doppler contribution according to LiDAR pointcloud anisotropy, emphasizing radar in-fluence in scans with severe degeneracy while limiting unnecessary influence in well-constrained scans.  
+
+> •
+
+We release a real-world dataset comprising 6 sequences across three scenes with degenerate scan geometries and accurate position ground truth. The method is validated on this dataset with extensive ablation studies. The code is also released to the research community. II. RELATED WORK 
+
+A. Radar-LiDAR Fusion 
+
+Radar provides line-of-sight (LOS)-direction Doppler mea-surements that complement LiDAR geometry, making Radar-LiDAR fusion effective in perceptually degraded or geomet-rically degenerate scenes. Prior work by Nissov et al. [2, 3] present a tightly coupled sliding-window estimator that jointly optimizes radial-velocity factors with LiDAR residuals, im-proving robustness under weak geometric constraints. In par-allel, filter-based methods [1, 7] integrate radar with LIO and highlight additional capabilities such as velocity-aware gravity estimation and dynamic object removal. Beyond robustness-oriented designs, computational aspects of asynchronicity have also been addressed. Hatleskog et al. [4] propose IMU-preintegrated radar velocity factors to avoid adding states at every radar timestamp, reducing the number of state nodes and runtime in fixed-lag smoothing. However, many existing works are often validated on lim-ited scenarios, and explicit modulation of radar contribution remains underexplored. To promote robust generalization, this work modulates the Doppler contribution according to LiDAR geometric observability, directing kinematic information to-ward weak directions while suppressing unnecessary influence in well-constrained scenes. 
+
+B. Adaptive Fusion and Reweighting Under Degradation 
+
+Robust operation in degraded scenes often relies on com-plementary modalities beyond geometry, such as LiDAR in-tensity or vision [8–10]. However, adding modalities alone does not guarantee higher accuracy, since relative measure-ment uncertainty across modalities is scene-dependent under degradation, and fixed fusion weights can over-trust unreliable measurements. Accordingly, several methods explicitly mod-ulate the relative influence of different information sources, adapting each contribution as conditions change. Zhao et al. [5] proposes a hierarchical adaptation framework that as-signs direction-dependent feature weights based on degrada-tion severity. Similarly, Du et al. [11] adaptively adjusts dead-reckoning priors in visual SLAM, and Yun et al. [12] down-weight measurements in multi-camera RGB-D inertial odome-try using photometric confidence. Even within a single modal-ity, GenZ-ICP [13] adapts complementary geometric error terms based on surrounding geometry to improve robustness in corridor-like degeneracy. Our approach shares the goal of adaptation under direction-dependent degradation but targets the reweighting of kine-matic information from radar Doppler within a tightly coupled Radar-IMU-LiDAR optimization. Unlike methods that switch modules or globally adjust parameters, we use LiDAR scan geometry to identify weak translational directions and then adapt Doppler residual contributions per measurement and per scan to reinforce those directions while limiting influence when LiDAR constraints are already informative. III. M ETHOD 
+
+A. Overview 
+
+We present a tightly coupled Radar-IMU-LiDAR optimiza-tion framework that leverages continuous time B-splines to fuse asynchronous measurements across diverse environments, with particular emphasis on geometrically degenerate scenes. The pose is modeled by separate position and orientation splines, known as the split pose representation [14], which has computational advantages over a single SE(3) spline. Our framework is summarized in Fig. 2. 
+
+B. Notation 
+
+We follow the notation convention in [15]. Scalars are de-noted by lowercase letters ( e.g. , a), column vectors by bold lowercase letters ( e.g. , a), and matrices by bold uppercase letters ( e.g. , A). A vector expressed in frame Fa is rotated to frame Fb using Rba ∈ SO(3) . The vector tba ∈ R3 denotes the position of the origin of frame Fa expressed in Fb. Measured quantities are indicated by a tilde ˜( · ). For state representation, we parameterize the continuous time body-to-world transfor-mation using cubic uniform B-splines. We set the body frame to the IMU frame ( FI ) and initialize the world frame to the 
+
+FI at t0. The trajectory is represented by a translational spline 
+
+p(t) ∈ R3 and a rotational spline R(t) ∈ SO(3) . Each spline is defined by a sequence of control points with uniform spacing 
+
+∆t. In our implementation, we set ∆t = 0 .02 s . We adopt the cumulative formulation of Sommer et al. [16], which enables the efficient computation of temporal derivatives [14]. The state is written as 
+
+x(t) ≜ R(t) p(t) bg ba
+
+ . (1) NOH et al. : TRAIL-ODOM: TIGHTLY COUPLED CONTINUOUS TIME RADAR-IMU-LIDAR ODOMETRY WITH ADAPTIVE DOPPLER WEIGHTING 3LiDAR Radar IMU  
+
+> Geometry Only Degeneracy Diagnosis
+> (Sec
+> Ⅲ-E)
+> Tightly Coupled Optimization
+> (Sec
+> Ⅲ-C)
+> Degeneracy-Aware Per-Point Radar Reweighting
+> (Sec
+> Ⅲ-F)
+> Degeneracy-Subspace LOS Coverage Check
+> (Sec
+> Ⅲ-F.1)
+> Calculate Per-Point Weight
+> (Sec
+> Ⅲ-F.2) Radar Gain Scheduling
+> (Sec
+> Ⅲ-G)
+> Radar-Inertial Initialization
+> (Sec
+> Ⅲ-D)
+> Velocity-based Radar Outlier Filtering
+> (Sec
+> Ⅲ-D.1)
+> Initial Pose Estimation
+> (Sec
+> Ⅲ-D.2)
+> Yes No No Yes
+
+Fig. 2: Overview of TRaIL-Odom . For each LiDAR scan, radar point clouds are filtered by velocity using the previous window esti-mate, followed by Radar-Inertial (RI) initialization. LiDAR geometry is then used to diagnose translational degeneracy and reweight radar Doppler constraints. The weighted residuals are jointly minimized in a tightly coupled optimization to estimate pose. 
+
+The gyroscope and accelerometer biases of the IMU are bg ∈
+
+R3 and ba ∈ R3 respectively. We assume that these biases remain constant over the duration of a single LiDAR scan. The gravity vector gG is initialized at startup from a short accelerometer average and kept fixed thereafter. 
+
+C. Tightly Coupled Optimization 
+
+State estimation is formulated as a single tightly coupled nonlinear least squares problem over a sliding window. The window spans one LiDAR scan and includes the IMU and radar measurements collected during the interval. The opti-mization variables consist of the active B-spline control points parameterizing R(t) and p(t), together with the IMU biases. The cost function and residual terms are defined as 
+
+F (x) = X
+
+> k∈I
+
+
+
+wω ∥rωk (tk )∥22 + wa ∥rak (tk )∥22
+
+
+
++ X
+
+> k∈R in
+
+w* 
+
+> R,k
+
+∥rRk (tk )∥22 + X
+
+> k∈L
+
+wL ∥rLk (tk )∥22
+
++ wp∥rp∥22,
+
+(2) 
+
+rLk (tk ) = n⊤ 
+
+> k
+
+(R(tk )RIL ˜pk + p(tk ) − qk ), (3) 
+
+rωk (tk ) = ω(tk ) + bg − ˜ωmk
+
+rak (tk ) = R(tk )⊤(¨ p(tk ) − gG) + ba − ˜amk , (4) 
+
+rRk (tk ) = − (˜ pRk )⊤
+
+˜pRk
+
+
+
+RIR
+
+⊤ 
+
+R(tk )⊤ ˙p(tk ) + ⌊ω(tk )⌋×tIR
+
+
+
+−˜vRmk
+
+(5) 
+
+where I, R, and L denote the IMU, radar Doppler, and LiDAR measurements in the window, respectively, rp is the marginal-ization prior from the previous window computed using the Schur complement, w∗ denotes the scalar weight for each residual term, ω(t) denotes the body angular velocity at time 
+
+t, and ⌊ · ⌋× denotes the skew-symmetric matrix operator. The radar Doppler weight w* 
+
+> R,k
+
+is the effective Doppler weight, defined in Sec. III-G. The residuals rωk ( · ), rak ( · ), rRk ( · ),and rLk ( · ) denote the IMU gyroscope, IMU accelerometer, radar Doppler, and LiDAR point-to-plane terms, where nk and 
+
+qk in (3) denote the unit normal and a reference point of the associated plane in the local map. In our implementation, the residual weights were empiri-cally selected as nominal residual-scaling coefficients for sta-ble optimization. A single global set was used across all re-ported experiments without sequence-specific tuning. Equation (2) defines the tightly coupled least-squares ob-jective. In degraded scenes, LiDAR geometric constraints can become weak or anisotropic along particular translational di-rections, making those directions poorly observable. Fixed weights alone cannot actively reinforce these LiDAR-weak directions, motivating the use of complementary sensing in-formation to support them. We therefore adaptively modulate the nominal radar Doppler weight through the per-point factor 
+
+αk and the scan-wise gain γ to complement LiDAR-diagnosed weak translational directions (Sec. III-F to III-G). 
+
+D. Radar-Inertial (RI) Initialization 
+
+The objective in (2) is solved iteratively and requires a reliable initialization for each window. We therefore use RI initialization to provide a velocity-consistent starting point for the joint optimization, which has shown stable behavior in prior work [17] even without LiDAR geometric information. 
+
+1) Velocity-based Radar Outlier Filtering: Radar measure-ments are prone to outliers arising from dynamic objects and multipath effects. Accordingly, radar measurements are first filtered prior to the RI optimization. Outliers are suppressed via velocity-based filtering using the ego velocity vRprior in the radar frame, predicted from the previous optimization window at the timestamp of its last radar measurements. Specifically, for each detection, the predicted radial component is computed by projecting vRprior onto the point LOS, and measurements whose radial velocities ˜vRmj deviate significantly from this prediction are discarded as follows: 
+
+Rin =
+
+n
+
+j ∈ R −˜vRmj − ˜lR⊤ 
+
+> j
+
+vRprior ≤ δv
+
+o
+
+. (6) 
+
+where ˜lRj ≜ ˜pRj /∥˜pRj ∥ is the unit LOS vector of radar point 
+
+˜pRj , and the velocity threshold δv is set to 0.3m /s.
+
+2) Initial Pose Estimation: The radar inliers Rin are used to form the radar Doppler residual set in (7) and are optimized jointly with the IMU residuals. The initial pose estimation problem is given as follows: 
+
+min 
+
+> x
+
+(X
+
+> k∈I
+
+
+
+wω ∥rωk (tk )∥22 +wa ∥rak (tk )∥22
+
+
+
++ X
+
+> k∈R in
+
+wR ∥rRk (tk )∥22
+
+)
+
+.
+
+(7) 4 IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. ACCEPTED AUGUST, 2026 High Weight, Align with , Low Weight, Unaligned              
+
+> Uncertainty Area
+> Fig. 3: In tunnel-like scenes, optimization uncertainty becomes anisotropic along weak translational directions (Red); per-point radar reweighting ( α) and adaptive gain scheduling ( γ) reduce this anisotropy (Yellow, Green).
+
+E. Geometry Only Degeneracy Diagnosis 
+
+Many LIO methods diagnose degeneracy using the eigenval-ues or condition number of the Hessian formed from LiDAR point-to-plane residuals [18, 19]. In continuous time B-spline LIO, however, this can be unreliable because LiDAR residuals with respect to control points are affected not only by scene geometry but also by spline basis coupling and knot place-ment [20]. As a result, control-point (CP)-space conditioning does not directly reflect geometric degeneracy, and interpreting it as such can lead to incorrect diagnoses. In this work, degeneracy diagnosis is restricted to trans-lation. Orientation is typically well constrained by high rate IMU gyroscope measurements, whereas translation is less di-rectly constrained because accelerometer measurements con-strain the second derivative of position rather than the first, and accelerometer errors, including bias and measurement noise, accumulate through double integration, leading to drift in the translational estimate [21]. Accordingly, instead of relying on the CP-space Hessian, we diagnose translational degeneracy using a scan-level 3 × 3 normal information matrix N , fol-lowing X-ICP [18]:     
+
+> N≜
+> MX
+> i=1
+> nin⊤
+> i∈R3×3,(8)
+
+where ni ∈ R3 denotes the unit normal vector of the i-th pla-nar feature identified in the scan. Planar features are extracted via local neighborhood plane fitting as in FAST-LIO2 [22], computed directly within the current scan. Although individ-ual scan-only normals may be noisy, aggregating many such normals provides a stable scan-level degeneracy indicator. Let the eigendecomposition of N be N = V ΛV ⊤, where 
+
+Λ = diag( λ1, λ 2, λ 3) with λ1 ≥ λ2 ≥ λ3 ≥ 0, and vk is the eigenvector of λk. We define the degeneracy subspace in the LiDAR frame by collecting eigen-directions whose eigenval-ues are small relative to the dominant one:          
+
+> Ud≜vkλk≤τ λ 1
+> ∈R3×d,(9)
+
+where τ ∈ [0 , 1] is a user-defined ratio threshold and d ∈{0, 1, 2} is the resulting subspace dimension, corresponding to weakly informative translational directions. In our experi-ments, we set τ = 0 .2.
+
+F. Degeneracy-Aware Per-Point Radar Reweighting 
+
+Radar Doppler measurements constrain the ego-velocity along each point’s LOS. When a sufficient number of points are available, these Doppler constraints can complement Li-DAR geometric constraints in segments where the LiDAR scan geometry is weak. Since each point contributes a rank-1 direc-tional constraint along its LOS, we apply per-point reweighting and assign larger weights to points whose LOS directions align with the LiDAR-diagnosed degeneracy subspace, rather than using uniform weights. The effect of per-point reweighting and gain scheduling is illustrated conceptually in Fig. 3. 
+
+1) Degeneracy Subspace LOS Coverage Check: As radar can support the LiDAR diagnosed weak subspace only if the current set of radar LOS directions provides sufficient cov-erage of the degeneracy subspace, a lightweight LOS cov-erage check is performed before applying degeneracy-aware reweighting. For each radar measurement j, define the unit LOS vector ˜lRj ∈ R3 and its projection onto the degeneracy subspace as         
+
+> zj=U⊤
+> dRLR˜lRj∈Rd.(10)
+
+Stacking these projected vectors yields the sensitivity matrix         
+
+> Z≜[z1, . . . , zq]∈Rd×q,(11)
+
+and the corresponding coverage matrix in the degeneracy sub-space is defined as        
+
+> M≜ZZ ⊤=
+> q
+> X
+> j=1
+> zjz⊤
+> j∈Rd×d.(12)
+
+By construction, M summarizes how well the current set of radar LOS directions excites the LiDAR-diagnosed degeneracy subspace. In our implementation, observability is checked us-ing a coverage test on M : for d = 1 , the subspace is accepted by default, whereas for d = 2 , it is regarded as observable only if cond( M ) < 30 . Otherwise, Doppler constraints are not considered sufficient to support all weak axes; therefore, degeneracy-aware reweighting is disabled for the current scan. To improve LOS coverage of the LiDAR diagnosed degener-acy subspace, the radar was mounted with a 20 ◦ downward tilt, similar to prior radar setups [23]. 
+
+2) Calculate Per-Point Weight: If M sufficiently excites the degeneracy subspace, a non-negative weight αj is com-puted for each radar point j. Denoting the radar frame ego-velocity implied by the state x at time tr as vR( · ), the radar Doppler residual for point j is expressed as 
+
+rRj (tr ) = −˜lR⊤ 
+
+> j
+
+y(x) − ˜vRmj , y ≜ vR(tr ; x) ∈ R3.
+
+(13) Applying first-order linearization to (13) yields    
+
+> δrRj≈ − ˜lR⊤
+> jδy.(14)
+
+Stacking all Doppler residuals results in δrR ≈ − Lδy, where 
+
+L ≜ [˜lR 
+
+> 1
+
+, . . . , ˜lRq ]⊤ ∈ Rq×3. With the diagonal weight matrix 
+
+W R(α) ≜ diag( wRα1, . . . , w Rαq ), the induced weighted least squares term in the cost is NOH et al. : TRAIL-ODOM: TIGHTLY COUPLED CONTINUOUS TIME RADAR-IMU-LIDAR ODOMETRY WITH ADAPTIVE DOPPLER WEIGHTING 5              
+
+> ∥δrR∥2
+> WR≜δrR⊤WR(α)δrR=δy⊤(L⊤WR(α)L)
+> |{z }
+> D(α)
+> δyD(α) =
+> q
+> X
+> j=1
+>  wRαj
+> ˜lRj˜lR⊤
+> j.
+> (15)
+
+Each point contributes a rank-1 term ˜lRj ˜lR⊤ 
+
+> j
+
+to the Doppler information matrix D(α). We set αj based on the alignment between the point LOS and the LiDAR diagnosed weak sub-space to increase Doppler information in U d. With the pro-jection vector zj in (10), the alignment score aj is defined as:         
+
+> aj≜∥zj∥2=z⊤
+> jzj,(16)
+
+and the per-point weights are given by an exponential function normalized to unit mean:          
+
+> αj=exp( η a j)
+> 1
+> q
+> Pqk=1 exp( η a k),η > 0,(17)
+
+where q denotes the number of radar points and η controls the distribution sharpness. This reweighting emphasizes points aligned with the degeneracy subspace while reducing the in-fluence of points along directions already constrained by the LiDAR scan. The value of η is selected empirically, and its effect is evaluated in the ablation study. 
+
+G. Radar Gain Scheduling 
+
+The per-point weights αj shape the directional distribution of the Doppler information but not its overall scale. Because the relative balance between weak and well-constrained trans-lational directions varies with the LiDAR scan geometry, we introduce a global gain γ to adjust the radar Doppler contri-bution per scan. To schedule γ, we use the sphericity measure 
+
+S(N ) of the LiDAR plane normal matrix N , computed per scan to summarize the imbalance of geometric constraints across translational directions:                     
+
+> S(N)≜
+>  det N1/313tr( N)=(λ1λ2λ3)1/313(λ1+λ2+λ3)
+> γ=g(S(N)) = 1 /max  S(N),10 −3(18)
+
+where λ1 ≥ λ2 ≥ λ3 are the eigenvalues of N . The sphericity 
+
+S(N ) approaches one for isotropic geometry and decreases as the information becomes concentrated in fewer directions. We then use a monotone mapping g( · ) so that γ increases as 
+
+S(N ) decreases, giving more weight to radar Doppler under anisotropic LiDAR geometry. After computing the Doppler weights {αj } and gain γ,state estimation is carried out by solving the tightly coupled nonlinear least squares problem in (2). In the radar Doppler term rRk ( · ), when degeneracy-aware reweighting is enabled (i.e. , the translation degeneracy check in Section III-E and LOS coverage check in Section III-F1 pass), the effective radar Doppler weight w* 
+
+> R,k
+
+in (2) is defined as      
+
+> w*
+> R,k ≜wRγ α k,(19)
+
+and otherwise set w* 
+
+> R,k
+
+≜ wR.IV. EXPERIMENT 
+
+A. Datasets and Evaluation Metric 
+
+We evaluate TRaIL-Odom against several state-of-the-art (SOTA) state estimation algorithms, including LiDAR-based methods: GenZ-ICP [13], FAST-LIO2 [22], 
+
+SuperOdom [24], DLIO [25], and RESPLE [26]; and radar-LiDAR fusion methods: DR-LRIO [2] and GaRLIO [1]. 
+
+Ours-LIO denotes the LiDAR-IMU-only variant of our framework. It retains the continuous-time B-spline trajectory representation and graph-based tightly coupled sliding-window optimization of LiDAR point-to-plane and IMU residuals, while disabling all radar-related components. 
+
+Datasets. We use two datasets with different geometric char-acteristics. The first is the GaRLILEO dataset [17], which contains well-constrained and semi-degenerate sequences in constructed indoor and outdoor environments. The second is our in-house dataset, collected with Boxi [27] to evaluate performance under optimization degeneracy; it consists of two sequences of different lengths in each of three environments. For the in-house dataset, the Boxi platform and environ-ments are shown in Fig. 4 and Fig. 1; all sequences were collected using the ANYmal robot. The dataset includes one radar, two LiDARs, ten RGB cameras, and seven IMUs. Ground truth was obtained with a Leica MS60 total station and GRZ101 360 ◦ Mini Prism. Intervals with unreliable prism tracking due to LOS loss were excluded from evaluation. Details are available on the dataset website 1. All methods use the Livox Mid-360 LiDAR, Honeywell HG4930 IMU, and D3 Embedded RS-1843AOPU mmWave radar. 
+
+Evaluation. Across both datasets, results are evaluated with the evo library [28] using the Absolute Trajectory Error (ATE) and Relative Translational Error (RTE) (over 1-meter seg-ments). Evaluation results are summarized in Table. I. 
+
+B. In-house Dataset 
+
+As shown in Table. I and Fig. 1, the LO baseline fails on all six sequences, and even SOTA LIO methods either diverge or exhibit large drift. An exception is Airfield* , where a vertical antenna and distant parked vehicles provide sparse but usable features, allowing several LiDAR-based methods to succeed. One notable observation is that DLIO does not exhibit large drift on four of the six in-house sequences and even attains the lowest ATE on Park2 . This is consistent with its observer-based design [25], which can prevent global drift, but under weak geometry the trajectory still shows local jitter, yielding an RTE about 3.4 × larger than that of Ours-RLIO . This highlights the need for additional radar constraints to improve local consistency in featureless environments. Radar-aided methods are the only approaches that succeed on all sequences and deliver consistently low errors. Ours-RLIO achieves the best RTE on five out of six sequences, and also attains the lowest ATE on BikeTunnel1/2 and Airfield1 .The only exception is Park2 , where GaRLIO achieves the lowest RTE but with a substantially larger ATE, whereas Ours-RLIO maintains both low RTE and a lower ATE. 
+
+> 1https://chiyunnoh.github.io/TRaIL-Odom/
+
+6 IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. ACCEPTED AUGUST, 2026 
+
+TABLE I: ATE (RMSE) [ m] / RTE (RMSE) [ m/m]. ( Bold : Best, Underline : Second-Best, × : fail)                                                                                                                                                                                    
+
+> GaRLILEO Dataset In-house Dataset Method Type Downstair CorriLoop BiCorridor SlopeStair Tunnel Overpass Quad BikeTunnel1 BikeTunnel2 Park1 Park2 Airfield1 Airfield2
+> 233 .75 m 208 .68 m 240 .82 m 273 .37 m 247 .94 m 169 .17 m 447 .83 m 360 .34 m 153 .84 m 159 .60 m 265 .17 m 198 .98 m 208 .65 m
+> GenZ-ICP LO 1.208 / 0.055 0.728 / 0.063 0.569 / 0.057 1.966 / 0.050 0.891 / 0.040 1.346 / 0.062 4.239 / 0.042 ××××××
+> FAST-LIO2 LIO 0.459 / 0.036 0.336 / 0.049 0.767 / 0.040 0.867 / 0.030 0.525 / 0.031 1.067 / 0.036 3.616 / 0.040 ×66.072 / 1.829 2.296 / 0.234 11.354 / 0.299 0.681 / 0.216 1.894 / 0.194
+> SuperOdom LIO 1.011 / 0.057 2.927 / 0.219 4.372 / 0.376 1.531 / 0.043 3.579 / 0.132 1.286 / 0.061 3.665 / 0.044 ××××××
+> DLIO LIO 0.887 / 0.059 0.284 / 0.064 ×0.694 / 0.065 0.791 / 0.055 0.954 / 0.067 3.464 / 0.062 ××1.008 / 0.162 1.219 / 0.159 0.627 / 0.141 0.942 / 0.139
+> RESPLE LIO 0.471 / 0.044 0.152 / 0.050 0.508 / 0.073 1.183 / 0.042 1.214 / 0.030 0.912 / 0.040 ×××××0.611 / 0.115 0.464 / 0.110
+> DR-LRIO RLIO 0.565 / 0.045 0.444 / 0.053 1.051 / 0.039 2.242 / 0.044 1.700 / 0.037 0.621 / 0.046 2.786 / 0.044 1.881 / 0.069 0.605 / 0.097 0.853 / 0.073 1.820 / 0.061 1.399 / 0.062 2.485 / 0.067
+> GaRLIO RLIO 0.225 / 0.147 0.223 / 0.055 ×5.040 / 0.745 0.506 / 0.117 ××2.507 / 0.097 1.558 / 0.250 0.423 / 0.035 4.602 / 0.039 0.773 / 0.028 0.580 / 0.025
+> Ours-LIO LIO 0.202 / 0.037 0.128 / 0.045 0.322 / 0.041 1.423 / 0.031 1.085 / 0.028 0.836 / 0.032 2.946 / 0.036 ×12.352 / 0.546 ××9.627 / 0.180 0.127 / 0.027
+> Ours-RLIO RLIO 0.213 / 0.035 0.139 / 0.044 0.279 /0.036 1.374 / 0.029 1.017 / 0.028 0.813 / 0.034 2.374 / 0.036 1.532 /0.050 0.485 /0.047 1.010 / 0.033 1.524 / 0.047 0.183 /0.026 0.142 / 0.024
+
+TABLE II: Performance change from adding radar. For each se-quence, the ATE and RTE ratios (RLIO/LIO) are reported; values < 1
+
+indicate improvement and values > 1 indicate degradation. ( Bold :Improvement) 
+
+Method Downstair CorriLoop BiCorridor SlopeStair 
+
+ATE RTE ATE RTE ATE RTE ATE RTE 
+
+DR-LRIO 0.978 1.216 2.337 0.981 3.515 0.975 2.276 1.257 
+
+Ours 1.054 0.946 1.086 0.978 0.866 0.878 0.966 0.935 
+
+Method Tunnel Overpass Quad Mean 
+
+ATE RTE ATE RTE ATE RTE ATE RTE 
+
+DR-LRIO 2.225 1.088 0.764 1.211 0.792 1.023 1.580 1.102 
+
+Ours 0.937 1.000 0.972 1.062 0.806 1.000 0.951 0.970 
+
+C. GaRLILEO Dataset 
+
+On the GaRLILEO dataset, we evaluate seven sequences. Since the dataset is semi-degenerate, most methods succeed on most sequences using sparse geometric features. However, se-quences such as BiCorridor and Quad start with narrow corri-dors and stair, which increase geometric degeneracy and cause several LiDAR-based methods to fail. In addition, GaRLIO 
+
+fails when its two-stage updates are affected by a high outlier ratio in sparse radar point clouds during sweep preprocessing. Notably, Ours-LIO shows competitive performance compared with existing LIO baselines. This is mainly due to its graph-based tightly coupled sliding-window LiDAR-IMU optimiza-tion with a continuous-time B-spline trajectory representation. The optimizer jointly refines active spline control points and IMU biases, while the marginalization prior preserves infor-mation from the previous window. Building on this LIO baseline, adding radar yields compara-ble or improved accuracy, as shown in Table. II. In particular, the radar-aided mode improves ATE on five out of seven sequences, with clear gains on BiCorridor and Quad . This suggests that direction-dependent radar weighting reinforces weakly observable directions without unnecessarily affecting well-constrained ones. The same trend appears in RTE: ours improves local accuracy on four sequences, is unchanged on two, and degrades only slightly on Overpass . In contrast, 
+
+DR-LRIO does not adaptively reallocate radar contribution, and adding radar degrades ATE by factors of 2.2-3.5 on Cor-riLoop , BiCorridor , SlopeStair , and Tunnel . It also degrades RTE on five out of seven sequences, resulting in a worse mean ratio of 1.102. 
+
+D. Degeneracy-Aware Behavior of Adaptive Radar Weighting 
+
+To better understand the proposed adaptive weighting, we analyze a representative CorriLoop sequence with repeated (b) (a) 
+
+radar 
+
+Boxi 
+
+Fig. 4: (a) Sensing platform; (b) In-house dataset scene ( Park* ). 5 m              
+
+> High Low
+> αmax = 1 .614, γ= 2 .052 αmax = 1 .783, γ= 1 .421 αmax = 1 .000, γ= 1 .000
+> 050 100 150 200
+
+t (s) 12
+
+> γ
+
+①
+
+② ③① ② ③
+
+1st Loop 2nd Loop 
+
+A
+
+BC
+
+DA B C D
+
+Colored by γ
+
+Colored by radar weight ( γα )(a) (b) 
+
+Fig. 5: Adaptive radar weighting on the CorriLoop sequence. (a) Radar measurements colored by the effective weight ( α & γ) at three representative locations. (b) Trajectory colored by the scan-wise gain ( γ) on the ground-truth map, along with its temporal evolution. A–D denote corridor segments, and ➀-➂ mark the locations of the examples in (a). 
+
+transitions between geometrically informative and degenerate regions. As shown in Fig. 5, the scan-wise gain γ increases in corridor segments where LiDAR geometry is weak, while remaining close to unity in more informative regions such as corners. Meanwhile, the per-point factor α exhibits a non-uniform spatial distribution, assigning larger effective weights to radar measurements that better support weakly observable NOH et al. : TRAIL-ODOM: TIGHTLY COUPLED CONTINUOUS TIME RADAR-IMU-LIDAR ODOMETRY WITH ADAPTIVE DOPPLER WEIGHTING 7
+
+TABLE III: Ablation study on system components. Bold is the best.                                       
+
+> Weighting BikeTunnel1 Park1 Airfield1
+> αγATE RTE ATE RTE ATE RTE
+> ✗✗6.957 0.288 7.792 0.144 4.670 0.075
+> ✓✗3.959 0.128 2.993 0.079 3.478 0.073
+> ✗✓2.686 0.074 0.802 0.036 0.231 0.034
+> ✓✓1.532 0.050 1.010 0.033 0.183 0.026
+
+TABLE IV: Effect of η on BikeTunnel2 . Bold is the best.                                       
+
+> η0.0 0.5 1.25 1.75 234ATE 4.214 1.081 0.868 0.638 0.485 0.386 0.650 RTE 0.210 0.073 0.061 0.051 0.047 0.050 0.062 RTE max 0.563 0.222 0.205 0.163 0.154 0.227 0.405 0100 200 300 400
+> t(s)
+> 0.00.51.01.52.0
+> RTE (m)
+> No Reweight αγα&γ
+
+Fig. 6: RTE over time on BikeTunnel1 . RTE is plotted for four variants: no reweighting, α only (per-point reweighting), γ only (adaptive gain), and α & γ (full method). 
+
+motion directions. Moreover, the temporal profile of γ remains similar across repeated traversals of the same corridor segments. In particu-lar, the first and second loops show consistent increases and decreases of γ over corresponding regions, suggesting that the adaptation is primarily driven by scene geometry. This repeata-bility supports the interpretation that γ captures environment-dependent degeneracy in a stable manner. 
+
+E. Ablation Study 1) Effect on each module: Table III shows that the two weighting modules (Section III-F and Section III-G) play dif-ferent roles. With only radar gain scheduling enabled ( γ), both ATE and RTE decrease relative to the fixed-weight baseline on all sequences, indicating that increasing the overall radar Doppler contribution under anisotropic LiDAR geometry is ef-fective. With only per-point reweighting enabled ( α), ATE and RTE also improve, but more selectively across sequences. This is consistent with the role of α as a directional redistribution mechanism: it reallocates Doppler information across transla-tional directions but does not increase its overall strength. When both modules are enabled, RTE is further reduced on all sequences compared to using either module alone, in-dicating that α allocates the additional curvature introduced by γ toward weak directions more effectively, which yields larger improvements. For ATE, the combined setting improves 
+
+BikeTunnel1 and Airfield1 , while Park1 shows a lower ATE with γ only. Overall, γ controls when radar Doppler should contribute more, and α controls where that contribution is directed. This is also visible in Fig. 6 and Fig. 7. In Fig. 6, 
+
+TABLE V: Average per-frame runtime of each pipeline compo-nent. All values are reported in milliseconds. Reweight refers to §III-E, §III-F, and §III-G; Optim. refers to §III-C.                                       
+
+> Sequence RI-Init Reweight Optim. Mapping Total
+> BikeTunnel1 4.64 0.93 40.72 0.39 46.68
+> Park1 4.46 1.65 51.34 0.84 58.29
+> BiCorridor 5.04 1.67 44.43 0.49 51.63
+> Overpass 4.38 2.95 42.08 1.25 50.67 −20 −15 −10 −50510 15 20
+> x(m) 0510
+> y (m)
+> Reference No Reweight α&γ
+
+Fig. 7: Return-to-start translation drift on BikeTunnel2 . Compar-ison between fixed-weight fusion (Red) and the full method (Blue, 
+
+α & γ). The full method reduces the return-to-start drift from 
+
+10 .48 m to 0.14 m 
+
+the fixed-weight baseline shows four pronounced RTE peaks caused by geometric degeneracy. These peaks are reduced with α, indicating that directional redistribution helps but is insufficient on its own. Using only γ suppresses peaks more effectively by increasing the overall radar information strength under weak LiDAR geometry, while the full method ( α + γ)yields the most stable estimate throughout the sequence. Fig. 7 further illustrates this effect through the return-to-start drift. The fixed-weight result shows a drift of 10.48 m, whereas the full method reduces it to only 0.14 m, demonstrating a substantial improvement in performance. 
+
+2) Effect on η parameter: Table IV evaluates the sensitiv-ity of the per-point radar reweighting in (17) to the sharp-ness parameter η on BikeTunnel2 . Recall that η controls how strongly the weights {αj } concentrate on radar points whose LOS directions align better with the LiDAR diagnosed weak subspace. When η = 0 , reweighting is disabled, and all points contribute uniformly. As η increases from 0, ATE, RTE, and RTE max generally decrease, indicating that allocating radar Doppler information toward the weak directions improves both global and local accuracy. However, when η becomes too large, performance degrades. This is consistent with weights becoming overly concentrated on a small subset of points, thereby increasing sensitivity to remaining outliers. Given this insight, the lowest ATE is obtained at η = 3 , while RTE and RTE max attain their minimum at η = 2 . Based on the relative error metrics, we use η = 2 in our algorithm. 
+
+F. Runtime Analysis 
+
+Table V reports the average per-frame runtime of each component, including its required preprocessing time, such as LiDAR feature extraction and scan-to-map association in “Optim.” and normal estimation in “Reweight”. Experiments were conducted on an Intel Core i9-14900HX CPU with 64 GB of RAM. The joint optimization dominates the computa-8 IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. ACCEPTED AUGUST, 2026 
+
+tional cost, requiring about 40 − 51 ms per LiDAR scan, while the proposed degeneracy-aware reweighting modules introduce only a small additional overhead of 0.93 − 2.95 ms . Across all evaluated sequences, the total runtime remains below 100 ms 
+
+per scan, satisfying the real-time requirement for our 10 Hz 
+
+LiDAR setup. V. C ONCLUSION 
+
+In this paper, we presented TRaIL-Odom, a tightly coupled Radar-IMU-LiDAR optimization framework based on contin-uous time B-splines for resilient state estimation across di-verse environments. TRaIL-Odom modulates the contribution of radar Doppler constraints according to LiDAR geometric observability, reweighting Doppler residuals both per measure-ment and per scan. Experimental results demonstrate robust performance in geometrically well- and ill-constrained scenes. In particular, enabling radar typically yields comparable or im-proved accuracy, showing that direction-dependent reweight-ing reinforces weakly observable directions without unnec-essarily increasing radar influence along well-constrained di-rections. Ablation further confirms the benefit of the two weighting modules, reducing mean ATE and RTE by 86.0% and 78.5% over the fixed-weight baseline. Future work will focus on integrating more complete covariance propagation and joint observability analysis of scene geometry, kinematic measurements, and sensor-specific uncertainty within the pro-posed adaptive weighting framework. REFERENCES 
+
+[1] C. Noh, W. Yang, M. Jung, S. Jung, and A. Kim, “GaRLIO: Gravity enhanced Radar-LiDAR-Inertial Odometry ,” in Proc. IEEE Intl. Conf. on Robot. and Automat. , Atlanta, May. 2025. [2] M. Nissov, N. Khedekar, and K. Alexis, “Degradation Resilient LiDAR-Radar-Inertial Odometry,” in Proc. IEEE Intl. Conf. on Robot. and Automat. , 2024, pp. 8587–8594. [3] M. Nissov, J. A. Edlund, P. Spieler, C. Padgett, K. Alexis, and S. Khattak, “Robust High-Speed State Estimation for Off-Road Navigation Using Radar Velocity Factors,” IEEE Robot. and Automat. Lett. , vol. 9, no. 12, pp. 11 146–11 153, 2024. [4] J. Hatleskog, M. Nissov, and K. Alexis, “IMU-Preintegrated Radar Factors for Asynchronous Radar-LiDAR-Inertial SLAM,” in Proc. IEEE Int. Conf. on Adv. Robot. , 2025, pp. 725–732. [5] S. Zhao, S. Zhou, Y. Zhang, J. Zhang, C. Wang, W. Wang, and S. Scherer, “Resilient odometry via hierarchical adaptation,” Sci. Robot. , vol. 10, no. 109, p. eadv1818, 2025. [6] T. Tuna, J. Nubert, P. Pfreundschuh, C. Cadena, S. Khattak, and M. Hutter, “Informed, Constrained, Aligned: A Field Analysis on Degeneracy-Aware Point Cloud Registration in the Wild,” 
+
+IEEE Trans. Robot. , vol. 2, pp. 485–515, 2025. [7] C. Qian, Y. Xu, X. Shi, J. Chen, and L. Li, “AF-RLIO: Adaptive Fusion of Radar-LiDAR-Inertial Information for Robust Odom-etry in Challenging Environments,” in Proc. IEEE Intl. Conf. on Robot. and Automat. IEEE, 2025, pp. 1–7. [8] P. Pfreundschuh, H. Oleynikova, C. Cadena, R. Siegwart, and O. Andersson, “COIN-LIO: Complementary Intensity-Augmented LiDAR Inertial Odometry,” in Proc. IEEE Intl. Conf. on Robot. and Automat. , 2024, pp. 1730–1737. [9] N. Khedekar and K. Alexis, “PG-LIO: Photometric-Geometric fusion for Robust LiDAR-Inertial Odometry,” arXiv preprint arXiv:2506.18583 , 2025. [10] C. Zheng, W. Xu, Z. Zou, T. Hua, C. Yuan, D. He, B. Zhou, Z. Liu, J. Lin, F. Zhu et al. , “FAST-LIVO2: Fast, Direct Li-DAR–Inertial–Visual Odometry,” IEEE Trans. Robot. , vol. 41, pp. 326–346, 2024. [11] Y. Du, J.-C. Peng, and P. A. Vela, “Good Weights: Proactive, Adaptive Dead Reckoning Fusion for Continuous and Robust Visual SLAM,” arXiv preprint arXiv:2509.22910 , 2025. [12] S. Yun, J. Shin, J. Cha, and A. Kim, “The More the Better? Confidence-Driven Residual Weighting and Depth Fusion for Multi-RGB-D Inertial Odometry,” IEEE Robot. and Automat. Lett. , 2025. [13] D. Lee, H. Lim, and S. Han, “GenZ-ICP: Generalizable and degeneracy-robust LiDAR odometry using an adaptive weight-ing,” IEEE Robot. and Automat. Lett. , vol. 10, no. 1, pp. 152– 159, 2024. [14] W. Talbot, J. Nubert, T. Tuna, C. Cadena, F. D¨ umbgen, J. Torde-sillas, T. D. Barfoot, and M. Hutter, “Continuous-time state estimation methods in robotics: A survey,” IEEE Trans. Robot. ,2025. [15] L. Carlone, A. Kim, T. Barfoot, D. Cremers, and F. Dellaert, Eds., SLAM Handbook. From Localization and Mapping to Spatial Intelligence . Cambridge University Press, 2026. [16] C. Sommer, V. Usenko, D. Schubert, N. Demmel, and D. Cre-mers, “Efficient derivative computation for cumulative b-splines on lie groups,” in Proc. IEEE Conf. on Comput. Vision and Pattern Recog. , 2020, pp. 11 148–11 156. [17] C. Noh, S. Jung, H. Kim, Y. Hu, L. Herlant, and A. Kim, “Garlileo: Gravity-aligned radar-leg-inertial enhanced odome-try,” The International Journal of Robotics Research , 2026. [18] T. Tuna, J. Nubert, Y. Nava, S. Khattak, and M. Hutter, “X-ICP: Localizability-Aware LiDAR Registration for Robust Localiza-tion in Extreme Environments,” IEEE Trans. Robot. , vol. 40, pp. 452–471, 2024. [19] S. Zhao, H. Zhu, Y. Gao, B. Kim, Y. Qiu, A. M. Johnson, and S. Scherer, “SuperLoc: The Key to Robust Lidar-Inertial Localization Lies in Predicting Alignment Risks,” in Proc. IEEE Intl. Conf. on Robot. and Automat. , 2025, pp. 14 080–14 086. [20] J. Quenzel and S. Behnke, “LIO-MARS: Non-uniform Continuous-time Trajectories for Real-time LiDAR-Inertial-Odometry,” arXiv preprint arXiv:2511.13985 , 2025. [21] H. V. Do, Y. H. Kim, J. H. Lee, M. H. Lee, and J. W. Song, “Dero: Dead reckoning based on radar odometry with accelerometers aided for robot localization,” in Proc. IEEE/RSJ Intl. Conf. on Intell. Robots and Sys. IEEE, 2024, pp. 8547– 8554. [22] W. Xu, Y. Cai, D. He, J. Lin, and F. Zhang, “FAST-LIO2: Fast Direct LiDAR-Inertial Odometry,” IEEE Trans. Robot. , vol. 38, no. 4, pp. 2053–2073, 2022. [23] M. Kulkarni, M. Dharmadhikari, N. Khedekar, M. Nissov, M. Singh, P. Weiss, and K. Alexis, “UniPilot: Enabling GPS-Denied Autonomy Across Embodiments,” in Proc. IEEE Int. Conf. on Adv. Robot. IEEE, 2025, pp. 456–463. [24] S. Zhao, H. Zhang, P. Wang, L. Nogueira, and S. Scherer, “Super odometry: IMU-centric LiDAR-visual-inertial estimator for challenging environments,” in Proc. IEEE/RSJ Intl. Conf. on Intell. Robots and Sys. IEEE, 2021, pp. 8729–8736. [25] K. Chen, R. Nemiroff, and B. T. Lopez, “Direct LiDAR-Inertial Odometry: Lightweight LIO with Continuous-Time Motion Correction,” in Proc. IEEE Intl. Conf. on Robot. and Automat. ,2023, pp. 3983–3989. [26] Z. Cao, W. Talbot, and K. Li, “RESPLE: Recursive spline esti-mation for LiDAR-based odometry,” IEEE Robot. and Automat. Lett. , 2025. [27] J. Frey, T. Tuna, L. F. T. Fu, C. Weibel, K. Patterson, B. Krum-menacher, M. M¨ uller, J. Nubert, M. Fallon, C. Cadena, and M. Hutter, “Boxi: Design Decisions in the Context of Algorith-mic Performance for Robotics,” in Proc. Robot.: Science & Sys. Conf. , Los Angeles, United States, July 2025. [28] M. Grupp, “evo: Python package for the evaluation of odometry and SLAM.” https://github.com/MichaelGrupp/evo, 2017.
