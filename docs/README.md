@@ -41,17 +41,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-09-04</span>
+      <span class="dpr-home-dashboard-kicker">2026-09-05</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 15 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 14 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
     <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>9</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>7</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>7</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-09-04 22:37:53 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-09-05 21:35:00 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,7 +62,9 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日精读6篇、速读9篇共15篇论文，焦点集中在机器人导航与自主探索的前沿方法上。最值得关注的是《Hydra》提出的离散潜在规划+连续流匹配执行世界模型，以及《Obstacle-Aware》针对户外机器人的障碍感知覆盖导航方案。建议普通读者优先追踪这两项工作，它们分别代表了导航智能决策与真实环境鲁棒性的关键突破。</p>
+<p>今日聚焦自主导航前沿：水下洞穴VLM导航与认知图场记忆导航并列最高分9.0。</p>
+<p>最值得精读《CAVE-NAV》与《CGFM-Nav》，前者攻克水下洞穴3D导航，后者实现语义引导的终身多模态具身导航。</p>
+<p>后续可延伸阅读语义引导探索、跨平台视觉导航及动态本体语义建图等8分工作。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -71,12 +73,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">6 篇</strong>
+    <strong class="dpr-home-dashboard-count">7 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Hydra: A Navigation World Action Model with Discrete Latent Planning and Continuous Flow-Matching Execution">Hydra: A Navigation World Action Model with Discrete Latent Planning and Continuous Flow-Matching Execution</span></li><li><span class="dpr-home-dashboard-paper-title" title="Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots">Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots</span></li><li><span class="dpr-home-dashboard-paper-title" title="Local Path Planning and Obstacle Avoidance for an Omnicopter Platform">Local Path Planning and Obstacle Avoidance for an Omnicopter Platform</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="CAVE-NAV: VLM-Based Autonomous 3D Navigation in Underwater Cave Environments">CAVE-NAV: VLM-Based Autonomous 3D Navigation in Underwater Cave Environments</span></li><li><span class="dpr-home-dashboard-paper-title" title="CGFM-Nav: Cognitive Graph-Field Memory for Semantic-Guided Lifelong Multimodal Embodied Navigation">CGFM-Nav: Cognitive Graph-Field Memory for Semantic-Guided Lifelong Multimodal Embodied Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="LightNav-0: Eliciting VLM Spatial Intelligence for Generalist Embodied Navigation">LightNav-0: Eliciting VLM Spatial Intelligence for Generalist Embodied Navigation</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>3</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>3</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>7</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -84,12 +86,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">速读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">9 篇</strong>
+    <strong class="dpr-home-dashboard-count">7 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="STEGNav: Spatio-Temporal Event Graph Reasoning for Multimodal Lifelong Object Navigation">STEGNav: Spatio-Temporal Event Graph Reasoning for Multimodal Lifelong Object Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="SGE: Semantically-Guided Exploration for Unstructured Environments via Image-Space Waypoint Sampling">SGE: Semantically-Guided Exploration for Unstructured Environments via Image-Space Waypoint Sampling</span></li><li><span class="dpr-home-dashboard-paper-title" title="RoughSense: Lightweight Terrain-Induced Rover Vibration Prediction Using Point Clouds and IMU Feedback">RoughSense: Lightweight Terrain-Induced Rover Vibration Prediction Using Point Clouds and IMU Feedback</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="SGE: Semantically-Guided Exploration for Unstructured Environments via Image-Space Waypoint Sampling">SGE: Semantically-Guided Exploration for Unstructured Environments via Image-Space Waypoint Sampling</span></li><li><span class="dpr-home-dashboard-paper-title" title="CanonNav: Disentangling Navigation Behavior from Camera Geometry in Cross-Platform Visual Navigation">CanonNav: Disentangling Navigation Behavior from Camera Geometry in Cross-Platform Visual Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="A hybrid pipeline for dynamic ontology-based semantic mapping">A hybrid pipeline for dynamic ontology-based semantic mapping</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>5</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>4</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>4</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>3</strong></span></div>
 </section>
 </div>
 
