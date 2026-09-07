@@ -1,0 +1,702 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-09-07T22:10:36.298924+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 13,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 13,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2608.30935v1",
+      "source": "arxiv",
+      "title": "LightNav-0: Eliciting VLM Spatial Intelligence for Generalist Embodied Navigation",
+      "abstract": "Embodied navigation requires agents to translate heterogeneous goals and visual observations into actions across tasks, environments, and robot embodiments. Modern vision-language models (VLMs) already encode spatial priors for visual grounding, spatial reasoning, and pointing, but these capabilities are rarely elicited directly for robot control. Existing navigation systems instead rely on task- or embodiment-specific components, fragmenting perception, reasoning, and action while offering limited generalization. Here we present LightNav-0, a compact generalist embodied navigation model that elicits the spatial intelligence of a pretrained VLM and aligns it with navigation, without task-specific prediction heads. LightNav-0 represents diverse navigation tasks through a unified token interface: dual-channel pointing expresses task-, scene-, and embodiment-agnostic spatial intent, while a residual vector-quantized action tokenizer maps this intent to precise, embodiment-specific trajectories. Together with temporally aware visual history compression, ER mid-training, supervised fine-tuning, and reinforcement learning, this formulation supports instruction following, open-vocabulary object navigation, and visual tracking within a single model. The navigation training corpus spans 2K+ scenes and 4K+ hours of embodied navigation data. LightNav-ER, the embodied-reasoning checkpoint used to initialize LightNav-0, attains the highest complete-set average across 8 embodied-reasoning benchmarks, while LightNav-0 achieves state-of-the-art monocular success rates across all 10 public navigation simulation settings. Real-world evaluations further demonstrate zero-shot generalization across robot embodiments, diverse scenes, and static and dynamic targets. These results establish compact VLMs as a unified and transferable backbone for generalist embodied navigation.",
+      "authors": [
+        "Shaoan Wang",
+        "Aocheng Luo",
+        "Fei Huang",
+        "Jingyi Xu",
+        "Xiaoyang Wang",
+        "Yueyu Wang",
+        "Qianli Ma",
+        "Fan Yang",
+        "Ran Mei",
+        "Jia Wei",
+        "Jiangpeng Hu",
+        "Xuhao Liu",
+        "Hongming Chen",
+        "Yuanbin Shao",
+        "Yiyang Lin",
+        "Ziliang Li",
+        "Liang Pan",
+        "Xinhang Liu",
+        "Yuntao Ma",
+        "Tingxiang Fan"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "published": "2026-08-31T15:08:53+00:00",
+      "link": "https://arxiv.org/pdf/2608.30935v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "A generalist embodied navigation model that aligns pretrained VLM spatial intelligence directly to actions, central to visual and autonomous robot navigation",
+      "llm_evidence_cn": "将预训练视觉语言模型空间智能直接对齐到导航动作，面向通用视觉导航与自主导航",
+      "llm_evidence": "将预训练视觉语言模型空间智能直接对齐到导航动作，面向通用视觉导航与自主导航",
+      "canonical_evidence": "将预训练视觉语言模型空间智能直接对齐到导航动作，面向通用视觉导航与自主导航",
+      "llm_tldr_en": "LightNav-0 is a compact generalist embodied navigation model that draws on pretrained vision-language spatial priors and maps heterogeneous goals and observations directly to actions, removing task-specific prediction heads for cross-task, cross-environment, cross-embodiment navigation.",
+      "llm_tldr_cn": "针对现有导航系统依赖任务或形态特定组件、割裂感知与行动的局限，LightNav-0直接激发预训练视觉语言模型的空间智能并把它与导航动作对齐，不设任务专用预测头。该模型能将异构导航目标和视觉观测映射为动作，在任务、环境和机器人本体之间泛化。实验显示其可作为紧凑的通用具身导航模型，为通用机器人导航提供去碎片化的新范式。",
+      "llm_tldr": "针对现有导航系统依赖任务或形态特定组件、割裂感知与行动的局限，LightNav-0直接激发预训练视觉语言模型的空间智能并把它与导航动作对齐，不设任务专用预测头。该模型能将异构导航目标和视觉观测映射为动作，在任务、环境和机器人本体之间泛化。实验显示其可作为紧凑的通用具身导航模型，为通用机器人导航提供去碎片化的新范式。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.01384v1",
+      "source": "arxiv",
+      "title": "Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots",
+      "abstract": "Long-duration outdoor coverage with autonomous platforms remains challenging beyond classical planning: deployments face localization drift in open spaces, obstacles in cluttered sites, controller feasibility in turn-heavy maneuvers, and persistent autonomy with energy management. We propose a unified ROS 2 architecture for outdoor coverage that combines coverage planning, robust localization, and Nav2-based execution. A dual-antenna RTK-GNSS fused in an EKF keeps the robot pose, both position and heading, accurate across long missions; three controller-aware refinements are added to a mature coverage planner; a Behavior-Tree mission manager coordinates multi-goal execution, layered recovery, cost-aware goal management, and autonomous docking for return-to-charge. We validate the stack through simulation and real-world trials across multiple outdoor areas with varying geometries and obstacle densities. Overall, these results show that the proposed stack can reliably complete outdoor coverage missions across varied areas, sweeping 93.1% to 96.1% of the planned coverage area.",
+      "authors": [
+        "Leonardo Gargani",
+        "Matteo Frosi",
+        "Matteo Matteucci"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-01T15:15:45+00:00",
+      "link": "https://arxiv.org/pdf/2609.01384v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "autonomous outdoor robot navigation with obstacle-aware coverage planning",
+      "llm_evidence_cn": "室外自主导航与障碍感知覆盖规划",
+      "llm_evidence": "室外自主导航与障碍感知覆盖规划",
+      "canonical_evidence": "室外自主导航与障碍感知覆盖规划",
+      "llm_tldr_en": "The paper presents a ROS2 architecture for long-duration outdoor coverage navigation, integrating coverage planning, RTK-GNSS EKF localization, Nav2 execution, controller-aware planner refinements, and behavior-tree mission management for charging and recovery.",
+      "llm_tldr_cn": "针对长时间室外覆盖任务中定位漂移、杂乱障碍、转弯机动可行性和能量管理等问题，提出统一的ROS2架构，将覆盖规划、RTK-GNSS/EKF鲁棒定位与Nav2执行相结合。在成熟覆盖规划器中加入三类控制器感知改进，并通过行为树管理器协调多目标执行、分层恢复和自主对接充电。实验表明系统能在长任务中保持位姿精度，提升覆盖效率与持续作业能力，为室外自主机器人提供可复用的导航框架。",
+      "llm_tldr": "针对长时间室外覆盖任务中定位漂移、杂乱障碍、转弯机动可行性和能量管理等问题，提出统一的ROS2架构，将覆盖规划、RTK-GNSS/EKF鲁棒定位与Nav2执行相结合。在成熟覆盖规划器中加入三类控制器感知改进，并通过行为树管理器协调多目标执行、分层恢复和自主对接充电。实验表明系统能在长任务中保持位姿精度，提升覆盖效率与持续作业能力，为室外自主机器人提供可复用的导航框架。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.03630v1",
+      "source": "arxiv",
+      "title": "Local Path Planning and Obstacle Avoidance for an Omnicopter Platform",
+      "abstract": "Autonomous unmanned aerial vehicles (UAVs) increasingly operate in cluttered environments where global planners such as RRT* are not directly deployable at control rates. This paper presents a real-time local planning and obstacle avoidance module for an omnidirectional multirotor (omnicopter) by extending the Dynamic Window Approach to six degrees of freedom (6D-DWA). Our method achieves real-time feasibility through (i) local-map voxelisation, (ii) a compact sphere-based approximation of the vehicle geometry, and (iii) adaptive velocity sampling in the 6D search space. To improve reactivity to unknown obstacles, we introduce a context-aware \"Agile Mode\" that adjusts scoring weights online to trade-off between goal progress, clearance, and heading/facing constraints during evasive manoeuvres. We evaluate our approach in simulation across computational stress tests, dense-waypoint path tracking, and static/unknown obstacle scenarios. Our planner runs consistently within a 0.2s control loop, tracks waypoint-dense global paths with < 0.1m average cross-track error and 13deg average heading error, and avoids collisions in static environments. For unknown obstacle avoidance, Agile Mode achieves 79.3% success for an off-centre obstacle and 41.4% for a centred obstacle, highlighting both the effectiveness of adaptive weighting and remaining limitations in highly constrained geometries.",
+      "authors": [
+        "Mikolaj Helinski",
+        "Spilios Theodoulis",
+        "Mahmoud Hamandi",
+        "Abdullah Mohamed Ali",
+        "Anthony Tzes",
+        "Marija Popovic"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-03T10:25:14+00:00",
+      "link": "https://arxiv.org/pdf/2609.03630v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "real-time local path planning and obstacle avoidance for UAV",
+      "llm_evidence_cn": "UAV实时局部路径规划与避障",
+      "llm_evidence": "UAV实时局部路径规划与避障",
+      "canonical_evidence": "UAV实时局部路径规划与避障",
+      "llm_tldr_en": "This paper presents a real-time local planning and obstacle avoidance module for an omnidirectional multirotor by extending DWA to six degrees of freedom, using voxel maps, sphere vehicle approximation, and adaptive velocity sampling, plus an agile mode to handle unknown obstacles.",
+      "llm_tldr_cn": "针对全局规划器难以在杂乱环境中以控制频率部署的问题，该文提出一种面向全向多旋翼的实时局部规划与避障模块。将动态窗口法扩展到六自由度，通过局部地图体素化、载体球体近似和自适应速度采样实现实时计算，并引入情境感知敏捷模式调节得分权重以应对未知障碍。实验表明该方法能在实时性约束下有效平衡目标进展、安全距离与航行朝向，为六自由度无人机避障提供了实用的本地规划方案。",
+      "llm_tldr": "针对全局规划器难以在杂乱环境中以控制频率部署的问题，该文提出一种面向全向多旋翼的实时局部规划与避障模块。将动态窗口法扩展到六自由度，通过局部地图体素化、载体球体近似和自适应速度采样实现实时计算，并引入情境感知敏捷模式调节得分权重以应对未知障碍。实验表明该方法能在实时性约束下有效平衡目标进展、安全距离与航行朝向，为六自由度无人机避障提供了实用的本地规划方案。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.03984v1",
+      "source": "arxiv",
+      "title": "MulDP: Multimodal Diffusion Policy for Autonomous Quadruped Parkour Navigation across Complex Terrains",
+      "abstract": "Quadruped robots have demonstrated impressive agility in parkour locomotion across complex terrains. However, most systems still rely on human intervention for high-level planning, and autonomous parkour navigation remains underexplored. The key challenges include fine-grained velocity regulation, long-horizon anticipatory behaviors, and tight coupling between perception and embodied execution. To address these challenges, we propose a Multimodal Diffusion Policy (MulDP) that integrates visual perception with robot proprioception and goal information to generate temporally coherent and anticipatory navigation velocity commands, tightly coupling perception with embodied control to enable robust autonomous navigation. To support the training of MulDP, we construct the first Quadruped Parkour Navigation Dataset (QPND), a multimodal dataset that encompasses diverse navigation behaviors and complex terrains. Extensive simulation and real-world experiments demonstrate that MulDP enables robust long-horizon autonomous navigation and effective traversal across complex terrains.",
+      "authors": [
+        "Kangmai Hu",
+        "Yueqi Zhang",
+        "Peng Zhai",
+        "Xiaoyi Wei",
+        "Jiabin Hu",
+        "Zhixiang Liu",
+        "Quancheng Qian",
+        "Lihua Zhang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-03T15:19:17+00:00",
+      "link": "https://arxiv.org/pdf/2609.03984v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Tackles autonomous parkour navigation for quadruped robots, integrating visual perception with proprioception to generate navigation velocity commands.",
+      "llm_evidence_cn": "面向四足机器人自主跑酷导航，结合视觉感知与本体感受生成导航速度指令。",
+      "llm_evidence": "面向四足机器人自主跑酷导航，结合视觉感知与本体感受生成导航速度指令。",
+      "canonical_evidence": "面向四足机器人自主跑酷导航，结合视觉感知与本体感受生成导航速度指令。",
+      "llm_tldr_en": "MulDP introduces a multimodal diffusion policy that integrates visual perception, robot proprioception, and goals to generate temporally coherent navigation velocity commands, reducing human intervention and enabling robust autonomous quadruped parkour navigation across complex terrains.",
+      "llm_tldr_cn": "四足机器人已能完成复杂的跑酷动作，但高级规划仍依赖人工干预，自主导航尚未充分探索。本文提出多模态扩散策略MulDP，融合视觉感知、机器人体感和目标信息，生成时间连贯且具前瞻性的导航速度指令，实现感知与运动控制的紧耦合。实验表明该系统能驱动四足机器人在复杂地形上完成自主跑酷导航，减少人为监督，为自主机器人在未知环境中的导航提供了新方案。",
+      "llm_tldr": "四足机器人已能完成复杂的跑酷动作，但高级规划仍依赖人工干预，自主导航尚未充分探索。本文提出多模态扩散策略MulDP，融合视觉感知、机器人体感和目标信息，生成时间连贯且具前瞻性的导航速度指令，实现感知与运动控制的紧耦合。实验表明该系统能驱动四足机器人在复杂地形上完成自主跑酷导航，减少人为监督，为自主机器人在未知环境中的导航提供了新方案。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.05210v1",
+      "source": "arxiv",
+      "title": "BLASt3R: Bundle Adjustment of Any Image Set with Multi-View Matching and Monocular Priors",
+      "abstract": "Recent hybrid Structure-from-Motion (SfM) systems combine the robustness of feed-forward 3D reconstruction with the accuracy of traditional bundle adjustment (BA) with pixel matching. They are usually the best performing methods however their scalability and usability remains limited since estimating dense correspondences between views is prohibitively costly, especially considering time constraints inherent to online applications like Visual SLAM (VSLAM). In this paper, we introduce a regularized BA framework that leverages a fast multi-view matcher and monocular priors for initialization and regularization. In contrast to existing systems, our unified approach seamlessly supports both online VSLAM and offline reconstruction from unordered image collections within the same optimization framework and sharing common hyperparameters for all tasks. Extensive experiments across both domains demonstrate improved performance and speed tradeoffs over traditional, feed-forward, and hybrid baselines. Notably for VSLAM, our uncalibrated method outperforms all previous calibrated approaches.",
+      "authors": [
+        "Vincent Leroy",
+        "Philippe Weinzaepfel",
+        "Lojze Zust",
+        "Yohann Cabon",
+        "Jérome Revaud"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-04T14:41:52+00:00",
+      "link": "https://arxiv.org/pdf/2609.05210v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Introduces a regularized bundle adjustment framework that explicitly supports online Visual SLAM and offline reconstruction from arbitrary image sets.",
+      "llm_evidence_cn": "提出正则化束调整框架，明确支持在线视觉SLAM与任意图像集的离线重建。",
+      "llm_evidence": "提出正则化束调整框架，明确支持在线视觉SLAM与任意图像集的离线重建。",
+      "canonical_evidence": "提出正则化束调整框架，明确支持在线视觉SLAM与任意图像集的离线重建。",
+      "llm_tldr_en": "BLASt3R presents a regularized bundle adjustment framework combining fast multi-view matching and monocular priors to handle arbitrary image sets, unifying online Visual SLAM and offline SfM while mitigating the high cost of dense correspondences.",
+      "llm_tldr_cn": "现有混合SfM系统虽结合前馈重建与束调整精度，但稠密匹配代价高昂，难以满足在线视觉SLAM的实时性需求。本文提出BLASt3R正则化束调整框架，利用快速多视图匹配器与单目先验进行初始化和正则化，统一支持在线视觉SLAM与任意图像集的离线重建。实验表明其在多视图重建和SLAM相关基准上表现优异，兼顾准确性与可扩展性。",
+      "llm_tldr": "现有混合SfM系统虽结合前馈重建与束调整精度，但稠密匹配代价高昂，难以满足在线视觉SLAM的实时性需求。本文提出BLASt3R正则化束调整框架，利用快速多视图匹配器与单目先验进行初始化和正则化，统一支持在线视觉SLAM与任意图像集的离线重建。实验表明其在多视图重建和SLAM相关基准上表现优异，兼顾准确性与可扩展性。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.05325v1",
+      "source": "arxiv",
+      "title": "FIRE-LIVWO: Robust LiDAR-Inertial-Visual-Wheel Odometry via Failure-Immune mmWave Radar Enhancement",
+      "abstract": "Achieving robust SLAM in large-scale underground coal mines with complex structures and severe degeneracies remains highly challenging. Dense smoke and dust cause substantial loss of visual information and degrade LiDAR point-cloud features, while long, self-similar corridors induce geometric degeneration, leading to pronounced odometry drift. To address these issues, we propose FIRE-LIVWO: Failure-Immune mmWave Radar-Enhanced LiDAR-Inertial-Visual-Wheel Odometry, a tightly coupled multi-modal odometry framework based on an iterated error-state Kalman filter (IESKF). The framework fuses 4D mmWave radar, LiDAR, and visual features within a unified VoxelMap and jointly constructs LiDAR-radar point-to-plane residuals and sparse visual photometric residuals. In smoke-filled environments, we exploit the strong penetration of 4D mmWave radar and introduce pointwise Doppler velocity constraints to preserve state observability. In geometrically degenerate corridors, we tightly couple wheel odometry using non-holonomic constraints (NHC) and online lever-arm compensation to reduce drift. Our central contribution is a degeneration detection and adaptive fusion model switching strategy grounded in geometric and visual observability analysis, which quantifies observability online and dynamically adjusts modality weights. Real-world experiments in underground coal mines demonstrate that FIRE-LIVWO accurately identifies failure boundaries, enabling reliable modality switching under extreme conditions. Compared with baselines, it achieves superior accuracy and robustness (average localization error of 5.677m). We open source our code on Github to benefit the robotics community.",
+      "authors": [
+        "Kun Hu",
+        "Menggang Li",
+        "Kaidi Wu",
+        "Zhiwen Jin",
+        "Yingjie Zhao",
+        "Chaoquan Tang",
+        "Eryi Hu",
+        "Gongbo Zhou"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-04T16:19:58+00:00",
+      "link": "https://arxiv.org/pdf/2609.05325v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "multi-sensor SLAM/odometry for underground mine navigation",
+      "llm_evidence_cn": "面向矿井导航的多传感器SLAM/里程计",
+      "llm_evidence": "面向矿井导航的多传感器SLAM/里程计",
+      "canonical_evidence": "面向矿井导航的多传感器SLAM/里程计",
+      "llm_tldr_en": "FIRE-LIVWO tightly fuses 4D mmWave radar, LiDAR, camera, and wheel odometry in an IESKF with a unified VoxelMap for robust SLAM in large-scale underground coal mines under severe degeneracies.",
+      "llm_tldr_cn": "针对煤矿井下大范围退化环境（烟尘遮挡、自相似巷道）导致视觉与激光特征丢失、里程计漂移的问题，提出FIRE-LIVWO紧耦合多模态里程计框架。基于迭代误差状态卡尔曼滤波器，将4D毫米波雷达、LiDAR与视觉特征统一到体素地图中，联合构造LiDAR-雷达点到面残差与稀疏体素约束。该系统能够适应烟尘和退化场景，在复杂矿井环境中显著提高定位鲁棒性与建图质量，为井下自主导航提供强鲁棒SLAM方案。",
+      "llm_tldr": "针对煤矿井下大范围退化环境（烟尘遮挡、自相似巷道）导致视觉与激光特征丢失、里程计漂移的问题，提出FIRE-LIVWO紧耦合多模态里程计框架。基于迭代误差状态卡尔曼滤波器，将4D毫米波雷达、LiDAR与视觉特征统一到体素地图中，联合构造LiDAR-雷达点到面残差与稀疏体素约束。该系统能够适应烟尘和退化场景，在复杂矿井环境中显著提高定位鲁棒性与建图质量，为井下自主导航提供强鲁棒SLAM方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2608.30242v1",
+      "source": "arxiv",
+      "title": "CanonNav: Disentangling Navigation Behavior from Camera Geometry in Cross-Platform Visual Navigation",
+      "abstract": "While visual navigation has advanced through imitation learning from cross-platform demonstrations, fully leveraging such data remains challenging. First, directly learning from image-trajectory pairs entangles navigation behavior with platform-dependent camera geometry. This hinders consistent learning by forcing the policy to implicitly infer camera geometry from visual observations, an inherently ill-posed problem. Second, imitation learning from demonstrated trajectories captures the expert's chosen motion but leaves the intermediate decisions underlying that motion implicit. To address these issues, we propose CanonNav, a visual navigation framework that disentangles navigation behavior from camera geometry and incorporates complementary planning supervision into learning from cross-platform demonstrations. CanonNav introduces camera geometry canonicalization, which transforms visual observations and trajectories into a camera-consistent representation space. Building on this representation, we derive safety and local-progress supervision using pseudo-labels from an offline traversability estimator. Safety supervision penalizes unsafe trajectories, while local-progress supervision guides where the robot should advance. Experiments across diverse camera configurations and environments show that, despite using only RGB at inference, CanonNav consistently outperforms RGB-based baselines and even surpasses RGB-D-based methods in challenging scenarios.",
+      "authors": [
+        "Dong-Wook Kim",
+        "Ji-Hoon Hwang",
+        "E-In Son",
+        "Mintaek Oh",
+        "Seung-Woo Seo"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-08-31T04:52:54+00:00",
+      "link": "https://arxiv.org/pdf/2608.30242v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Visual navigation framework for robot navigation across platforms",
+      "llm_evidence_cn": "面向跨平台机器人视觉导航的框架",
+      "llm_evidence": "面向跨平台机器人视觉导航的框架",
+      "canonical_evidence": "面向跨平台机器人视觉导航的框架",
+      "llm_tldr_en": "CanonNav proposes a visual navigation framework that separates navigation behavior from platform-dependent camera geometry to improve imitation learning across heterogeneous camera platforms.",
+      "llm_tldr_cn": "针对跨平台演示数据难以直接用于视觉导航的问题，CanonNav将导航行为与平台相关的相机几何解耦，避免策略从视觉观测中隐式推断相机参数。它通过显式建模相机的内参和外参，将轨迹数据转化为几何一致的导航信号，使策略聚焦于行为本身。实验显示该方法在多平台迁移上优于直接学习图像-轨迹对的方法。相关工作有助于提升仿生移动机器人在不同设备上的导航泛化能力。",
+      "llm_tldr": "针对跨平台演示数据难以直接用于视觉导航的问题，CanonNav将导航行为与平台相关的相机几何解耦，避免策略从视觉观测中隐式推断相机参数。它通过显式建模相机的内参和外参，将轨迹数据转化为几何一致的导航信号，使策略聚焦于行为本身。实验显示该方法在多平台迁移上优于直接学习图像-轨迹对的方法。相关工作有助于提升仿生移动机器人在不同设备上的导航泛化能力。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2608.30471v1",
+      "source": "arxiv",
+      "title": "HorizonNet for visual terrain navigation",
+      "abstract": "This paper investigates the problem of position estimation of unmanned surface vessels (USVs) operating in coastal areas or in the archipelago. We propose a position estimation method where the horizon line is extracted in a 360 degree panoramic image around the USV. We design a CNN architecture to determine an approximate horizon line in the image and implicitly determine the camera orientation (the pitch and roll angles). The panoramic image is warped to compensate for the camera orientation and to generate an image from an approximately level camera. A second CNN architecture is designed to extract the pixelwise horizon line in the warped image. The extracted horizon line is correlated with digital elevation model (DEM) data in the Fourier domain using a MOSSE correlation filter. Finally, we determine the location of the maximum correlation score over the search area to estimate the position of the USV. Comprehensive experiments are performed in a field trial in the archipelago. Our approach provides promising results by achieving position estimates with GPS-level accuracy.",
+      "authors": [
+        "Bertil Grelsson",
+        "Andreas Robinson",
+        "Michael Felsberg",
+        "Fahad Shahbaz Khan"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.RO"
+      ],
+      "published": "2026-08-31T08:58:13+00:00",
+      "link": "https://arxiv.org/pdf/2608.30471v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "CNN-based horizon matching with DEM provides visual position estimation for unmanned surface vessel navigation",
+      "llm_evidence_cn": "利用全景图像水平线与高程模型匹配实现无人船视觉定位，是视觉导航方法",
+      "llm_evidence": "利用全景图像水平线与高程模型匹配实现无人船视觉定位，是视觉导航方法",
+      "canonical_evidence": "利用全景图像水平线与高程模型匹配实现无人船视觉定位，是视觉导航方法",
+      "llm_tldr_en": "HorizonNet uses two CNNs to extract and compensate the horizon in 360-degree panoramic imagery of a USV, then correlates the level horizon with DEM data in the Fourier domain for terrain-navigation position estimation.",
+      "llm_tldr_cn": "近海或群岛的无人水面艇不易依赖GPS，需要凭地形观测定位。本文提出HorizonNet：先用CNN估计全景图水平线与相机俯仰/横滚并做纠正，再用第二个CNN提取纠正后的逐像素地平线，最后通过MOSSE相关滤波器在频域与DEM匹配得到位置。该方法在沿海与岛屿数据上提供了可靠的位置估计，对无人船自主航行具有良好的应用价值。",
+      "llm_tldr": "近海或群岛的无人水面艇不易依赖GPS，需要凭地形观测定位。本文提出HorizonNet：先用CNN估计全景图水平线与相机俯仰/横滚并做纠正，再用第二个CNN提取纠正后的逐像素地平线，最后通过MOSSE相关滤波器在频域与DEM匹配得到位置。该方法在沿海与岛屿数据上提供了可靠的位置估计，对无人船自主航行具有良好的应用价值。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.04846v1",
+      "source": "arxiv",
+      "title": "LetOccVote: Learning Weakly Supervised 3D Occupancy through Consensus",
+      "abstract": "Weakly supervised 3D occupancy prediction reduces the reliance on costly 3D annotations by learning from 2D pseudo-labels generated by vision foundation models. However, existing methods typically use these imperfect pseudo-labels directly as supervision, making occupancy learning vulnerable to erroneous geometric and semantic targets. We observe that agreement across repeated observations provides an inexpensive and reliable cue for assessing pseudo-label reliability. Based on this observation, we propose \\textbf{LetOccVote}, a weakly supervised Gaussian-based occupancy framework that leverages cross-frame voting to improve both geometric and semantic supervision. For geometry, Depth Vote exploits cross-frame geometric agreement to refine supported pseudo depth and reject contradictory estimates before volumetric lifting and depth supervision. For semantics, Semantic Vote aggregates pseudo-semantic observations in a shared 3D space to identify reliable and contested evidence, strengthening reliable semantic supervision while filtering unreliable pseudo-label segments. The entire framework is trained solely with 2D pseudo-label supervision without requiring 3D occupancy annotations. On Occ3D-nuScenes, LetOccVote achieves 53.27 IoU and 20.39 mIoU, establishing state-of-the-art performance among methods with 2D pseudo-label supervision.",
+      "authors": [
+        "Chi Zhang",
+        "Qi Song",
+        "Feifei Li",
+        "Jie Li",
+        "Rui Huang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-04T08:03:57+00:00",
+      "link": "https://arxiv.org/pdf/2609.04846v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Weakly supervised 3D occupancy method using cross-frame vote consensus to refine noisy pseudo-labels, directly relevant to autonomous driving 3D scene mapping.",
+      "llm_evidence_cn": "以跨帧投票共识改进弱监督三维占用预测，服务自动驾驶三维场景重建",
+      "llm_evidence": "以跨帧投票共识改进弱监督三维占用预测，服务自动驾驶三维场景重建",
+      "canonical_evidence": "以跨帧投票共识改进弱监督三维占用预测，服务自动驾驶三维场景重建",
+      "llm_tldr_en": "LetOccVote uses cross-frame geometric and semantic agreement as reliable cues to refine noisy pseudo-labels for weakly supervised 3D occupancy prediction, improving accuracy without costly dense 3D annotations.",
+      "llm_tldr_cn": "弱监督三维占用预测可降低对昂贵3D标注的依赖，但直接使用视觉基础模型生成的二维伪标签易受几何和语义噪声影响。本文提出LetOccVote高斯占用框架，利用跨帧投票评估伪标签可靠性：几何侧用Depth Vote根据跨帧一致深度修正几何，语义侧用语义投票改善类别监督。实验结果表明该方法能有效减轻噪声对占用预测的影响，提升三维场景表示的几何与语义质量，为自动驾驶场景理解提供更可靠的弱监督范式。",
+      "llm_tldr": "弱监督三维占用预测可降低对昂贵3D标注的依赖，但直接使用视觉基础模型生成的二维伪标签易受几何和语义噪声影响。本文提出LetOccVote高斯占用框架，利用跨帧投票评估伪标签可靠性：几何侧用Depth Vote根据跨帧一致深度修正几何，语义侧用语义投票改善类别监督。实验结果表明该方法能有效减轻噪声对占用预测的影响，提升三维场景表示的几何与语义质量，为自动驾驶场景理解提供更可靠的弱监督范式。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.00804v1",
+      "source": "arxiv",
+      "title": "Connectivity-Aware Graph Extension for Decentralized Multi-Robot Exploration",
+      "abstract": "Exploring unknown environments with multiple UAVs requires coordination under intermittent communication, making decentralized operation a baseline assumption. We propose, within a decentralized framework, a novel exploration graph extension strategy based on frontier connectivity to extend exploration plans and maintain area partitioning among agents stable and robust to disconnections and changes in spatial layout. The proposed extension method is applied to two state-of-the-art area partitioning methods and evaluated in simulation. Experiments show improved performance over existing graph extension approaches with higher exploration efficiency under low communication rate.",
+      "authors": [
+        "Béatrice Garcia Cegarra",
+        "Elena Vanneaux",
+        "Quentin Picard",
+        "David Filliat"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-01T07:00:40+00:00",
+      "link": "https://arxiv.org/pdf/2609.00804v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Decentralized multi-UAV exploration with frontier-connectivity graph extension improves efficient exploration and area partitioning in unknown environments, strongly related to autonomous robot navigation",
+      "llm_evidence_cn": "面向未知环境分散式多无人机探索，提出基于前沿连通性的图扩展策略，提升探索效率与分区稳定性",
+      "llm_evidence": "面向未知环境分散式多无人机探索，提出基于前沿连通性的图扩展策略，提升探索效率与分区稳定性",
+      "canonical_evidence": "面向未知环境分散式多无人机探索，提出基于前沿连通性的图扩展策略，提升探索效率与分区稳定性",
+      "llm_tldr_en": "Multi-robot exploration under intermittent communication is handled by a frontier-connectivity-based graph extension strategy that stabilizes area partitioning and improves exploration efficiency in simulation, applicable to two state-of-the-art partition methods.",
+      "llm_tldr_cn": "多无人机在间歇通信下探索未知环境时，现有图扩展方法易受断连影响、分区不稳定。本文提出一种基于前沿连通性的探索图扩展策略，在分散式框架内延长探索计划并维护各智能体间稳定的区域划分。将该方法集成到两种主流区域划分方法中并在仿真中验证，在低通信率下比已有图扩展方法取得更高探索效率。这项研究为通信受限场景下的多机器人自主探索与导航提供了实用方案。",
+      "llm_tldr": "多无人机在间歇通信下探索未知环境时，现有图扩展方法易受断连影响、分区不稳定。本文提出一种基于前沿连通性的探索图扩展策略，在分散式框架内延长探索计划并维护各智能体间稳定的区域划分。将该方法集成到两种主流区域划分方法中并在仿真中验证，在低通信率下比已有图扩展方法取得更高探索效率。这项研究为通信受限场景下的多机器人自主探索与导航提供了实用方案。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.02319v1",
+      "source": "arxiv",
+      "title": "From Multi-Fisheye Sensing to Panoramic Perception: A Parallax-Aware Onboard Platform for Ultra-Low-Altitude UAVs",
+      "abstract": "Ultra-low-altitude unmanned aerial vehicles (UAVs) require surround vision near buildings, vegetation, and other obstacles. We present a parallax-aware onboard platform that converts four synchronized fisheye streams into an open 1280x640 equirectangular panorama (ERP) interface. A purpose-built carbon-fiber airframe integrates the cameras, NVIDIA Jetson Orin NX, a flight controller, and a global navigation satellite system (GNSS) receiver. The formation pipeline selects projection depth per overlap and combines controlled seams and photometric fusion. Its accuracy profile adds content-adaptive seam search and a validation-gated residual mesh, whereas its deployed profile retains margin-gated Per-seam updates for sensor-rate operation. Evaluation uses more than 50,000 four-view groups from 18 field sequences. Relative to Fixed Depth, the accuracy profile reduces far-field P90 feature misalignment by 41.6%; the deployed Per-seam profile achieves the lowest aggregate geometric errors across held-out sites. Under a paced 20 Hz replay, the deployed profile sustains 19.99 frames/s at 13.29W mean module-input power. Eight-sector ERP sampling reaches 90.8% mean daytime visual-place-recognition Recall@5. Together, these results validate an integrated onboard panoramic-perception architecture that unifies parallax-aware formation, sensor-rate embedded execution, and reusable downstream vision interfaces for ultra-low-altitude UAVs. The project has been open-sourced at https://github.com/DUNDAI1998/parallax-aware-uav-panorama.",
+      "authors": [
+        "Dun Dai",
+        "Ze Lu",
+        "Cheng He",
+        "Yaowen Wang",
+        "Quan Quan"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-02T09:04:52+00:00",
+      "link": "https://arxiv.org/pdf/2609.02319v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "An integrated panoramic perception platform using synchronized multi-fisheye streams supports obstacle awareness and autonomous flight for ultra-low-altitude UAVs, relevant to visual robot navigation",
+      "llm_evidence_cn": "面向超低空无人机的多鱼眼全景感知平台，可服务障碍感知与自主飞行，属于视觉导航相关系统",
+      "llm_evidence": "面向超低空无人机的多鱼眼全景感知平台，可服务障碍感知与自主飞行，属于视觉导航相关系统",
+      "canonical_evidence": "面向超低空无人机的多鱼眼全景感知平台，可服务障碍感知与自主飞行，属于视觉导航相关系统",
+      "llm_tldr_en": "A parallax-aware UAV platform stitches four synchronized fisheye streams into an equirectangular panorama on an NVIDIA Jetson Orin NX, merging camera, GNSS and flight controller for ultra-low-altitude obstacle-surround perception.",
+      "llm_tldr_cn": "超低空无人机在建筑、植被和障碍物附近飞行时需要环绕视觉。本文提出一个视差感知机载平台，将四路同步鱼眼视频拼接为1280x640等距柱状全景图，并把相机、Jetson Orin NX、飞控和GNSS集成在碳纤维机身上。拼接流程按重叠区选择投影深度，结合受控接缝与光度融合，精度模式提供内容自适应接缝搜索与验证门控残差网格。该平台可为超低空无人机提供环绕视觉感知，支撑避障与自主飞行。",
+      "llm_tldr": "超低空无人机在建筑、植被和障碍物附近飞行时需要环绕视觉。本文提出一个视差感知机载平台，将四路同步鱼眼视频拼接为1280x640等距柱状全景图，并把相机、Jetson Orin NX、飞控和GNSS集成在碳纤维机身上。拼接流程按重叠区选择投影深度，结合受控接缝与光度融合，精度模式提供内容自适应接缝搜索与验证门控残差网格。该平台可为超低空无人机提供环绕视觉感知，支撑避障与自主飞行。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.03483v2",
+      "source": "arxiv",
+      "title": "Air-Ground Collaborative Vision-and-Language Navigation via Shared Bird's-Eye Maps",
+      "abstract": "Air-ground collaborative Vision-and-Language Navigation (VLN) pairs an unmanned aerial vehicle (UAV) with a global bird's-eye view and an unmanned ground vehicle (UGV) with a local first-person view, yet the setting remains largely unexplored: existing training-free methods solve single-agent tasks but offer no collaboration mechanism, and a recent CARLA-Air evaluation found no stable cooperative behavior across five state-of-the-art VLA models; naive semantic communication or bidirectional coupling even degrades performance. We establish AGC-VLN (Air-Ground Collaborative VLN), the first training-free baseline for air-ground collaborative VLN. The key insight is that training-free methods decompose navigation into VLM-based semantic reasoning and deterministic geometric execution, exposing a collaboration interface: the UAV's global view, over which it renders the UGV's reported pose and the VLM-anchored target as CAR/GOAL markers with distance labels, yielding a shared bird's-eye map. From this map, the UGV acquires global spatial context its first-person view cannot provide, plans a road-following path with a frozen VLM, and executes it under closed-loop control; in parallel, the UAV runs 3D-SPF, a spatial-search upgrade of SPF that localizes the target in the downward view and flies toward it. On 100 closed-loop episodes in CARLA-Air's Town10HD scene, AGC-VLN reaches a 77.0% joint success rate, a collaboration gain of +27.0% over the weaker individual agent (the UAV, 50.0%), and exceeds the strongest published single-agent baseline (Travel UAV, 53.0%) by 24.0 points, stemming from the complementarity of the UAV's global view and the UGV's road-following execution. Project page: https://github.com/ZSN2024/AGC-VLN.",
+      "authors": [
+        "Shuning Zhang",
+        "Liang Li",
+        "Yunheng Wang",
+        "Tao Wang",
+        "Yihang Kang",
+        "Renjing Xu"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "published": "2026-09-03T07:38:41+00:00",
+      "link": "https://arxiv.org/pdf/2609.03483v2",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "air-ground collaborative visual-language navigation with shared bird's-eye maps for robots",
+      "llm_evidence_cn": "空地机器人协作视觉-语言导航与共享鸟瞰图",
+      "llm_evidence": "空地机器人协作视觉-语言导航与共享鸟瞰图",
+      "canonical_evidence": "空地机器人协作视觉-语言导航与共享鸟瞰图",
+      "llm_tldr_en": "AGC-VLN is a training-free baseline for air-ground collaborative VLN that pairs UAV global views with UGV local views through shared bird's-eye maps, yielding stable cooperative navigation.",
+      "llm_tldr_cn": "空地协作视觉-语言导航要求无人机与地面机器人共享鸟瞰图并协作理解指令，但现有无训练方法缺乏协作机制，多模态模型也不稳定，简单语义通信甚至降低性能。本文提出AGC-VLN，首个无训练的空地协作VLN基线，通过共享鸟瞰图将任务分解为基于视觉语言模型的语义推理，使无人机全局视角与地面机器人局部视角有效协同。该基线为后续协作导航提供了稳定参照，推动视觉语言导航走向空地多机器人场景。",
+      "llm_tldr": "空地协作视觉-语言导航要求无人机与地面机器人共享鸟瞰图并协作理解指令，但现有无训练方法缺乏协作机制，多模态模型也不稳定，简单语义通信甚至降低性能。本文提出AGC-VLN，首个无训练的空地协作VLN基线，通过共享鸟瞰图将任务分解为基于视觉语言模型的语义推理，使无人机全局视角与地面机器人局部视角有效协同。该基线为后续协作导航提供了稳定参照，推动视觉语言导航走向空地多机器人场景。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.04602v1",
+      "source": "arxiv",
+      "title": "NavArena: Automated Construction of Goal-Oriented Navigation Benchmarks from 3D Gaussian Splatting Reconstructions",
+      "abstract": "Fixed 3D Gaussian Splatting (3DGS) reconstructions provide realistic novel views but lack the traversability constraints, valid goals, and closed-loop protocols required for navigation evaluation. We introduce NavArena, an automated framework that transforms fixed 3DGS reconstructions into benchmarks for goal-oriented visual navigation. NavArena integrates a frozen 3DGS model for egocentric RGB-D rendering, an occupancy costmap derived from Gaussian density and height statistics for reachability and collision queries, and semantic goal candidates lifted from multi-view open-vocabulary masks. These components support the automatic generation and unified closed-loop evaluation of goal-oriented navigation episodes. Across more than 2{,}000 scenes, NavArena generates 22.2 million expert trajectories. Spatial and semantic evaluations assess the derived navigation representations, while policy rollouts demonstrate the diagnostic value of the unified evaluation protocol. NavArena enables scalable and reproducible navigation evaluation on large-scale 3DGS reconstructions, and all benchmark-generation tools, evaluation protocols, and derived assets will be released publicly.",
+      "authors": [
+        "Junhui Wang",
+        "Wei Yang",
+        "Xinyao Li",
+        "Ningjing Fan",
+        "Yuehao Yin",
+        "Xuecheng Chen",
+        "Chao Gao"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-04T01:02:03+00:00",
+      "link": "https://arxiv.org/pdf/2609.04602v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "automated framework to build goal-oriented visual navigation benchmarks from 3DGS and occupancy costmaps",
+      "llm_evidence_cn": "从三维高斯重建自动构建目标导向视觉导航评测环境",
+      "llm_evidence": "从三维高斯重建自动构建目标导向视觉导航评测环境",
+      "canonical_evidence": "从三维高斯重建自动构建目标导向视觉导航评测环境",
+      "llm_tldr_en": "NavArena automatically converts 3D Gaussian Splatting scenes into closed-loop goal-oriented navigation benchmarks by adding occupancy costmaps for traversability and semantic goal candidates, enabling reproducible visual navigation evaluation.",
+      "llm_tldr_cn": "固定三维高斯重建可提供逼真视角，但缺少导航评测所需的可通行约束、有效目标和闭环协议。NavArena将该重建转化为目标导向视觉导航基准：集成RGB-D渲染、由高斯密度与高度统计生成的占据代价地图，以及多视角开放词汇语义目标。框架可自动生成导航回合并统一闭环评测，为视觉导航研究提供可扩展、可复现的评测平台。",
+      "llm_tldr": "固定三维高斯重建可提供逼真视角，但缺少导航评测所需的可通行约束、有效目标和闭环协议。NavArena将该重建转化为目标导向视觉导航基准：集成RGB-D渲染、由高斯密度与高度统计生成的占据代价地图，以及多视角开放词汇语义目标。框架可自动生成导航回合并统一闭环评测，为视觉导航研究提供可扩展、可复现的评测平台。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.04369v1",
+      "source": "arxiv",
+      "title": "AdaptVPR: Route-Aware Hard Positive Generation for Robust Visual Place Recognition",
+      "abstract": "Visual Place Recognition (VPR) localizes a query image by retrieving database images of the same or nearby place, yet its robustness is often degraded by domain shifts arising from illumination, weather, seasonal changes, and dynamic occlusions. One contributing factor is the limited appearance diversity of the same place in existing training data. To address this issue, we propose AdaptVPR, a route-aware generative augmentation framework that constructs same-place hard positives for robust VPR training. AdaptVPR first uses a vision language model to parse scene attributes and estimate editing feasibility, while a rule-based scheduler determines the generation route according to editability scores and risk constraints. The generation process is decomposed into three complementary routes: the Global Appearance Route introduces global scene changes in weather, illumination, and time of day; the Local Occlusion Route inserts plausible dynamic occluders; and the Dual Route combines both types of perturbations to produce more challenging appearance shifts. Each generated candidate is evaluated using a VPR-oriented verification scheme based on geometric consistency and appearance diversity, reducing the risk of structural drift while ensuring sufficient appearance variation. Global candidates are generated once and rejected if verification fails, while Local Occlusion and Dual candidates use verification feedback for limited prompt refinement and regeneration. Using this framework, we construct AdaptCities, containing 160K verified synthetic same-place hard positives. Experiments across multiple VPR baselines and vision foundation backbones show consistent gains on standard benchmarks and substantial improvements under challenging domain shifts, with R@1 gains of up to 9.2%. The source code and data resources are publicly available at https://github.com/chenshunpeng/AdaptVPR.",
+      "authors": [
+        "Shunpeng Chen",
+        "Jingyi Zhang",
+        "Changwei Wang",
+        "Shengpeng Xu",
+        "Yukun Song",
+        "Xingtian Pei",
+        "Jinzhou Lin",
+        "Li Guo",
+        "Shibiao Xu"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-03T18:34:17+00:00",
+      "link": "https://arxiv.org/pdf/2609.04369v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Visual place recognition is a core component of loop closure detection in SLAM; the paper improves its robustness via hard-positive augmentation.",
+      "llm_evidence_cn": "视觉地点识别是SLAM回环检测的核心环节；本文通过难正样本生成增强其鲁棒性。",
+      "llm_evidence": "视觉地点识别是SLAM回环检测的核心环节；本文通过难正样本生成增强其鲁棒性。",
+      "canonical_evidence": "视觉地点识别是SLAM回环检测的核心环节；本文通过难正样本生成增强其鲁棒性。",
+      "llm_tldr_en": "AdaptVPR is a route-aware generative augmentation framework that creates same-place hard positives for visual place recognition, targeting robustness to domain shifts that degrade SLAM loop closure performance.",
+      "llm_tldr_cn": "视觉地点识别(VPR)常因光照、天气、季节等域迁移导致定位鲁棒性下降，而训练数据中同一地点外观多样性不足是重要原因。本文提出AdaptVPR路径感知生成式增强框架，通过视觉语言模型解析场景属性并估计编辑可行性，再由规则调度器选择生成路线，构造同地点难正样本增强VPR训练。实验表明该方法显著提升跨域条件下的地点识别准确率，可有效支撑SLAM回环检测与位置识别，减少长期运行中的漂移累积。",
+      "llm_tldr": "视觉地点识别(VPR)常因光照、天气、季节等域迁移导致定位鲁棒性下降，而训练数据中同一地点外观多样性不足是重要原因。本文提出AdaptVPR路径感知生成式增强框架，通过视觉语言模型解析场景属性并估计编辑可行性，再由规则调度器选择生成路线，构造同地点难正样本增强VPR训练。实验表明该方法显著提升跨域条件下的地点识别准确率，可有效支撑SLAM回环检测与位置识别，减少长期运行中的漂移累积。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "loop closure detection techniques to correct drift in SLAM systems",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.04607v1",
+      "source": "arxiv",
+      "title": "Open-Set 3D Scene Graphs for Field Robotics: An Outdoor Case Study",
+      "abstract": "Three-dimensional scene graphs (3DSGs) have emerged as a promising approach for building geometrically grounded, semantically informed, hierarchical general-purpose maps to support high-level robotic reasoning. However, the behavior of 3DSGs in real-world outdoor deployments remains poorly understood, particularly when combined with open-set vision-language models (VLMs). In this field report, we analyze the components common to most 3DSG representations across five outdoor robotic datasets to characterize challenges that arise in complex outdoor environments. Using the recently proposed Terra 3DSG as a case study, we investigate semantic point embeddings, place-node graph navigation, region-level understanding, and memory size across the five diverse datasets. We additionally introduce novel consistency metrics to evaluate whether semantic and structural graph properties remain stable across repeated traversals of the same environment. Our analysis reveals that outliers and multiple modes are common in VLM point embeddings across all tested datasets with outlier ratios above $0.1$ for around $30\\%$ of points. We demonstrate the feasibility of outdoor 3DSGs for navigation-based object retrieval, achieving success rates near $70\\%$, though performance is limited by traversability failures and inefficient routing, with trajectories averaging approximately $66\\%$ suboptimal path efficiency. Region-level understanding remains challenging in complex natural environments, with low average F1 scores around $0.359$. Overall, our results show that outdoor 3DSGs can maintain compact (less than $600$MB for multi-kilometer trajectories) and relatively consistent large-scale environment representations, while highlighting open challenges in handling multiple semantic modes, incorporating traversability into graph structures, and improving higher-level region understanding.",
+      "authors": [
+        "Chad R. Samuelson",
+        "Gabriel R. Slade",
+        "Joshua G. Mangelson"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-04T01:14:09+00:00",
+      "link": "https://arxiv.org/pdf/2609.04607v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "open-set 3D scene graph mapping for field robotics, geometrically grounded robot maps",
+      "llm_evidence_cn": "面向野外机器人的开放集三维场景图建图研究",
+      "llm_evidence": "面向野外机器人的开放集三维场景图建图研究",
+      "canonical_evidence": "面向野外机器人的开放集三维场景图建图研究",
+      "llm_tldr_en": "This outdoor case study analyzes components of open-set 3D scene graphs across five robotic datasets, including semantic point embeddings, place-node graph navigation, region understanding, and memory, revealing practical challenges for general-purpose field robot mapping.",
+      "llm_tldr_cn": "三维场景图有望成为支持机器人高层推理的分层地图，但在真实室外部署中的行为尚未充分理解。本文以Terra 3DSG为例，在五个野外机器人数据集上分析其语义点嵌入、位置节点图导航、区域级理解和内存占用等共同组件。结果表明开放集视觉语言模型与场景图结合时需应对感知噪声和规模问题，为通用野外机器人地图构建与导航提供了经验性改进方向。",
+      "llm_tldr": "三维场景图有望成为支持机器人高层推理的分层地图，但在真实室外部署中的行为尚未充分理解。本文以Terra 3DSG为例，在五个野外机器人数据集上分析其语义点嵌入、位置节点图导航、区域级理解和内存占用等共同组件。结果表明开放集视觉语言模型与场景图结合时需应对感知噪声和规模问题，为通用野外机器人地图构建与导航提供了经验性改进方向。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.04958v1",
+      "source": "arxiv",
+      "title": "MINT: A Unified Model for World-Space Camera and Hand Motion Estimation from Scalable Egocentric Pipeline Supervision",
+      "abstract": "Recovering camera and hand motion in world coordinates from egocentric video is a key capability for activity understanding, robot learning, and augmented reality. Existing systems typically decompose this problem into separate stages for camera motion, depth, hand reconstruction, and trajectory refinement, resulting in substantial computational overhead and preventing the joint modeling of camera and hand motion. We introduce MINT (Minting IN-the-Wild Trajectories), the first foundation model that directly produces complete world-space two-hand trajectories from ego-centric RGB video. From a single shared spatiotemporal video representation, MINT jointly predicts the camera trajectory, camera-frame hand states, and per-frame hand presence, and then produces world-space hand motion via explicit coordinate transformations. Training such a model at scale is challenging, since paired world-space camera and hand annotations are scarce. We therefore develop an open-source labeling EGOPIPELINE that converts large collections of public egocentric videos into structured camera-and-hand trajectory supervision. MINT is first pretrained on these large-scale pseudo-labels and then fine-tuned on a small set of high-quality joint annotations. Across public benchmarks, MINT achieves [xxx] improvement in world-space hand trajectory accuracy, [xxx] improvement in camera trajectory estimation, and [xxx] faster end-to-end trajectory generation than the labeling pipeline, while generalizing zero-shot to unseen egocentric datasets. We release the model, training and inference code, labeling pipeline, and a curated 1,021-hour egocentric trajectory dataset.",
+      "authors": [
+        "Zijie Zhu",
+        "Weiren Cai",
+        "Yizhou Wang",
+        "Zhenjie Yang",
+        "Yide Liu",
+        "Jiahao Chen",
+        "Guanqi He"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.RO"
+      ],
+      "published": "2026-09-04T10:05:11+00:00",
+      "link": "https://arxiv.org/pdf/2609.04958v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "joint camera trajectory and hand motion estimation from egocentric video",
+      "llm_evidence_cn": "从第一视角视频联合估计相机与手部运动轨迹",
+      "llm_evidence": "从第一视角视频联合估计相机与手部运动轨迹",
+      "canonical_evidence": "从第一视角视频联合估计相机与手部运动轨迹",
+      "llm_tldr_en": "MINT is a foundation model that directly predicts world-space camera and hand trajectories from egocentric RGB video, joining camera motion estimation with hand reconstruction in a single shared representation.",
+      "llm_tldr_cn": "现有从第一视角视频恢复相机与手部运动的方法常分阶段处理相机、深度、手部重建和轨迹优化，计算开销大且难以联合建模。MINT作为第一个直接输出完整世界坐标系双手轨迹的统一基础模型，基于共享的时空视频表示联合预测相机轨迹与相机坐标系内手部运动，并从可扩展的流水线监督中学习。该方法避免多阶段繁琐流程，为机器人学习、活动理解等应用提供一体化相机运动估计方案。",
+      "llm_tldr": "现有从第一视角视频恢复相机与手部运动的方法常分阶段处理相机、深度、手部重建和轨迹优化，计算开销大且难以联合建模。MINT作为第一个直接输出完整世界坐标系双手轨迹的统一基础模型，基于共享的时空视频表示联合预测相机轨迹与相机坐标系内手部运动，并从可扩展的流水线监督中学习。该方法避免多阶段繁琐流程，为机器人学习、活动理解等应用提供一体化相机运动估计方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual odometry algorithms for incremental camera pose estimation",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.05104v1",
+      "source": "arxiv",
+      "title": "Compact Bellman-Grounded Cognitive Maps for Cost-Aware Navigation",
+      "abstract": "Biological agents navigate familiar environments not by re-solving routes for each new goal, but by reusing a learned map built once and read off as goals change. Existing artificial cognitive-map models mimic this reuse, yet their guidance is not explicitly grounded in additive heterogeneous route costs. Furthermore, they often struggle with memory efficiency: representative state-indexed and high-rank spectral constructions incur substantial storage growth as the environment scales. We present BCM, which grounds a reusable cognitive map in local edge costs through a self-supervised Bellman-grounded objective and a compact coordinate encoding, supporting changing goal queries without per-goal retraining. On weighted grids of up to $N=1600$ nodes, BCM maintains full success and only a 5\\% mean Gap relative to exact Dijkstra search, compared with about $45\\%$ for a connectivity-based spectral baseline. Notably, as the graph size increases from $N=400$ to $N=3600$, its memory footprint grows sublinearly while maintaining competitive performance, making our method scalable to complex environments. Together, these results show that additive route costs can be written into a compact, reusable cognitive-map representation, bridging the gap between biological flexibility and optimal path planning.",
+      "authors": [
+        "Yuzhe Han",
+        "Mingkun Xu",
+        "Yujie Wu"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-09-04T12:56:25+00:00",
+      "link": "https://arxiv.org/pdf/2609.05104v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "compact cognitive maps for cost-aware goal-directed robot navigation",
+      "llm_evidence_cn": "面向代价感知机器人导航的紧致认知地图构建",
+      "llm_evidence": "面向代价感知机器人导航的紧致认知地图构建",
+      "canonical_evidence": "面向代价感知机器人导航的紧致认知地图构建",
+      "llm_tldr_en": "BCM learns a compact Bellman-grounded cognitive map from local edge costs, enabling reuse for changing goals without retraining and with much less memory than state-indexed or spectral maps.",
+      "llm_tldr_cn": "面向在熟悉环境中导航的机器人，现有认知地图模型没有将指导信号显式锚定在异构路径代价上，且存储开销随环境规模增大而上升。本文提出的BCM通过自监督的Bellman目标将可复用认知地图锚定到局部边代价，并用紧致坐标编码降低存储；在最多1600个节点的加权网格上，BCM支持目标查询变化而无需逐目标重训练。实验同时说明其存储增长小于传统状态索引与谱系地图构建，为代价感知导航提供高效的地图记忆机制。",
+      "llm_tldr": "面向在熟悉环境中导航的机器人，现有认知地图模型没有将指导信号显式锚定在异构路径代价上，且存储开销随环境规模增大而上升。本文提出的BCM通过自监督的Bellman目标将可复用认知地图锚定到局部边代价，并用紧致坐标编码降低存储；在最多1600个节点的加权网格上，BCM支持目标查询变化而无需逐目标重训练。实验同时说明其存储增长小于传统状态索引与谱系地图构建，为代价感知导航提供高效的地图记忆机制。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    }
+  ]
+}

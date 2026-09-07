@@ -1,0 +1,442 @@
+Title: Connectivity-Aware Graph Extension for Decentralized Multi-Robot Exploration
+
+URL Source: https://arxiv.org/pdf/2609.00804v1
+
+Published Time: Wed, 02 Sep 2026 00:50:36 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Connectivity-Aware Graph Extension for Decentralized Multi-Robot Exploration 
+
+B´ eatrice Garcia Cegarra ⋆†, Elena Vanneaux †, Quentin Picard ⋆ and David Filliat ⋆
+
+Abstract — Exploring unknown environments with multiple UAVs requires coordination under intermittent communication, making decentralized operation a baseline assumption. We propose, within a decentralized framework, a novel exploration graph extension strategy based on frontier connectivity to extend exploration plans and maintain area partitioning among agents stable and robust to disconnections and changes in spatial layout. The proposed extension method is applied to two state-of-the-art area partitioning methods and evaluated in simulation. Experiments show improved performance over existing graph extension approaches with higher exploration efficiency under low communication rate. 
+
+I. INTRODUCTION Exploring unknown environments is a core task in au-tonomous robotics, and extending it to multi-agent systems introduces the key challenge of balancing communication constraints with fast, coordinated behavior. Since UAV com-munication is limited in range, frequency, and reliability due to obstacles or interference, we treat intermittent connectivity as a baseline condition rather than an exception, and we aim at studying and mitigating its impact on exploration efficiency. We focus on distributed decision-making where each UAV acts locally based on partial observations enriched by occasional encounters, thus implementing indirect and asynchronous collaboration. Multi-robot exploration (MRE) is a specification of the multi-robot task allocation problem (MRTA). Tasks are ex-ploration areas that are allocated among agents and the main motivation of this work is to understand how structured partial information can be leveraged to ensure both effi-cient wide-ranging exploration and consistent task allocation across UAVs operating without reliable communication. The objective is to use this structure to align decisions across UAVs, reduce variability in task allocation, and guide ex-ploration toward structurally meaningful and distant regions while limiting inefficient revisits. To address this problem, we adopt a decentralized frame-work where each UAV makes decisions from a shared, partially observed topological graph to structure regions connectivity. The graph is further partitioned with Voronoi [1] or K-medoids [2]. As our main contribution, we pro-pose a novel exploration graph extension method based on frontier addition and connectivity preservation. This method aims to capture higher-level exploration plans and maintain a partition robust to disconnections or changes in spatial 
+
+> ⋆
+
+Pˆ ole recherche, AMIAD, Palaiseau, France 
+
+> †
+
+UI2S, ENSTA, IP Paris, Palaiseau, France All authors are members of LARIAD, a joint AMIAD-ENSTA laboratory Divide map                         
+
+> in N rsubregions
+> Partition : group frontiers
+> in Nc= k cells / partitions
+> Local : Plan exploration
+> within assigned frontiers
+> Group subregions
+> in N ffrontiers
+> Assign cells / partitions
+> to k agents
+> Task definition Task allocation Task planning
+> Centralized (C)
+> Flexible (C or D)
+> Distributed (D)
+> * N r≥ N f> N c= k
+> Optional
+> // Parallel or .
+> Optional Hierarchical Planning
+> Global : Plan exploration
+> over all frontiers
+> Optional
+
+Fig. 1. Iterative task-driven MRE workflow 
+
+layout—i.e., avoiding abrupt changes in the resulting par-tition shape—and staying consistent in assigning subregions across drones and time without explicit communication over allocation stages. We adopt a mechanism similar to coverage nodes in [3], which use a UAV-centered sliding window to sample addi-tional exploration targets beyond immediate reach. The key difference of our approach is its awareness of graph topology and extension from all frontiers. In contrast to sampling-based methods that generate candidate nodes within a local range-limited window around each UAV, we introduce nodes over the entire graph domain. These nodes are added deter-ministically based on topological parent-set intersection as an extension criterion. Finally, we evaluate both extensions across the two partitioning methods in two topologically distinct environments under limited communication, using a full-range communication setting as a reference. This paper is organized as follows: first, the multi-agent exploration strategies with a focus on task allocation are reviewed in Sec. II. Then, the graph structure, communi-cation scheme, and local exploration pipeline from graph partitioning to planning are detailed in Sec. III. Finally, the exploration performances, such as connectivity and partition robustness across two environments using different partition-ing methods and extension levels are evaluated in Sec. IV. II. RELATED WORK Fig. 1 illustrates the complete MRE pipeline, with each stage detailed in the following sections. In unknown envi-ronments, the exploration area may be either dynamically expanding or predefined and subsequently partitioned into a grid of sub-regions. MRE methods operate either on individual subregions or on aggregates of subregions formed via continuity [4], [5] similarity, proximity [6] or density criteria [7]. In [7] and [8], mean-shift and K-means enable arXiv:2609.00804v1 [cs.RO] 1 Sep 2026 scalable geometric and density-based clustering, while [6] uses spectral clustering for higher-dimensional grouping. Subregion cluster count varies with exploration progress and environment topology. However, clustering introduces an additional level of abstraction, enabling more informed MRTA decisions while reducing computational cost. 
+
+A. Frontier-based exploration (FBE) 
+
+The two most widely used approaches to MRE adapt single-agent exploration strategies based on frontier detection or sampling. Frontier-based approaches [5] guide agents toward frontiers, i.e., subregions at the interface between explored and unexplored space, ensuring complete coverage with lower computational cost. Sampling-based approaches, in contrast, select next agent positions based on information gain evaluated over a random set of sampled points. Subse-quent exploration methods are exclusively frontier-based. Utility-based methods evaluate frontiers using a scalar scoring function, considering factors like distance, frontier size [9], turning cost [10], density, feasibility [7], and poten-tial connectivity loss or recovery [11], [12]. Utility functions can be replaced by longer-term sequential foresight methods that optimize trajectories but have high computational costs such as the Vehicle Routing Problem [6] where frontiers are used as intermediate way-points. Potential field approaches use attractive forces from frontiers and repulsive forces from obstacles and other agents position and tasks to continuously guide exploration via gradient-based motion [13], [14]. These methods are suitable for dynamic environments but less predictable due to local minima tackled by wavefront-based distance transforms [4]. 
+
+B. Area partitioning for exploration 
+
+Some works allocate cells or sets of frontiers to UAVs rather than individual frontiers, reducing computational cost and enabling longer-horizon planning. This improves per-formance over single-stage FBE algorithms detailed below by yielding more stable assignments and a more spatially distributed swarm. Within each cell or subregion, frontiers are explored sequentially during planning, following utility-based principles (e.g. current load, UAV velocity). Allocation denotes the stage comprising both space partition into clus-ters and their assignment to agents. Voronoi diagrams (VG) are a popular allocation approach due to low computational cost and suitability for distributed implementations. This method partitions the environment into dynamic cells, or equivalently assigns each frontier to an agent, typically the spatially closest relative to all others [1], [3]. Agents explore within their assigned cells with penalties for deviations [15], [16]. An earlier alternative is clustering-based allocation, using K-Means to partition frontiers into groups by optimizing a similarity criterion, typically the intra-cluster variance. Cluster centroids are initialized either randomly [16], [17], [2], from agent positions [18], from map center [15], or via K-Means++ to select well-separated initial seeds that ensure more predictive outcomes after convergence. K-means variants, unlike Voronoi diagram, relax strict proximity to agents by forming cells based on inter-node relationships (e.g., proximity, connectivity). As a result, cells are not directly tied to UAVs and require a subsequent assignment stage based on utility criteria (cf. Sec. II-A). Thus, the UAV-cell assignment can be addressed through greedy [15], [16], [2] or Minimum Position ranking [19], which prioritize robots per frontier rather than frontiers per robot. Global optimization methods, such as the Hungarian algorithm [17] also minimize the overall assignment cost across all agents. K-means variants are more sensitive to topological changes, particularly in sparse graphs. In con-trast, the Voronoi diagram provides a more stable solution by consistently allocating nearby frontiers to UAVs, guiding them in fixed directions with greater resistance to abrupt objective deviations, such as when another agent discovers a high-density area. 
+
+C. Graph-based partitioning 
+
+MRTA largely rely on euclidean distance assumptions, which poorly capture obstacle-constrained environments. Some works attempt to mitigate this limitation by incorpo-rating obstacle-aware penalties [8]. Building on this idea, recent literature construct graphs [14] where frontiers are nodes, carrying exploration state, and edges encode traversal costs derived from real-time shortest-path planners such as RRT, A* [6], Dijkstra [1], [3]. Communication volumes are reduced, replacing the exchange of voxel-level map repre-sentations by edge and nodes updates, sometimes enriched with semantic labels. The Generalized Voronoi Diagram (GVD), referred to as Voronoi hereafter, extends the classical Voronoi diagram using geodesic distance for a topology-driven partition [1], [3]. Similarly, adaptations of K-means have been proposed to better handle graph-structured environments, using K-medoids [18] or non-Euclidean distances and metrics adapt-able to sparse frontier connectivity [20]. Unlike a centroid which is defined as the mean position of a set of nodes in Euclidean space (i.e., the average of their coordinates), a medoid is an actual node that minimizes total distance on the graph, making it suitable for non-Euclidean pairwise distances. Instead of relying solely on Euclidean distance, K-medoids leverage graph-theoretic measures such as PageR-ank centrality, which recursively quantifies node importance by recursive ranking, capturing global influence [21]. Finally, few authors extend graphs beyond frontiers by incorporating agent positions, previously visited free-space locations [10], [1], and farther neighboring frontiers, to guide exploration toward map expansion [3], [22]. 
+
+D. Exploration under limited communication 
+
+Most papers assume ideal communication conditions with continuous and reliable updates among agents, disregarding relative positions or adversarial factors like jamming or obstacles. Others maintain network connectivity constantly but sacrifice reactivity to link losses and limit swarm ex-pansion for rapid mission completion. Only a quarter of the cited studies address robustness to uncertain communication and fully distributed MRE, leveraging scheduled rendezvous [10], [13] or opportunistic encounters to increase shared knowledge (e.g. map merging) and ensure more consistent offline decisions [7], [3], [22]. Decision-making may still remain centralized, when the whole swarm or connected subgroups operates, relying on auction mechanisms [16] or leader election [9], [10]. We employ fully distributed strategies, where each robot decides using punctually shared, time-stamped observations and estimated exploration state. III. METHODS 
+
+A. Problem formulation 
+
+The environment, defined over a 3-D static fixed volume, is discretized into a grid of regularly-spaced cubic subre-gions, referred to as Grid Exploration Subregions GES. Each GES is represented by its center, which defines its position, and undergoes the following stages : 1) Undiscovered 2) Discovered, to be explored 3) Discovered, fully explored or deemed infeasible We note that in stage 2, GES matches the state-of-the-art definition of frontier nodes introduced in II-A. We consider a team of NM homogeneous Unmanned Aerial Vehicles (UAVs) launched near a common initial position. Each UAV is assumed to have access to accurate localization within the environment. During exploration, the UAVs maintain in parallel a consistent graph as a topological representation of the environment, encapsulating data on the exploration state, following [1]. For a UAV m, the graph 
+
+Gm = ( V m, E m) is composed of a node set V m and an edge set Em. The nodes v in V m belong to three distinct types :  
+
+> •
+
+F : Frontier nodes vF , representing discovered and explorable GES, i.e., in Stage 2.  
+
+> •
+
+H : History nodes vH which are sparsely distributed, free-space way-points previously reached by UAVs.  
+
+> •
+
+M : UAV nodes vM , representing each UAV All nodes in the graph can be denoted as : 
+
+V m = {vtype j | type ∈ T ypes = {F, M, H }, j ∈ N}.
+
+For simplicity, we treat vM nodes as mobile vH . Ac-cordingly, edges are defined between two vH nodes ( eHH )or between a vH node and a vF node ( eHF ), with each 
+
+vF connected to one or more vH parents. Each vH and 
+
+vF constructs a Dijkstra-based shortest-path tree over the free space to establish connectivity with other nodes. In our implementation, edges are explicitly built following the procedure detailed in [1]. This results in a dynamically maintained graph in which edges are created, removed, or updated according to changes in obstacle-aware connectivity. UAVs exchange data opportunistically within a commu-nication range rc (in meters) and relay the latest received system information. Therefore, messages encapsulate each UAV’s current position and its vF goal, each GES cur-rent stage and vH locations. Note that nodes are shared GM          
+
+> vM
+> vF
+> UAV
+> eHH , e HF (original)
+> S1. Graph
+> maintenance
+> vH
+> GM
+> Partitions
+> Partition medoïd
+> S3. Task
+> allocation
+> vFUAV goal
+> S4. Planning UAV trajectory
+> vN
+> eFF (enhanced)
+> S2. Graph
+> enhancement ext
+> Fig. 2. Overview of the proposed MRTA system, from an illustrative run
+
+among agents, whereas edge (weights and endpoints) are computed locally and not communicated, independently of communication range and protocol. We assume noise-free data sharing and seamless integration of maps and positions during merging. 
+
+B. System Overview 
+
+Our method overview is illustrated in Fig. 2 and detailed in Algorithm 1. At each step S, each UAV relies on the last known data on the system, swarm and mission progress, which may vary in freshness. The volumetric mapping mod-ule integrates the estimated pose and point cloud data to update the 3-D volumetric map, as shown in the background of the figure. The updated map is transmitted to the local ground station for visualization purposes only. Each UAV independently maintains its graph by adding sensed GES and 
+
+vH then running a first Dijkstra’s algorithm over the envi-ronment’s cost map to connect nodes (see Fig. 2 S1). Extension and allocation are executed sequentially and repeated every second since graph topology is constantly changing. First, Gm is extended into Gmext by adding neigh-boring GES candidates (see Fig. 2 S2 and Sec. III-D). When using partition based on geodesic distances (see S3), we compute all-pairs shortest paths (APSP) using a second Dijkstra on the extended graph Gmext . Gmext is then divided into NM partitions using either Vorono¨ ı diagram or K-medoid adapted clustering (see Fig. 2 S3 and Sec. III-C.1). UAV m only considers its assigned partition. Finally, the planning stage is decoupled from the allocation stage and triggered as GES are being explored. Each UAV i selects a GESnode to explore within its Gmext partition (see Fig. 2 
+
+S4 and Sec. III-C.2). Gm updates performed in step 1 and local UAV plan from step 4 are opportunistically shared with other agents while graph extension and partition are not communicated (cf. Sec. III-A). Algorithm 1 Asynchronous UAV i Exploration Framework 
+
+Require: Graph Gm, UAV node vmM , sensed GES S  
+
+> 1:
+
+function UPDATE GRAPH (Gm, vmM , S) 
+
+> 2:
+
+if ∀vH , ∥vmM − vH ∥ ≥ X then  
+
+> 3:
+
+Add vH at position pm 
+
+> 4:
+
+Update edges with APSP (Dijkstra 1)  
+
+> 5:
+
+end if  
+
+> 6:
+
+for all s ∈ S do  
+
+> 7:
+
+if s reachable: connect to nearest vH ; else discard  
+
+> 8:
+
+if s explored: remove from Gm 
+
+> 9:
+
+end for  
+
+> 10:
+
+end function  
+
+> 11:
+
+function TASK ALLOCATION (Gm, pm) 
+
+> 12:
+
+Construct extended graph Gmext (see Algorithm 2)  
+
+> 13:
+
+Create distance matrix Madj with APSP (Dijkstra 2)  
+
+> 14:
+
+Divide Gmext into NM partitions :  
+
+> 15:
+
+Method: closest to UAV (GVP) or medoid (K-medoids)  
+
+> 16:
+
+Metric: node positions (Euclidian) or Madj (Geodesic)  
+
+> 17:
+
+end function  
+
+> 18:
+
+while free-space is not fully explored do  
+
+> 19:
+
+if ∃viM , ∥vmM − viM ∥ ≤ rc then  
+
+> 20:
+
+Exchange graph Gm with neighbors UAV i 
+
+> 21:
+
+UPDATE GRAPH (Gm, vmM , received GES S) 
+
+> 22:
+
+end if  
+
+> 23:
+
+UPDATE GRAPH (Gm, vmM , sensed GES S) 
+
+> 24:
+
+TASK ALLOCATION (Gm, vmM ) 
+
+> 25:
+
+Plan motion toward closest assigned node  
+
+> 26:
+
+end while 
+
+C. Hierarchical Graph-Frontier Planning 1) Task Allocation: We compared our graph extension algorithm using two partitioning methods: Voronoi diagrams and the K-medoids variant of K-means. Detailed descriptions of both algorithms can be found in [1] for the Voronoi approach and in [2] for K-medoids. As illustrated in Fig. 3, the main difference between the two methods lies in how the medoids are defined. K-medoids partitions the nodes into NM clusters based solely on the graph structure, in-dependently of the current UAV positions. In contrast, the Voronoi method directly uses the UAV positions as medoids by definition. We removed vM nodes from K-medoids clustering to limit local graphs divergence due to unreliable, rapidly outdated UAV position data. Unlike most state-of-the-art methods which use random medoids selection, we employ K-means++ strategy to initialize medoids to NM farthest away nodes in 
+
+Gm. By selecting distant nodes initially, we aim to reduce initialization variance because these nodes are likely to be in different clusters and less prone to immediate changes in their connectivity within the graph compared to other nodes. We employ the closeness centrality method [21] for our analysis due to its focus on distance metrics. Unlike other centrality measures such as PageRank or between-ness centrality, closeness centrality assesses how easily a node can reach all other nodes in the graph, emphasizing shortest Partition  Medoid      
+
+> (a) Generalized Vorono¨ ı Diagram vFvHUAV (b) K-medoid (closeness centrality) Fig. 3. Comparison of graph partitioning methods, with NM= 2
+
+path relationships. Cluster are then attributed to UAVs. In the Voronoi ap-proach, UAVs act as medoids, so assignment is inherently coupled with partitioning. In K-medoid, each medoid must be explicitly mapped to a UAV. A cost matrix of minimal distances between medoids and UAVs is computed, and the Hungarian algorithm performs optimal one-to-one assign-ment by minimizing total cost. 
+
+2) Planning: Once the nodes in Gmext are assigned to each agent, every UAV proceeds with sequential exploration of the GES corresponding to its allocated nodes. Each UAV explores the closest GES, where closeness is defined using a weighted distance that accounts for both the UAV position and its partition’s medoid [15]. This approach avoids, on the one hand, planning toward overly peripheral regions of the partition, which would pull the UAV away from its cluster, and on the other hand, focusing only on centrally located regions, which would restrict the expansion of the explored space. Newly discovered and connected vF nodes are assigned by default to the discovering UAV if directly adjacent to its partition or improving relative position to its medoid. Otherwise, they remain unassigned and are redistributed during the task allocation phase, preventing the UAV from being driven toward progressively distant regions outside its assigned partition. If exploration of a partition is completed before reallocation —either because the partition is empty or further obstacles detection makes the area inaccessible— the UAVs plan toward the GES still in Gmext attributed to other UAVs closest to its centroid. 
+
+3) Complexity: Johnson-Dijkstra’s algorithm is chosen for its lower complexity of O(( | E | + | V | ) log( | V | ),making it efficient for sparse graphs where the number of edges exceeds the number of nodes. However, we populate an adjacency matrix after applying Dijkstra’s algorithm to facilitate easy access to all pairwise distances, increasing the overall complexity to O( | V | 2). This approach remains advantageous compared to algorithms like Floyd-Warshall, which have a higher complexity of O( | V | 3).The computational complexities for K-medoid and Voronoi are O( | V | NM T ) and O( | V | log( | V | )) , respec-tively. However, since the adjacency matrix is computed in all cases for shortest paths, frequently accessed during plan-ning, the overall system complexity remains quadratic. The primary advantage of Voronoi lies in its ability to perform in-dividual assignments nearly in O( | V | ) (cf. Sec. II-B). When applied to an adjacency matrix, Voronoi complexity becomes 
+
+O( | V | NM ), placing it on par with K-medoid. Additionally, K-medoids performs clustering via distance minimization, resulting in an overall complexity of O( | V | NM T + | V | 2 
+
+> NM
+
+).Assuming T is constant, both algorithms exhibit near-linear scaling behavior for small swarms. However, when NM
+
+increases, potentially approaching the number of nodes in the graph, the complexity degrades towards quadratic growth. 
+
+D. Graph Extension 
+
+The proposed graph extension method temporary augment 
+
+Gm by connecting selected GES during the distributed task partition process resulting in the extended graph Gmext .Neighboring GES in stage 1, denoted vadj N , are attached with associated edges to the overall structure to steer exploration toward space regions with higher GES concentration (see Fig. 2 step S2 and Sec. III-D). The intuition behind graph topological aware extension is highlighted in Fig. 4. In Fig. 4a, edge addition is detrimental: one node (circled in blue) is topologically separated due to an obstacle and does not share common ancestry with the others. In this case, adding edges without topological consideration would intro-duce spurious shortcuts between otherwise distant regions of the graph. In Fig. 4b, in contrast, edge addition is beneficial, as the nodes share common ancestors and the added edges reinforce their existing structural proximity within the graph. Algorithm 2 presents the proposed graph extension proce-dure. For each vF in Gm, we identify and establish parentage to its geographically adjacent GES in stage 1 neighbors, sharing a face or edge and not yet included in the graph and explored. We first gather all vadj N , then, for each of them, identify the sets of vF parent PF (vadj N ) with common 
+
+vH ancestry. As shown in Fig. 4b, if all parents belong to the same largest connected component (LCC), we add vadj N
+
+to the the graph and connect it to this parents via eF F .Otherwise, vadj N is ignored as in Fig. 4a, to avoid creating spurious shortest paths. As mentioned above, no edges exist between vF eF F in Gm; They are introduced in Gmext . The edge weight corresponds to the Euclidean distance between node positions, scaled by a penalty value ρF F > 1.0. This penalty accounts for uncertainty regarding obstacles since farther undiscovered nodes have unknown reachability from other nodes. IV. EXPERIMENTS AND RESULTS 
+
+A. Experimental setup 
+
+We evaluate the algorithms using total exploration time 
+
+Ttot , average UAV traveled distance Davg , and the standard deviation of total traveled distance across agents Dstd . Times are reported in seconds, and distances in meters. These metrics capture operational constraints by promoting fast ex-ploration while limiting unnecessary motion and imbalance Sets of common  vH ancestry                      
+
+> Obstacle viewed, unknown
+> (a) Conservation: disjoint vHsets eHH , e HF (original), eFF (enhanced)
+> vH∈PH(v F) | vF∈PF(v N), vN
+> adj adj (b) Extension: intersecting vHsets Fig. 4. Effect of vadj Nparent-set connectivity on graph extension.
+
+Algorithm 2 Construct extended graph Gmext  
+
+> 1:
+
+Notation: PF (vN ): vF parents of vN ; PH (vF ): vH
+
+parents of vF ; PH(vN ) = {PH (vF ) | vF ∈ PF (vN )}. 
+
+> 2:
+
+Gmext ← Gm 
+
+> 3:
+
+for all vF ∈ Gm do  
+
+> 4:
+
+for all vadj N ∈ GET ADJACENT GES( vF ) do  
+
+> 5:
+
+PF (vadj N ) ← vF , PH(vadj N ) ← PH (vF ) 
+
+> 6:
+
+end for  
+
+> 7:
+
+end for  
+
+> 8:
+
+for all vadj N do  
+
+> 9:
+
+U ← PF (vadj N ) ∪ PH (vadj N ) 
+
+> 10:
+
+if LARGEST CONNECT COMPONENT (U) = U then  
+
+> 11:
+
+Gmext nodes ← vadj N 
+
+> 12:
+
+for all vF ∈ PF (vadj N ) do  
+
+> 13:
+
+length e ← ρF F ∥vF − vadj N ∥ 
+
+> 14:
+
+Gmext edges ← (vadj N , v F , length e) 
+
+> 15:
+
+end for  
+
+> 16:
+
+end if  
+
+> 17:
+
+end for 
+
+between UAVs. We additionally introduce τ , the average computation time of a graph partition during exploration. To evaluate performance under a fixed communication range and opportunistic communication, i.e., without connectivity strategy, we introduce four additional metrics. First, the connectivity ratio ρconn = 1
+
+> Ttot k
+
+PTtot  
+
+> 0
+
+nr
+
+> conn
+
+(t) is the nor-malized average number of communication partners per UAV over a run r. Second, we define Btot as the total volume of data exchanged by a UAV during the run, measured in megabits. We then quantify both intra-UAV stability and inter-UAV consensus of partition medoid estimates under varying connectivity conditions.      
+
+> (a) Maze, 2560 m3[1] (b) Subterranean (SubT), 13710 m3
+> Fig. 5. Simulation environments
+
+We first evaluate the stability of each UAV’s assigned cluster medoid trajectory. This metric is only meaningful for K-medoids-based approaches, since in Voronoi partitioning TABLE I SIMULATION PARAMETERS 
+
+Parameter Value Parameter Value Number of UAVs 3 Voxel size 0.001 m3
+
+Average UAV velocity 1.1 m.s −1 GES size 8 m3
+
+Communication radius 6 m Sensing radius 4 m
+
+the medoid trajectory coincides with the UAV trajectory. Let 
+
+xr,i (tk) ∈ R3 denote the medoid position of UAV i at time 
+
+tk in run r, and let cr,i (tk) ∈ { 0, 1} indicate whether UAV i
+
+is connected to at least one other agent over the time window 
+
+[tk − τ, t k]. Stability is defined as the trace of the covariance of the medoid trajectory over the sliding window: 
+
+V r,i s (tk) = Tr  Cov  {xr,i (tj )}tj ∈[tk −τ,t k ]
+
+ . (1) We additionally quantify inter-UAV consensus by measur-ing the dispersion of medoid estimates across agents. At each time tk, every UAV computes a medoid position for a given UAV i, and these estimates are averaged across all UAVs to obtain ¯xr,i (tk). The consensus metric is then defined as the temporal covariance of this averaged estimate over the sliding window: 
+
+V r,i c (tk) = Tr  Cov  {¯xr,i (tj )}tj ∈[tk −τ,t k ]
+
+ . (2) For both stability and consensus metrics, the mean is computed over disconnection intervals to quantify partition divergence : 
+
+V r,i ϕ,disc = mean {V r,i ϕ (tk) | cr,i (tk) = 0 }, ϕ ∈ { s, c }. (3) Simulations are conducted using the ROS and Gazebo framework with the configuration settings detailed in Tab. I. We select a 3-drone setup due to its low cost and inherent asymmetry, a prime configuration highlighting exploration performance variations. Each configuration is run 20 times; metrics are averaged over runs and variability is assessed using box and whisker plots (minimum, maximum, median, quartiles Q1 and Q3), with the mean also reported. The orig-inal MRE algorithm relies on a Voronoi-based decomposition combined with global communications, without any form of graph extension, and the evaluation is restricted to relatively homogeneous, office-like environments, without assessing performance under various topology. We conduct experi-ments both in the original setup provided in [1] (Fig. 5a) and in a more complex map featuring multiple corridors and dead ends, to approximate subterranean conditions (Fig. 5b). The environments are intentionally kept with limited vertical extent (quasi-planar) for visualization purposes, although the framework fully supports 3D scenarios. Our approach on graph extension is applied to two clus-tering methods: K-medoids clustering on graphs [2] and the communication-constrained version of the original graph-based Voronoi method [1]. For graph extension, we compare against [3], which samples points uniformly over the graph 
+
+TABLE II COMPARED METHOD LABELING 
+
+Category Notation Description Method K-medoid [2] K-medoid partition + Hungarian Voronoi [1] Voronoi-based allocation Communication Glob (global) full-range Loc (local) range-limited Graph extension Std None 
+
+Ext (ours) Topological connectivity-based Samp [3] Sampling-based 
+
+within a sensing-range window for a Voronoi-based alloca-tion. We also compare graph partitioning based on topolog-ical distances (i.e., edge weights) and based on euclidean distances between node positions. The notation and encoding scheme used throughout this work are summarized in Tab. II. Each configuration follows the naming convention Method– Communication–Graph extension . Methods enhanced with our approach are indicated in bold in the legends and tables, while the others are represented with hatched box-plots. 
+
+B. Results analysis 1 2 3 4 5 6 7 8125 150 175 200 225 250 275 
+
+> Exploration Time (s)
+> 203.61 185.26 198.92 201.61 161.94 173.77 163.00 193.52
+> K-medoid-Glob-Std
+> K-medoid-Glob-Ext
+> K-medoid-Loc-Std
+> K-medoid-Loc-Ext
+> Voronoi-Glob-Std
+> Voronoi-Glob-Ext
+> Voronoi-Loc-Std
+> Voronoi-Loc-Ext
+
+(a) Maze 1 2 3 4 5 6 7 8200 250 300 350 400 450 
+
+> Exploration Time (s)
+> 351.37 299.54 316.59 314.45 267.76 264.95 319.36 300.76
+> K-medoid-Glob-Std
+> K-medoid-Glob-Ext
+> K-medoid-Loc-Std
+> K-medoid-Loc-Ext
+> Voronoi-Glob-Std
+> Voronoi-Glob-Ext
+> Voronoi-Loc-Std
+> Voronoi-Loc-Ext
+
+(b) Subterranean (SubT) Fig. 6. Comparison of environments and communication scope on total exploration time required to explore 95% of the map. 
+
+1) Environment dependence: In Fig. 6a, for the maze environment, Voronoi and K-medoid exhibit similar perfor-mance under both local and global communication regimes, occasionally achieving slightly better results in the local setting, with or without graph extension. This suggests the exploration partitioning process is only weakly affected by the communication radius; even under limited communi-cation, the swarm converges to similar exploration strate-gies with no significant performance loss. Such behavior highlights the robustness of Voronoi in sparse, unclustered environments, while suggesting that communication-limited settings provide limited additional insight in these conditions. TABLE III PERFORMANCES COMPARISON OF METHODS UNDER LIMITED COMMUNICATION (L OC ), IN ENVIRONMENT SUB T                                                                                 
+
+> Scope Method Global Local
+> Ttot Davg Ttot Davg Dstd ρconn Btot Vs, disc Vc, disc τ
+> Std Voronoi 267.8 291.1 319.4 352.7 9.8 0.14 252.3 ––3×10 −4
+> K-medoid 351.4 360.7 316.6 355.5 9.8 0.18 221.8 59.1 244.0 1.1 Ext (ours) Voronoi 265.0 295.0 300.8 335.9 4.9 0.17 215.3 ––1.1 K-medoid 299.5 316.0 314.5 364.3 5.5 0.18 252.8 76.6 241.7 1.1 Samp Voronoi 307.1 316.3 298.6 334.7 6.6 0.21 225.3 ––1.1 K-medoid 273.6 305.2 319.7 357.0 18.5 0.17 229.0 56.9 259.6 1.1
+
+In contrast to Maze, for the SubT environment in Fig. 6b, most partition methods perform better, as expected, un-der global communication, except K-medoids, which shows higher variability. This stems from the low number of frontiers, leading to sparse graph connectivity and strong bottlenecks due to insufficient node density at the boundaries. As a result, clusters shift rapidly across UAVs, causing frequent changes in partition structure. In Tab. III, we observe similar performances for Voronoi-Loc with both extension methods, which is likely related to the topology of the environment. In environments with thin walls or tight separations, clustering nodes geographically close but topologically distant lead to inefficient backtrack-ing. The SubT environment, however, is characterized by non-concave obstacles, wide corridors, and low-curvature turns. These properties create regions that are spatially ex-tended while remaining clearly separated at their extremities, reducing ambiguity in exploration progression. In SubT environments structural complexity including dead-ends and crossroads limits partitioning effectiveness making robust graph extension beneficial. Subsequent eval-uations focus on the SubT environment. 
+
+2) Effect of graph extension: Overall, graph extension improves both partitioning methods. In global settings, topological extension preserves Voronoi performance, while sampling-based extension improves K-medoids stability, re-ducing T tot and Davg by 15% (see Tab. III). In local settings, topological extension maintains K-medoids perfor-mance, while both extensions improve Voronoi, with gains of 20 s in T tot and 20 m in Davg .Graph extension stabilizes K-medoid clusters shape, posi-tion, and assignment. Drones prioritize broader exploration due to continuously integrating information from other UAVs located in different regions of the environment. As environ-mental knowledge increases, the system becomes less driven toward exploration and increasingly focused on thoroughly exploring remaining vF ∈ Gmext within known regions. 
+
+3) Local dynamics: K-medoids, which we modified for stable graph partitioning, performs similarly to Voronoi under local and opportunistic communication, and both remain insufficient to match the performance of their global counter-parts. In contrast, while K-medoids shows little benefit from graph extension, Voronoi is consistently improved by both extension methods, reducing T tot by 20 s and Davg by 18 m per UAV. We also observe that Dstd is significantly lower with topological extension for both Voronoi and K-medoids, indicating that UAVs tend to travel more similar distances during exploration, independently of the frontiers exploration rate. Although ρconn is similar across configurations, it only re-flects average connectivity, not contact timing or data volume per encounter. In practice, encounter frequency and spacing influence data exchange, as longer independent exploration increases accumulated information. Thus, despite similar 
+
+ρconn , the extended Voronoi approach reduces Btot while maintaining better performance through more even spatial distribution and reduced travel to new areas. K-medoids performs better when V s, disc is high, as connected communication uniformly propagates information across the map, leading to more centrally located medoids and increased back-and-forth UAV motion. The sampling-based extension encourages early spatial dispersion and improves the ratio of explored area to traveled distance in the initial phase. However, in later stages, reduced awareness of other agents’ states and explored regions limits efficient discovery of remaining areas, similar to standard graph configurations, with minimal redundancy. 
+
+4) Allocation robustness: Across all categories and in-dependently of the graph extension, K-medoid consistently yields higher total exploration times and higher average traveled distances than Voronoi. This confirms the greater robustness of Voronoi for swarm exploration in the consid-ered settings. The comparison of partitioning approaches has shown that the strength of one algorithm is the weakness of the other: K-medoids has a higher grasp on environment exploitation and UAVs coordination, while Voronoi pushes the swarm towards deeper exploration achieving higher per-formances. We observed that, in the standard configuration without extension, Voronoi-based partitioning is only locally consis-tent in the short term during direct drone communication, but regions may evolve in parallel along similar directions in disconnected neighborhoods without synchronization. In contrast, K-medoid clustering can produce fragmented small clusters in previously unvisited areas, leading to biased ex-ploration confined to residual regions or artificial assignment of drones to poorly representative zones. Both approaches rely on single-source information that lacks long-term valid-ity. As mentioned before, under limited communications, no significant performance improvement is observed for K-medoid when applying the proposed extension in terms of exploration efficiency. However, our topological extension induces lower cluster-position divergence V c, disc than the sampling-based extension, while also achieving better con-sensus during disconnection than the standard baseline and indicating a more consistent cluster assignment over time. V. CONCLUSION This article presents a novel exploration graph extension method based on nodes parenting connectivity, to support distributed regions allocation during multi-agent exploration of unknown environments under limited-communication. Partitioning efficiency depends on environment topology and Euclidean distance can outperform topological metrics. In constrained environments, enriching the exploration graph under low communication rates is beneficial. It helps main-tain deeper exploration, reduces overlap with other drones’ inferred exploration zones, and mitigates performance degra-dation. Future work includes increasing robustness to environ-mental topology and refining decision criteria, particularly regarding the trade-off between deep exploration and lateral area completion. A first direction to improve graph extension and local knowledge accuracy through parameter tuning, trajectory prediction and learning-based approaches. A com-plementary research direction is the development of recovery strategies, such as rendezvous, to increase the frequency and timing of information sharing within the swarm or toward an external operator, both for emergency intervention and improved shared knowledge supporting local decision-making. VI. ACKNOWLEDGMENT We gratefully acknowledge Donovan Thaing for his help in performing experiments. REFERENCES [1] Q. Dong, H. Xi, S. Zhang, Q. Bi, T. Li, Z. Wang, and X. Zhang, “Fast and communication-efficient multi-uav exploration via voronoi parti-tion on dynamic topological graph,” in 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , Oct. 2024, pp. 14 063–14 070. [2] L. Goodwin and S. Nokleby, “A k-means clustering approach to segmentation of maps for task allocation in multi-robot sys-tems exploration of unknown environments,” in Proceedings of the 2022 USCToMM Symposium on Mechanical Systems and Robotics ,P. Larochelle and J. M. McCarthy, Eds. Cham: Springer International Publishing, Apr. 2022, pp. 198–211. [3] T. Ding, R. Zheng, S. Zhang, and M. Liu, “Balanced collaborative exploration via distributed topological graph voronoi partition,” Oct. 2025, arXiv:2510.24067 [cs]. [4] J. Yu, J. Tong, Y. Xu, Z. Xu, H. Dong, T. Yang, and Y. Wang, “Smmr-explore: Submap-based multi-robot exploration system with multi-robot multi-target potential field exploration method,” in 2021 IEEE International Conference on Robotics and Automation (ICRA) ,2021, pp. 8779–8785. [5] B. Yamauchi, “Frontier-based exploration using multiple robots,” in 
+
+Proceedings of the second international conference on Autonomous agents - AGENTS ’98 . Minneapolis, Minnesota, United States: ACM Press, May 1998, pp. 47–53. [6] Y. Gao, Y. Wang, X. Zhong, T. Yang, M. Wang, Z. Xu, Y. Wang, Y. Lin, C. Xu, and F. Gao, “Meeting-merging-mission: A multi-robot coordinate framework for large-scale communication-limited explo-ration,” in 2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , Oct. 2022, pp. 13 700–13 707. [7] A. Ribeiro and M. Basiri, “Efficient 3D Exploration with Distributed Multi-UAV Teams: Integrating Frontier-Based and Next-Best-View Planning,” Drones , vol. 8, no. 11, p. 630, Oct. 2024. [8] Y. Tang, R. Zhou, G. Sun, B. Di, and R. Xiong, “A Novel Cooperative Path Planning for Multirobot Persistent Coverage in Complex Envi-ronments,” IEEE Sensors Journal , vol. 20, no. 8, pp. 4485–4495, Apr. 2020. [9] M. Luperto, M. Tellaroli, M. Antonazzi, and N. Basilico, “Multi-robot rendezvous in communication-restricted unknown environments via backtracking and semantic frontier-based exploration,” Robotics and Autonomous Systems , vol. 194, p. 105137, Dec. 2025. [10] W. Gao, M. Booker, A. Adiwahono, M. Yuan, J. Wang, and Y. W. Yun, “An improved Frontier-Based Approach for Autonomous Explo-ration,” in 2018 15th International Conference on Control, Automation, Robotics and Vision (ICARCV) , Nov. 2018, pp. 292–297. [11] F. Benavides, C. Ponzoni Carvalho Chanel, P. Monz´ on, and E. Gramp´ ın, “An Auto-Adaptive Multi-Objective Strategy for Multi-Robot Exploration of Constrained-Communication Environments,” Ap-plied Sciences , vol. 9, no. 3, p. 573, Jan. 2019, number: 3. [12] F. Benavides, P. Monz´ on, C. P. Carvalho Chanel, and E. Gramp´ ın, “Multi-robot Cooperative Systems for Exploration: Advances in Deal-ing with Constrained Communication Environments,” in 2016 XIII Latin American Robotics Symposium and IV Brazilian Robotics Sym-posium (LARS/SBR) , Oct. 2016, pp. 181–186. [13] K. Pongsirijinda, Z. Cao, B. Pik Lik Lau, R. Liu, C. Yuen, and U.-X. Tan, “MEF-Explore: Communication-Constrained Multi-Robot Entropy-Field-Based Exploration,” IEEE Transactions on Automation Science and Engineering , vol. 22, pp. 16 062–16 078, 2025. [14] Z. Zhang, J. Yu, J. Tang, Y. Xu, and Y. Wang, “MR-TopoMap: Multi-Robot Exploration Based on Topological Map in Communication Restricted Environment,” IEEE Robotics and Automation Letters ,vol. 7, no. 4, pp. 10 794–10 801, Oct. 2022. [15] A. Solanas and M. Garcia, “Coordinated multi-robot exploration through unsupervised clustering of unknown space,” in 2004 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) (IEEE Cat. No.04CH37566) , vol. 1, Sep. 2004, pp. 717–721. [16] L. Bramblett, R. Peddi, and N. Bezzo, “Coordinated Multi-Agent Exploration, Rendezvous, & Task Allocation in Unknown Environ-ments with Limited Connectivity,” in 2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , Oct. 2022, pp. 12 706–12 712. [17] “A new global optimization strategy for coordinated multi-robot exploration: Development and comparative evaluation,” Robotics and Autonomous Systems , vol. 59, no. 9, pp. 635–653, Sep. 2011. [18] H. Lee and M. Lee, “Multi-Agent Coverage Path Planning Using Graph-Adapted K-Means in Road Network Digital Twin,” Electronics ,vol. 14, no. 19, Oct. 2025. [19] A. Bautin, O. Simonin, and F. Charpillet, “Minpos: A novel frontier al-location algorithm for multi-robot exploration,” in Intelligent Robotics and Applications , C.-Y. Su, S. Rakheja, and H. Liu, Eds. Berlin, Heidelberg: Springer Berlin Heidelberg, 2012, pp. 496–508. [20] S. Sieranoja and P. Fr¨ anti, “Adapting k-means for graph clustering,” 
+
+Knowledge and Information Systems , vol. 64, no. 1, pp. 115–142, Jan. 2022. [21] M. Hajij, E. Said, and R. Todd, “Pagerank and the k-means clustering algorithm,” Mar. 2021, arXiv:2005.04774 [cs]. [22] X. Yang, Y. Yang, C. Yu, J. Chen, J. Yu, H. Ren, H. Yang, and Y. Wang, “Active neural topological mapping for multi-agent exploration,” IEEE Robotics and Automation Letters , vol. 9, no. 1, pp. 303–310, Jan. 2024.

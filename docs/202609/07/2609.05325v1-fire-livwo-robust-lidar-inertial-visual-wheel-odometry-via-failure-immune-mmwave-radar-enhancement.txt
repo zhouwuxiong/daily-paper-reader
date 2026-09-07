@@ -1,0 +1,776 @@
+Title: FIRE-LIVWO: Robust LiDAR-Inertial-Visual-Wheel Odometry via Failure-Immune mmWave Radar Enhancement
+
+URL Source: https://arxiv.org/pdf/2609.05325v1
+
+Published Time: Mon, 07 Sep 2026 01:13:21 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# FIRE-LIVWO: Robust LiDAR-Inertial-Visual-Wheel Odometry via Failure-Immune mmWave Radar Enhancement 
+
+Kun Hu 1, Menggang Li 1,2,3,†, Kaidi Wu 1, Zhiwen Jin 1,Yingjie Zhao 1, Chaoquan Tang 1, Eryi Hu 1 and Gongbo Zhou 1
+
+Abstract — Achieving robust simultaneous localization and mapping (SLAM) in large-scale underground coal mines with complex structures and severe degeneracies remains highly challenging. Dense smoke and dust often cause substantial loss of visual information and degrade LiDAR point-cloud features, while long, self-similar corridors induce geometric degeneration that leads to pronounced odometry drift along specific degrees of freedom. To address these issues, we propose FIRE-LIVWO: Failure-Immune mmWave Radar-Enhanced Li-DAR–Inertial–Visual–Wheel Odometry, a tightly coupled multi-modal odometry framework based on an iterated error-state Kalman filter (IESKF). The framework fuses 4D millimeter-wave (mmWave) radar, LiDAR, and visual features within a unified VoxelMap and jointly constructs LiDAR–radar point-to-plane residuals and sparse visual photometric residuals for the filter update. In smoke-filled environments, we exploit the strong penetration capability of 4D mmWave radar and introduce pointwise Doppler velocity constraints to preserve state observability. In geometrically degenerate corridors, we tightly couple wheel odometry using non-holonomic constraints (NHC) and online lever-arm compensation to reduce drift. Our central contribution is a degeneration detection and adaptive fusion model switching strategy grounded in geometric and visual observability analysis, which quantifies observability online and dynamically adjusts the weights and activation states of each modality. Real-world experiments in underground coal mines demonstrate that FIRE-LIVWO accurately identifies the boundaries of visual failures and geometric underconstraints, enabling reliable modality switching under extreme conditions. Compared with baseline methods, it achieves superior accuracy and robustness, with an average localization error of 5.677 m. We open source our code of this work on Github 3 to benefit the robotics community. 
+
+I. INTRODUCTION Underground coal-mine tunnels feature long travel dis-tances, poor illumination, heavy dust and smoke, and highly                                        
+
+> Research supported by the National Natural Science Foundation of China (grant number: 52304183, 52274159), the Jiangsu Provincial Key Research and Development (R&D) Plan Projects (BE2023008-4), and the Project Funds of the Priority Academic Program Development of Jiangsu Higher Education Institutions (PAPD).
+> 1K. Hu, M. Li, K. Wu, Z. Jin, Y. Zhao, C. Tang, G. Zhou and E. Hu are with the School of Mechatronic Engineering, China University of Mining and Technology. ts22050017a31, sallylmg, ts23050205p31, ts24050202p31, ts23050157p31, tangchaoquan, gbzhou@cumt.edu.cn, horyhu@126.com
+> 2M. Li is with the Jiangsu Collaborative Innovation Center of Intelligent Mining Equipment, China University of Mining and Technology.
+> 3M. Li is with the National Key Laboratory of Intelligent Mining Equipment Technology, China University of Mining and Technology. Kun Hu and Menggang Li contributed equally to this work and should be considered co-first authors.
+> †Menggang Li is the corresponding author.
+> 3https://github.com/KJ-Falloutlast/FIRE-LIVWO
+
+repetitive layouts. In post-disaster rescue operations, vis-ibility can deteriorate abruptly, and the ground may be-come uneven and unstructured, creating substantial haz-ards for mobile robots performing autonomous inspection and search-and-rescue. Building high-precision, long-term digital-twin colored point-cloud maps in such environments typically relies on LiDAR–Visual–Inertial (LVI) SLAM sys-tems. However, in complex underground mines, LVI systems often fail due to the combined effects of heterogeneous degeneration mechanisms: (1) Visual degradation: high-concentration smoke reduces image contrast and disrupts photometric consistency; (2) Geometric degradation: long, straight corridors and smooth walls provide insufficient geo-metric structure in LiDAR point clouds, causing pronounced drift in state estimation; and (3) Limitations of multi-modal fusion: existing degeneration-handling methods often rely on a single Hessian-threshold test or fixed sensor-fusion strategies, limiting their ability to adaptively schedule multi-source information under mixed degeneracies. To address these challenges, we present FIRE-LIVWO, a robust, tightly coupled multi-modal odometry system based on IESKF. Our main contributions are as follows:  
+
+> •
+
+Contribution 1: We propose a tightly-coupled frame-work that jointly optimizes LiDAR–radar geometric residuals and visual photometric residuals within a uni-fied VoxelMap. The framework further integrates radar Doppler velocity constraints to improve robustness and prevent divergence in smoke-filled environments.  
+
+> •
+
+Contribution 2: To mitigate geometric degradation in long underground corridors, we introduce a tightly coupled wheel-odometry module that incorporates non-holonomic constraints (NHC) and adaptive online lever-arm compensation, thereby reducing corridor-induced drift.  
+
+> •
+
+Contribution 3: We design a degradation detection and adaptive fusion strategy based on geometric and vi-sual observability analysis. By monitoring observability scores online, the system identifies smoke interference and geometric underconstraints, dynamically switches fusion modalities, and maintains continuous state esti-mation across scenarios.  
+
+> •
+
+Contribution 4: Extensive real-world experiments in underground coal mines validate the proposed method. We also conduct comprehensive evaluations against state-of-the-art approaches, demonstrating superior ac-curacy and reliability under challenging conditions. arXiv:2609.05325v1 [cs.RO] 4 Sep 2026 II. R ELATED WORK 
+
+Simultaneous localization and mapping (SLAM) in large-scale, unknown, and structurally complex underground coal mines remains highly challenging. Low illumination, per-vasive dust and smoke, and long, self-similar corridor ge-ometries make it difficult for conventional SLAM systems that rely on a single exteroceptive modality to operate reliably over long durations in real deployments. Prior work has primarily improved robustness along two directions: (i) tightly coupled multi-sensor fusion to increase measurement redundancy and enhance state observability; and (ii) degen-eration detection with adaptive constraint scheduling to avoid incorporating unreliable measurements when observations are degraded. Tightly coupled LiDAR–inertial odometry (LIO), which combines LiDAR geometric constraints with inertial mea-surements from an IMU, is a mainstream approach for underground localization. LIO-SAM [1] and FAST-LIO2 [2] achieve tight coupling of LiDAR and IMU measurements. To mitigate LiDAR performance degradation in weakly structured scenes (e.g., long, straight corridors), researchers have developed LiDAR–visual–inertial (LVI) systems that incorporate vision. LVI-SAM [3] integrates LIO and VIO in a factor-graph framework to improve robustness, while R3LIVE [4], FAST-LIVO [5], FAST-LIVO2 [6], and SR-LIVO [7] adopt an iterated error-state Kalman filter (IESKF) to tightly couple LiDAR, visual, and inertial data. In recent years, 4D mmWave radar has attracted increas-ing attention because of its strong penetration capability in dust and smoke. 4DRadarSLAM [8] presented an end-to-end mmWave SLAM system. GaRLIO [9] proposed a gravity-aided radar–LiDAR–inertial odometry method that leverages pointwise Doppler velocities to improve gravity estimation and reduce vertical drift. DR-LRIO [10] intro-duced a degradation-robust LiDAR–radar–inertial odometry system and demonstrated robust localization in degenerate environments, including geometrically self-similar tunnels and dense fog. Wheel odometry provides proprioceptive motion infor-mation that is independent of exteroceptive sensing and is therefore valuable in geometrically degenerate settings such as tunnels. Mandow et al. [11] proposed an extended differential-drive model. ACK-MSCKF [12] preintegrates wheel-odometry forward-velocity and angular-rate measure-ments, but assumes flat terrain. Liu et al. [13] improved lo-calization accuracy by preintegrating encoder and gyroscope measurements. Degradation detection is essential for robust operation in complex environments. Zhang et al. [14] detected odometry degradation by analyzing the eigenvalues of the LiDAR Hessian matrix. X-ICP [15] combined localizability detection with optimization to improve scan-matching accuracy un-der degradation. LIVER [16] integrated LiDAR degradation handling with learning-based image enhancement. However, these systems rely on MAP-based fusion; when sensors experience long-duration failures, the estimator may diverge. Moreover, they can be overly dependent on vision and there-fore may not operate reliably in no-illumination scenarios. III. P RELIMINARY 
+
+A. Notations and Definitions                    
+
+> TABLE I DEFINITIONS OF IMPORTANT VARIABLES
+> Notation Meaning
+> x,ˆx,xGround truth, predicted, and updated estimates of x.
+> δxError-state vector.
+> G(·),B(·)Vector in global or body frame.
+> R(·),L(·),C(·)Vector in radar, LiDAR, or camera frame.
+> W(·),I(·)Vector in wheel or IMU frame.
+
+We assume that the temporal offsets among the five sensors—LiDAR, IMU, camera, wheel odometer, and 4D mmWave radar—are known (via pre-calibration or synchro-nization). The IMU frame, denoted by I, is used as the body frame, and the global frame, denoted by G, is defined at the origin of the total-station coordinate system (Table I). All sensors are rigidly mounted, and the LiDAR, camera, and IMU are hardware-synchronized. The discrete-time state transition model at the i-th IMU measurement is 
+
+xi+1 = xi ⊞ (∆t f (xi, ui, wi)) , (1) where ⊞/⊟ denote the generalized addition/subtraction op-erators [2], ∆t is the IMU sampling period, and the state 
+
+x ∈ R18 is defined as 
+
+x ≜  GRTI GpTI GvT bT 
+
+> g
+
+bT 
+
+> aG
+
+gT T . (2) The input u, process noise w, and function f follow the definitions in [2]; due to space limitations, we omit the details here. 
+
+B. Error-State Iterated Kalman Filter Update 
+
+The propagated state ˆ xk and covariance ˆ Pk obtained from forward propagation [2] impose a prior distribution on xk:
+
+xk ⊟ ˆxk ∼ N  0, ˆPk
+
+ . (3) Combining the prior in (3) with radar Doppler-velocity measurements zRV , radar geometric measurements zRG , Li-DAR measurements zL, visual measurements zC, and wheel-odometry measurements zW , we obtain the maximum aposteriori (MAP) estimate of δ xk:min   
+
+> δxk∈M
+
+∥xk ⊟ ˆxk∥2ˆPk +
+
+> NRV
+
+## ∑
+
+> i=1
+
+rRV
+
+ ziRV , xk
+
+ 2
+
+> PiRV
+
++
+
+> NRG
+
+## ∑
+
+> i=1
+
+rRG
+
+ ziRG , xk
+
+ 2
+
+> PiRG
+
++
+
+> NL
+
+## ∑
+
+> i=1
+
+rL
+
+ ziL, xk
+
+ 2
+
+> PiL
+
++
+
+> NC
+
+## ∑
+
+> i=1
+
+rC
+
+ ziC, xk
+
+ 2
+
+> PiC
+
++
+
+> NW
+
+## ∑
+
+> i=1
+
+rW
+
+ ziW , xk
+
+ 2
+
+> PiW
+
+!
+
+,
+
+(4) where ∥x∥2 
+
+> P
+
+≜ xT P−1x, and rRV , rRG , rL, rC, and rW denote the Doppler-velocity residual, radar geometric residual, Li-DAR residual, visual residual, and wheel-odometry velocity Radar Inputs             
+
+> LiDAR Inputs Pre -processing Backward
+> Propagation
+> Point -to -plane
+> Residual Computation
+> Doppler Velocity
+> Residual Compuation
+> Ego -Velocity
+> Estimation
+> Camera Inputs Outlier
+> Rejection
+> IMU Inputs Forward
+> Propagation
+> Voxel Map
+> Wheel Inputs Wheel Odometer
+> Residual Computation
+> Wheel
+> Update
+> Reference Patch
+> Visual Map Point
+> Radar Point
+> LiDAR Point
+> Plane
+> Wheel
+> Initialization
+> Photometric Error
+> Residual Computation
+> Degeneration
+> Detection &
+> Adaptive
+> Fusion Mode
+> Switching
+> Append Radar
+> Update
+> Radar
+> Update
+> Append LiDAR
+> Update
+> LiDAR
+> Update
+> Retrieve
+> Visual
+> Update
+> Visual
+> Update
+> Retrieve
+> Odometry
+> (Section V -A) Radar Enhanced LVI Constraint Module
+> Wheel Odometry Constraint Module (Section V -B)
+> (Section V -C)
+> Radar Inputs
+> LiDAR Inputs Pre -processing Backward
+> Propagation
+> Point -to -plane
+> Residual Computation
+> Doppler Velocity
+> Residual Compuation
+> Ego -Velocity
+> Estimation
+> Camera Inputs Outlier
+> Rejection
+> IMU Inputs Forward
+> Propagation
+> Voxel Map
+> Wheel Inputs Wheel Odometer
+> Residual Computation
+> Wheel
+> Update
+> Reference Patch
+> Visual Map Point
+> Radar Point
+> LiDAR Point
+> Plane
+> Wheel
+> Initialization
+> Photometric Error
+> Residual Computation
+> Degeneration
+> Detection &
+> Adaptive
+> Fusion Mode
+> Switching
+> Append Radar
+> Update
+> Append LiDAR
+> Update
+> Retrieve
+> Visual
+> Update
+> Retrieve
+> Odometry
+> (Section V -A) Radar Enhanced LVI Constraint Module
+> Wheel Odometry Constraint Module (Section V -B)
+> (Section V -C)
+
+System Overview Fig. 1. System overview. 
+
+residual, respectively. PiRV , PiRG , PiL, PiC, and PiW are the corresponding measurement covariance matrices, and NRV ,
+
+NRG , NL, NC, and NW are the numbers of measurements within the interval from tk−1 to tk. The optimization problem in (4) is non-convex and can be solved iteratively using the Gauss–Newton method; this iterative optimization is equivalent to an iterated Kalman filter [17]. IV. S YSTEM OVERVIEW 
+
+Our objective is to estimate the 6-DoF pose of a coal-mine robot while constructing a global map. The overall system architecture is shown in Fig. 1. The system comprises three modules: 
+
+(i) Radar-Enhanced LiDAR Visual Inertial Constraint Module: We extract point clouds from mmWave radar echoes. Using ego-velocity estimation, we reject outliers and construct Doppler-velocity constraints (Chapter V-A). Radar points are then indexed into the map and inserted into a unified VoxelMap jointly maintained with LiDAR and visual data, where radar and LiDAR point-to-plane residuals are formulated in a consistent manner (Chapter V-A.2). In addition, radar and LiDAR points are projected onto the image plane to construct sparse direct photometric errors (Chapter V-A.3). By adopting a unified map representation, this module improves robustness under severe smoke and dust conditions. 
+
+(ii) Vehicle Kinematic Constraint Module: We ob-tain velocity measurements from wheel odometry, synchro-nize wheel-speed data with LiDAR timestamps, and for-mulate vehicle kinematic constraints by incorporating non-holonomic constraints (NHC) and online lever-arm compen-sation (Chapter V-B). 
+
+(iii) Degradation Detection and Adaptive Fusion Mode Switching Module: This module assesses the reliability of multi-source observations in real time and adaptively schedules the fusion strategy. We design a visual degradation detector based on an atmospheric scattering model and a geometric degradation detector based on eigenvalue analysis of the geometric Hessian matrix. The detectors compute a visual observability score OV and a geometric observability score OG, respectively. These indicators identify heteroge-neous degeneration boundaries and dynamically adjust the activation of residual terms in the IESKF, enabling robust state estimation in complex degenerate scenarios (Chapter V-C). V. M ETHODOLOGY 
+
+A. Radar-Enhanced LiDAR-Visual-Inertial Constraint Mod-ule 1) Unified VoxelMap and Visual Map-Point Selection Strategy: We employ an adaptive, octree-based voxel map (Fig. 1) with a root voxel size of 0.5 m. Each leaf voxel stores planar features Π ≜ (n, q, Σn,q) and LiDAR points Lpi.A subset of points is augmented with 8 × 8 image patches to form a set of visual map points, denoted by Pmap :converged points retain only the reference patch, whereas unconverged points additionally store other visible patches. Visual map points are drawn from two sources: LiDAR candidate points lying on planes, denoted by Pmap L , and radar candidate points lying on planes, denoted by Pmap R .Accordingly, Pmap = Pmap L ∪Pmap R . To ensure robust visual alignment, we adopt the map-point selection strategy in [6] and extend it to (i) explicitly incorporate radar field-of-view constraints and (ii) support heterogeneous point sources. This design helps maintain stable visual alignment when LiDAR measurements become degenerate. 
+
+2) Unified Geometric Residuals for LiDAR/Radar and Doppler-Velocity Residuals: We propose a dual-constraint strategy that fuses LiDAR and 4D mmWave radar feature points by jointly leveraging (i) geometric constraints from both LiDAR and radar points and (ii) Doppler-velocity constraints from radar points. In dense smoke, where Li-DAR point-cloud features can degrade, radar geometric constraints help preserve reliable data association, while Doppler-velocity residuals provide complementary motion information. Together, these constraints improve estimation accuracy and robustness. 
+
+Geometric residuals of LiDAR and radar points: Fol-lowing [2], upon receiving a LiDAR scan at time tk, we first compensate motion distortion via backward propagation so that each point Lp j can be treated as being sampled at tk.We then construct a point-to-plane observation model. If the LiDAR point Lp j is transformed into the global frame using the true state xk, its point-to-plane residual should be zero: 
+
+0 = r jL
+
+ xk, nLj
+
+ = uTj
+
+ GTIk
+
+I TLLp j − q j
+
+ , (5) where nLj denotes the LiDAR measurement noise, and u j and 
+
+q j are the normal vector and a point on the matched plane in the map, respectively. Similarly, for a radar feature point 
+
+Rp j, the radar geometric residual r jRG is defined as 
+
+0 = r jRG
+
+
+
+xk, nRG
+
+j
+
+
+
+= uTj
+
+ GTIk
+
+I TRRp j − q j
+
+ , (6) where nRG
+
+j denotes the radar geometric measurement noise, and I TR is the radar-to-IMU extrinsic parameter. Equa-tions (5) and (6) define the LiDAR residual and the radar geometric residual, respectively. 
+
+Doppler-velocity residuals of radar points: We further use radar points Rp j to construct Doppler-velocity residuals. The linear velocity expressed in the radar frame is defined as 
+
+vR(xk, nRV
+
+j ) ≜ vR = I R⊤
+
+R
+
+GR⊤
+
+Ik
+
+GvIk + ⌊ ˆωI ⌋× I pR
+
+
+
+, (7) which leads to the Doppler-velocity residual constraint rRV :
+
+rRV (xk, nRV
+
+j ) = u(Rp j)⊤ I R⊤
+
+R
+
+GR⊤
+
+Ik
+
+GvIk + ⌊ ˆωI ⌋× I pR
+
+
+
+− ˆvR j ,
+
+(8) where I RR and I pR are the radar–IMU extrinsics, ˆvR j is the Doppler measurement of the 4D mmWave radar at Rp j,
+
+⌊ ˆωI ⌋× is the skew-symmetric matrix of the angular velocity, and u(·) denotes the unit direction vector u(Rp j) = Rp j
+
+∥Rp j ∥ .
+
+3) Sparse Direct Photometric Residuals: Inspired by [6], we construct the visual measurement model using visual map points Gpi ∈ Pmap , where Gpi may originate from either LiDAR or radar. The underlying assumption is that, after transforming the map point Gpi into the current image Ik(·)
+
+using the true state xk, the photometric error between the reference patch and the current patch should be zero: 
+
+rC(xk, nc) =  Ik(ui + ∆u) − δ nIk
+
+ −  Ir(u′
+
+i + Ari ∆u) − δ nIr
+
+ ,
+
+(9) where ui = π
+
+CTI
+
+ G ˆTIκ
+
+−1 Gpi
+
+
+
+and u′
+
+i =
+
+π  Cr TGExp (δ T) Gpi
+
+ are the projections of the map point into the current and reference images, respectively. Here, π(·) denotes the camera projection model, ∆u is the pixel offset within the patch, Ari is the affine transformation matrix, and nc denotes image noise. 
+
+B. Vehicle Kinematic-Constraint Module 
+
+In geometrically degenerate environments, such as long, self-similar tunnels, LiDAR or visual constraints can be-come under-constrained along certain directions, leading to accumulated drift. Wheel odometry provides proprioceptive motion information that is independent of external features and can therefore serve as an effective constraint under such structural degradation. Inspired by [18], we formulate the wheel-odometry constraint as 
+
+rW (xk, nW ) = W ˆv − I RTW
+
+ GRTI Gv + I ω × I pW
+
+, (10) where W ˆv is the velocity measurement expressed in the wheel-odometer frame, I v and W v denote the velocity ex-pressed in the IMU and wheel frames, respectively, I RW
+
+and I pW are the wheel-to-IMU extrinsic parameters, I ω is the IMU angular velocity, and nW denotes the measurement noise. 
+
+C. Degradation Detection and Adaptive Fusion Mode Switching Module 
+
+This section presents an observability-analysis-driven strategy for degradation detection and adaptive fusion-mode switching, as illustrated in Fig. 2. The module comprises two components: degradation detection and adaptive fusion mode switching. It introduces additional sensor constraints and switches fusion modes online to improve SLAM robustness in challenging environments. We consider two forms of degradation: (i) visual degra-dation caused by smoke and dust, which substantially re-duces image contrast and obscures texture information; and 1kL     
+
+> +
+> z1kW
+> +
+> zLiDAR Measurements
+> Visual Measurements
+> IMU Measurements
+> Wheel Vel Measurements
+> LIVW Mode LIVR Mode LIV Mode
+> Geometric Degradation
+> Detector kxState
+> Geometric Degeneration
+> Direction
+> Robot Velocity
+> Global Coordinate
+> (a) V
+> kRz1kC
+> +
+> z1kC
+> −
+> zkLz1kL
+> −
+> zkCz
+> Trajectory 1GkI
+> +
+> v
+> Doppler Vel
+> Measurements
+> Degeneration Detection & Fusion Mode Switching
+> Visual Degradation Detector
+> Visual Degradation
+> Degeneration Detection & Fusion Mode Switching
+> (b) (c) GXGZ1k−x1k+xGY
+> Reduced
+> Tr ansmittance
+
+Fig. 2. Degradation detection and adaptive fusion based on geometric and visual observability analysis. (a) In feature-rich corridor scenes, the system localizes using the LiDAR+IMU+Visual (LIV) mode, and the ellipsoid defined by the eigenvectors of the geometric Hessian matrix Hpp is well con-ditioned. (b) In smoke-filled, visually degraded scenes, the visual detector identifies a decrease in transmittance; the system introduces radar Doppler-velocity constraints zRV and switches to the LiDAR+IMU+Visual+Radar (LIVR) mode. (c) In feature-sparse, geometrically degenerate corridors, the geometric detector identifies an under-constrained direction in x-axis translation (the ellipsoid defined by the eigenvectors of Hpp becomes degenerate); the system introduces wheel-odometry velocity constraints zW
+
+and switches to the LiDAR+IMU+Visual+Wheel (LIVW) mode. 
+
+(ii) geometric degradation caused by long, straight cor-ridors, in which point-cloud registration becomes under-constrained along certain degrees of freedom. Accordingly, FIRE-LIVWO employs two complementary detectors. (1) Visual degradation detector (camera-centric): determines whether the current image is in a smoke-induced low-visibility state and decides whether to suppress visual photo-metric constraints while strengthening mmWave radar con-straints. (2) Geometric degradation detector (LiDAR-centric): analyzes the Hessian matrix associated with the point-to-plane residuals rL and rRG to identify under-constrained directions in geometric registration and decides whether to introduce or strengthen wheel-odometry con-straints. Finally, the system selects the fusion mode based on the outputs of both detectors and integrates it into the IESKF iterated update in (4). 
+
+1) Visual Degradation Detector: Smoke- and dust-induced image degradation can be approximated by the classical atmospheric scattering model [19]: 
+
+I(u) = J(u)t(u) + A (1 − t(u)) , (11) where I(u) is the observed pixel intensity, J(u) is the haze-free scene radiance, A is the airlight, and t(u) = 
+
+exp (−β d(u)) ∈ (0, 1] is the transmittance. Here, β is the scattering coefficient and d(u) is the scene depth. Denser smoke yields smaller transmittance, lower contrast, and fewer visible details, thereby reducing the amount of usable visual information. For real-time smoke detection, we estimate the transmit-tance ˆ t(u) using the dark channel prior [20] and define the visual observability score OV for the current frame as the average transmittance: 
+
+OV ≜ ¯tk = 1
+
+|U | ∑
+
+u∈U
+
+ˆt(u) ∈ (0, 1] , (12) where U denotes the set of sampled pixels. A larger OV
+
+indicates higher transmittance and richer image details, and therefore more reliable visual photometric constraints in (9). We define the visual degradation criterion as 
+
+DV =
+
+(
+
+1, OV ≤ Oth V ,
+
+0, otherwise , (13) where Oth V is the threshold for visual degradation. When 
+
+DV = 1, the system is in a visually degraded state. In this case, the sparse direct photometric residual in (9) becomes less reliable due to contrast loss and scattering-induced attenuation. The system should therefore down-weight the visual term or disable visual updates and instead rely on Doppler-velocity constraints to maintain state estimation. 
+
+2) Geometric Degradation Detector: Geometric degra-dation essentially arises when the point-cloud registration problem becomes under-constrained along certain degrees of freedom, which is equivalent to the existence of an null space in the corresponding Hessian matrix. By analyzing the principal directions of the Hessian in point-to-plane ICP optimization, the under-constrained directions can be identified, and unreliable updates along those directions can be suppressed accordingly. Let JG denote the stacked Jacobians of the LiDAR and radar point-to-plane residuals. We define the geometric Hessian under the weighted least-squares formulation as HG ≜ J⊤
+
+G WGJG, where WG =
+
+blkdiag 
+
+
+
+(P1
+
+L)−1, . . . , (PNL
+
+L )−1, (P1
+
+RG )−1, . . . , (PNRG
+
+RG )−1
+
+
+
+.From HG ∈ R18 ×18 , we extract the sub-block correspond-ing to δ x = [ δ Gθ ⊤
+
+I , δ Gp⊤
+
+I ]⊤ ∈ R6: Hpose =
+
+Hrr Hrp 
+
+Hpr Hpp 
+
+
+
+∈
+
+R6×6. We then perform eigen-decomposition on the rota-tional sub-matrix Hrr and the translational sub-matrix Hpp ,respectively: 
+
+Hpp = VpΛpV⊤
+
+p , Hrr = VrΛrV⊤
+
+r , (14) where Λp = diag (λp1 , λp2 , λp3 ) with λp1 ≥ λp2 ≥ λp3 , and the rotational part is defined analogously. We characterize local observability using the relative strength of eigenvalues: 
+
+sp ≜ λp1
+
+λp3 + ε , sr ≜ λr1
+
+λr3 + ε , (15) and define the geometric observability score as OG =
+
+max (sp, sr). The geometric degradation criterion is then given by 
+
+DG =
+
+(
+
+1, OG ≥ max (sth p , sth r ),
+
+0, otherwise , (16) where sth p and sth r are the degradation thresholds for transla-tion and rotation, respectively. The eigenvectors vp3 and vr3
+
+associated with the smallest eigenvalues indicate the degen-erate directions. This interpretation helps explain common structural degeneracies, such as under-constrained translation along the corridor direction or under-constrained rotation about a specific axis. 3.66  z          
+
+> (c)
+> Local Coordinate
+> Z
+> X
+> Y
+> ZXY
+> Local Coordinate
+> ZXY
+> Global Coordinate
+> Z
+> X
+> Y
+> ZXY
+> Global Coordinate
+> ZXY
+> 4D mmwave Radar Coordinate
+> Z
+> X
+> Y
+> Y
+> Camera
+> Coordinate
+> LiDAR Coordinate
+> Z
+> X
+> ZXZ
+> X
+> Y
+> ZX
+> Y
+> Z
+> X
+> Y
+> Wheel Odometry Coordinate
+> Z
+> X
+> Y
+> ZXY
+> IMU Coordinate
+> Tunnel 1 Tunnel 2 Tunnel 3 (a) (b) (c) (d) (e)
+> 3.66
+> 2.20
+> 2.35 GXGYrobot PGO
+> Geometric Degeneration
+> Visual Degradation Tunnel 1
+> Tunnel 2
+> Tunnel 3 GXGYrobot PGOGeometric Degeneration Visual Degradation Tunnel 1
+> Tunnel 2 Tunnel 3
+> (f)
+> (f1)
+> (f2)
+> (f3)
+
+Fig. 3. Experimental environment in underground coal-mine tunnels. (a) Deployment of the Husky robot and the total station; (b) sensor configuration on the Husky platform, including LiDAR, camera, 4D mmWave radar, IMU, and wheel odometer; (c)–(e) environments, dimensions, and texture details of Tunnel1, Tunnel2, and Tunnel3, respectively; (f) locations exhibiting the most severe visual and geometric degradations (f1, f3). 
+
+3) Adaptive Fusion-Mode Switching: Based on the detec-tion outputs, we develop an adaptive fusion-mode switching mechanism. The visual and geometric detectors first identify the degradation type and compute the observability scores 
+
+OV and OG to quantify degradation severity. When a score crosses its corresponding threshold, the system activates ad-ditional constraints—mmWave radar Doppler-velocity con-straints or wheel-odometry velocity constraints—to enhance robustness. As illustrated in Fig. 2, the switching strategy consists of three stages. (a) Stage I: LIV mode (nominal scenarios). 
+
+As shown in Fig. 2-(a), when DV = 0 and DG = 0, the system operates in feature-rich corridor scenes, where the ellipsoid induced by Hpp is well conditioned. The estimator fuses LiDAR measurements zL, visual measurements zC, and IMU measurements to localize the platform. (b) Stage II: LIVR mode (visual degradation). As shown in Fig. 2-(b), when DV = 1 and DG = 0, the visual detector indi-cates smoke-induced visual degradation. The system acti-vates radar Doppler-velocity constraints zRV and switches to the LIVR mode. (c) Stage III: LIVW mode (geometric degradation). As shown in Fig. 2-(c), when DV = 0 and 
+
+DG = 1 (i.e., OG ≥ Oth G ), the geometric detector indicates that registration is under-constrained along at least one direction (e.g., translation along the x-axis). The system activates wheel-odometry velocity constraints zW and switches to the LIVW mode to compensate for missing constraints along degenerate directions. When the system simultaneously encounters visual and geometric degradation (e.g., a long, straight corri-dor filled with dense smoke), it activates both radar Doppler-velocity constraints and wheel-odometry veloc-ity constraints, thereby entering the LIVRW mode (Li-DAR+IMU+Visual+Radar+Wheel) to maintain robust state estimation under dual degradation. VI. E XPERIMENT 
+
+A. Experiment Setup 
+
+Hardware and software platform: We conducted field experiments in severely degenerate underground coal-mine tunnels. The mobile platform is a Husky A200 equipped with a Livox AVIA LiDAR (with a built-in IMU), a Hikvision camera (MVS-CU013-A0UC), an Oculii Eagle 4D mmWave radar, and the chassis wheel odometer. The LiDAR–camera (a) FIRE-Full      
+
+> (b) FIRE-LIVR
+> (c) FIRE-LIVW
+> (d) FIRE-Base
+> (e) FAST-LIVO2
+> (f) R3LIVE
+> (g) GaRLIO
+> (h) 4DRadarSLAM
+> Geometric Degradation
+> Dense Smoke
+> Visual Degradation
+> Visual
+> Degradation
+> Visual Degradation Geometric Degradation
+> Geometric
+> Degradation
+> Visual
+> Degradation
+> Z-axis Geometric
+> Degradation
+> Y-axis Geometric Degradation
+> First intersection in Tunnel 1
+> Tunnel1 Tunnel2 Tunnel3
+> (a1)
+> (a2)
+> (b1)
+> (c1) (d1)
+> (d2)
+> (e1) (f1)
+> (f2)
+> (g1)
+> (h1)
+> (h2)
+
+Fig. 4. Comparison of mapping results of different algorithms in underground coal-mine tunnels. (a) FIRE-Full, (b) FIRE-LIVR, (c) FIRE-LIVW, (d) FIRE-Base, (e) FAST-LIVO2, (f) R3LIVE, (g) GaRLIO, and (h) 4DRadarSLAM. In Tunnel1, FIRE-LIVW and FAST-LIVO2 fail due to smoke-induced visual degradation. In Tunnel3, FIRE-LIVR, FIRE-Base, R3LIVE, and GaRLIO suffer from severe geometric degeneration. 4DRadarSLAM exhibits significant drift along the y- and z-axes. Only FIRE-Full successfully reaches the end of the tunnel. FIRE-Full FIRE-LIVR FIRE-LIVW FIRE-Base FAST-LIVO2 R3LIVE GaRLIO 4DRadarSLAM Start End GroundTruth                        
+
+> 0
+> 50 100 200 250 150 X [m] -7.5
+> 05.0 12.5 20-2 -4 -6 -8
+> -10
+> 0100 200 300 400 500 600 700 800
+> [m] X100 200
+> 0100 200 300 400 500 600 700 800 [m] Z0-5 -10 -15
+> 80 120 150
+> 30
+> 20 10 0500
+> 80 100 140 220 180
+> 600 700
+> t [s]
+
+(a) 
+
+(a1)  (a2) 
+
+(b) (b1)         
+
+> Degraded in dense smoke
+> Geometric degradation
+> Severe d rift along
+> the Z -axis
+> Geometric degradation
+> along the Z -axis
+> Failed FIRE-Full FIRE-LIVR FIRE-LIVW FIRE-Base FAST-LIVO2 R3LIVE GaRLIO 4DRadarSLAM Start End GroundTruth
+
+Fig. 5. Time evolution of the x- and z-axis trajectory components for different methods. (a) and (b) show the x- and z-axis components of FIRE-Full, FIRE-LIVR, FIRE-LIVW, FIRE-Base, FAST-LIVO2, R3LIVE, GaRLIO, and 4DRadarSLAM, respectively. (a1) and (a2) provide zoomed-in views of the x-axis components, and (b1) shows a zoomed-in view of the z-axis components. 
+
+and radar–IMU extrinsics were carefully calibrated, and a hardware synchronizer time-synchronized the LiDAR, IMU, camera, and mmWave radar. Ground-truth points were mea-sured using a total station. All computations were performed on an industrial PC with an Intel i7 CPU, 32 GB DDR4 RAM, an NVIDIA GeForce GTX 1050Ti GPU, and a512 GB solid-state drive (SSD). 
+
+Experimental design: To comprehensively evaluate the proposed method, we designed experiments to assess trajectory accuracy as well as degradation detection and adaptive fusion-mode switching. We compare four variants of FIRE-LIVWO—FIRE-Base (LiDAR+IMU+Visual), FIRE-LIVR (LiDAR+IMU+Visual+Radar), FIRE-LIVW (LiDAR+IMU+Visual+Wheel), and FIRE-Full (LIVRW)—against FAST-LIVO2 (LIV), R3LIVE (LIV), GaRLIO (RLI), and 4DRadarSLAM (Radar). 
+
+B. Real-world Experiment 
+
+This section evaluates the proposed method in real un-derground coal-mine tunnels in terms of trajectory accuracy, degradation detection and adaptive fusion-mode switching. Fig. 3-(a,f) shows the deployment of the robot and the total station in the tunnel. We define the total-station center OG as the origin of the world frame, and set the robot initial posi-tion to Probot = ( −6.261 , 1.222 , 0.268 ). Fig. 3-(b) illustrates the sensor layout on the robot platform. The robot moves forward at a constant speed of 0.3 m/s, with a maximum angular speed of 0.2 rad/s. Fig. 3-(c)–(e) depict the envi-ronments of Tunnel1, Tunnel2, and Tunnel3, respectively: Tunnel1 contains relatively rich features but suffers from severe smoke and dust; Tunnel2 is smoke-free but feature-sparse; and Tunnel3 is extremely feature-sparse and highly repetitive. These conditions pose substantial challenges for SLAM: (1) smoke occlusion significantly degrades visual performance, making Tunnel1 prone to visual degradation; (2) long, straight structures weaken LiDAR geometric con-straints, particularly during motion aligned with the tunnel direction; and (3) repetitive geometry reduces distinctiveness, making Tunnel3 prone to geometric degradation. Despite these challenges, our system achieves favorable localization accuracy and robustness. 
+
+1) Trajectory Accuracy Analysis: Figures 4 and 5 present the mapping and trajectory results for all methods, re-spectively. Because GPS is unavailable in underground coal-mine tunnels, we evaluate trajectory accuracy using 20 ground-truth points, pigt , measured by a total station and the corresponding estimated points, pies , produced by each method. The average localization error is defined as AvgErr = ∑N−1
+
+i=0
+
+|| pies −pigt || 
+
+N .( Remark: if a method crashes or numerically diverges during the sequence and cannot output the full trajectory, it is marked as failure and denoted by ×.) The baseline methods exhibit varying degrees of anomalies and failures under these extreme conditions. In Tunnel1, FAST-LIVO2 and FIRE-LIVW, which rely on visual and LiDAR features, fail shortly after entering the tunnel due to smoke-induced visual degradation (Fig. 4-(e,c) and Fig. 5-(a,a1)) and therefore cannot output complete trajectories. FIRE-Base and R3LIVE operate over parts of the route but show visual degradation in Tunnel1 (Fig. 4-(d1,f1) and Fig. 5-(a1)). They also exhibit trajectory deviation and map misalignment in Tunnel3 (Fig. 4-(d2,f2) and Fig. 5-(a2)). Methods equipped with 4D mmWave radar are more resilient to visual degradation. GaRLIO and FIRE-LIVR mitigate smoke-induced visual degradation in Tunnel1, but still suffer pronounced geometric degeneration in the highly repetitive environment of Tunnel3 (Fig. 5-(a2) and Fig. 4-(g1,b1)). Although 4DRadarSLAM does not crash, owing to the strong penetration capability of mmWave radar (Fig. 4-(h)), its limited ranging accuracy and sparse point clouds lead to severe drift of up to 15 m along the y- and z-axes (Fig. 5-(b)). In contrast, the full system, FIRE-Full, achieves the best robustness and accuracy: it overcomes smoke-induced visual failures in Tunnel1 by leveraging radar and suppresses geometric degeneration in Tunnel3 by adaptively fusing wheel-odometry constraints, ultimately reaching the end of the tunnel (Fig. 4-(a) and Fig. 5-(a)). To quantitatively assess localization performance, Table II reports AvgErr for all methods. FIRE-Full achieves an AvgErr of 5.677 m, substantially outperforming all base-lines. FIRE-LIVR and FIRE-Base yield errors of 15.420 m and 23.962 m, respectively, indicating that removing ei-ther radar or wheel constraints significantly degrades ac-curacy. R3LIVE (31.596 m), GaRLIO (17.212 m), and 4DRadarSLAM (45.453 m) exhibit large drift under different degradation mechanisms, whereas FIRE-LIVW and FAST-LIVO2 fail due to visual degradation. Overall, these results highlight the importance of multi-modal fusion: omitting any modality leads to a pronounced performance drop. 
+
+TABLE II AVERAGE LOCALIZATION ERROR ANALYSIS (M). FIRE-Full FIRE-LIVR FIRE-LIVW FIRE-Base FAST-LIVO2 R3LIVE GaRLIO 4DRadar-SLAM AvgErr 5.677 15.420 × 23.962 × 31.596 17.212 45.453 
+
+Bold indicates the best accuracy; underline indicates the second best. ×
+
+indicates failure. 
+
+2) Analysis of Degradation Detection and Adaptive Fusion-Mode Switching: This section further validates the 10m 20m 135m 143m 276m             
+
+> 050 100 200 250 100 Geometric Observability Score
+> 150 Position X [m] 10 20 135 143 276 Geometric Degradation Region Geometric Observability Score Geometric Degradation Threshold Region Without Geometric Degradation
+> 80
+> 60 40 20 0G(a)
+> (b) (c) (d) (e) (f)
+> Severe
+> Geometric
+> degradation
+> Peak of geometric observability score
+> 114.2
+> 36.7 34.7
+> Start of geometric
+> degradation
+> Endpoint of the tunnel
+> 9.2
+
+Fig. 6. Geometric observability score OG and visualization of the eigenvectors of Hpp (red arrows indicate eigen-directions, and their lengths represent eigenvalue magnitudes). (a) OG versus the robot x-position; (b)– (f) eigenvectors at key locations: inside Tunnel1 ( x = 10 , 20 m, OG =
+
+34 .7, 36 .7), the onset of geometric degradation ( x = 135 m, OG = 40), the most severe geometric degradation ( x = 143 m, OG = 114 .2), and the end of Tunnel3 ( x = 276 m, OG = 9.2). The red dashed line denotes the threshold 
+
+Oth G = 40. 4m                                         
+
+> 050 100 200 250 0.2 Visual Observability Score Visual Observability Score
+> Visual Degradation Threshold
+> Position X [m] 150 10 25 35 453 0.0 0.6
+> 0.8
+> 1.0 0.4 Visual Degradation Region Region Without Visual Degradation
+> 4m 10m 25m 35m 53m (a)
+> (b) (c) (d) (e) (f)
+> (b1) (c1) (d1) (e1) (f1)
+> Exiting the
+> smoke region
+> Entering smoke region
+> Peak of visual
+> observability
+> score
+> 0.02
+> 0.88
+> 0.66
+> Most severe visual
+> degradation V4m
+> 050 100 200 250 0.2 Visual Observability Score Visual Observability Score
+> Visual Degradation Threshold
+> Position X [m] 150 10 25 35 453 0.0 0.6
+> 0.8
+> 1.0 0.4 Visual Degradation Region Region Without Visual Degradation
+> 4m 10m 25m 35m 53m
+> (a) (b) (c) (d) (e) (f)
+> (b1) (c1) (d1) (e1) (f1)
+> Exiting the
+> smoke region
+> Entering smoke region
+> Peak of visual
+> observability
+> score
+> 0.02 0.88
+> 0.66
+> Most severe visual
+> degradation V
+
+Fig. 7. Visual observability score OV and system behavior in smoke scenarios. (a) OV versus the robot x-position; (b,b1)–(f,f1) corresponding odometry behavior and in-situ photos: initial clear region ( x = 4 m, OV =
+
+0.88), entering the smoke region ( x = 10 m, OV = 0.66), densest smoke region ( x = 25 m, OV = 0.02), weakening smoke region ( x = 35 m, OV =
+
+0.40), and smoke-free region ( x = 53 m, OV = 0.66). The red dashed line denotes the threshold Oth V = 0.4. 
+
+effectiveness of the proposed visual and geometric degra-dation detectors. Figures 6 and 7 show how the geometric observability score OG and the visual observability score OV
+
+(for FIRE-Full) vary with the robot x-position in geometri-cally constrained (Tunnel3) and visually constrained (Tun-nel1) scenarios, respectively, together with visualizations at representative locations. 
+
+Geometric degradation detection: As shown in Fig. 6, when the robot traverses the feature-rich Tunnel1 (x ∈
+
+[0, 135 ] m), OG remains below the threshold Oth G . After entering Tunnel3, the environment transitions abruptly to a textureless, long, straight corridor; consequently, OG in-creases rapidly and exceeds Oth G , reaching a peak of 114.2 at 
+
+x = 143 m. At this location, the smallest eigenvalue of Hpp 
+
+becomes extremely small (Fig. 6-(d,e)), indicating that point-cloud registration is severely under-constrained along the corresponding direction. This under-constraint causes pro-nounced drift in the x-axis direction for R3LIVE, GaRLIO, and FIRE-LIVR in this region (Fig. 5-(a2)). In contrast, FIRE-Full monitors OG online and, once DG = 1 is de-tected, activates tightly coupled wheel-odometry constraints to prevent divergence along the degenerate direction, thereby maintaining stable estimates throughout the geometrically degenerate interval (highlighted in yellow in Fig. 6-(a)). 
+
+Visual degradation detection: As shown in Fig. 7, in the initial clear region of Tunnel1 ( x = 4 m), OV = 0.88 and the system localizes using tightly-coupled visual–LiDAR– inertial constraints. After the robot enters the smoke region, scattering causes a sharp drop in transmittance; OV decreases rapidly and falls below the threshold Oth V at x = 10 m, triggering visual degradation ( DV = 1). In the densest smoke region ( x = 25 m), OV drops to 0.02, and camera observa-tions become nearly invalid (Fig. 7-(d,d1)). FIRE-LIVW and FAST-LIVO2, lacking online observation-quality assessment, introduce erroneous visual residuals in this region, leading to divergence and failure (Fig. 5-(a1)), whereas FIRE-Base and R3LIVE do not crash but exhibit pronounced visual degradation. By contrast, once FIRE-Full detects DV = 1, it adaptively down-weights the visual term and switches to radar-dominant observations, leveraging radar penetration to compensate for missing exteroceptive information and stably traverse the smoke region. When OV recovers to 0.66 at 
+
+x = 53 m, the system reactivates vision for state estimation (Fig. 7-(f,f1)). Overall, these results show that OV and OG reliably indicate visual failures and geometric under-constraints in real underground coal-mine tunnels. FIRE-Full per-forms two key online switches (visual-degradation in-terval: LIV →LIVR →LIV; geometric-degradation interval: LIV →LIVW →LIV), achieving the best accuracy and robust-ness under extreme mixed-degradation conditions. VII. C ONCLUSION 
+
+This paper presents FIRE-LIVWO, a tightly coupled multi-modal odometry framework designed for extreme un-derground coal-mine scenarios characterized by large-scale environments, severe smoke and dust interference, and geo-metric degeneration in long tunnels. The proposed method jointly models shared map elements across LiDAR, radar, and vision within a unified VoxelMap and, within a single filter update, fuses LiDAR–radar point-to-plane geometric residuals with sparse direct visual photometric residuals in a unified formulation. We further incorporate pointwise Doppler-velocity constraints from 4D mmWave radar to improve observability and resilience to visual failure in smoke-filled environments. In addition, wheel odometry is tightly coupled into the estimator via non-holonomic con-straints (NHC) and online lever-arm compensation, thereby reducing drift induced by long, straight corridor degeneracy. We also develop an observability-analysis-based degradation detection and adaptive fusion strategy that identifies smoke interference and geometric underconstraints online and dy-namically switches fusion modes to maintain continuous and stable state estimation across scenarios. Comparative and ablation studies in real underground coal mines demonstrate that FIRE-LIVWO can robustly traverse severely degraded environments, including dense smoke and long, featureless tunnels, achieving superior localization accuracy and ro-bustness compared with existing methods, with an average localization error AvgErr of 5.677 m. REFERENCES [1] T. Shan, B. Englot, D. Meyers, W. Wang, C. Ratti, and D. Rus, “Lio-sam: Tightly-coupled lidar inertial odometry via smoothing and mapping,” in 2020 IEEE/RSJ international conference on intelligent robots and systems (IROS) . IEEE, 2020, pp. 5135–5142. [2] W. Xu, Y. Cai, D. He, J. Lin, and F. Zhang, “Fast-lio2: Fast direct lidar-inertial odometry,” IEEE Transactions on Robotics , vol. 38, no. 4, pp. 2053–2073, 2022. [3] T. Shan, B. Englot, C. Ratti, and D. Rus, “Lvi-sam: Tightly-coupled lidar-visual-inertial odometry via smoothing and mapping,” in 2021 IEEE international conference on robotics and automation (ICRA) .IEEE, 2021, pp. 5692–5698. [4] J. Lin and F. Zhang, “R 3 live: A robust, real-time, rgb-colored, lidar-inertial-visual tightly-coupled state estimation and mapping package,” in 2022 International Conference on Robotics and Automation (ICRA) .IEEE, 2022, pp. 10 672–10 678. [5] C. Zheng, Q. Zhu, W. Xu, X. Liu, Q. Guo, and F. Zhang, “Fast-livo: Fast and tightly-coupled sparse-direct lidar-inertial-visual odometry,” in 2022 IEEE/RSJ international conference on intelligent robots and systems (IROS) . IEEE, 2022, pp. 4003–4009. [6] C. Zheng, W. Xu, Z. Zou, T. Hua, C. Yuan, D. He, B. Zhou, Z. Liu, J. Lin, F. Zhu, et al. , “Fast-livo2: Fast, direct lidar-inertial-visual odometry,” IEEE Transactions on Robotics , 2024. [7] Z. Yuan, J. Deng, R. Ming, F. Lang, and X. Yang, “Sr-livo: Lidar-inertial-visual odometry and mapping with sweep reconstruction,” 
+
+IEEE Robotics and Automation Letters , vol. 9, no. 6, pp. 5110–5117, 2024. [8] J. Zhang, H. Zhuge, Z. Wu, G. Peng, M. Wen, Y. Liu, and D. Wang, “4dradarslam: A 4d imaging radar slam system for large-scale environ-ments based on pose graph optimization,” in 2023 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2023, pp. 8333–8340. [9] C. Noh, W. Yang, M. Jung, S. Jung, and A. Kim, “Garlio: Gravity enhanced radar-lidar-inertial odometry,” in 2025 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2025, pp. 9869–9875. [10] M. Nissov, N. Khedekar, and K. Alexis, “Degradation resilient lidar-radar-inertial odometry,” in 2024 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2024, pp. 8587–8594. [11] A. Mandow, J. L. Martinez, J. Morales, J. L. Blanco, A. Garcia-Cerezo, and J. Gonzalez, “Experimental kinematics for wheeled skid-steer mobile robots,” in 2007 IEEE/RSJ international conference on intelligent robots and systems . IEEE, 2007, pp. 1222–1227. [12] F. Ma, J. Shi, Y. Yang, J. Li, and K. Dai, “Ack-msckf: Tightly-coupled ackermann multi-state constraint kalman filter for autonomous vehicle localization,” Sensors , vol. 19, no. 21, p. 4816, 2019. [13] J. Liu, W. Gao, and Z. Hu, “Visual-inertial odometry tightly coupled with wheel encoder adopting robust initialization and online extrinsic calibration,” in 2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2019, pp. 5391–5397. [14] J. Zhang, M. Kaess, and S. Singh, “On degeneracy of optimization-based state estimation problems,” in 2016 IEEE international confer-ence on robotics and automation (ICRA) . IEEE, 2016, pp. 809–816. [15] T. Tuna, J. Nubert, Y. Nava, S. Khattak, and M. Hutter, “X-icp: Localizability-aware lidar registration for robust localization in ex-treme environments,” IEEE Transactions on Robotics , 2023. [16] T. Wen, Y. Fang, B. Lu, X. Zhang, and C. Tang, “Liver: A tightly coupled lidar-inertial-visual state estimator with high robustness for underground environments,” IEEE Robotics and Automation Letters ,vol. 9, no. 3, pp. 2399–2406, 2024. [17] B. M. Bell and F. W. Cathey, “The iterated kalman filter update as a gauss-newton method,” IEEE Transactions on Automatic Control ,vol. 38, no. 2, pp. 294–297, 1993. [18] K. Hu, M. Li, Z. Jin, C. Tang, E. Hu, and G. Zhou, “Cm-liuw-odometry: Robust and high-precision lidar-inertial-uwb-wheel odom-etry for extreme degradation coal mine tunnels,” in 2025 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) .IEEE, 2025, pp. 7139–7146. [19] S. G. Narasimhan and S. K. Nayar, “Vision and the atmosphere,” 
+
+International journal of computer vision , vol. 48, no. 3, pp. 233–254, 2002. [20] K. He, J. Sun, and X. Tang, “Single image haze removal using dark channel prior,” IEEE transactions on pattern analysis and machine intelligence , vol. 33, no. 12, pp. 2341–2353, 2010.

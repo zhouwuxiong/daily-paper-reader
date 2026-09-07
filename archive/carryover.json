@@ -1,12 +1,56 @@
 {
-  "generated_at": "2026-09-06T21:07:38.342750+00:00",
-  "updated_date": "20260906",
+  "generated_at": "2026-09-07T22:10:36.300046+00:00",
+  "updated_date": "20260907",
   "carryover_days": 9,
   "tag_states": {
     "d-slam": {
-      "updated_date": "20260906",
+      "updated_date": "20260907",
       "carryover_days": 9,
-      "items": []
+      "items": [
+        {
+          "id": "2609.05114v1",
+          "source": "arxiv",
+          "title": "VoxelFix: Post-Hoc Semantic Correction of Completed 3D Voxel Maps",
+          "abstract": "Semantic 3D maps are increasingly constructed automatically for aerial robotics by integrating learned semantic predictions into 3D representations. While this avoids costly manual 3D annotation, errors in the perception and mapping pipeline can persist in the resulting map, reducing its reliability for downstream autonomous tasks. Existing 3D semantic map refinement methods either rely on the original observations, treat occupancy as part of the prediction problem, or apply non-learned local regularization to completed maps. Instead, we study post-hoc semantic correction, asking whether semantic accuracy can be recovered directly from the completed map while keeping its geometry and occupancy fixed. We introduce \\method, a graph-based model that corrects voxel labels based on local geometry and neighboring semantic information. To obtain training pairs, we corrupt contiguous regions of annotated OccuFly maps according to class confusions observed in upstream maps. We evaluate \\method on completed OccuFly maps generated from predictions of four independently trained 2D segmentation models. \\method consistently improves mIoU by 4.23--5.00 percentage points, with gains broadly distributed across the evaluated semantic classes and particularly strong improvements for tree, roof, and wall. Results on an independently reconstructed out-of-distribution aerial scene further suggest that the learned correction can transfer beyond the environments seen during training.",
+          "authors": [
+            "Sunesh Praveen Raja Sundarasami",
+            "Taehyoung Kim",
+            "Johannes Scherer",
+            "Tomaž Cotič",
+            "Sivasubiramaniam Subbiah",
+            "Andreas Greiner",
+            "Paul Spannaus",
+            "Sebastian Houben"
+          ],
+          "primary_category": "cs.CV",
+          "categories": [
+            "cs.CV"
+          ],
+          "published": "2026-09-04T13:08:07+00:00",
+          "link": "https://arxiv.org/pdf/2609.05114v1",
+          "tags": [
+            "keyword:d-slam",
+            "query:d-slam"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "post-hoc semantic correction of completed 3D voxel maps for aerial robotics mapping",
+          "llm_evidence_cn": "面向空中机器人地图的后验语义纠错与三维体素建图",
+          "llm_evidence": "面向空中机器人地图的后验语义纠错与三维体素建图",
+          "canonical_evidence": "面向空中机器人地图的后验语义纠错与三维体素建图",
+          "llm_tldr_en": "VoxelFix corrects semantic labels on completed 3D voxel maps with a graph-based model, keeping geometry and occupancy fixed, improving semantic accuracy for aerial robotics without recomputing reconstruction.",
+          "llm_tldr_cn": "面向空中机器人自动建立语义三维体素地图，感知与建图错误会残留在完成后的地图上并影响自主任务。现有修正方法要么依赖原始观测、要么将占据率纳入预测、要么仅做非学习式局部平滑；VoxelFix则直接在已完成的体素地图上，以固定几何与占据状态为前提，用基于图模型的后验语义修正恢复语义准确性。该方法针对完成后的地图进行语义纠错，提供一种无需重新重建即可提升语义地图可靠性的新思路。",
+          "llm_tldr": "面向空中机器人自动建立语义三维体素地图，感知与建图错误会残留在完成后的地图上并影响自主任务。现有修正方法要么依赖原始观测、要么将占据率纳入预测、要么仅做非学习式局部平滑；VoxelFix则直接在已完成的体素地图上，以固定几何与占据状态为前提，用基于图模型的后验语义修正恢复语义准确性。该方法针对完成后的地图进行语义纠错，提供一种无需重新重建即可提升语义地图可靠性的新思路。",
+          "llm_tags": [
+            "query:d-slam"
+          ],
+          "matched_query_tag": "query:d-slam",
+          "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+          "matched_requirement_id": "req-6",
+          "selection_source": "carryover_cache",
+          "paper_id": "2609.05114v1",
+          "carry_days": 1
+        }
+      ]
     },
     "robot-nav": {
       "updated_date": "20260815-20260824",
