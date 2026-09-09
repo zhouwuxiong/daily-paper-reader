@@ -1,0 +1,419 @@
+Title: NavArena: Automated Construction of Goal-Oriented Navigation Benchmarks from 3D Gaussian Splatting Reconstructions
+
+URL Source: https://arxiv.org/pdf/2609.04602v1
+
+Published Time: Mon, 07 Sep 2026 00:21:32 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# NavArena: Automated Construction of Goal-Oriented Navigation Benchmarks from 3D Gaussian Splatting Reconstructions 
+
+Junhui Wang, Wei Yang, Xinyao Li, Ningjing Fan, Yuehao Yin, Xuecheng Chen, and Chao Gao *
+
+Abstract — Fixed 3D Gaussian Splatting (3DGS) reconstruc-tions provide realistic novel views but lack the traversability constraints, valid goals, and closed-loop protocols required for navigation evaluation. We introduce NavArena, an automated framework that transforms fixed 3DGS reconstructions into benchmarks for goal-oriented visual navigation. NavArena integrates a frozen 3DGS model for egocentric RGB-D ren-dering, an occupancy costmap derived from Gaussian density and height statistics for reachability and collision queries, and semantic goal candidates lifted from multi-view open-vocabulary masks. These components support the automatic generation and unified closed-loop evaluation of goal-oriented navigation episodes. Across more than 2,000 scenes, NavArena generates 22.2 million expert trajectories. Spatial and seman-tic evaluations assess the derived navigation representations, while policy rollouts demonstrate the diagnostic value of the unified evaluation protocol. NavArena enables scalable and reproducible navigation evaluation on large-scale 3DGS re-constructions, and all benchmark-generation tools, evaluation protocols, and derived assets will be released publicly. 
+
+I. I NTRODUCTION 
+
+Goal-oriented visual navigation requires closed-loop eval-uation: an agent acts from observations, receives new views as it moves, and must reach a metric, visual, or semantic target without violating motion constraints [1]. A useful benchmark must therefore provide not only realistic obser-vations, but also traversability, collision feedback, reachable goals, and consistent success criteria throughout a rollout. Large-scale navigation benchmarks typically obtain these capabilities from curated simulators, meshes, and simulator-native annotations [2]–[5]. Meanwhile, 3D Gaussian Splat-ting (3DGS) has enabled high-quality view synthesis at practical rendering rates [6], and large collections of 3DGS reconstructions are becoming available [7], [8]. These recon-structions offer a scalable source of visually realistic scenes, but appearance alone does not define a navigation environ-ment. A 3DGS reconstruction provides neither explicit free space and collision constraints nor verified metric, visual, and semantic goals. Existing pipelines can recover some of these signals through mesh reconstruction, NavMesh construction, or scene-specific semantic optimization, but they do not directly provide an automated benchmark-construction pro-cedure for heterogeneous 3DGS collections [9]. This gap raises a practical question: can a fixed 3DGS reconstruction be augmented with the spatial and semantic interfaces required for reproducible closed-loop navigation 
+
+> *Corresponding author.
+
+evaluation, without first converting it into a complete physi-cal simulator? Addressing this question requires three capa-bilities in a common coordinate system: egocentric render-ing, collision-aware motion constraints, and reachable task-specific goals. The resulting interface should also support automatic episode generation and apply consistent actions, termination conditions, and metrics across navigation tasks. We introduce NavArena, a framework that automatically constructs goal-oriented navigation benchmarks from fixed 3DGS reconstructions. NavArena preserves the frozen 3DGS representation for egocentric RGB-D rendering and derives two aligned navigation layers. First, an occupancy costmap estimated from Gaussian density and height statistics sup-ports reachability analysis, trajectory generation, and colli-sion queries. Second, a semantic layer lifts multi-view open-vocabulary masks into Object Navigation (ObjectNav) goal candidates without scene-specific training or semantic-field optimization [10]. Together, the visual, spatial, and seman-tic layers provide a unified interface for Point Navigation (PointNav), Image Navigation (ImageNav), and ObjectNav. NavArena avoids per-scene mesh repair [11] and manual semantic annotation, while deliberately focusing on naviga-tion benchmark interfaces rather than rigid-body dynamics or general robot physics. The main contributions are summarized as follows.  
+
+> •
+
+We propose an automated method that augments fixed 3DGS reconstructions with traversability, collision queries, and semantic goal candidates, without per-scene mesh repair, semantic annotation, or semantic-field optimization.  
+
+> •
+
+We develop a unified benchmark-construction and closed-loop evaluation pipeline for PointNav, Image-Nav, and ObjectNav, including task-specific episode generation under a common action and metric interface.  
+
+> •
+
+We demonstrate scalability across more than 2,000 heterogeneous scenes, generating 22.2 million expert trajectories and supporting closed-loop policy evalua-tion. II. R ELATED WORK 
+
+A. Goal-Oriented Navigation Benchmarks and Simulators 
+
+Goal-oriented navigation requires an agent to reach a metric location, reference view, or semantic object category through closed-loop interaction [1]. Despite their different goal specifications, they rely on the same evaluation infras-tructure: egocentric observations, collision-aware transitions, arXiv:2609.04602v1 [cs.RO] 4 Sep 2026 TABLE I COMPARISON OF NAVIGATION -ENVIRONMENT CONSTRUCTION PIPELINES BASED ON THE CAPABILITIES REPORTED BY THEIR RESPECTIVE SOURCES .NAV ARENA FOCUSES ON AUTOMATED BENCHMARK CONSTRUCTION FROM FIXED 3DGS ASSETS .
+
+Platform Rendering model Collision model Scale Automated onboarding Automated goal extraction Goal-nav expert traj. Closed-loop evaluation Habitat + HM3D [2], [12] Mesh NavMesh 1K × × ✓ ✓
+
+Habitat-GS [9] 3DGS NavMesh – △ × ✓ ✓
+
+GS-Playground [13] 3DGS Mesh – △ × × ×
+
+DISCOVERSE [14] 3DGS Mesh – △ × × ×
+
+GaussGym [15] 3DGS Mesh – △ × × ×
+
+NavArena 3DGS Costmap 2K+ ✓ ✓ ✓ ✓       
+
+> Notes: Scale follows each source’s reporting convention and is therefore not directly comparable across rows. Automated scene onboarding denotes benchmark construction from a valid, metric-calibrated scene asset, without manual scene-specific mesh repair, semantic labeling, or per-scene semantic optimization. Goal-nav expert traj. denotes target-conditioned trajectory generation. ✓denotes reported support, △denotes setup-dependent or partial support, and ×denotes support not reported in the cited source.
+
+reachable goals, and consistent termination criteria. Existing platforms provide this infrastructure through interactive en-vironments [3], reconstructed indoor scenes [2], [4], [12], procedurally generated assets [16], or GPU-based physics simulation [5]. These platforms enable controlled evaluation, but their construction pipelines typically presuppose curated geometry, simulator-native annotations, or scene-specific as-set preparation. NavArena addresses a different setting: it de-rives the interfaces required for navigation directly from fixed 3DGS reconstructions that were not created as simulator-ready assets. 
+
+B. 3DGS-Based Embodied Environments 
+
+3D Gaussian Splatting provides high-quality novel-view synthesis at practical rendering rates [6], making it a useful visual representation for embodied simulation and naviga-tion. Existing studies have integrated Gaussian rendering into navigation simulators [9], used reconstructed scenes for visual navigation and policy reasoning [17], and coupled Gaussian appearance models with robot-learning or physics backends [14], [15]. Together, these efforts demonstrate the value of 3DGS for observation synthesis, navigation, and robot learning. Their primary focus, however, is rendering in-tegration, policy development, or physics-enabled simulation rather than a general procedure for converting fixed 3DGS assets into navigation-ready benchmarks. Fixed 3DGS reconstructions do not explicitly encode traversability, collision-valid transitions, or reachable task goals. NavArena derives these interfaces from the frozen as-set through an occupancy costmap and aligned semantic can-didates, which support both episode generation and closed-loop evaluation. Table I therefore compares environment-construction interfaces; NavArena targets automated goal-navigation benchmark construction rather than general-purpose physics simulation. 
+
+C. Semantic Grounding for Object Navigation 
+
+ObjectNav requires semantic evidence to be associated with discrete instances and reachable, collision-valid terminal states. Existing approaches distill visual-language features into Gaussian representations [8], [18], optimize scene-specific semantic representations [19], [20], or lift multi-view segmentation evidence into an existing reconstruction [21]. NavArena builds on the lifting paradigm to avoid scene-specific semantic training. It further aggregates the fused evidence into instance candidates and retains only candidates with reachable, collision-valid goal states. The resulting semantic layer is therefore designed for reproducible Ob-jectNav episode construction rather than dense scene under-standing alone. III. U NIFIED SCENE REPRESENTATION 
+
+Figure 1 provides an overview of the NavArena pipeline, from multi-source 3DGS scene conversion to navigation-ready scene representations, scalable task generation, and closed-loop evaluation. NavArena treats each converted reconstruction as a bench-mark asset rather than a full physical simulator. For each retained scene, the asset is defined as 
+
+S = ( G, Mocc , I),
+
+where G is the renderable 3DGS model, Mocc is the navi-gation constraint layer, and I is the set of semantic object-instance candidates. In a shared metric frame, G renders egocentric ob-servations, Mocc supports navigation-validity queries, and 
+
+I provides labeled 3D instance centers. This separation avoids requiring watertight geometry, rigid-body physics, or simulator-native semantics. A benchmark instance is B = ( S, D, Π) , where D con-tains episodes, trajectories, and goals, and Π specifies the action interface, termination rules, metrics, and closed-loop protocol. The latter two components remain task-specific. IV. N AVIGATION -R EADY 3DGS S CENE CONSTRUCTION 
+
+A. Overview 
+
+Given a frozen 3D Gaussian Splatting model G = {gi}NG
+
+> i=1
+
+,camera poses, and an open-vocabulary ObjectNav category set, NavArena constructs S through coordinate normaliza-tion, height-aware occupancy inference, valid-region estima-tion, and semantic grounding. We assume that the input reconstruction is valid and that the 3DGS model and camera poses share a consistent metric coordinate frame. Multi -source 3DGS Scenes 1    
+
+> PointNav ImageNav ObjectNav
+> 1) Data Generation
+> 22.2M+ Expert Trajectories
+> 2) Closed -loop Evaluation
+> Agent
+> (Server)
+> Simulator
+> (Client)
+> Action
+> (Waypoint / Velocity)
+> Observation
+> (RGB / Depth / Info)
+> Semantic
+> Layer
+> Visual
+> Layer
+> Spatial
+> Layer
+> 2K+ Scenes
+> Unified Scene Representation
+
+2 Scalable Task Generation and Evaluation 3
+
+> Frame -Level
+> Semantic Extraction
+> Scene -Level
+> Semantic Fusion
+> Semantic Grounding
+> 3DGS
+> Voxelization
+> Coordinate
+> Normalization
+> Occupancy Map
+> Inference
+> Valid Region
+> Estimation
+> Spatial Constraint Inference
+
+Fig. 1. NavArena construction pipeline. A frozen 3DGS model provides egocentric rendering, while separately inferred spatial and semantic layers define where the agent can move and which goals are valid. PointNav, ImageNav, and ObjectNav episodes are accepted only after reachability, collision, and goal-validity checks, then evaluated through the same closed-loop protocol. 
+
+The resulting asset exposes two primitive queries to the benchmark protocol. At time step t, let qt denote the agent pose. Rendering returns the RGB-D observation 
+
+ot = ( It, D t) = R(G, q t)
+
+where It is the rendered RGB image and Dt is the pixel-aligned metric depth map. The transition model computes 
+
+qt+1 = T (qt, u t, Mocc ).
+
+Here, ut denotes the control input. The transition query evaluates collision and motion validity through Mocc , while 
+
+G remains responsible only for observation rendering. 
+
+B. Spatial Constraint Inference 
+
+Spatial-layer construction voxelizes Gaussian opacity, nor-malizes the coordinate frame, and derives an agent-height-aware costmap and valid sampling region. 
+
+a) 3DGS Voxelization: Voxelization converts the frozen reconstruction into a coarse occupied volume. The geomet-ric pass treats the 3DGS as an opacity field and ignores color and spherical harmonic attributes. For each Gaussian 
+
+gi = ( μi, ηi, si, a i, · · · ), μi is its center, ηi is its rotation quaternion, si contains its log-scales, and ai is its opacity logit. NavArena recovers physical scales and opacity as 
+
+σi = exp( si) and αi = (1+exp( −ai)) −1. Each overlapping Gaussian contributes to a voxel ν, centered at xν , as 
+
+χ2 
+
+> i,ν
+
+= X
+
+> k∈{ x,y,z }
+
+d2
+
+> i,ν,k
+
+σ2
+
+> i,k
+
+, ρi,ν = αi exp 
+
+
+
+− 12 χ2
+
+> i,ν
+
+
+
+, (1) In (1), χ2 
+
+> i,ν
+
+is the squared Mahalanobis distance, di,ν =
+
+R⊤ 
+
+> i
+
+(xν − μi), and Ri is induced by ηi. Let N (ν) be the set of Gaussians whose truncated support overlaps ν. Treating the bounded contributions ρi,ν ∈ [0 , 1] as independent occu-pancy evidence, the effective voxel opacity Aν and binary occupancy V (ν) are defined as 
+
+Aν = 1 − Y 
+
+> i∈N (ν)
+
+(1 − ρi,ν ) , V (ν) = 1[Aν ≥ τocc ],
+
+(2) where τocc denotes the opacity threshold. The voxel field in (2) provides the evidence used to derive the navigation costmap. 
+
+b) Coordinate Normalization: Given the assumed in-put frame, coordinate normalization places heterogeneous reconstructions in a common navigation frame using only a rigid transform; it does not estimate or calibrate physical scale. NavArena estimates the dominant support plane from occupied voxels using RANSAC, aligns its normal with the gravity axis, and translates the plane to z = 0 . The same rigid transform is applied to the voxel field, and 3DGS scene, producing a normalized voxel field V ⋆ paired with a canonically aligned 3DGS. 
+
+c) Occupancy Map Inference: Occupancy map infer-ence compresses the aligned volume into the 2D structure used by online navigation. Let hmin and hmax denote the lower and upper vertical bounds of the collision body relative to the aligned ground plane. The embodiment-specific body interval is Hbody = [ hmin , h max ]; its bounds are supplied by the robot configuration rather than fixed by NavArena. Let Ziz denote the vertical extent of voxel index iz . The raw planar occupancy map marks a cell as occupied when a voxel in its vertical column intersects the configured body interval: 
+
+Mraw (ix, i y ) = _    
+
+> iz:Ziz ∩H body ̸=∅
+
+V ⋆(ix, i y , i z ). (3) Equation (3) adapts to each embodiment through Hbody .d) Valid Region Estimation: Valid region estimation restricts navigation to regions for which the reconstruction provides spatial evidence. DBSCAN first removes isolated occupied-voxel clusters. Let Xproj ⊂ R2 be the ground-plane projection of the remaining occupied voxels. An α-shape concave hull defines the reconstruction-supported domain and its binary support mask: 
+
+Ωsup = AlphaShape( Xproj ; αhull ) ,Msup (ix, i y ) = 1
+
+h
+
+x2D  
+
+> ix,i y
+
+∈ Ωsup 
+
+i
+
+. (4) In (4), x2D  
+
+> ix,i y
+
+is the center of planar cell (ix, i y ), αhull is the hull parameter, and Msup = 1 denotes a reconstruction-supported cell. Let B(ragent ) be a disk with the configured agent radius. Combining obstacle inflation with the support mask gives the final navigation costmap 
+
+Mocc = Dilate( Mraw , B(ragent )) ∨ ¬ Msup . (5) Thus, occupied cells in (5) represent obstacles intersecting the configured body, while cells outside Ωsup are treated as unknown and unavailable. Only cells satisfying Mocc =0 are eligible for start and goal sampling; task-specific connected-reachability and collision checks subsequently de-termine whether a sampled pair is retained. The resulting costmap supports collision checking, reachability analysis, path planning, and episode filtering. 
+
+C. Semantic Grounding for ObjectNav a) Problem Setup: The semantic layer converts multi-view open-vocabulary segmentations into ObjectNav in-stance candidates. The semantic layer prioritizes preci-sion because false-positive centers can create invalid goals, whereas false negatives primarily reduce the candidate pool. This trade-off favors reliable retained episodes over exhaus-tive object coverage. Given G, category set C, and covering poses, NavArena extracts I(c) = {(xobj  
+
+> j,c
+
+, ℓ j,c )}Jc
+
+> j=1
+
+, where xobj  
+
+> j,c
+
+is an instance center and ℓj,c = c. Their union I = S 
+
+> c∈C
+
+I(c) forms the semantic layer. Figure 2 summarizes the grounding process. 
+
+b) Frame-Level Semantic Extraction: The first stage associates 2D semantic priors with 3D spatial points. NavArena renders pixel-aligned RGB and depth from the covering poses {qview  
+
+> k
+
+} using differentiable Gaussian raster-ization [22]. Rendered views and target-category prompts are passed to SAM3 [23], which produces per-frame semantic masks. Each mask is eroded before backprojection to suppress noisy boundary pixels caused by opacity bleeding and depth uncer-tainty. Pixels with valid depth are backprojected through the camera intrinsics and extrinsics, producing a labeled point cloud P(c) 
+
+> k
+
+for each frame k and category c.
+
+c) Scene-Level Semantic Fusion: The second stage fuses independent frame observations into scene-level se-mantic evidence. Each frame cloud is voxel-downsampled at resolution δdown , yielding ˜P(c) 
+
+> k
+
+; their union P(c) = S 
+
+> k
+
+˜P(c)
+
+> k
+
+is evaluated on a coarser voting grid with resolution δvote .Voxels without sufficient support from the pooled multi-view 3DGS      
+
+> Camera
+> Poses
+> Scene-level
+> Instance Set
+> RGB -D Rendering
+> SAM3 Segmentation
+> Mask Erosion
+> Depth Backprojection
+> Frame -level Semantic Extraction
+> Per -frame Voxel
+> Downsampling
+> Multi -view
+> Voxel Voting
+> 3DGS Labeling
+> Semantic Instance
+> Center Estimation
+> Scene -Level Semantic Fusion
+> Fig. 2. Training-free ObjectNav semantic grounding. Multi-view open-vocabulary masks are eroded, backprojected, fused by voxel voting, trans-ferred to Gaussian primitives, and clustered into instance centers.
+
+point clouds are discarded; each retained voxel receives the majority label among its points: 
+
+ℓ(b) = arg max 
+
+> c∈C
+
+n
+
+p ∈ P (c) | ⌊ p/δ vote ⌋ = b
+
+o
+
+. (6) In (6), b ∈ Z3 denotes a voting-grid voxel index. Voting ties are treated as ambiguous and excluded. The remaining voxel labels are transferred to Gaussian centers according to their enclosing cells. For each category, DBSCAN clusters the labeled centers into object instances, and clusters below the minimum size threshold are discarded. The centroid of each remaining cluster defines xobj  
+
+> j,c
+
+. Aggregating over all categories yields the scene-level semantic candidate set I.Each pair (xobj  
+
+> j,c
+
+, ℓ j,c ) in I is a semantic candidate rather than a navigation endpoint. The episode generator accepts a candidate only after identifying reachable, collision-valid goal states under the checks in Section V-A. V. T ASK GENERATION AND CLOSED -L OOP EVALUATION 
+
+A. Task Definition 
+
+An episode is represented as (q0, γ task , τ ⋆) together with an observation specification, where q0 is the initial robot state, γtask is the task-specific goal, and τ ⋆ is an expert rollout. The robot state lies in SE(2) , and the observation specification defines the camera parameters used to render egocentric views from G.The three navigation tracks differ only in their goal payloads and success predicates. PointNav specifies a metric target coordinate xgoal = ( xgoal , y goal ). ImageNav provides a reference image rendered at a reachable target pose. ObjectNav specifies a target category represented by the semantic candidates defined in Section IV-C. This explicit separation preserves task-specific goals while allowing all tracks to share the same scene dynamics and validity checks. 
+
+B. Episode Generation 
+
+The generator first samples q0 from the valid region defined in Section IV-B and then instantiates a task-specific goal. A start–goal pair is accepted only if it satisfies the prescribed distance, reachability, collision, and semantic con-straints. For ObjectNav, a semantic candidate is retained only when the generator identifies a reachable, collision-valid goal state associated with the requested object category. For each accepted pair, NavArena synthesizes a discrete-time expert rollout τ ⋆ = ( {qt}Tt=0 , {ut}T −1 
+
+> t=0
+
+) in SE(2) sub-ject to the spatial constraints encoded by Mocc . The control ut is expressed either as a relative waypoint command 
+
+(∆ x, ∆y, ∆θ) in the robot-local frame or as a velocity com-mand (v, ω, ∆t), where ∆t is the integration interval. The generator retains a rollout only if its states and controls sat-isfy clearance, terminal-goal consistency, heading continuity, and kinematic-feasibility checks. Because observations are rendered on demand from G, each stored episode comprises the trajectory, task goal, and rendering metadata rather than pre-rendered observation sequences. 
+
+C. Closed-loop Evaluation Protocol 
+
+Closed-loop evaluation executes policy actions in the constructed scenes rather than scoring isolated predictions. Each rollout is initialized with a start state, a task goal, and a step budget. At step t, the simulator renders an egocentric observation from G, and the policy emits a discrete action 
+
+at ∈ Amove ∪ { STOP }. The interface layer maps each motion action in Amove to a relative waypoint command 
+
+(∆ x, ∆y, ∆θ), queries Mocc , and then updates the robot state. A rejected motion is recorded as a collision or stall. The STOP action leaves the robot pose unchanged and is handled according to the active termination protocol. Within each task track, all policies use the same transition function, action interface, collision model, and metric im-plementation. The distance-based protocol ignores STOP as a termination request: the action consumes one evaluation step without changing the pose, and the rollout succeeds immediately upon entering the success region. Under the explicit-stop protocol, entering the success region alone does not terminate the rollout; success requires STOP inside the region, whereas STOP outside the region terminates the rollout as a failure. All task-success distances are planar Euclidean distances in the shared metric frame. PointNav measures distance to the target coordinate, ImageNav to the reference-pose position, and ObjectNav to the nearest re-tained target-instance center projected onto the ground plane. ObjectNav success does not impose an additional target-visibility requirement. Pose SR additionally evaluates head-ing consistency with the ImageNav goal view, and Stop SR applies the explicit-stop protocol to the ObjectNav success region. Section VI-D reports the corresponding numerical thresholds. 
+
+D. Evaluation Metrics 
+
+NavArena reports standard navigation metrics [24] at both aggregate and per-difficulty levels. Distance SR reports success under automatic distance-based termination, whereas Stop SR requires an explicit STOP inside the success region. Because the distance-based protocol terminates a rollout immediately upon entering its success region and does not require STOP , oracle success would be identical to Distance SR and is therefore not reported. NE uses the final planar Euclidean distance, whereas SPL uses the optimal costmap geodesic for path-length normalization. Collision Rate (CR) denotes the fraction of attempted policy actions rejected as collision-invalid, while Average Steps (AvgSteps) measures rollout length. Pose SR reports the stricter ImageNav head-ing criterion. DTW and NDTW are retained as optional trajectory-shape diagnostics rather than primary benchmark metrics. VI. E XPERIMENTS 
+
+A. Experimental Setup 
+
+NavArena contains more than 2,000 heterogeneous scenes: approximately 1,000 artist-created InteriorGS scenes [7], 1,000 mixed-source SceneSplat++ reconstructions [8], and 50 real-world captures collected for this study. Before apply-ing NavArena, the source scenes are manually screened for obvious rendering artifacts and incomplete reconstruction, and scenes failing this check are excluded. This dataset-curation step is external to the automated benchmark-construction pipeline. NavArena is applied only to inputs satisfying the validity and coordinate-frame assumptions stated in Section IV-A. All sources use the same construction parameters and expose the same rendering, collision, reach-ability, semantic-goal, and episode-generation interfaces. We evaluate spatial-query agreement and efficiency, Ob-jectNav candidate-center precision, dataset scale after va-lidity filtering, and closed-loop policy behavior. These ex-periments assess benchmark feasibility and diagnostic value rather than complete physical or semantic fidelity. We evaluate representative policies across PointNav, Im-ageNav, ObjectNav, and multi-task navigation. The Point-Nav track includes LoGoPlanner [25]; the ImageNav track includes GNM [26], ViNT [27], NoMaD [28], and NaviB-ridger [29]; the ObjectNav track includes PoliFormer [30], Uni-NaVid [31], and OmniNav [32]; and the multi-task track includes the PointNav and ImageNav branches of NavDP [33] and OmniVLA [34]. Experiments that require additional supervision, such as collision meshes or manual semantic annotations, use only scenes for which the corresponding reference is available. Within each task track, all policies are evaluated on the same 600 episodes using identical difficulty-dependent step budgets, rendering settings, collision checker, action interface, and metric implementation. Each model retains its native input modality and output representation up to the interface layer. The interface maps non-stop motion actions to the shared waypoint command (∆ x, ∆y, ∆θ) and preserves STOP as a discrete action. Because this adaptation can affect absolute performance, comparisons are restricted to models within the same task track. Results across different tracks are reported only to illustrate distinct failure profiles. 
+
+B. Spatial and Semantic Validity 
+
+We first characterize the spatial layer against a mesh-based reference. NavArena’s occupancy-grid queries are compared with FCL queries [35] on a diversity-sampled subset of 100 scenes with available collision meshes. Each scene contributes 5,000 randomly sampled state queries and 1,000 motion queries. All methods use the same metric world frame and the same embodiment configuration assigned to each query. In particular, both the occupancy grid and FCL use TABLE II SPATIAL -LAYER QUERY PERFORMANCE AT 0.05 m GRID RESOLUTION ;
+
+> LOWER LATENCY INDICATES CHEAPER CLOSED -LOOP COLLISION AND MOTION -VALIDITY CHECKS .
+
+Query CPU grid ( μs) FCL mesh ( μs) State 0.986 7.802 Motion 39.65 425.02        
+
+> TABLE III OCCUPANCY -GRID RESOLUTION TRADE -OFF AGAINST THE FCL
+> REFERENCE . FP AND FN DENOTE FALSE -POSITIVE AND FALSE -NEGATIVE RATES ;LOW FN IS PREFERRED BECAUSE MISSED COLLISIONS CREATE INVALID EPISODES .
+
+Resolution (m) State FP (%) State FN (%) Motion FP (%) Motion FN (%) Storage (KiB) 0.02 3.522 0.000 2.630 0.000 382.4 0.05 6.034 0.000 4.710 0.000 61.6 0.10 13.054 0.002 8.590 0.000 15.5 
+
+the body interval Hbody and footprint B(ragent ) supplied by that configuration. The embodiment configuration is held fixed across the compared collision backends and policy rollouts. Unless otherwise specified, the occupancy grid uses the default 0.05 m resolution. Tables II and III show that CPU grid queries are 7.91 ×
+
+faster for state checks and 10 .72 × faster for motion checks than FCL. No motion false negatives occur at the tested resolutions; state false negatives appear only at 0.10 m 
+
+(0.002% ). The remaining disagreements are predominantly conservative false positives. We adopt 0.05 m , which retains the observed zero false-negative rate of the finer grid while reducing storage from 382 .4 to 61 .6 KiB . These sampled rates do not guarantee performance on unseen geometries. For semantic validity, we evaluate ObjectNav goal pre-cision rather than general-purpose semantic segmentation. On a diversity-sampled 10-scene subset, predicted centers are manually checked against the corresponding ground-truth object regions. We report valid-center rate, the fraction of predicted ObjectNav centers that fall inside the target object region. This precision-oriented metric matches the requirements of automatic episode generation: false positives can create invalid goals, whereas false negatives mainly reduce the candidate pool. Because SceneSplat [18] and FlashSplat [21] do not directly output object centers, all methods use the same center-extraction rule. NavArena attains a 92 .25% valid-center rate, exceeding the two baselines by 26 .30 and 34 .89 percentage points under the same extraction rule (Table IV). It also remains substantially faster than the optimization-based baseline. This experiment evaluates the precision of retained ObjectNav candidates for episode construction; exhaustive object cov-erage and instance recall are outside the scope of this work. 
+
+C. Dataset Scale 
+
+We next examine the scalability of the common con-struction pipeline across heterogeneous scene sources. As  
+
+> TABLE IV SEMANTIC INSTANCE -CENTER VALIDITY FOR OBJECT NAV GOAL CONSTRUCTION .
+
+Method Valid Center (%) ↑
+
+Time/Scene (min) ↓
+
+SceneSplat (Feedforward) 65.95 0.97 
+
+FlashSplat (Optimization) 57.36 135.31 Ours 92.25 6.56  
+
+> TABLE V SCALE OF THE GENERATED NAV ARENA NAVIGATION DATASET .
+
+Metric PointNav/ImageNav ObjectNav Episodes 16.6M 5.6M Mean Path Length (m) 7.35 3.51 Avg Steps 567 392 Total Duration (h) 130K 30K 
+
+summarized in Table V, NavArena generates 22.2M expert trajectories for PointNav/ImageNav and ObjectNav across more than 2,000 scenes, corresponding to over 160K hours of navigation data. All retained scenes expose the same visual, spatial, semantic, and task-generation interfaces. 
+
+D. Closed-loop Diagnostic Utility 
+
+Finally, we test whether NavArena exposes distinct policy behaviors under closed-loop execution. Each task track uses a separate 600-episode zero-shot set sampled across source groups, layouts, appearances, task-relevant goals, and navi-gation horizons. Every set contains 180 easy, 240 medium, and 180 hard episodes, with step budgets of 500, 1000, and 1500, respectively. All rollouts use the embodiment-specific body interval and footprint supplied by the episode configuration, together with RGB observations rendered at 
+
+640 ×480 . PointNav success requires a final planar Euclidean distance below 0.5 m . ImageNav uses a 1 m planar Euclidean distance threshold and, when reported, a 30 ◦ pose criterion. ObjectNav uses a 1 m planar Euclidean distance threshold to the nearest retained target-instance center. Termination follows the protocol in Section V-C. 
+
+1) Aggregate Zero-shot Performance: Table VI reports distance-based zero-shot results aggregated over the three difficulty splits. We compare policies only within the same task track; cross-track values illustrate how the evaluation protocol captures different goal-conditioned failure profiles and should not be interpreted as a unified leaderboard. Table VI reveals distinct within-track profiles. NaviBridger leads single-task ImageNav in Distance SR and CR; Uni-NaVid leads ObjectNav in Distance SR and SPL, although OmniNav has lower CR; and NavDP outperforms OmniVLA on both multi-task branches. AvgSteps is diagnostic rather than an efficiency ranking because early failure may shorten rollouts. LoGoPlanner is a geometry-conditioned PointNav reference and is not directly comparable across goal modal-ities. Overall, the protocol separates distance-based success, path efficiency, and collision behavior under task-specific interfaces. TABLE VI AGGREGATE DISTANCE -BASED ZERO -SHOT CLOSED -LOOP PERFORMANCE ON NAV ARENA .                                                                
+
+> Task Model Dist. SR ↑SPL ↑NE ↓CR ↓AvgSteps PointNav LoGoPlanner 0.679 0.597 1.601 0.470 78.2 ImageNav NaviBridger 0.434 0.389 2.095 0.694 694.2
+> GNM 0.403 0.362 2.082 0.710 712.0 NoMaD 0.385 0.364 2.160 0.707 734.9 ViNT 0.288 0.286 2.203 0.728 806.0 ObjectNav Uni-NaVid 0.374 0.175 2.491 0.183 163.6 PoliFormer 0.310 0.136 2.728 0.128 318.7 OmniNav 0.129 0.090 3.047 0.108 122.1
+> Multi-Task NavDP ImageNav 0.661 0.561 1.975 0.545 93.4
+> OmniVLA ImageNav 0.235 0.235 2.609 0.675 125.7 NavDP PointNav 0.588 0.582 1.429 0.355 87.7
+> OmniVLA PointNav 0.127 0.126 2.579 0.853 138.7 0.0 0.2 0.4 0.6 0.8
+
+(a) ImageNav    
+
+> NaviBridger GNM NoMaD ViNT
+> Easy Medium Hard 0.0 0.2 0.4 0.6 0.8
+
+(b) ObjectNav 
+
+> Uni-NaVid PoliFormer OmniNav
+> Success rate (SR)
+
+Difficulty split 
+
+Fig. 3. Success degradation across navigation difficulty; longer optimal paths expose horizon-dependent failure modes under the same task inter-faces. 
+
+2) Difficulty-Induced Horizon Degradation: The difficulty analysis tests how policy performance changes as closed-loop horizons and action complexity increase while the task interface remains fixed. Figure 3 shows that Distance SR decreases as episode difficulty increases, although the rate of degradation varies substantially across policies. From the easy to the hard split, the single-task ImageNav policies lose 72% –91% of their Distance SR. This trend is compatible with the accumulation of perception and local-control errors over longer horizons, but the present experiment does not isolate their individual contributions. Uni-NaVid and PoliFormer show smaller rel-ative drops of 32% and 43% , respectively, on the evaluated 
+
+TABLE VII TERMINATION SENSITIVITY UNDER POSE AND STOP CRITERIA .DISTANCE SR SUCCEEDS UPON ENTERING THE TARGET REGION WITHOUT REQUIRING STOP ; S TOP SR REQUIRES STOP INSIDE THE REGION .                                         
+
+> Track Model Dist. SR ↑Pose SR ↑Pose Ret. ↑Stop SR ↑
+> ImageNav NaviBridger 0.434 0.255 0.588 n/a
+> ImageNav GNM 0.403 0.250 0.620 n/a
+> ImageNav NoMaD 0.385 0.189 0.491 n/a
+> ImageNav ViNT 0.288 0.180 0.625 n/a
+> ObjectNav Uni-NaVid 0.374 n/an/a0.036 ObjectNav PoliFormer 0.310 n/an/a0.033 ObjectNav OmniNav 0.129 n/an/a0.048
+
+split, while OmniNav remains weak on hard episodes. 
+
+3) Termination Sensitivity: Distance-based success can conceal last-mile localization and termination failures. We therefore evaluate the same episode sets under the ImageNav pose criterion and rerun ObjectNav with the explicit-stop termination protocol. Table VII reports distance SR, Image-Nav pose SR and conditional Pose Retention, and ObjectNav stop-aware SR. Table VII identifies failures that distance-only SR does not capture. For ImageNav, imposing the heading criterion retains only 49 .1% –62 .5% of distance-successful episodes, showing that reaching the goal neighborhood does not nec-essarily imply correct final alignment. Pose Retention is normalized by each model’s distance SR and is therefore not biased toward models with lower base success. For ObjectNav, which has no canonical target heading, pose-based metrics are not defined. Stop-aware SR remains below 
+
+0.05 for all evaluated ObjectNav policies, indicating that successful approach rarely coincides with an explicit stop inside the target neighborhood. VII. C ONCLUSION AND LIMITATIONS 
+
+NavArena constructs goal-oriented navigation benchmarks from fixed 3DGS reconstructions by combining a frozen vi-sual layer with derived spatial and semantic representations. The unified construction pipeline supports scalable episode generation, while closed-loop evaluation distinguishes suc-cess, collision, horizon, and termination outcomes. Physical and semantic fidelity remains dependent on the underlying representations. NavArena currently targets mostly static scenes and an SE(2) mobile-motion model. Rendering qual-ity is treated as an input condition; the current results may not extend to low-quality reconstructions. Its occupancy and semantic layers remain sensitive to reconstruction and seg-mentation errors. Policy-specific input and action adaptations may also affect absolute performance. Future work will extend the framework to dynamic environments and richer motion models. REFERENCES [1] D. Batra, A. Gokaslan, A. Kembhavi, O. Maksymets, R. Mottaghi, M. Savva, A. Toshev, and E. Wijmans, “ObjectNav revisited: On evaluation of embodied agents navigating to objects,” arXiv preprint arXiv:2006.13171 , 2020. [2] M. Savva, A. Kadian, O. Maksymets, Y. Zhao, E. Wijmans, B. Jain, J. Straub, J. Liu, V. Koltun, J. Malik, D. Batra, and D. Parikh, “Habitat: A platform for embodied AI research,” in IEEE/CVF International Conference on Computer Vision (ICCV) , 2019. [3] E. Kolve, R. Mottaghi, W. Han, E. VanderBilt, L. Weihs, A. Herrasti, M. Deitke, K. Ehsani, D. Gordon, Y. Zhu, A. Gupta, and A. Farhadi, “AI2-THOR: An interactive 3D environment for visual AI,” arXiv preprint arXiv:1712.05474 , 2017. [4] F. Xia, A. R. Zamir, Z. He, A. Sax, J. Malik, and S. Savarese, “Gibson env: Real-world perception for embodied agents,” in IEEE/CVF Con-ference on Computer Vision and Pattern Recognition (CVPR) , 2018. [5] V. Makoviychuk, L. Wawrzyniak, Y. Guo, M. Lu, K. Storey, M. Mack-lin, D. Hoeller, N. Rudin, A. Allshire, A. Handa et al. , “Isaac gym: High performance GPU-based physics simulation for robot learning,” in Thirty-fifth Conference on Neural Information Processing Systems Datasets and Benchmarks Track , 2021. [6] B. Kerbl, G. Kopanas, T. Leimk¨ uhler, and G. Drettakis, “3D Gaussian Splatting for real-time radiance field rendering,” ACM Transactions on Graphics (SIGGRAPH) , vol. 42, no. 4, 2023. [7] B. Miao, R. Wei, Z. Ge, X. Sun, S. Gao, J. Zhu, R. Wang, S. Tang, J. Xiao, R. Tang, and J. Li, “Towards physically executable 3D Gaussian for embodied navigation,” arXiv preprint arXiv:2510.21307 ,2025, interiorGS: 1,000 annotated 3DGS scenes. [8] M. Ma, Q. Ma, Y. Li, J. Cheng, R. Yang, B. Ren, N. Popovic, M. Wei, N. Sebe, L. Van Gool, T. Gevers, M. R. Oswald, and D. P. Paudel, “SceneSplat++: A large dataset and comprehensive benchmark for language Gaussian splatting,” arXiv preprint arXiv:2506.08710 , 2025, sceneSplat-49K: approx. 49K raw / 46K curated 3DGS scenes, indoor and outdoor. [9] Z. Xia, J. Xu, C. Cui, Y. Yu, J. Zhang, Q. Yan, T. Ni, J. Chen, X. Zhou, H. Bao, R. Hu, and S. Peng, “Habitat-GS: A high-fidelity navigation simulator with dynamic gaussian splatting,” 2026. [10] J. Kerr, C. M. Kim, K. Goldberg, A. Kanazawa, and M. Tancik, “LERF: Language embedded radiance fields,” in IEEE/CVF Interna-tional Conference on Computer Vision (ICCV) , 2023. [11] A. Gu´ edon and V. Lepetit, “SuGaR: Surface-aligned Gaussian splatting for efficient 3D mesh reconstruction and high-quality mesh rendering,” in IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2024. [12] S. K. Ramakrishnan, A. Gokaslan, E. Wijmans, O. Maksymets, A. Clegg, J. Turner, E. Undersander, W. Galuba, A. Westbury, A. X. Chang et al. , “Habitat-Matterport 3D dataset (HM3D): 1000 large-scale 3D environments for embodied AI,” in Advances in Neural Information Processing Systems (NeurIPS) , 2021. [13] Y. Jia, H. Zhang, Z. Zhang, J. Wu, M. Yu, Z. Wang, D. Jiang, Z. Li, C. Cao, Z. Yu, X. Yang, H. Ge, Y. Zhang, J. Zhang, Z. Huang, T. Liu, S. Chen, J. Wang, B. Xie, X. Yao, X. Deng, G. Wang, J. Zhang, L. Hao, Z. Chen, Y. Chen, A. Wang, H. Tian, Y. Yan, Z. Cao, Y. Jiang, H. Shao, Y. Li, L. Shi, B. Chen, W. Sui, H. Cui, Y. Qin, R. Huang, L. Han, T. Wang, and G. Zhou, “GS-Playground: A high-throughput photorealistic simulator for vision-informed robot learning,” 2026. [14] Y. Jia, G. Wang, Y. Dong, J. Wu, Y. Zeng, H. Lin, Z. Wang, H. Ge, W. Gu, K. Ding, Z. Yan, Y. Cheng, Y. Li, Z. Wang, C. Li, W. Sui, L. Shi, G. Tian, R. Huang, and G. Zhou, “DISCOVERSE: Effi-cient robot simulation in complex high-fidelity environments,” arXiv preprint arXiv:2507.21981 , 2025, 3DGS + MuJoCo Real2Sim2Real simulator. [15] A. Escontrela, J. Kerr, A. Allshire, J. Frey, R. Duan, C. Sferrazza, and P. Abbeel, “GaussGym: An open-source real-to-sim framework for learning locomotion from pixels,” arXiv preprint arXiv:2510.15352 ,2025, 3DGS as a drop-in renderer inside IsaacGym for pixel-based locomotion and navigation. [16] M. Deitke, E. VanderBilt, A. Herrasti, L. Weihs, K. Ehsani, J. Salvador, W. Han, E. Kolve, A. Farhadi, A. Kembhavi, and R. Mottaghi, “ProcTHOR: Large-scale embodied AI using procedural generation,” in Advances in Neural Information Processing Systems (NeurIPS) ,2022. [17] X. Lei, M. Wang, W. Zhou, and H. Li, “GaussNav: Gaussian splatting for visual navigation,” IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 47, 2025. [18] Y. Li, Q. Ma, R. Yang, H. Li, M. Ma, B. Ren, N. Popovic, N. Sebe, E. Konukoglu, T. Gevers et al. , “Scenesplat: Gaussian splatting-based scene understanding with vision-language pretraining,” in Proceedings of the IEEE/CVF International Conference on Computer Vision , 2025, pp. 4961–4972. [19] M. Qin, W. Li, J. Zhou, H. Wang, and H. Pfister, “LangSplat: 3D language Gaussian splatting,” in IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2024. [20] H. Li, Y. Wu, J. Meng, Q. Gao, Z. Zhang, R. Wang, and J. Zhang, “Instancegaussian: Appearance-semantic joint gaussian representation for 3d instance-level perception,” in Proceedings of the Computer Vision and Pattern Recognition Conference , 2025, pp. 14 078–14 088. [21] Q. Shen, X. Yang, and X. Wang, “Flashsplat: 2d to 3d gaussian splatting segmentation solved optimally,” in European Conference on Computer Vision . Springer, 2024, pp. 456–472. [22] V. Ye, R. Li, J. Kerr, M. Turkulainen, B. Yi, Z. Pan, O. Seiskari, J. Ye, J. Hu, M. Tancik et al. , “gsplat: An open-source library for gaussian splatting,” Journal of Machine Learning Research , vol. 26, no. 34, pp. 1–17, 2025. [23] N. Carion, L. Gustafson, Y.-T. Hu, S. Debnath, R. Hu, D. Suris, C. Ryali, K. V. Alwala, H. Khedr, A. Huang, J. Lei, T. Ma, B. Guo, A. Kalla, M. Marks, J. Greer, M. Wang, P. Sun, R. R¨ adle, T. Afouras 
+
+et al. , “SAM 3: Segment anything with concepts,” arXiv preprint arXiv:2511.16719 , 2025. [24] P. Anderson, A. Chang, D. S. Chaplot, A. Dosovitskiy, S. Gupta, V. Koltun, J. Kosecka, J. Malik, R. Mottaghi, M. Savva, and A. R. Zamir, “On evaluation of embodied navigation agents,” arXiv preprint arXiv:1807.06757 , 2018. [25] J. Peng, W. Cai, Y. Yang, T. Wang, Y. Shen, and J. Pang, “LoGoPlan-ner: Localization grounded navigation policy with metric-aware visual geometry,” arXiv preprint arXiv:2512.19629 , 2025. [26] D. Shah, A. Sridhar, A. Bhorkar, N. Hirose, and S. Levine, “GNM: A general navigation model to drive any robot,” in IEEE International Conference on Robotics and Automation (ICRA) , 2023. [27] D. Shah, A. Sridhar, N. Dashora, K. Stachowicz, K. Black, N. Hirose, and S. Levine, “ViNT: A foundation model for visual navigation,” in 
+
+Conference on Robot Learning (CoRL) , 2023. [28] A. Sridhar, D. Shah, C. Glossop, and S. Levine, “NoMaD: Goal masked diffusion policies for navigation and exploration,” in IEEE International Conference on Robotics and Automation (ICRA) , 2024. [29] H. Ren, Y. Zeng, Z. Bi, Z. Wan, J. Huang, and H. Cheng, “Prior does matter: Visual navigation via denoising diffusion bridge models,” arXiv preprint arXiv:2504.10041 , 2025. [30] K.-H. Zeng, Z. Zhang, K. Ehsani, R. Hendrix, J. Salvador, A. Herrasti, R. Girshick, A. Kembhavi, and L. Weihs, “PoliFormer: Scaling on-policy RL with transformers results in masterful navigators,” arXiv preprint arXiv:2406.20083 , 2024. [31] J. Zhang, K. Wang, S. Wang, M. Li, H. Liu, S. Wei, Z. Wang, Z. Zhang, and H. Wang, “Uni-NaVid: A video-based vision-language-action model for unifying embodied navigation tasks,” arXiv preprint arXiv:2412.06224 , 2024. [32] X. Xue, J. Hu, M. Luo, S. Xie, J. Chen, Z. Xie, K. Quan, W. Guo, M. Xu, and Z. Chu, “OmniNav: A unified framework for prospective exploration and visual-language navigation,” arXiv preprint arXiv:2509.25687 , 2025. [33] W. Cai, J. Peng, Y. Yang, Y. Zhang, M. Wei, H. Wang, Y. Chen, T. Wang, and J. Pang, “NavDP: Learning sim-to-real navigation diffusion policy with privileged information guidance,” arXiv preprint arXiv:2505.08712 , 2025. [34] N. Hirose, C. Glossop, D. Shah, and S. Levine, “OmniVLA: An omni-modal vision-language-action model for robot navigation,” in IEEE International Conference on Robotics and Automation (ICRA) , 2026. [35] J. Pan, S. Chitta, and D. Manocha, “FCL: A general purpose library for collision and proximity queries,” in IEEE International Conference on Robotics and Automation (ICRA) , 2012.

@@ -1,0 +1,950 @@
+Title: TRAIL: Trajectory-Aware Visual Place Recognition against Unordered Databases
+
+URL Source: https://arxiv.org/pdf/2609.07373v1
+
+Published Time: Wed, 09 Sep 2026 02:52:16 GMT
+
+Number of Pages: 34
+
+Markdown Content:
+# TRAIL: Trajectory-Aware Visual Place Recognition against Unordered Databases 
+
+Dominik A. Kloepfer 1⋆ and Patrick Wenzel 2 
+
+> 1
+
+Visual Geometry Group (VGG), University of Oxford  
+
+> 2
+
+Helsing 1 5 10 
+
+Timestep     
+
+> 50% 67%
+> Recall @ T
+> 56.5% 65.2% 66.7% 55.1% 58.0% 58.3%
+> +7.3% +8.3%
+> Ours Pure MegaLoc
+> T=1 T=5 T=10
+
+Fig. 1: Incorporating information from previous images in a sequence boosts Visual Place Recognition (VPR) performance in challenging settings. We compare the top-1 Recall of the state-of-the-art VPR algorithm MegaLoc [6] with our system, which makes use of previous images in the sequence (see Sec. 4 for full results). 
+
+Abstract. Modern Visual Place Recognition (VPR) methods excel on standard benchmarks yet remain brittle in feature-poor environments. By treating each query image in isolation, they discard the sequential context in any real trajectory. We formalize a task that exploits this context: given a query sequence, localize the final image against an un-ordered reference database—which, unlike sequence-to-sequence meth-ods, requires no sequential structure in the database. We propose TRAIL (TR ajectory-Aware Image Localization), a principled framework based on Conditional Random Fields (CRF) that combines learned functions for visual similarity and for camera-motion consistency, refining a dis-tribution over candidate references as each query arrives. A lightweight post-processing layer atop any pre-trained VPR backbone, TRAIL im-proves a state-of-the-art baseline by up to 8.3 percentage points on our primary benchmark, transfers to unseen datasets without retraining, and delivers its largest gains where visual cues are scarce.  
+
+> ⋆
+
+Work partially done during an internship at Helsing. arXiv:2609.07373v1 [cs.CV] 7 Sep 2026 2 D.A. Kloepfer and P. Wenzel 
+
+# 1 Introduction 
+
+Visual Place Recognition (VPR), the task of matching query images against a reference database to determine camera location, has seen remarkable progress in recent years. Leveraging large-scale datasets and powerful pre-trained visual encoders such as DINOv2 [33], modern methods achieve impressive performance on established benchmarks [2, 6, 21, 23]. Yet, this progress masks a fundamental brittleness. In visually challenging scenarios such as rural landscapes, forests, or uniform highway environments, performance degrades sharply due to a lack of distinctive visual cues. Recent work has further exposed fragility in seemingly robust systems, revealing sensi-tivity to minor variations in evaluation parameters like retrieval distance thresh-olds [20]. This brittleness is particularly troubling given VPR’s role in many important applications: camera relocalization, loop closure detection in SLAM, and hierar-chical localization systems where VPR provides the initial coarse estimate. We observe that standard VPR formulations exacerbate this brittleness through an artificial constraint: treating each query image in isolation. This single-image paradigm, while convenient for benchmarking, discards critical information avail-able in any real navigation scenario. Cameras follow continuous trajectories through space, and each new observation arrives with strong geometric pri-ors from preceding frames. Such information dramatically constrains the search space, but the standard VPR formulation is unable to leverage it. Prior sequence-based VPR methods [7, 11, 25, 31, 47] operate in a sequence-to-sequence paradigm requiring the reference database to be organized as or-dered sequences covering the same routes as potential queries. This imposes a significant structural constraint: it demands exhaustive coverage of all possible trajectories through the environment. In practice, however, reference imagery is typically collected opportunistically, from mapping vehicles, crowd-sourced plat-forms, or satellite data, yielding unordered sets of geo-tagged images rather than structured sequences. In this paper, we formalize a task that addresses these limitations: given a sequence of query images, the goal is to localize the final query image against an 
+
+unordered reference database. This setting captures the practical scenario of an agent that needs to determine its current position, exploiting the context from its recent trajectory without imposing any structural requirements on the database. We develop TRAIL (TR ajectory-Aware Image Localization), a principled prob-abilistic framework for this task, leveraging Bayesian filtering to maintain and update a probability distribution over reference locations as new query images arrive. Crucially, this framework operates as a post-processing step over existing VPR methods, requiring no architectural modifications and minimal computa-tional overhead. Specifically, our contributions are as follows: (a) We formalize a Sequential Visual Place Recognition task that operates on un-ordered reference databases and targets localization of the final query image, TRAIL 3
+
+clearly distinguishing it from the sequence-to-sequence paradigm adopted by prior work (Sec. 3.1). (b) We introduce TRAIL , a probabilistic framework for incorporating sequential context into place recognition, designed to maximize retrieval accuracy while imposing minimal computational overhead (Sec. 3.2, Sec. 3.3, Sec. 3.4). (c) We empirically validate our proposed framework and demonstrate its effec-tiveness on challenging datasets (Sec. 4). By exploiting the temporal structure of navigation sequences, our method achieves notable improvements in both robustness and accuracy. Its simplicity and compatibility with existing systems make it well-suited for integration into real-world localization pipelines. 
+
+# 2 Related Work 
+
+Visual Place Recognition. Visual Place Recognition (VPR) has evolved from handcrafted local features and global descriptors [4, 10, 22, 38] to deep-learning techniques that brought remarkable performance gains, with architectures such as NetVLAD [3], Generalized Mean Pooling [34], and MixVPR [1] marking key milestones. More recently, large pre-trained foundation models like DINOv2 [33] have further boosted performance by acting as local feature extractors, with methods such as AnyLoc [23], SALAD [21], and Bag-of-Queries [2] used to ag-gregate these features into global image descriptors. MegaLoc [6] is a recent model that builds on the SALAD architecture and achieves state-of-the-art per-formance by combining training data from multiple datasets. These advances have led to the saturation of several previously challenging benchmarks. However, challenges persist; for example, Izquierdo and Civera [20] have illustrated the heavy reliance of recall performance on the distance thresh-old that determines correct retrievals. 
+
+Sequential Visual Place Recognition. Sequence-based localization originates from loop closure detection, where SeqSLAM [32] and its variants [5, 36] match query sequences against previously visited locations. This sequence-to-sequence paradigm has since been extended to general VPR; SeqNet [11] learns descriptors for sequence-based hierarchical retrieval, Mereu et al . [31] aggregate single-image descriptors into sequence-level representations, JIST [7] jointly trains image and sequence descriptors, Zhao et al . [47] apply spatio-temporal attention to con-struct sequence descriptors, and CaseVPR [25] performs correlation-aware align-ment between query and database sequences. Closely related, Lynen et al . [28] match continuous query image streams against previously recorded trajectories, and SeqMatchNet [12] learns single-image descriptors that are explicitly shaped by a sequence-matching metric, collapsing to standard single-image retrieval when no ordered references are available. Despite CaseVPR framing its task as 
+
+sequence-to-frame , its retrieval stage, too, operates over database sequences. All of these methods thus require the reference database to be organized as ordered sequences, which demands exhaustive route coverage of the environment. 4 D.A. Kloepfer and P. Wenzel 
+
+The setting most closely related to ours is the seq2im task described by Warburg et al . [41], which pairs query sequences with an unordered reference database. However, their formulation considers a retrieval correct if it is near any 
+
+image in the query sequence, rather than targeting a specific one. We formalize a stricter variant that reflects the practical localization objective: determining the position of the final query image, and develop TRAIL , a CRF-based framework, to address it. 
+
+Probabilistic Models for Sequence Localization. Some methods employ Hidden Markov Models (HMM) for sequence localization, such as the work by Rudić et al . [35] in indoor environments, and Gui et al . [14] who used LiDAR scans for unmanned ground vehicle localization in enclosed spaces. These approaches typically use discretized camera locations as hidden states, creating large state spaces that pose challenges in expansive environments. In contrast, we estimate directly the probability that database images are close to the true camera loca-tion, offering a novel approach to efficiently managing large environments. Other approaches such as Cadena et al . [8] use a formulation based on Condi-tional Random Fields (CRF), which we, too, use in our theoretical treatment (see Sec. 3.2 and Appendix Sec. A). However, existing works do not address the prob-lem of visual place recognition with a very large database but instead focus on loop closure in SLAM pipelines, which have a significantly smaller set of reference images. Most directly related, Xu et al . [45] perform probabilistic topometric lo-calization with a discrete Bayes filter whose forward recurrence coincides with the one we derive (Appendix Sec. A). Their setting differs substantially, however, assuming an ordered reference map with per-edge odometry; transferring it to our unordered databases is non-trivial and forces simplifications that strip away much of its odometry-driven motion model, so that the resulting baseline fails to consistently improve over plain single-image retrieval (Appendix Sec. F). More broadly, sequence and trajectory priors are widely used in the robotics-localization literature for loop-closure detection and verification in SLAM, with recent examples such as ROVER [46] exploiting trajectory priors to reject false loop closures in repetitive environments. These methods, however, operate un-der far milder appearance variation than VPR (generally no day-night or season shifts) and assume the existence of loops that revisit previously mapped loca-tions; they therefore do not transfer straightforwardly to our setting, in which queries follow open trajectories with no guaranteed revisits and visual appear-ance can change drastically between query and reference. 
+
+# 3 TRAIL: Sequential VPR with Conditional Random Fields 
+
+3.1 Task Definition 
+
+Similarly to the standard Visual Place Recognition task, our goal is to localize an image with respect to a database set of N unordered reference images with TRAIL 5
+
+associated locations, R = {(ri, x i), i = 1 . . . N }, where ri ∈ R3×H×W is an RGB-image of dimensions H × W and xi ∈ R3 is a position coordinate. In contrast to Visual Place Recognition, each query is not just a single query image, but a query sequence of length T , so that Q = ( q1, . . . , q i, . . . , q T ) ∈ Q T
+
+with qi ∈ R3×H×W images typically taken in order by an agent traversing the environment and QT the set of all query sequences of length T . Each image qi in the query sequence also has an associated location yi ∈ R3, the agent’s location when collecting this query image. Given such a query sequence, a Sequential-VPR algorithm retrieves a single reference image, so we can formally write a : Q → R . A retrieval (ri, x i) is defined to be a correct retrieval if |xi − yT | ≤ δ with δ > 0. In other words, the algorithm attempts to localize the final query image in the query sequence by retrieving a reference image that was collected from a location within a certain threshold distance δ from the location of the query image. This reflects the practical goal of localizing an agent now , i.e ., at the end of its trajectory. We assume that reference images carry known positions (GPS or geo-tags), which is standard in VPR [6,41]. At inference time, reference positions are used for the distance cutoff ∆ (Eq. (8)) and the aggregation function κ (Eq. (4)). We measure performance using a Recall@T metric: the fraction of query sequences of length T for which the retrieved image is correct. The standard VPR Recall@1 metric corresponds to the special case T = 1 . Note that T denotes the sequence length, not the number of retrieved candidates as in the standard 
+
+Recall@K metric; the two coincide only for T =K=1 .We now introduce TRAIL , which leverages a pre-trained VPR algorithm to compute the probability that each database image is a correct retrieval for the final query image in a sequence, returning the location of the highest-probability reference image. 
+
+3.2 Inference 
+
+Our goal is to localize the final query image in the sequence, qT , as reliably as possible, maximizing the Recall@T . In other words, we want to return the reference image that has the highest probability of having been taken from a position within the threshold δ of the query image’s position. We proceed in two stages: First, we model P (cit|(q1, . . . , q t)) where cit is a random variable with cit = 1 if the reference image ri is the retrieval image closest to query image qt and cit = 0 otherwise. Second, we use these probabilities to estimate P (sit|(q1, . . . , q t)) , where sit is a random variable with sit = 1 if the reference image ri is within the distance threshold δ of the query image qt and 
+
+sit = 0 otherwise. In the appendix Sec. A, we show that under some light locality assumptions we can model this process using a Conditional Random Field (CRF) [24] and derive the following recurrence relation for the first stage: 
+
+P (cit|Q) = αT (i)
+
+P 
+
+> j
+
+αT (j) , (1) 6 D.A. Kloepfer and P. Wenzel 
+
+Fig. 2: Diagram illustrating TRAIL , our approach for Sequential Visual Place Recog-nition. For each query image qt in the sequence (top row), a pre-trained VPR model retrieves the top-K database images, shown below in order of decreasing emission po-tential Ψe (green border = correct retrieval, red = incorrect). The emission potential measures visual similarity between a query and a candidate reference image, while the transition potential Ψtr (arrows, left ) measures whether the spatial displacement between two candidate reference images is consistent with the observed camera mo-tion between consecutive queries; thicker arrows indicate higher transition potentials. 
+
+Right : Compared to using only emission potentials (top bars, not filled), fusing emis-sion and transition potentials via the CRF recurrence (Eq. (2)) yields substantial ac-curacy gains (bottom bars, filled; see Sec. 4.4). 
+
+where 
+
+α1(i) = Ψe(ci
+
+> 1
+
+, q 1) (2) 
+
+αt(i) = X
+
+> j
+
+Ψtr (cit, c jt−1, q t, q t−1)Ψe(cit, q t)αt−1(j).
+
+Ψe(cit, q t) and Ψtr (cit, c jt−1, q t, q t−1) are two probability potentials. Intuitively, 
+
+Ψe measures the probability that the state where cit = 1 would ‘emit’ query image qt, effectively measuring the similarity of the query image and a given retrieved image. Ψtr in turn measures the probability that the state where cjt−1 =1 transitions to the state where cit = 1 , conditioned on the query images at t − 1
+
+and t.Both of these probability potentials can be parameterized using neural net-works ϕe(ri, q t) ≈ Ψe(cit, q t) and ϕtr (ri, r j , q t, q t−1) ≈ Ψtr (cit, c jt−1, q t, q t−1).In the second stage, we use the computed P (cit|Q) to compute P (sit|Q), the probability of reference image ri being within the distance threshold of the query image qt. We approximate 
+
+P (sit|Q) = X
+
+> j
+
+P (sit|Q, c jt )P (cjt |Q) ≈ X
+
+> j
+
+P (sit|cjt )P (cjt |Q). (3) This approximation allows us to model P (sit|cjt ) = κ(|xi − xj |) using some ap-propriate function κ : R+ → [0 , 1] .TRAIL 7
+
+The complete forward algorithm is given in Algorithm 1. To obtain the pre-dicted query image location at time step t, we return the location of the highest-probability reference image: ˆyt = xi⋆ where i⋆ = arg max j P (sjt |Q).
+
+Algorithm 1 Forward Algorithm for Sequential VPR 
+
+Require: ϕe, ϕ tr # neural networks 
+
+Require: R = {(ri, x i)} # reference image database 
+
+Require: Q = ( q1, . . . , q T ) # query sequence 
+
+1: α1(i) ← ϕe(ri, q 1)∀ri ∈ R 
+
+2: for t = 2 . . . T do 
+
+3: αt(i) ← P 
+
+> j
+
+ϕtr (ri, r j , q t, q t−1)ϕe(ri, q t)αt−1(j)
+
+4: end for 
+
+5: for i : ( ri, x i) ∈ R do 
+
+6: P (ciT |Q) ← αT (i)P  
+
+> jαT(j)
+
+7: P (siT |Q) ← P 
+
+> j
+
+κ(|xi − xj |)P (cjT |Q)
+
+8: end for 
+
+9: return P (siT |Q), i = 1 . . . |R| 
+
+3.3 Network Architecture and Modeling Choices 
+
+In principle, we need to compute αt for all images in the retrieval database. The large size of the database, however, makes this intractable, so we set Ψe(cit, q t) = 0 ∀i / ∈ vK (qt) and only compute P (cit|Q) for the top-K reference images retrieved by a pre-trained VPR algorithm vK .Unless K is very large, there is a non-negligible probability that none of the top-K retrievals are actually within the distance threshold δ of a given query image. To account for this case, we add a dustbin state rdustbin with 
+
+sdustbin  
+
+> t
+
+= 1 iff sit = 0 ∀i ∈ vK (qt). We found improved performance by setting 
+
+Ψtr (cit, c dustbin  
+
+> t−1
+
+, q t, q t−1) = Ψe(cit, q t), which corresponds to the case where the algorithm “lost track” of the query location. 
+
+Choice of κ. We require κ(0) = 1 and κ(x) = 0 for x > δ , with smooth interpolation between these points. Intuitively, κ models the distribution of the minimum localization error |xi − yt| when cit = 1 , i.e ., reference image ri is the best possible reference image; if this error was always zero and the location of the best possible reference image always coincided with the query image location, the optimal κ would be κ(x) = 1(x ≤ δ) with 1 as the indicator function. We choose a scaled sigmoid: 
+
+κ(x) = 1(x ≤ δ) · σ( γ − xτ )/σ ( γτ ) (4) 8 D.A. Kloepfer and P. Wenzel 
+
+with the offset γ fixed and the bandwidth τ learnable. The scaling factor σ( γτ ) en-sures that κ(0) = 1 , while the indicator function 1 ensures that κ(x) = 0 ∀x > δ .This function consists of an initial flat section followed by a quick decay towards zero. The boundary condition κ(x)=0 for x>δ directly mirrors the evaluation criterion (a retrieval is correct iff it lies within δ). Just as any retrieval method must define what counts as correct, κ encodes the same notion into the prob-ability model. Our ablation (Sec. D) shows that replacing the scaled sigmoid with a supergaussian yields similar performance, confirming that the framework is robust to the particular functional form of κ.
+
+Network Architectures. Finally, we also need to make some modeling choices for the network architectures of ϕe and ϕtr . Since we already use a pre-trained visual place recognition algorithm vK to constrain the candidate reference images at each time step, it would be efficient to use intermediate results computed by that algorithm. In our experiments, we use the standard form of visual place recognition algorithms that compute global image descriptors dglobal ∈ Rdg by first extracting local image features dlocal ∈ Rh×w×dl that are then aggregated into a single vector. We make the following choices: First, we notice that the task performed by ϕe is similar to pure Visual Place Recognition without sequential information, and so to the task that the global image descriptors are trained to do. We therefore set 
+
+ϕe(ri, q t) = MLP (dg (ri) ∗ dg (qt))  (5) with ∗ corresponding to element-wise multiplication and MLP denoting a small multi-layer perceptron, as a sort of ‘generalized cosine-similarity’. To compute the probability potentials Ψtr , we first want to compute descrip-tors dtr for the movement between the reference images rj and ri and between the query images qt−1 and qt, and then assign a high probability potential if these transitions are similar. For the latter step, we again use a generalized cosine-similarity 
+
+ϕtr (ri, r j , q t, q t−1) = MLP (dtr (ri, r j ) ∗ dtr (qt, q t−1)) . (6) We compute the transition descriptors dtr by computing the cosine-similarity between each pair of local image features and arranging them into a tensor of shape Rh×w×(h·w), which we pass through a convolutional neural network: 
+
+dtr (a, b ) = CNN (dl(a)dl(b)⊤). (7) Finally, we notice that the probability potential Ψtr should be zero for pairs of retrieval images that are very far apart, as a transition between those would be physically impossible. We therefore set ϕtr = 0 when the positions xi, x j of the retrieval images ri, r j are too far apart. This leaves us with 
+
+ϕtr (. . . ) = 
+
+(
+
+0 if |xi − xj | > ∆ 
+
+MLP (dtr (ri, r j ) ∗ dtr (qt, q t−1)) otherwise . (8) TRAIL 9
+
+Intuition. Intuitively, the recurrence Eq. (2) suppresses candidate reference images whose locations are inconsistent with earlier observations: if an earlier query image was confidently matched to database image D, for the current query image the transition potentials will down-weight candidate images at locations relative to D’s location that do not match the query images’ trajectory. Even when no single image is easy to match ( e.g ., along a feature-poor high-way), the transition potentials implicitly compare the relative camera motion inferred from reference image pairs with the motion observed in the query se-quence, progressively constraining the set of plausible locations. 
+
+3.4 Training End-to-End Training. The entire algorithm Algorithm 1 is differentiable, so given a pre-trained algorithm vK we train the entire system end-to-end by ap-plying a binary cross-entropy loss on the computed P (sit|Q):
+
+Lt = X
+
+> i
+
+− log( P (sit|Q)) · 1(|xi − yt| ≤ δ) (9) 
+
+− log(1 − P (sit|Q)) · 1(|xi − yt| > δ ).
+
+To improve training dynamics, we apply this loss at every timestep, not just 
+
+T :
+
+L = X
+
+> t
+
+Lt. (10) In our implementation, we perform all calculations in log-space for improved numerical stability. The relevant derivations and equations can be found in the appendix in Sec. B. 
+
+Pre-Training. End-to-end training is sped up and stabilized by first pre-training ϕe and ϕtr individually with cross-entropy losses. For ϕe, given query images with K candidate retrievals from vK , we train using: 
+
+Le = − X
+
+> i
+
+log exp ( ϕ(rci , q i)) 
+
+P 
+
+> k
+
+exp( ϕ(rki , q i))  (11) where rci = arg min rki |xki − yi| is the closest candidate to the query position. For ϕtr , we sample consecutive query pairs (qti , q t+1  
+
+> i
+
+) and, for efficiency, train transitions from the correct retrieval rt,c i to K candidates rt+1 ,k i . That is, for each pair of query images we also select rt,c i , the candidate retrieval with the position closest to qti , and K candidate retrievals rt+1 ,k i . We then compute 
+
+ϕtr (rt,c i , r t+1 ,k i , q ti , q t+1  
+
+> i
+
+) and again apply a cross-entropy loss: 
+
+Ltr = − X
+
+> i
+
+log exp 
+
+
+
+ϕtr (rt,c i , r t+1 ,c i , q ti , q t+1  
+
+> i
+
+)
+
+P 
+
+> k
+
+exp 
+
+
+
+ϕtr (rt,c i , r t+1 ,k i , q ti , q t+1  
+
+> i
+
+)
+
+ . (12) 10 D.A. Kloepfer and P. Wenzel 
+
+# 4 Experiments 
+
+4.1 Datasets Mapillary Street-Level Sequences To train and evaluate TRAIL, we need datasets containing images with associated camera locations, organized into indi-vidual image sequences. A large and diverse dataset that fits these requirements is the Mapillary Street-Level Sequences (MSLS) [41] dataset, and accordingly we use it as our main training dataset. This dataset contains 1.6 million images collected from short sequences of dashcam footage in 30 cities around the globe, providing a large and diverse set of images for training and evaluation. Since individual sequences are split across the original ‘query’ and ‘database’ sets for each city, we merge them and construct a new database set for each se-quence, against which localization is performed. For each sequence, the database set consists of all images from the same city that do not appear in the query sequence, and all results for MSLS cited in this paper refer to this setting. To avoid degenerate sequences with little camera movement, we skip frames in a sequence that have a distance of less than 25 .0 meters from the previous frame. 
+
+Evaluation Protocol. Prior work [21, 23] holds out the images collected in San Francisco and Copenhagen for validation. However, we notice that these two cities are among the easiest in the entire dataset, with some of the highest 
+
+Recall@1 performance for state-of-the-art Visual Place Recognition algorithms such as MegaLoc [6]. We therefore instead hold out the images collected in Amsterdam and Boston for validation, which are more challenging. Whereas MegaLoc has a Recall@1 performance of 89% for images from Copenhagen and 84.5% for images from San Francisco, the Recall@1 performance for images from Amsterdam is 54.0% and 71.5% for images from Boston. We continue to use the distance threshold of δ = 25 .0 meters used in the literature [6, 21, 23]. Two main factors account for the slightly worse Recall@1 performance on the Mapillary-SLS dataset in our setting compared to the performance reported on the validation split of the dataset elsewhere in the literature even for images from Copenhagen and San Francisco ( e.g ., Berton et al . [6] reach 91 .0% Recall@1 ). Firstly, we ensure that no images from the same sequence as a query image are included in the database. Secondly, we use all other sequences to create the database instead of a more curated sub-set of images. While this leads to a higher theoretically possible localization performance due to a denser coverage of a given environment, it also increases the number of distractor images among which a VPR-algorithm must discriminate. 
+
+Nordland Another dataset containing image sequences that can be used as query sequences in our setting is the Nordland dataset [37]. This dataset com-prises videos of a train traversing a 728-kilometer route in Norway across four seasons. TRAIL 11 
+
+The largely rural landscape, with few distinctive features that remain con-sistent across seasons, makes this a challenging setting. While its lack of visual diversity makes it unsuitable for training, we evaluate our model on Nordland without fine-tuning, using weights trained on MSLS. 
+
+Evaluation Protocol. The standard test split of the Nordland dataset discards the sequential nature of the source data. We therefore define the query sequences by uniformly sub-sampling 256 sequences of 10 frames each from the winter-video. As the database, we choose all the images of the summer-video, which is the season with the largest domain shift to the query season. We filter out degenerate cases with little camera movement by skipping frames if they were not collected at least 10 meters from the previously sampled frame. Like for the MSLS dataset, we define δ = 25 .0 meters as the threshold for correct localization. 
+
+4Seasons As a third dataset, we evaluate on the 4Seasons [43,44] dataset, which consists of gray-scale videos recorded using a sensor suite on a car following a number of different routes throughout different seasons. Most of these routes lead through urban environments with a large number of visual features, which causes non-sequential VPR algorithms to saturate them. We therefore use the “countryside” loop, which is the most challenging route that also supplies ground-truth camera poses for each frame for evaluation. Like Nordland, this dataset is used for evaluation only, again using weights trained on MSLS. 
+
+Evaluation Protocol. We follow a similar protocol as for the Nordland dataset, extracting 252 query sequences from the “winter” recording, which we localize against the “summer” recording that serves as the database. As before, we ensure that subsequent query frames are separated by at least 25 .0 meters and that database images are separated by at least 10 .0 meters, and use δ = 25 .0 meters as the threshold for correct localization. The comparatively small loop leaves a total of 672 reference images. 
+
+Other Datasets Few other datasets meet the requirement of sequential queries covering sufficiently large areas. Standard VPR benchmarks such as Pittsburgh-30k [3, 13], Tokyo 24/7 [39], and St. Lucia [42] do not preserve the sequential structure of their source data in the standard evaluation splits, making them unsuitable for our task without non-trivial re-processing. The Oxford Robot-Car dataset [30] contains sequential information but covers a small, feature-rich loop where im2im methods are near-saturated. Other domains such as off-road or aerial data are promising future directions where sequential priors may be especially valuable. We hope that clearly defining our task (Section 3.1) and framework (Section 3) will encourage future dataset collection and benchmark design in these domains. 12 D.A. Kloepfer and P. Wenzel 
+
+4.2 Architecture and Training 
+
+We train on MSLS, holding out the Amsterdam and Boston images for evaluation and resize all images to squares with side-length 224 pixels. As our pre-trained VPR model vK we use MegaLoc [6], which computes 
+
+8448 -dimensional global descriptors. The emission network ϕe is a small MLP operating on the element-wise product of global descriptors (Eq. (5)). The tran-sition network ϕtr computes pairwise correlations between DINOv2 [33] local features (ViT-14-Base, 768 -dim) and processes them with a ResNet-style CNN to obtain transition descriptors (Eq. (7)). We set the distance cutoff ∆ = 75 .0
+
+meters. We keep MegaLoc frozen and only train ϕe and ϕtr , first individually and then end-to-end using AdamW [26] with RandAugment [9] data augmentation (excluding geometric transforms, as they interfere with the learning of geometric transitions between images). For pre-training, we use K = 10 retrievals per query, with learning rate 10 −3
+
+and batch sizes of B = 56 (emission) and B = 256 (transition). For end-to-end training, we use batches of 6 sequences of length 10 with K = 10 retrievals and learning rate 10 −4.All training is done on a single NVIDIA A100 GPU with 48GB memory. Full architecture details are provided in Sec. C. 
+
+Computational and Memory Cost. TRAIL adds little overhead on top of the un-derlying VPR backbone. The DINOv2 local features used by ϕtr are produced by MegaLoc en route to its global descriptor, so ϕtr requires no additional back-bone pass, only the small CNN and MLP heads. Taking TRAIL (MegaLoc) as the unit of inference wall-clock per query, raw MegaLoc and the hand-crafted heuristics cost 0.2× and FoL 0.6×, while the SelaVPR and PairVPR re-rankers cost 7.2× and 9.3× respectively. TRAIL is therefore substantially lighter than the re-rankers it matches or exceeds in accuracy (Sec. 4.4). On the memory side, the cached local features for a single image occupy roughly 1.3× the storage of the raw reference image ( 5.3, 14 .8, 14 .6, and 0.5 GB for MSLS-Amsterdam, MSLS-Boston, Nordland, and 4Seasons, respectively). Since only the 2K = 20 
+
+feature sets for the candidate retrievals of two consecutive frames are needed at once, these can be streamed from disk for arbitrarily large maps. 
+
+4.3 Baselines 
+
+We evaluate the performance of our approach against a number of baseline al-gorithms. We use the authors’ code and pre-trained weights. 
+
+Global Descriptor Algorithms. MegaLoc [6] and FoL [40] are two recent, state-of-the-art Visual Place Recognition algorithms that compute global image descriptors and use these to retrieve matches from a database. We apply them to our setting by ignoring the sequential information and simply localizing the final image in the sequence. Note that while MegaLoc uses a ViT-B-based feature TRAIL 13 
+
+backbone, the authors of FoL only release weights for a ViT-L-based backbone. FoL therefore benefits from significantly larger model capacity, which should be kept in mind when interpreting its results. 
+
+Sequence-Retrieval Algorithms. We also compare to methods trained to use sequences for Visual Place Recognition: SeqNet [11], JIST [7], and CaseVPR [25]. These methods assume that the database contains sequences of images, whereas our database consists of unordered collections of images. We apply them by using the full query sequence descriptors to retrieve unordered database images, treat-ing each as a single-image sequence. We adapt CaseVPR’s two stages as follows: we first retrieve the top-K = 5 database images using the full query sequence descriptor, then choose among them the image with the highest similarity to the final query image’s descriptor. Further details are given in Sec. E.3. 
+
+Re-Ranking Algorithms. The third type of Visual Place Recognition Al-gorithm we evaluate are two recent re-ranking algorithms, SelaVPR [27] and PairVPR [16]. These im2im methods first retrieve K = 10 candidate database images using global image descriptors, before then re-ranking these images us-ing more expensive methods. Like for the Global-Descriptor-based algorithms, we apply these algorithms to our setting by ignoring sequential information and only localizing the final image in the query sequence. 
+
+Hand-crafted Algorithms. Finally, we compare to three hand-crafted meth-ods that use the MegaLoc algorithm for computing image descriptors for re-trieval. The first, Maximum Similarity , is briefly discussed in Warburg et al . [41] as the +MIN approach for their seq2im task. Given a window size W = 2 , this algorithm computes the top-1 retrieved image for the final W query images and returns the reference image that was retrieved with the highest similarity. The second, Majority Voting , also appears in Warburg et al ., under the name +MODE. Given a window size W = 3 , this algorithm uses the top-K = 10 
+
+images retrieved for each of the final W query images and returns the reference image that was retrieved most often among these W · K images. Finally, Location Filtering returns the database image that is most similar to the final image in the query sequence after filtering out any database image that was not collected within a distance threshold d = 75 .0 meters of at least one of the top-K = 10 retrievals for the previous W = 2 images. This corresponds roughly to the maximum distance between two correctly retrieved images when their respective query images are separated by approximately 25 meters. Formal definitions for these hand-crafted heuristics can be found in Sec. E.1. 
+
+4.4 Results 
+
+Our main results are given in Tab. 1. We report the Recall@T metric for T =1, 5, 10 timesteps on the Amsterdam and Boston subsets of the Mapillary-SLS 14 D.A. Kloepfer and P. Wenzel MSLS Nordland 4Seasons Algorithm R@T=1 R@T=5 R@T=10 R@T=1 R@T=5 R@T=10 R@T=1 R@T=5 R@T=10 Global Descriptor                                                                                                    
+
+> MegaLoc [6] 55.1 58.0 58.3 73.8 73.8 68.8 69.4 69.1 68.6 FoL (ViT-L) [40] 63.8 62.3 66.7 53.5 53.9 55.5 74.6 74.6 74.2
+> Sequence-Retrieval
+> SeqNet [11] 17.4 5.8 8.3 3.9 2.7 2.3 23.8 18.3 17.7 JIST [7] 17.4 11.6 16.7 10.9 1.6 0.4 34.5 15.1 6.5 CaseVPR [25] 33.3 27.5 25.0 18.4 7.0 7.8 58.7 21.8 22.2
+> Re-Ranking
+> SelaVPR [27] 71.0 65.2 66.7 64.8 64.1 60.9 77.0 76.6 76.2 PairVPR [16] 59.4 52.2 50.0 69.5 69.5 66.0 92.1 91.7 91.5
+> Hand-Crafted
+> Max. Similarity 55.1 39.1 66.7 73.8 43.0 39.1 69.4 66.3 65.7 Majority Voting 55.1 37.7 50.0 73.8 19.5 15.2 69.4 46.0 46.0 Loc. Filtering 55.1 60.9 58.3 73.8 79.7 76.2 69.4 69.4 66.9
+> Ours
+> TRAIL (MegaLoc) 56.5 65.2 66.7 75.3 81.3 78.1 71.0 78.2 79.0
+
+Table 1: Recall@T for T = 1 , 5, 10 on the Amsterdam and Boston subsets of Mapillary SLS [41], on Nordland [37], and on the 4Seasons [43, 44] countryside loop (Nordland and 4Seasons: winter queries localized against a summer database). T =1 corresponds to standard single-image VPR. Best results in bold , second-best underlined; FoL uses a larger ViT-L backbone than MegaLoc (ViT-B). 
+
+dataset, using all sequences that contain at least five images with successive query images separated by at least 25 meters, on the Nordland dataset, localizing query-sequences drawn from the winter recording against the images drawn from the summer recording, and on the 4Seasons countryside loop under the analogous winter-to-summer protocol. Whereas the improvements over vanilla MegaLoc are negligible for the first image in a sequence (when no sequential information is available), they are substantial for later frames. On MSLS at T =10 , SelaVPR reaches 66.7%, tying with our method. However, SelaVPR applies per-frame re-ranking using cross-attention over local features, which is considerably more expensive than our small MLPs operating on K=10 pre-retrieved candidates. FoL, despite using a larger ViT-L backbone, does not outperform our ViT-B-based method at T ≥5
+
+on MSLS and falls clearly behind on Nordland. Sequence-retrieval methods that assume a database consisting of sequences 
+
+perform very poorly in our setting. The core issue is that these methods treat all query images equally rather than focusing on localizing the final image: their sequence descriptors average across all frames, so when database “sequences” consist of a single image the descriptor distributions are mismatched. TRAIL avoids this by explicitly modeling transitions and returning the location estimate for the final timestep. A more detailed analysis is given in Sec. E.3. For T =1 , the handcrafted heuristics reduce to pure MegaLoc. Among them, only Location Filtering consistently improves over vanilla retrieval. This heuristic performs well on Nordland’s predictable train trajectory but is less effective on TRAIL 15 
+
+the more varied driving data in MSLS, where learned transition modeling is more robust. On 4Seasons, the same patterns hold: our method again improves substan-tially over the raw MegaLoc backbone as well as over the hand-crafted heuristics and SelaVPR, remaining effective despite the compounded domain shift from snowy winter queries to a summer database and from colour training data to grayscale test images, and despite never being trained on grayscale imagery. The notable exception is PairVPR, which performs exceptionally well on this dataset. We attribute this to the comparatively small reference set of the coun-tryside loop, which leaves far fewer distractor images, combined with PairVPR being more robust to the season and colour domain shift than SelaVPR. In Sec. E.2 we report the performance of these baselines using different values for their hyper-parameters. For an ablation analysis investigating the impact of some of the individual design choices for our method, refer to Sec. D in the supplement. 
+
+# 5 Conclusion 
+
+In this work, we presented TRAIL , a novel framework for Sequential Visual Place Recognition that exploits temporal context across a sequence of query images. Specifically, TRAIL uses localization estimates from earlier images in the sequence to improve place recognition for the current query image within a large reference database. This approach was empirically shown to improve the 
+
+Recall@T metric by up to 8.3 percentage points on MSLS, 9.3 on Nordland, and 
+
+10 .4 on 4Seasons, with minimal computational overhead. Several directions for future work remain: (i) extending to domains beyond street-level driving, such as aerial or off-road imagery; (ii) exploring richer archi-tectures for ϕe and ϕtr , including fine-tuning the backbone vK itself; (iii) directly modeling the evolving distribution of the query image’s position rather than classifying the closest reference image, which could yield smaller localization er-rors; and (iv) further reducing the framework’s compute and memory footprint, for instance through a learned down-projection of the redundant DINOv2 lo-cal features, or by exploiting odometry data to drive lighter-weight transition potentials. 
+
+# Acknowledgements 
+
+Dominik A. Kloepfer gratefully acknowledges support from the EPSRC (Visu-alAI, EP/T028572/1). 
+
+# References 
+
+> 1. Ali-Bey, A., Chaib-Draa, B., Giguere, P.: Mixvpr: Feature mixing for visual place recognition. In: Proceedings of the IEEE/CVF winter conference on applications of computer vision. pp. 2998–3007 (2023)
+
+16 D.A. Kloepfer and P. Wenzel 2. Ali-Bey, A., Chaib-draa, B., Giguère, P.: Boq: A place is worth a bag of learnable queries. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. pp. 17794–17803 (2024) 3. Arandjelovic, R., Gronat, P., Torii, A., Pajdla, T., Sivic, J.: Netvlad: Cnn ar-chitecture for weakly supervised place recognition. In: Proceedings of the IEEE conference on computer vision and pattern recognition. pp. 5297–5307 (2016) 4. Arandjelovic, R., Zisserman, A.: All about vlad. In: Proceedings of the IEEE con-ference on Computer Vision and Pattern Recognition. pp. 1578–1585 (2013) 5. Bai, D., Wang, C., Zhang, B., Yi, X., Yang, X.: Sequence searching with cnn features for robust and fast visual place recognition. Computers & Graphics 70 ,270–280 (2018) 6. Berton, G., Masone, C.: Megaloc: One retrieval to place them all. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) Workshops. pp. 2861–2867 (June 2025) 7. Berton, G., Trivigno, G., Caputo, B., Masone, C.: Jist: Joint image and sequence training for sequential visual place recognition. IEEE Robotics and Automation Letters 9(2), 1310–1317 (2023) 8. Cadena, C., Gálvez-López, D., Tardós, J.D., Neira, J.: Robust place recognition with stereo sequences. IEEE Transactions on Robotics 28 (4), 871–885 (2012) 9. Cubuk, E.D., Zoph, B., Shlens, J., Le, Q.V.: Randaugment: Practical automated data augmentation with a reduced search space. In: Proceedings of the IEEE/CVF conference on computer vision and pattern recognition workshops. pp. 702–703 (2020) 10. Cummins, M., Newman, P.: Fab-map: Probabilistic localization and mapping in the space of appearance. The International journal of robotics research 27 (6), 647–665 (2008) 11. Garg, S., Milford, M.: Seqnet: Learning descriptors for sequence-based hierarchical place recognition. IEEE Robotics and Automation Letters 6(3), 4305–4312 (2021) 12. Garg, S., Vankadari, M., Milford, M.: SeqMatchNet: Contrastive learning with sequence matching for place recognition & relocalization. In: Proceedings of the 5th Conference on Robot Learning. pp. 429–443 (2022) 13. Gronat, P., Obozinski, G., Sivic, J., Pajdla, T.: Learning and calibrating per-location classifiers for visual place recognition. In: Proceedings of the IEEE con-ference on computer vision and pattern recognition. pp. 907–914 (2013) 14. Gui, L., Zeng, C., Luo, J., Yang, X.: Place recognition through multiple lidar scans based on the hidden markov model. Sensors 24 (11) (2024). https://doi.org/10. 3390/s24113611 , https://www.mdpi.com/1424-8220/24/11/3611 
+
+15. Hammersley, J.M., Clifford, P.: Markov fields on finite graphs and lattices (1971), unpublished manuscript 16. Hausler, S., Moghadam, P.: Pair-vpr: Place-aware pre-training and contrastive pair classification for visual place recognition with vision transformers. IEEE Robotics and Automation Letters 10 (4), 4013–4020 (2025). https://doi.org/10.1109/ LRA.2025.3546512 
+
+17. He, K., Zhang, X., Ren, S., Sun, J.: Deep residual learning for image recognition. In: Proceedings of the IEEE conference on computer vision and pattern recognition. pp. 770–778 (2016) 18. Householder, A.S.: A theory of steady-state activity in nerve-fiber networks: I. definitions and preliminary lemmas. The bulletin of mathematical biophysics 3(2), 63–69 (1941) TRAIL 17 19. Ioffe, S., Szegedy, C.: Batch normalization: Accelerating deep network training by reducing internal covariate shift. In: International conference on machine learning. pp. 448–456. pmlr (2015) 20. Izquierdo, S., Civera, J.: Close, but not there: Boosting geographic distance sen-sitivity in visual place recognition. In: European Conference on Computer Vision. pp. 240–257. Springer (2024) 21. Izquierdo, S., Civera, J.: Optimal transport aggregation for visual place recogni-tion. In: Proceedings of the ieee/cvf conference on computer vision and pattern recognition. pp. 17658–17668 (2024) 22. Jégou, H., Douze, M., Schmid, C., Pérez, P.: Aggregating local descriptors into a compact image representation. In: 2010 IEEE computer society conference on computer vision and pattern recognition. pp. 3304–3311. IEEE (2010) 23. Keetha, N., Mishra, A., Karhade, J., Jatavallabhula, K.M., Scherer, S., Krishna, M., Garg, S.: Anyloc: Towards universal visual place recognition. IEEE Robotics and Automation Letters 9(2), 1286–1293 (2023) 24. Lafferty, J., McCallum, A., Pereira, F.C.: Conditional random fields: Probabilistic models for segmenting and labeling sequence data. Proc. 18th International Conf. on Machine Learning (2001) 25. Li, H., Peng, G., Zhang, J., Wen, M., Ma, Y., Wang, D.: Casevpr: Correlation-aware sequential embedding for sequence-to-frame visual place recognition. IEEE Robotics and Automation Letters (2025) 26. Loshchilov, I., Hutter, F.: Decoupled weight decay regularization. In: International Conference on Learning Representations (2019), https://openreview.net/forum? id=Bkg6RiCqY7 
+
+27. Lu, F., Zhang, L., Lan, X., Dong, S., Wang, Y., Yuan, C.: Towards seamless adap-tation of pre-trained models for visual place recognition. In: The Twelfth Interna-tional Conference on Learning Representations (2024) 28. Lynen, S., Bosse, M., Furgale, P., Siegwart, R.: Placeless place-recognition. In: 2014 2nd International Conference on 3D Vision. vol. 1, pp. 303–310 (2014) 29. Maas, A.L., Hannun, A.Y., Ng, A.Y., et al.: Rectifier nonlinearities improve neural network acoustic models. In: Proc. icml. p. 3. Atlanta, GA (2013) 30. Maddern, W., Pascoe, G., Linegar, C., Newman, P.: 1 Year, 1000km: The Oxford RobotCar Dataset. The International Journal of Robotics Research (IJRR) 36 (1), 3–15 (2017). https://doi.org/10.1177/0278364916679498 , http://dx.doi.org/ 10.1177/0278364916679498 
+
+31. Mereu, R., Trivigno, G., Berton, G., Masone, C., Caputo, B.: Learning sequen-tial descriptors for sequence-based visual place recognition. IEEE Robotics and Automation Letters 7(4), 10383–10390 (2022) 32. Milford, M.J., Wyeth, G.F.: Seqslam: Visual route-based navigation for sunny sum-mer days and stormy winter nights. In: 2012 IEEE international conference on robotics and automation. pp. 1643–1649. IEEE (2012) 33. Oquab, M., Darcet, T., Moutakanni, T., Vo, H., Szafraniec, M., Khalidov, V., Fernandez, P., Haziza, D., Massa, F., El-Nouby, A., et al.: Dinov2: Learning robust visual features without supervision. arXiv preprint arXiv:2304.07193 (2023) 34. Radenović, F., Tolias, G., Chum, O.: Fine-tuning cnn image retrieval with no human annotation. IEEE transactions on pattern analysis and machine intelligence 
+
+41 (7), 1655–1668 (2018) 35. Rudić, B., Pichler-Scheder, M., Schmidt, R., Helmel, C., Efrosinin, D., Kastl, C., Auer, W.: A geometry-aware hidden markov model for indoor positioning. In: 2020 IEEE/ASME International Conference on Advanced Intelligent Mechatronics (AIM). pp. 547–552. IEEE (2020) 18 D.A. Kloepfer and P. Wenzel 36. Siam, S.M., Zhang, H.: Fast-seqslam: A fast appearance based place recognition algorithm. In: 2017 IEEE International Conference on Robotics and Automation (ICRA). pp. 5702–5708. IEEE (2017) 37. Sünderhauf, N., Neubert, P., Protzel, P.: Are we there yet? challenging seqslam on a 3000 km journey across all four seasons. In: Proc. of workshop on long-term autonomy, IEEE international conference on robotics and automation (ICRA). p. 2013. Citeseer (2013) 38. Sünderhauf, N., Protzel, P.: Brief-gist-closing the loop by simple means. In: 2011 IEEE/RSJ International Conference on Intelligent Robots and Systems. pp. 1234– 1241. IEEE (2011) 39. Torii, A., Arandjelovic, R., Sivic, J., Okutomi, M., Pajdla, T.: 24/7 place recogni-tion by view synthesis. In: Proceedings of the IEEE conference on computer vision and pattern recognition. pp. 1808–1817 (2015) 40. Wang, C., Chen, S., Song, Y., Xu, R., Zhang, Z., Zhang, J., Yang, H., Zhang, Y., Fu, K., Du, S., et al.: Focus on local: Finding reliable discriminative regions for visual place recognition. In: Proceedings of the AAAI Conference on Artificial Intelligence. pp. 7536–7544 (2025) 41. Warburg, F., Hauberg, S., López-Antequera, M., Gargallo, P., Kuang, Y., Civera, J.: Mapillary street-level sequences: A dataset for lifelong place recognition. In: Computer Vision and Pattern Recognition (CVPR) (June 2020) 42. Warren, M., McKinnon, D., He, H., Upcroft, B.: Unaided stereo vision based pose estimation. In: Proceedings of the 2010 Australasian Conference on Robotics and Automation. pp. 1–8. Australian Robotics & Automation Association (2010) 43. Wenzel, P., Wang, R., Yang, N., Cheng, Q., Khan, Q., von Stumberg, L., Zeller, N., Cremers, D.: 4Seasons: A cross-season dataset for multi-weather SLAM in au-tonomous driving. In: German Conference on Pattern Recognition (GCPR) (2020) 44. Wenzel, P., Yang, N., Wang, R., Zeller, N., Cremers, D.: 4Seasons: Benchmarking visual SLAM and long-term localization for autonomous driving in challenging conditions. International Journal of Computer Vision (IJCV) (2024) 45. Xu, M., Fischer, T., Sünderhauf, N., Milford, M.: Probabilistic appearance-invariant topometric localization with new place awareness. IEEE Robotics and Automation Letters 6(4), 6985–6992 (2021) 46. Yu, J., Yang, J., Hu, A., Wang, J., Tan, P., Zhang, H.: ROVER: Robust loop closure verification with trajectory prior in repetitive environments. IEEE Transactions on Automation Science and Engineering 23 , 8476–8489 (2026) 47. Zhao, J., Zhang, F., Cai, Y., Tian, G., Mu, W., Ye, C., Feng, T.: Learning sequence descriptor based on spatio-temporal attention for visual place recognition. IEEE Robotics and Automation Letters 9(3), 2351–2358 (2024) TRAIL 1
+
+# TRAIL: Trajectory-Aware Visual Place Recognition against Unordered Databases 
+
+# Supplementary Material 
+
+# A Derivation of Recurrence Relation 
+
+ct−1 ct ct+1 
+
+Fig. 3: Diagram of the undirected graph showing the conditional independence rela-tions satisfied by the random variables c1, . . . , c T . After conditioning on the sequence of query images Q, each ct is independent of all ci s.t. |i − t| > 1, hence the set of random variables {ct} forms a Markov random field with respect to the graph. 
+
+We are given a sequence of query images Q = ( q1, . . . , q i, . . . , q T ) with qi ∈
+
+R3×H×W where each query image has an associated (but unknown) location 
+
+yt ∈ R3 and a set R = {(ri, x i), i ∈ 1 . . . N } of reference images with associated locations, where ri ∈ R3×H×W and xi ∈ R3.Our goal is to model P (ct|Q) for all t = 1 . . . T . Here we define ct = arg min i |xi−
+
+yt|, so ct is the random variable that indicates which reference image i was taken from the closest location to query image qt.We first make the locality assumption that after conditioning on the ob-servations Q, the random variables ct form a Markov Random Field over the linear chain graph shown in Fig. 3. That means that each ct is conditionally independent of all other variables except for its neighbours ct−1 and ct+1 , so 
+
+ct ⊥⊥ { ci : |i − t| > 1}.By the Hammersley-Clifford Theorem [15], we can write the conditional prob-ability for each entire sequence of closest states C = ( c1, . . . , c T ) as a product over probability potentials (functions with a range R>0) of cliques of the graph. The cliques in the graph here (Fig. 3) are pairs of adjacent nodes and single vertices, so 
+
+P (C|Q) ∝
+
+> T
+
+Y
+
+> t=2
+
+Ψtr (ct−1, c t, Q )
+
+> T
+
+Y
+
+> t=1
+
+Ψe(ct, Q ) (13) where Ψtr , Ψ e > 0.Intuitively, Ψe should be large when Q makes a particular value of ct likely, and Ψtr should be large when the transition from ct−1 to ct is plausible given Q.2 D.A. Kloepfer and P. Wenzel 
+
+This motivates the following further locality assumptions: 
+
+Ψe(ct, Q ) = Ψe(ct, q t) (14) 
+
+Ψtr (ct−1, c t, Q ) = Ψtr (ct−1, c t, q t−1, q t) (15) because those are the most influential query images for computing Ψe and Ψtr ,respectively. We then get 
+
+P (C|Q) ∝ Ψe(c1, Q )
+
+> T
+
+Y
+
+> t=2
+
+Ψtr (ct−1, c t, Q )Ψe(ct, Q ) (16) 
+
+∝ Ψe(c1, q 1)
+
+> T
+
+Y
+
+> t=2
+
+Ψtr (ct−1, c t, q t−1, q t)Ψe(ct, q t) (17) 
+
+∝ ST (C), (18) where we defined ST (C) as the unnormalised score for the state sequence C.Let us now define αt(i) as the unnormalised probability score of all state sequences (c1, . . . , c t−1, i ) that have length t and end in state ct = i. Then, trivially, 
+
+α1(i) = Ψe(c1 = i, q 1), (19) and for other t we have 
+
+αt(i) = X
+
+> c1,...,c t−1
+
+St(c1, . . . , c t−1, c t = i) (20) 
+
+= X
+
+> c1,...,c t−1
+
+Ψe(c1, q 1) ·
+
+> t−1
+
+Y
+
+> k=2
+
+Ψtr (ck−1, c k, q k−1, q k)Ψe(ck, q k)
+
+· Ψtr (ct−1, c t = i, q t−1, q t)Ψe(ct = i, q t)=Ψe(ct = i, q t) · X
+
+> j
+
+Ψtr (ct−1 = j, c t = i, q t−1, q t)αt−1(j),
+
+which is the recurrence relation used in the main paper (Eq. (2)). To calculate P (cT = i|Q), we have to normalise the αt(i), so with the parti-tion function ZT (Q) we have 
+
+P (cT = i|Q) = αT (i)
+
+ZT (Q) ∝ αT (i) (21) 
+
+= αT (i)
+
+P 
+
+> j
+
+αT (j) , (22) as in the main paper. TRAIL 3
+
+# B Derivation of Log-Space Equations 
+
+For numerical stability, we implement the relevant equations in log-space. In this section, we derive the relevant log-space equations for the recurrence relation (Eq. (2)), the probability aggregation (Eq. (3)), and the loss calculation (Eq. (9)), as well as the log-space form of the scaled sigmoid function κ (Eq. (4)). 
+
+B.1 Computing P (cit|Q) in Log-Space 
+
+We start by taking the logarithm of both sides of the recurrence relation Eq. (2). 
+
+log αt(i) = log 
+
+X
+
+> j
+
+Ψtr (cit, c jt−1, q t, q t−1)Ψe(cit, q t)αt−1(j)
+
+ (23) 
+
+= log Ψe(cit, q t) + log 
+
+X
+
+> j
+
+Ψtr (cit, c jt−1, q t, q t−1)αt−1(j)
+
+ .
+
+Defining ϕe = log Ψe and ϕtr = log Ψtr , we get 
+
+log αt(i) = ϕe(cit, q t) + logsumexp j [ϕtr (cit, c jt−1, q t, q t−1) + log αt−1(j)] . (24) Here logsumexp can use the log-sum-exp trick to improve numerical stability. With this log-space recurrence relation, we then have 
+
+P (cit|Q) = αt(i)
+
+P 
+
+> j
+
+αt(j) (25) 
+
+= exp log αt(i)
+
+P 
+
+> j
+
+exp log αt(j) (26) 
+
+= softmax i(log αt) (27) or 
+
+log P (cit|Q) = log αt(i) − logsumexp j [log αt(j)] . (28) 
+
+B.2 Computing P (sit|Q) in Log-Space 
+
+To compute the binary cross-entropy loss on the aggregated probabilities P (sit|Q)
+
+(see Eq. (9)), we need to compute both log P (sit|Q) and log(1 − P (sit|Q)) .Using P (sit|Q) = P 
+
+> j
+
+κ(|xi − xj |)P (cjt |Q) from Eq. (3), we find: 
+
+log P (sit|Q) = logsumexp j
+
+h
+
+log κ(|xi − xj |) + log P (cjt |Q)
+
+i
+
+. (29) 4 D.A. Kloepfer and P. Wenzel 
+
+To compute 1 − P (sit|Q), we can use the fact that P 
+
+> j
+
+P (cjt |Q) = 1 and write 
+
+1 − P (sit|Q) = 1 − X
+
+> j
+
+κ(|xi − xj |)P (cjt |Q) (30) 
+
+= X
+
+> j
+
+P (cjt |Q) − X
+
+> j
+
+κ(|xi − xj |)P (cjt |Q) (31) 
+
+= X
+
+> j
+
+(1 − κ(|xi − xj |)) P (cjt |Q). (32) Taking the logarithm of both sides then yields: 
+
+log(1 − P (sit|Q)) = logsumexp j [ log(1 − κ(|xi − xj |)) + log P (cjt |Q)] . (33) 
+
+B.3 Computing κ in Log-Space 
+
+To compute the overall loss, in log-space, the remaining piece is computing 
+
+log κ(|xi − xj |) and log(1 − κ(|xi − xj |)) .In Eq. (4), we defined 
+
+κ(x) = 1(x ≤ δ) · σ( γ − xτ )/σ ( γτ ) (34) where σ(x) = exp( x)/(1 + exp( x)) is the sigmoid function and 1 is the indicator function, while γ and τ are parameters. We therefore have log κ(x) = −∞ for x > δ , and for x ≤ δ
+
+log κ(x) = γ − xτ − log(1 + exp( γ − xτ )) − γτ + log(1 + exp( γτ )) (35) 
+
+= xτ − log1p (exp( γ − xτ )) + log1p (exp( γτ ))  (36) where log1p (x) = log(1 + x), which has a numerically stable implementation for small x.For x > δ , log(1 − κ(x)) → −∞ , but since this term is exponentiated inside the logsumexp in Eq. (33), we can handle it by simply masking out those terms. Defining A = γ−xτ and B = γτ for notational simplicity, for x ≤ δ, we get 
+
+1 − κ(x) =1 − σ(A)
+
+σ(B) (37) 
+
+=1 − σ(A)
+
+σ(B) + σ(A) − σ(A) (38) 
+
+=1 − σ(A) + 
+
+
+
+1 − 1
+
+σ(B)
+
+
+
+σ(A) (39) 
+
+=σ(−A) + σ(B) − 1
+
+σ(B) σ(A) (40) 
+
+=σ(−A) − σ(−B)
+
+σ(B) σ(A), (41) TRAIL 5
+
+where we used σ(−x) = 1 − σ(x). Now 
+
+σ(−B)
+
+σ(B) = 11 + exp( B)1 + exp( −B)1 (42) 
+
+= 1 + exp( −B)1 + exp( B) · exp( B)exp( B) (43) 
+
+= exp( B) + 1 1 + exp( B) · exp( −B) (44) 
+
+= exp( −B). (45) Therefore, 
+
+1 − κ(x) = σ(−A) − exp( −B)σ(A) (46) 
+
+= 11 + exp( A) − exp( −B) exp( A)1 + exp( A) (47) 
+
+= 1 − exp( A − B)1 + exp( A) . (48) Taking the logarithm on both sides and substituting back in for A and B finally yields 
+
+log(1 − κ(x)) = log1p 
+
+h
+
+exp 
+
+
+
+− xτ
+
+i 
+
+− log1p 
+
+
+
+exp 
+
+ γ − xτ
+
+ 
+
+. (49) 
+
+# C Architecture and Training Details 
+
+Emission Network. The MLP used in ϕe (Eq. (5)) has input dimension 8448 and a single hidden layer with dimension 64 , using LeakyReLU [29] activations and dropout 0.1.
+
+Transition Network. The CNN computing transition descriptors dtr (Eq. (7)) is a ResNet [17]-inspired network with three residual blocks. Each block contains two convolutional layers with ReLU [18] activations and Batch-Normalization [19], using hidden dimension 256 , kernel size 3, and stride 1. Mean-pooling and a linear projection produce 512 -dimensional descriptors. The MLP in ϕtr has two hidden layers of dimension 512 and 256 , with LeakyReLU activations and dropout 0.1.As local features we use the DINOv2 [33] feature maps from MegaLoc (ViT-14-Base, patch size 14 × 14 , feature dimension 768 ). 
+
+Training. We train on MSLS, holding out Amsterdam and Boston for evaluation. Images are resized to 224 ×224 pixels with ImageNet normalisation, yielding local features of dimension 16 × 16 × 768 . We apply RandAugment [9] with magnitude 
+
+9, excluding translation, shear, and rotation augmentations as they interfere with learning geometric transitions. 6 D.A. Kloepfer and P. Wenzel 
+
+For pre-training ϕe: batches of B = 56 query images with K = 10 retrievals, AdamW [26] with learning rate 10 −3 and weight-decay 10 −3. For pre-training 
+
+ϕtr : batches of B = 256 query pairs with K = 10 retrievals, AdamW with learning rate 10 −3 and weight-decay 10 −4. For end-to-end training: batches of 6
+
+sequences of length 10 with K = 10 retrievals, AdamW with learning rate 10 −4
+
+and weight-decay 10 −3.
+
+# D Ablations                                            
+
+> MSLS Nordland Ablation R@T=1 R@T=5 R@T=10 R@T=1 R@T=5 R@T=10
+> No Pre-Training 58.0 66.7 66.7 75.3 79.3 78.5
+> κ=Eq. (50) 57.4 66.7 66.7 75.1 81.6 78.5
+> ϕtr uses dg56.5 65.2 66.7 75.3 83.2 80.5
+> ϕtr = 1 56.5 60.9 62.7 75.3 76.2 73.4 TRAIL (FoL) 60.9 59.4 75.0 55.1 61.3 53.1 TRAIL (MegaLoc) 56.5 65.2 66.7 75.3 81.3 78.1
+> Table 2: Performance of Ablation Experiments on the MSLS and Nordland datasets. For detailed description of the experiments and a discussion of the results, please refer to Sec. D.
+
+To investigate the impact of some of our modeling choices on the system’s performance, we perform a number of ablation experiments. Keeping all other training settings constant, we report the performance for a number of settings in Tab. 2. 
+
+No Pre-Training We experiment with training our model exclusively end-to-end, skipping the pre-training phase. While at early epochs this model’s perfor-mance lags behind that of the pre-trained model, it quickly catches up and by the time the pre-trained model converges, achieves broadly similar performance. 
+
+Alternative κ Function. The choice of a scaled sigmoid as the functional form for the function κ (Eq. (4)) is not unique. We also experiment with a similar function, a generalised Gaussian of the form 
+
+κ(x) = exp( −(x/τ )β ) · 1(x ≤ δ) (50) where τ corresponds to the cut-off in the scaled-sigmoid and is set to 20 .0 meters and the shape parameter β is learnable and initialised to 4.0.This setting, too, achieves broadly similar performance to the model in the main paper. This is not surprising, as the functional shape of both equations is quite similar. TRAIL 7
+
+ϕtr uses Global Descriptors. In the main paper, we use an architecture for the transition probability potentials that uses local features to compute descrip-tors dtr of the transition between a pair of images (Eq. (7)). In this ablation, we instead use the global image descriptors extracted by the pre-trained VPR algorithm to compute dtr :
+
+dtr = MLP (dg (ri) ∗ dg (qt)) . (51) The Multi-layer Perceptron we use here has two hidden layers with 512 dimen-sions each, and uses leaky-ReLU activations and a dropout of 0.1 during training. The performance is slightly stronger than that of the full model on the Nord-land dataset. MegaLoc [6] uses the SALAD [21] architecture, which aggregates local features into clusters that are then concatenated. Such global descriptors may still retain information about the spatial arrangement of features in the im-age, which a sufficiently expressive network can exploit. For the Nordland dataset especially, this information can be enough to identify the quite consistent camera movement between subsequent frames. We also note that the number of parameters of this Multi-layer Perceptron (4.8 million) is larger than that for the CNN used in the main paper ( 3 million). 
+
+Setting ϕtr = 1 . We also ablate the effect of explicitly integrating the informa-tion derived from the transitions between query images compared to the effect of explicitly modeling the probability P (sit|Q) by aggregating the probabilities 
+
+P (cit|Q) using Eq. (3). We do so by setting ϕtr = 1 in our trained model, which results in the recur-rence relation Eq. (2) becoming αt(i) ∝ ϕe(cit, q t). The proportionality constant cancels when computing P (cit|Q). The performance of this modification lags sig-nificantly behind the full model, though it still outperforms the pure MegaLoc baseline. Standard VPR-Algorithms return the single reference image with the high-est similarity with the query image, so do not take into account the similarity scores assigned to other reference images. By explicitly modeling the probability 
+
+P (sit|Q), our approach allows a reference image with a slightly lower similarity score to be chosen ahead of an image with a higher similarity score, if there are other reference images with reasonably high scores at locations close to its loca-tion. This helps discard outlier similarity scores, where two unrelated places look similar from only a certain perspective or only in certain lighting conditions. 
+
+Different Backbone. Finally, we evaluate our method trained using the FoL [40] backbone (a recent VPR method using a ViT-L-based architecture), with the architecture and training recipe otherwise unchanged. It, too, tends to improve on the raw FoL backbone, demonstrating that our framework is backbone-agnostic. The gains are more inconsistent, though, which may stem from FoL’s specific training recipe making it less suited to our specific choices for the emission and transition network architectures. 8 D.A. Kloepfer and P. Wenzel 
+
+Our framework’s principles (Sec. 3.2, Sec. 3.4, Sec. 3.3, and Appendix Sec. A) remain applicable to any VPR backbone, however. 
+
+D.1 Sequence Pre-Processing and Transition Cutoff                                                    
+
+> MSLS Nordland 4Seasons Setting R@T=1 R@T=5 R@T=10 R@T=1 R@T=5 R@T=10 R@T=1 R@T=5 R@T=10
+> TRAIL (MegaLoc) 56.5 65.2 66.7 75.3 81.3 78.1 71.0 78.2 79.0
+> No stationary-frame filter 56.5 63.8 66.7 75.3 80.1 78.9 71.0 75.0 74.6
+> ∆= 50 .0m56.5 63.8 66.7 75.3 82.8 80.0 71.0 79.4 79.0
+> ∆= 100 .0m56.5 63.8 66.7 75.3 79.7 77.0 71.0 77.4 77.0
+
+Table 3: Effect of removing the stationary-frame filter and of varying the transition cutoff ∆. Performance is broadly stable across all three settings; best results per column in bold (columns in which all settings tie are left unmarked). 
+
+We further study two choices in our data pre-processing and modeling pipeline that are independent of the trained networks: the filtering of near-stationary query frames and the value of the transition cutoff ∆. For both, we re-run the 
+
+same trained TRAIL model without any retraining; the results are reported in Tab. 3. 
+
+Stationary and Variable-Speed Frames. To avoid degenerate sequences with little camera movement, we skip query frames that are less than 25 .0 meters from the previous frame (Sec. 4.1). We ablate this choice by re-running trained TRAIL on the unfiltered sequences. Each Recall@ T metric still refers to the same target query frame as before, but the previously-skipped intermediate frames now also flow through TRAIL. As Tab. 3 shows, performance remains broadly stable. In a deployment setting, such frames can also be removed cheaply using image similarity or coarse odometry, without recourse to ground-truth positions. 
+
+Transition Cutoff ∆. The distance cutoff ∆ = 75 .0 meters, beyond which transition potentials are set to zero, is the geometric ceiling on the separation between two consecutive references: given a query spacing of 25 meters and a localization threshold δ = 25 .0 meters, two correctly localized consecutive refer-ences can be at most δ + 25 + δ = 75 meters apart. Varying ∆ ∈ { 50 , 100 } meters yields similar results (Tab. 3), confirming that the framework is insensitive to the precise value of this cutoff. TRAIL 9
+
+# E Hand-Crafted and Sequential Baseline Details 
+
+E.1 Formal Definition 
+
+We now give the formal definitions of the three hand-crafted heuristics evaluated in the main paper in Sec. 4. As we saw there, it is not trivial to create heuristics that outperform even the simplest baseline. For each of these algorithms, we assume the availability of a previously trained Visual Place Recognition algorithm, which, given a single query image, can retrieve the K most similar images according to some algorithm-specific similarity metric. In the notation used above, such an algorithm is a function 
+
+vK : Q1 → R K . Usually, such an algorithm computes a descriptor for the query image and all reference images and then retrieves the top-K database entries: 
+
+vK (q) = top-K(r,x )∈R [s(d(q), d (r))] , where d : R3×H×W → Rd is an image de-scriptor, and s : R2×d → R is a similarity function. 
+
+Maximum Similarity. This baseline is briefly discussed in Warburg et al . [41] as an approach for their seq2im task, calling it +MIN. Given a window size 
+
+W ≤ T , this algorithm computes the top-1 retrieved image for the final W query images and returns the reference image that was retrieved with the maximum similarity. Formally, this set of top-1 retrieved images for the final W query images is W1(( q1, . . . , q T )) = STi=T −W +1 v1(qi) and so with 
+
+ˆs(r) = max  
+
+> T−W <i ≤Tv1(qi)= r
+
+s[d(qi), d (r)] ∀r ∈ W 1 (52) the highest retrieval similarity for each retrieved image we have 
+
+amax. similarity (Q; vK ) = arg max 
+
+> (r,x )∈W 1(Q)
+
+ˆs(r). (53) 
+
+Majority Voting. This baseline is also briefly discussed in [41], under the name +MODE. Again, given a window size W ≤ T , this algorithm computes the top-K images retrieved for each of the final W query images and returns the reference image that was retrieved most often among these W · K images. With 
+
+WK (( q1, . . . , q T )) = STi=T −W vK (qi), we have formally 
+
+amajority voting (Q; vK ) = mode (WK (Q)) . (54) 
+
+Location Filtering. This baseline is built on the heuristic that correctly re-trieved database images for the different images in the query sequence will have been collected from locations not too far apart from each other. It returns the database image that is most similar to the final query sequence image after filter-ing out any retrieved image that was not collected within a distance threshold d10 D.A. Kloepfer and P. Wenzel 
+
+of at least one of the top-K retrievals for the previous W query images. Formally, 
+
+aloc.filtering (Q; vK ) = arg max 
+
+> (r,x )∈F K,W
+
+s[d(qT ), d (r)] , (55) where we define the set of filtered retrievals as 
+
+FK,W = {(r, x ) ∈ vK (qT ) s.t. ∃(s, y ) ∈ 
+
+> T−1
+
+[ 
+
+> i=T−W
+
+vK (qi) with |x − y| ≤ ∆}.
+
+E.2 Additional Baselines 
+
+MSLS Nordland Setting R@T=1 R@T=5 R@T=10 R@T=1 R@T=5 R@T=10 
+
+Pure Retrieval (MegaLoc) 55.1 58.0 58.3 73.8 73.8 68.8 
+
+Maximum Similarity 
+
+W = 2 55.1 39.1 66.7 73.8 43.0 39.1 
+
+W = 3 55.1 39.1 66.7 73.8 31.6 25.0 
+
+W = 5 55.1 34.8 66.7 73.8 19.9 18.4 
+
+W = 10 55.1 34.8 66.7 73.8 19.9 10.6 
+
+Majority Voting 
+
+W = 3 , K = 10 55.1 37.7 50.0 73.8 19.5 15.2 
+
+W = 2 , K = 10 55.1 30.4 58.3 73.8 38.3 34.8 
+
+W = 3 , K = 5 55.1 42.0 58.3 73.8 22.3 16.0 
+
+W = 2 , K = 5 55.1 37.7 58.3 73.8 39.1 36.3 
+
+W = 3 , K = 20 55.1 36.2 41.7 73.8 21.5 16.0 
+
+W = 2 , K = 20 55.1 29.0 58.3 73.8 40.2 36.7 
+
+Location Filtering 
+
+W = 2 , K = 10 , ∆ = 75 .0 55.1 60.9 58.3 73.8 79.7 76.2 
+
+W = 3 , K = 10 , ∆ = 75 .0 55.1 60.9 58.3 73.8 78.5 75.0 
+
+W = 3 , K = 10 , ∆ = 100 .0 55.1 60.9 58.3 73.8 78.5 74.2 
+
+W = 2 , K = 10 , ∆ = 50 .0 55.1 60.9 58.3 73.8 79.3 76.2 
+
+W = 3 , K = 10 , ∆ = 50 .0 55.1 60.9 58.3 73.8 78.1 75.0 
+
+W = 2 , K = 10 , ∆ = 25 .0 55.1 56.5 58.3 73.8 37.9 35.2 TRAIL (MegaLoc) 56.5 65.2 66.7 75.3 81.3 78.1 Table 4: Additional Results for Hand-Crafted Baselines with Different Hyperparam-eters. We see that the performance of the baselines can sometimes be sensitive to the hyperparameter choices made, but does not reach the performance of our method. 
+
+We also evaluated the hand-crafted heuristics using a range of different hyper-parameters for the window size W , the number of candidate reference images K,TRAIL 11 
+
+and, in the case of the Location Filtering baseline, the distance filtering threshold 
+
+∆. The results of these experiments can be found in Tab. 4. The different hyperparameters fail to improve the overall performance, and the Majority Voting baseline is quite sensitive to the choice of hyperparameter; larger window sizes in particular decrease its performance as there are more spurious votes by earlier query images for reference images that are too far away from the final query image. For the Maximum Similarity baseline, a higher window size primarily in-creases the likelihood that the highest-similarity retrieval will be for a previous time-step, and lie outside the distance threshold for correct localizations. Similarly, the Location Filtering baseline is quite insensitive to the exact hy-perparameter choice, because its hard filtering approach generally filters out the most egregious similarity-score outliers, while harder examples are not filtered out for sensible choices of hyperparameters. On the Nordland dataset, though, we see that a filtering threshold of ∆ = 25 .0 meters is too strict and significantly reduces performance. These results underscore the need for careful thinking about how to best integrate sequence information into a visual place recognition system. 
+
+E.3 Sequence-Retrieval Baselines                              
+
+> MSLS Nordland Algorithm R@T=1 R@T=5 R@T=10 R@T=1 R@T=5 R@T=10
+> SeqNet [11] 17.4 5.8 8.3 3.9 2.7 2.3 JIST [7] 17.4 11.6 16.7 10.9 1.6 0.4 CaseVPR [25] 33.3 27.5 25.0 18.4 7.0 7.8 TRAIL (MegaLoc) 56.5 65.2 66.7 75.3 81.3 78.1 Table 5: Sequence-retrieval baselines evaluated in our setting with an unordered ref-erence database. These methods are designed for databases organised into sequences and perform poorly when this assumption is violated.
+
+We evaluate three methods designed for sequence-to-sequence Visual Place Recognition—SeqNet [11], JIST [7], and CaseVPR [25]—in our setting, where the reference database consists of unordered images rather than sequences (Tab. 5). These methods assume that the database is organised into sequences and compute fixed-length descriptors that aggregate information across all frames in a sequence. We apply them to our setting by using the full query sequence descriptors to retrieve the unordered database images, treating each database image as a single-frame “sequence.” For CaseVPR, which has two stages, we first retrieve the top-K=5 database images using the full query sequence descriptor, 12 D.A. Kloepfer and P. Wenzel 
+
+then choose among them the image with the highest similarity to the image descriptor of the final query image. All three methods perform far below standard single-image retrieval. Two factors explain this: 1. Descriptor mismatch. Sequence descriptors are trained to match against other sequence descriptors. When the database contains only single images, the descriptor distributions are mismatched—the query descriptor averages over T frames while each database descriptor represents a single frame. 2. No focus on the final image. These methods treat all frames in a sequence equally, producing a descriptor that represents the entire trajectory rather than privileging the final query image. Since earlier query images may be far from the final image’s location, the aggregated descriptor is biased away from the target location. TRAIL avoids this by explicitly modeling transitions and returning the location estimate for the final timestep. These results confirm that sequence-to-sequence methods are not directly applicable to our task setting, motivating TRAIL, which works with unordered databases by design. 
+
+# F Odometry CRF Baseline                                       
+
+> MSLS Nordland 4Seasons Algorithm R@T=1 R@T=5 R@T=10 R@T=1 R@T=5 R@T=10 R@T=1 R@T=5 R@T=10
+> MegaLoc [6] 55.1 58.0 58.3 73.8 73.8 68.8 69.4 69.1 68.6 Odometry CRF [45] 47.8 58.0 41.7 73.4 76.6 75.0 69.1 69.8 52.5 TRAIL (MegaLoc) 56.5 65.2 66.7 75.3 81.3 78.1 71.0 78.2 79.0
+
+Table 6: Comparison against a hand-crafted odometry CRF adapted from Xu et al . [45]. TRAIL outperforms both pure MegaLoc and the odometry CRF across all three datasets. 
+
+In addition to the baselines evaluated in the main paper, we compare against a hand-crafted odometry-based CRF adapted from Xu et al . [45], who perform probabilistic appearance-invariant topometric localization. The results are re-ported in Tab. 6. Adapting their method to our setting is not straightforward: their motion model is built on an ordered reference map whose adjacent places are joined by relative-pose edges, which we do not have. This in turn means our references carry no orientation, so the directional part of the query odometry cannot be used and only its magnitude survives; the simplifications this forces are derived in Sec. F.1. For odometry, we use real IMU integration on 4Seasons; on MSLS and Nordland, which do not provide inertial measurements, we derive odometry from the ground-truth positions corrupted with calibrated random-walk noise. TRAIL 13 
+
+As Tab. 6 shows, this adaptation trails pure MegaLoc on MSLS and 4Seasons, with the drop concentrated at large T , where the absence of heading information most hurts long-range disambiguation. Strengthening this baseline—for example by fusing visual odometry to recover a heading estimate—is a promising direction for future work. We further note that our forward recurrence (Eq. (2)) parallels Eq. (10) of Xu et al . [45]. Their transition potentials, however, condition on the query odometry, which violates the standard causality assumption of hidden Markov models and the textbook derivation of the forward algorithm; our derivation in Sec. A closes this gap. 
+
+F.1 Adapting the TopometricLoc Motion Model 
+
+We now derive the odometry CRF baseline in detail, adopting the notation of Xu et al . [45] where convenient. Their TopometricLoc system is a discrete Bayes filter that maintains a belief over a set of reference places together with a single 
+
+off-map state O, which absorbs probability mass whenever the query leaves the mapped area. At each timestep the belief is updated by a measurement model ,scoring the appearance of the query against each reference, and a motion model ,a transition matrix Et that scores how consistent each candidate-to-candidate transition is with the query odometry. The two are combined through the stan-dard hidden-Markov-model forward recursion. This filter is structurally the same model as TRAIL (Sec. A). Its measurement model is an emission potential , playing the role of our Ψe; its motion model is a 
+
+transition potential , playing the role of our Ψtr ; its off-map state O is our dustbin state; and its forward recursion is exactly ours. The substance of the adaptation lies in re-deriving these two potentials for an unordered reference set, which we do below. Crucially, the TopometricLoc map is an ordered traverse : each reference node carries an appearance descriptor, and adjacent nodes are joined by edges that store a relative-pose estimate μri→j obtained from mapping-time odometry. As we restrict the candidate set at each timestep to the top-K retrievals of the underlying VPR model, the transition matrix is of size (K+1) × (K+1) .
+
+Emission Potential. The measurement model is the baseline’s emission poten-tial and transfers to our setting unchanged, as it requires only descriptors and is indifferent to whether the references are ordered. Following Xu et al ., the emission factor for candidate i, the analogue of our Ψe(cit, q t), is an exponential appearance kernel 
+
+gt,i ∝ exp( −λ ∥dg (qt) − dg (ri)∥2) , (56) where dg is the global descriptor of the underlying VPR model and the sharpness 
+
+λ is calibrated once, at t=1 , from the spread (a pair of quantiles) of the distances between the first query descriptor and all map descriptors. The off-map state is assigned the emission of the k-th best match for some k ≫ 1, yielding a likelihood 14 D.A. Kloepfer and P. Wenzel 
+
+that is consistently high but never optimal; the filter therefore only commits to a within-map location when the appearance matches are genuinely strong. 
+
+Transition Potential. The motion model is the baseline’s transition potential, the analogue of our Ψtr . In the notation of Xu et al ., the relative pose of the query at time t, given the hypothesis that it was at reference i at time t−1, is modelled as a Gaussian N (μqt , Σ qt ) parameterised by the 3-DoF query odometry. The transition score Et,ij is the likelihood of this Gaussian evaluated on the mapped trajectory segment Tj around node j, a short curve interpolated between the relative poses of j’s neighbouring nodes, which reduces to a minimum squared Mahalanobis distance d2 
+
+> t,ij
+
+between the predicted pose and Tj .This construction relies on two ingredients the unordered setting denies us. First, the edges and per-edge relative poses μri→j needed to interpolate Tj do not exist when the references are an unordered set of points. Second, and more subtly, each reference carries a position but no orientation : there is no local frame at node i against which the direction of a query displacement could be measured. In Xu et al . this frame is provided by the heading of the mapping traverse at each node, with which a directional query odometry is implicitly assumed to be aligned. We therefore make three generalisations. 
+
+(G1) A neighbourhood ball replaces the trajectory segment. With unordered references there is no notion of a predecessor or successor of node j, and hence no segment Tj to interpolate. We replace it with a 2D ball of radius R around the candidate’s position, 
+
+N (j) = {y ∈ R2 : ∥y − xj ∥ ≤ R}, (57) and set R = δ, the same neighbourhood radius that defines a correct localization in our evaluation. Lacking a local trajectory, the most we can assert is that a correct candidate lies somewhere within a metric neighbourhood of xj .
+
+(G2) Isotropic odometry covariance. We take Σqt = σ2I with a constant scalar σ, so the Mahalanobis distance collapses to a scaled Euclidean distance. 
+
+(G3) Comparison of displacement magnitudes only. Our odometry yields a 2D displacement between consecutive frames, but its direction cannot be used. There is no per-reference heading to compare it against (above), and the absolute orientation of the query trajectory in the map frame is unobservable to a system localizing against an unordered database; supplying it would, for our simulated odometry, amount to feeding in ground-truth heading. We therefore retain only the rotation-invariant displacement magnitude st = ∥ot − ot−1∥ between the odometry-derived query positions ot−1, o t. Writing the map separation between candidates as ∆d ij = ∥xj − xi∥, the predicted query position given hypothesis 
+
+i then lies somewhere on the circle of radius st centred on xi. The minimum distance from this circle to the ball N (j) is max {0, |∆d ij − st| − R} (treating the radial offset as one-dimensional), which yields the squared cost 
+
+d2 
+
+> t,ij
+
+= 1
+
+σ2
+
+
+
+max {0, |∆d ij − st| − R}
+
+2
+
+. (58) TRAIL 15 
+
+This discards all directional information, precisely the cue that most helps dis-ambiguate distant places that happen to lie a similar travel distance away, and is reflected in the baseline’s degradation at large T (Tab. 6). With d2 
+
+> t,ij
+
+in hand, the transition matrix is assembled exactly as in Xu et al .The within-map block is a softmax over the negative half-costs, rescaled by the complementary off-map mass, 
+
+log Et,ij = − 12 d2 
+
+> t,ij
+
+− logsumexp j′
+
+ − 12 d2
+
+> t,ij ′
+
+ + log(1 − Et,iO ) , (59) while the within-to-off-map probability grows with the cost of the best available transition through a chi-squared CDF, 
+
+Et,iO = χ2
+
+> ν
+
+
+
+min  
+
+> j
+
+d2
+
+> t,ij
+
+
+
+, (60) capped at a maximum per-step value. We set the degrees of freedom to ν = 2 ,matching our planar motion, rather than the ν = 3 used by Xu et al . for 3-DoF motion. Finally, transitions out of the off-map state fall back to the emission factors, log Et,Oj = log gt,j .
+
+Inference. Localization then proceeds by the same forward recursion and decod-ing as our own model. In log-space, 
+
+log αt(j) = log gt,j + logsumexp i(log Et,ij + log αt−1(i)) , (61) initialised with the emission factors log α1(j) = log g1,j . This is exactly our forward recurrence (Eq. (2)), with the emission factor gt,j in place of Ψe and the transition factor Et,ij in place of Ψtr . As before, we normalise αt with a softmax, aggregate the resulting state distribution over candidate locations with the same neighbourhood aggregation used throughout our framework (Eq. (3)), and return the highest-scoring candidate. The baseline thus differs from TRAIL only in its potentials—hand-crafted, odometry-driven factors in place of the learned ϕe and ϕtr . The one conceptual gap is that conditioning the transition potential on the query odometry makes the recurrence depart from the textbook forward algorithm; our learned model avoids this by deriving appearance-only potentials from first principles in Sec. A. 
+
+# G Qualitative Analysis 
+
+In this section, we give some qualitative examples of query sequences in the Mapillary dataset for which our TRAIL method outperforms basic Visual Place Recognition algorithms represented by the Pure MegaLoc baseline. As the reader can observe in Fig. 4, the query images where our method outperforms the baseline are primarily those in feature-poor rural regions and highways. Such regions make single-image visual place recognition very challeng-ing. By taking previous query images into account and propagating its belief about the current query image’s location, our method can continue to localize these images successfully. 16 D.A. Kloepfer and P. Wenzel      
+
+> (a) Pure Retrieval (MegaLoc) Baseline (b) Our TRAIL (MegaLoc)
+
+Fig. 4: Selected Validation Sequences where TRAIL outperforms Pure Retrieval .Feature-sparse rural and high-way regions as opposed to feature-rich urban regions are overrepresented compared to the full validation set. Green borders indicate correct, red borders incorrect localization. The performance of the Pure Retrieval baseline is shown to the left in Fig. 4a, the performance of our TRAIL method to the right in Fig. 4b.

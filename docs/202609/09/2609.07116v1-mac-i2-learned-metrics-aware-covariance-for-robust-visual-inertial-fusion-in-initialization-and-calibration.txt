@@ -1,0 +1,2390 @@
+Title: MAC-I^2: Learned Metrics-Aware Covariance for Robust Visual-Inertial Fusion in Initialization and Calibration
+
+URL Source: https://arxiv.org/pdf/2609.07116v1
+
+Published Time: Wed, 09 Sep 2026 02:37:07 GMT
+
+Number of Pages: 15
+
+Markdown Content:
+# MAC-I 2: Learned Metrics-Aware Covariance for Robust Visual-Inertial Fusion in Initialization and Calibration 
+
+Project Page: mac-i2.github.io 
+
+Xiang Fei 1,∗, Yuheng Qiu 1,∗,‡, Can Xu 1,3, Yutian Chen 1, Ruogu Li 1,Xingxing Zuo 2, Wenshan Wang 1, Sebastian Scherer 1
+
+Fig. 1: MAC-I 2 achieves robust VI fusion through learned metrics-aware covariances for both visual and inertial measurements. We build a VI initialization and calibration system, which substantially outperforms existing methods (left). 
+
+Abstract — Visual-Inertial (VI) fusion is fundamental to ac-curate and robust state estimation, where camera and IMU measurements are combined according to their respective un-certainties. Existing methods, however, fuse the two modalities with predefined uncertainties, regardless of how reliable each is in the local context, and thus often struggle under chal-lenging environments involving illumination changes, dynamic objects, and textureless regions. In this paper, we present MAC-I 2, which achieves robust VI fusion through learned metric-aware covariance for both modalities, so that vision and IMU compete on their own merits rather than relying on predefined uncertainties. Here, metrics-aware means that each predicted covariance faithfully reflects the actual magnitude of the corresponding measurement noise. On the visual side, we propagate learned feature-matching uncertainties into pose covariances for the fusion. On the inertial side, motivated by the observation that integration error accumulates sharply at the early stage and grows slowly afterward, we design a learned IMU model with a learnable initial covariance, and propose a dedicated fine-tuning strategy on a held-out training subset to enable the metrics-aware covariance on unseen sequences. As a showcase, we build a VI initialization and calibration system, since accurate and robust initialization and calibration are the  
+
+> ∗
+
+Equal contribution.  
+
+> ‡
+
+Project lead.  
+
+> 1
+
+The Robotics Institute, Carnegie Mellon University, 5000 Forbes Ave, Pittsburgh, PA 15213 USA.  
+
+> 2
+
+Mohamed bin Zayed University of Artificial Intelligence (MBZUAI), Masdar City, Abu Dhabi, UAE.  
+
+> 3
+
+University of Toronto Institute for Aerospace Studies (UTIAS), Uni-versity of Toronto, 4925 Dufferin St, Toronto, ON M3H 5T6, Canada. 
+
+prerequisite for any reliable VI system. Experiments on EuRoC, and VBR show that MAC-I 2 substantially outperforms existing methods: it achieves a 99.9% initialization success rate on EuRoC, reducing gravity and velocity errors by about 60% and 42% over the strongest baseline, and maintains 80% success rate on challenging VBR sequences where baseline methods such as VINS-Mono drop below 10%. 
+
+I. I NTRODUCTION 
+
+Visual-inertial (VI) fusion is a cornerstone technology for autonomous systems, AR/VR, and robotics, providing accu-rate and robust state estimation by combining complementary visual and inertial measurements [1]–[3]. At its core, VI fusion weights the two modalities according to how much each should be trusted, where the trust is encoded by the covariance assigned to each measurement. In practice, the reliability of each modality varies with the local context: visual measurements degrade under illumination changes, dynamic objects, and textureless regions, while inertial reli-ability is affected by the motion patterns. However, existing methods rely on predefined covariances that fail to capture the reliability of each measurement. This reliance on predefined covariances is evident across existing VI systems. Factor-graph-based estimators such as VINS-Mono [1] and OKVIS [3] weight visual residuals by a fixed pixel noise (e.g. 1.5 pixels in VINS-Mono), while inertial residuals are weighted by covariances propagated from preset IMU noise parameters. ORB-SLAM3 [2] assigns arXiv:2609.07116v1 [cs.RO] 7 Sep 2026 the visual information matrix according to the image pyramid level at which each feature is detected, so that features from the same scale share an identical covariance. Filter-based estimators such as MSCKF [4] and OpenVINS [5] likewise rely on a fixed measurement-noise covariance in the EKF update. In all these cases, the covariance follows a predefined rule rather than the actual reliability of each measurement in context, and therefore cannot reflect the varying con-ditions encountered at deployment. As a result, unreliable measurements might be over-weighted during fusion, leading to degraded accuracy or even complete failure. Recent progress in learning-based methods [6], [7] offers a promising alternative by learning uncertainty directly from data. MAC-VO [6] learns metrics-aware feature-matching uncertainty, where each predicted uncertainty faithfully re-flects the actual magnitude of the matching noise and thus quantitatively indicates how reliable each match is. Air-IMU [7] learns the per-frame uncertainty of inertial mea-surements and propagates it into the uncertainty of IMU integration, replacing fixed noise parameters with data-driven estimates. These advances suggest that learned, metrics-aware uncertainties could enable fusion that weights each measurement by its reliability in local contexts. However, the inertial uncertainty from AirIMU is not metrics-aware, as we show later, and more importantly, no work has yet exploited learned metrics-aware covariances for VI fusion. In this paper, we propose MAC-I 2, which achieves ro-bust VI fusion through learned metrics-aware covariances for both visual and inertial measurements, so that vision and IMU compete on their own merits rather than relying on predefined uncertainties. For the visual modality, we propagate the learned feature-matching uncertainties from MAC-VO into pose covariances through the information matrix at convergence of the visual pose estimation, then bringing metrics-aware visual uncertainty into the fusion. For the inertial modality, we observe that the integration error accumulates sharply at the early stage and grows slowly afterward, and accordingly design a learned IMU model with a learnable initial covariance to capture this pattern. In addi-tion, we further introduce a fine-tuning strategy on a held-out training subset, enabling metrics-aware inertial covariances on unseen sequences. As a showcase, we apply MAC-I 2 to VI initialization and calibration, which are the prerequisite for running VI pose estimation. The main contributions are:  
+
+> •
+
+We propose MAC-I 2, the first framework to fuse vision and IMU through learned metrics-aware covariances, weighting each measurement by its reliability in local contexts instead of predefined uncertainties.  
+
+> •
+
+We derive metrics-aware visual pose covariances from learned feature-matching uncertainties, and design a learned IMU model with a learnable initial covariance together with a held-out fine-tuning strategy that yields metrics-aware inertial covariances on unseen sequences. Ablation studies and analysis validate their effectiveness and metrics-aware properties.  
+
+> •
+
+As a showcase, we build a VI initialization and cali-bration system, demonstrating substantial improvement over existing methods, including a 99.9% initialization success rate on EuRoC benchmark and a 80% success rate on challenging VBR sequences where baseline methods such as VINS-Mono drop below 10%. II. R ELATED WORK 
+
+A. Traditional Uncertainty Modeling in VI Fusion 
+
+Covariances are central to VI fusion, as they determine how much each visual and inertial measurement is trusted, and a range of strategies have been explored to set them. The most common choice is to assign fixed or hand-tuned covariances to visual and inertial residuals [1]–[3], [5], [8], which are simple but cannot reflect how reliable each measurement is in local contexts. To introduce adaptivity, robust cost functions and back-ends such as switchable constraints [9] and dynamic covariance scaling [10] down-weight residuals with large errors during optimization, while heuristic schemes adapt the visual covariance according to indicators such as image quality or feature counts [11]. On the inertial side, adaptive filters online-estimate time-varying IMU noise covariances [12], and online IMU self-calibration estimates noise and intrinsic parameters during operation [13]. While these strategies relax the rigidity of fixed covariances, the resulting weights are still governed by heuristics or residual statistics rather than the measurement uncertainty, and therefore still fail to capture how reliable each measurement actually is. 
+
+B. VI Initialization and Calibration 
+
+VI initialization and calibration provide the initial states and camera-IMU extrinsics required for VI pose estimation. Existing methods vary in how they allocate trust between vision and IMU. A common strategy first estimates camera motion from visual correspondences and then fully trusts these poses to align IMU integration [1], [14], which is efficient but fragile, as erroneous visual poses directly cor-rupt the alignment. To reduce this dependence, decoupled methods trust bias-corrected gyroscope integration for ro-tation and vision for translation [15], while others jointly optimize visual and inertial residuals [2], [16], where the relative weighting between them is still set by predefined covariances. For extrinsic calibration, traditional methods rely on offline procedures with structured targets [17], [18], and online approaches integrate calibration into the estimator for target-free operation [19], [20], but their reliance on geometric correspondences and hand-tuned noise models makes calibration brittle. In all cases, the trust between vision and IMU is predetermined rather than adapted to how reliable each measurement actually is, which motivates our use of learned metrics-aware covariances to let the two modalities compete on their own merits. 
+
+C. Learning-based Uncertainty Modeling 
+
+Learning-based methods offer an alternative by learning sensor uncertainty directly from data. For vision, learned uncertainty has been used to weight residuals in direct visual odometry [21], while MAC-VO [6] predicts a metrics-aware covariance for each feature, where the predicted uncertainty reflects the actual magnitude of the matching noise rather than only the relative confidence among features. For the inertial modality, TLIO [22] is a learned inertial odometry, which regresses 3D displacement together with the corre-sponding uncertainty. VIO-DualProNet [23] and AirIMU [7] instead learn the uncertainty of the inertial measurements and propagate it into the integration covariance, which can be used for fusion, yet this learned covariance is not metrics-aware. Consequently, to the best of our knowledge, we are the first to bring metrics-aware covariances from both vision and IMU into a common fusion. MAC-I 2 fills this gap by producing metrics-aware covariances for both modalities and fusing them in a joint optimization. III. N OTATIONS AND PRELIMINARIES 
+
+A. Notations 
+
+As a showcase, we apply MAC-I 2 to VI initialization and calibration, for which we define the state: 
+
+X =x0, x1, . . . xn, gc0 , bg , ba, Tbc ,
+
+xk =Tc0 
+
+> bk
+
+, vbk 
+
+> bk
+
+, (1) where Tc0 
+
+> bk
+
+∈ SE(3) denotes the pose of the k-th IMU frame with respect to the first camera frame {c0}. vbk
+
+> bk
+
+denotes the velocity of the k-th IMU frame expressed in its local frame. gc0 denotes the gravity vector expressed in the first camera frame. bg and ba denote the IMU gyroscope and accelerometer biases, respectively, which are assumed to remain constant during the initialization and calibration process. Tbc denotes the extrinsic from the camera frame to the IMU frame. For initialization with known camera-imu extrinsics, Tbc can be removed from the state variables. 
+
+B. IMU Integration and learning-based IMU model 
+
+The IMU integration follows the standard approach as proposed in [24]: 
+
+qc0 
+
+> bj
+
+= qc0 
+
+> bi
+
+γbi 
+
+> bj
+
+,
+
+vc0 
+
+> bj
+
+= vc0 
+
+> bi
+
++ gc0 ∆tij + Rc0 
+
+> bi
+
+βbi 
+
+> bj
+
+,
+
+pc0 
+
+> bj
+
+= pc0 
+
+> bi
+
++ vc0 
+
+> bi
+
+∆tij + 12 gc0 ∆t2 
+
+> ij
+
++ Rc0 
+
+> bi
+
+αbi 
+
+> bj
+
+,
+
+(2) where qc0 
+
+> bi
+
+∈ SO(3) denotes the rotation quaternion from the 
+
+i-th body frame to the initial camera frame c0, and Rc0
+
+> bi
+
+denotes its matrix form. γbi 
+
+> bj
+
+, βbi 
+
+> bj
+
+, and αbi 
+
+> bj
+
+denote IMU preintegration terms for rotation, velocity, and translation between time i and j, which can be computed with the raw IMU measurements { ak, ωk | k = i, i + 1 , . . . , j }:
+
+γbi 
+
+> bj
+
+= Yj−1 
+
+> k=i
+
+Exp (ωk∆t) ,
+
+βbi 
+
+> bj
+
+= Xj−1 
+
+> k=i
+
+Rbi 
+
+> bk
+
+ak∆t, 
+
+αbi 
+
+> bj
+
+= Xj−1
+
+> k=i
+
+
+
+βbi 
+
+> bk
+
+∆t + 12 Rbi 
+
+> bk
+
+ak∆t2
+
+
+
+,
+
+(3) AirIMU [7] is a learned model to estimate the corrections 
+
+[σacc , σgyro ] and the uncertainty [ηacc , ηgyro ] of the IMU measurements, with the input as the raw IMU data [a, ω]:
+
+(σacc , σgyro ) = gθ (a, ω), (ηacc , ηgyro ) = hθ (a, ω),
+
+˜a = a + σacc , ˜ω = ω + σgyro , (4) where θ is the parameter of the neural network. The corrected measurements ˜a and ˜ω are obtained by adding the learned corrections σ to the raw measurements, while the predicted uncertainties η characterize the measurement noise. 
+
+C. Learning-based Visual Odometry MAC-VO 
+
+MAC-VO [6] is a learned visual odometry that learns a metrics-aware uncertainty model to select reliable keypoints and weight residuals in pose graph optimization (PGO). Specifically, MAC-VO estimates camera poses by solving the following PGO for consecutive frames ck and ck+1 :
+
+Tck 
+
+> ck+1
+> ⋆
+
+= argmin 
+
+> Tckck+1
+
+X
+
+> i
+
+pck,i − Tck 
+
+> ck+1
+
+pck+1 ,i 
+
+> 2
+> Σi
+
+,
+
+Σi = Σpk,i + Rck 
+
+> ck+1
+
+Σpk+1 ,i (Rck 
+
+> ck+1
+
+)T ,
+
+(5) where pck,i denotes the i-th keypoint in frame ck, and ∥ · ∥ Σi
+
+represents the Mahalanobis distance with covariance matrix 
+
+Σi. Σpk,i denotes the learned 3D covariance of pck,i .IV. M ETHODOLOGY 
+
+MAC-I 2 achieves robust VI fusion by predicting metrics-aware covariances for both modalities, so that visual and inertial measurements are weighted by their reliability in local contexts. We model metrics-aware covariance for the estimated visual poses (section IV-A) and predict metrics-aware covariance for the IMU integration through a learned IMU model (section IV-B). These two covariances are then combined in a VI initialization and calibration system (sec-tion IV-C) as a showcase application, where they jointly weight the visual and inertial residuals in the optimization. 
+
+A. Metrics-Aware Visual Pose Covariance 
+
+MAC-VO [6] provides a learned, metrics-aware 3D uncer-tainty for each visual feature. Many VI tasks, however, do not fuse raw features but first estimate the visual pose and then fuse it with the IMU, as in VI initialization, where directly optimizing raw measurements is unstable without good initial values. We therefore derive the covariance of estimated visual poses from the learned 3D feature uncertainty. Notably, despite being trained solely on synthetic TartanAir [25] dataset, our covariance model produces metrics-aware pose uncertainties on real-world datasets without any fine-tuning. The covariance of the estimated pose ΣTckck+1 
+
+can be approximated via the Jacobian computed at convergence of the PGO problem in (5), where k indexes the frames and 
+
+i indexes the keypoints matched between frames ck and 
+
+ck+1 . We consider the left perturbation model ri,k (δξ) = pck,i − Exp (δξ)Tck 
+
+> ck+1
+
+pck+1 ,i , which yields: 
+
+Ji,k = ∂ri,k (δξ)
+
+∂δ ξ = −I3×3 (Tck 
+
+> ck+1
+
+pck+1 ,i )∧ ,
+
+Hk ≈ X
+
+> i
+
+(Ji,k )T Σ−1 
+
+> i
+
+Ji,k , ΣTckck+1 
+
+≈ H−1 
+
+> k
+
+, (6) where Ji,k is the left Jacobian of the residual w.r.t. the left perturbation δξ in the tangent space of the estimated visual pose Tck 
+
+> ck+1
+
+, (·)∧ denotes the skew matrix of a vector, and 
+
+Σi denotes the covariance matrix defined in (5). The estimated visual pose covariance is metrics-aware, as illustrated in Fig. 2. Specifically, we group the pose estimations into bins according to their predicted uncertainty and compute the mean translation and rotation error within each bin, following the method in [26]. The results show that the estimated uncertainty closely follows the optimal relationship of y = x, indicating a strong correlation between predicted uncertainty and actual pose error. 
+
+Fig. 2: Translation and rotation pose errors versus the pre-dicted visual pose covariance on EuRoC. Blue bars denote the mean error within each bin, and grey bars denote the sample counts. The estimated uncertainty exhibits metrics-aware behavior, closely following the optimal y = x.
+
+B. Metrics-Aware Inertial Covariance 
+
+Observation: after bias correction, the IMU integration error rises sharply at the start of the window and accumulates slowly thereafter. As shown in Fig. 3, the bias-corrected integration error exhibits a consistent temporal pattern: a sharp rise at the beginning of the integration window, followed by much slower growth. This pattern is particularly evident for rotation and velocity integration. 
+
+Fig. 3: Average IMU integration error with ground-truth bias correction on the EuRoC MH 04 sequence. 
+
+Learnable Initial Covariance. Standard preintegration prop-agates the covariance from Σ0 = 0, which can not capture this error pattern. AirIMU captures the error pattern in a data-driven manner: its gated recurrent unit (GRU) encoder assigns markedly higher noise to the first samples of the sequence. This compensation, however, is tied to where the recurrent state is initialized. In practice, we pre-integrate the IMU data in segments for real-time deployment. This, however, force the GRU to be reset at each segment start for the inflated noise to appear, which discards all measurements preceding the segment. Running the GRU continuously across segments preserves that context, but the inflated noise then appears only at the start of the whole sequence rather than at each segment start. To address this issue, we introduce a learnable initial covariance Σ0, which serves as the starting covariance for the propagation process. Moreover, we remove the GRU from the uncertainty prediction branch and instead employ only a CNN encoder shared with the correction prediction. Since 
+
+Σ0 starts the propagation of every segment, the inflated noise is always present at each segment start, and we don’t need to discard the measurements before each segment. 
+
+Metrics-Aware Covariance Supervision. The metrics-aware property is enforced during training through a Gaus-sian negative-log-likelihood loss that supervises the propa-gated covariance jointly with the state correction [7]. Starting the propagation from the learnable Σ0 and denoting by 
+
+er , ev , ep the rotation, velocity, and position integration errors against ground truth, the covariance loss is 
+
+Lcov = X
+
+> ⋆∈{ r,v,p }
+
+12
+
+
+
+e⋆
+
+> 2
+> Σ⋆
+
++ ln det Σ⋆
+
+
+
+, (7) where Σr , Σv , Σp are the residual covariances obtained from the propagated preintegration covariance. The Maha-lanobis term rewards small predicted uncertainty on accurate integrations, while the ln det term penalizes over-inflated covariance; together they drive the predicted uncertainty to track the error magnitude. 
+
+Covariance Fine-tuning. On unseen sequences, the pre-dicted covariance tends to be overconfident. To mitigate this, we propose a held-out fine-tuning strategy. Specifi-cally, we split the training set into two subsets, train the full network on the first, and then fine-tune the learnable initial covariance and the uncertainty decoder on the second with all other parameters frozen. As shown in fig. 4, our model produces metrics-aware uncertainties on unseen test sequences, whereas the uncertainties predicted by AirIMU remain overconfident. This metrics-aware covariance is then used in the subsequent VI initialization and calibration. 
+
+C. VI Initialization and Calibration 
+
+As a showcase application, we build a VI initialization and calibration system upon MAC-I 2, as illustrated in fig. 5. The system takes the metrics-aware visual pose covariance (section IV-A) and inertial covariance (section IV-B), and fuses the two modalities in a joint optimization weighted by these covariances. Since the learned IMU model requires Fig. 4: Comparison of IMU covariance estimation on un-seen EuRoC sequences MH 02 , MH 04 , V1 01 , V1 03 , and 
+
+V2 02 . Our model produces metrics-aware uncertainties that follow the optimal y = x line, while AirIMU is overconfi-dent. Blue bars denote the mean error in each bin, and grey bars denote the sample counts. 
+
+Fig. 5: Overview of the VI initialization and calibration sys-tem built on MAC-I 2. (a) With the learned IMU model: cor-rected IMU measurements and metrics-aware uncertainties. (b) Without the learned IMU model: raw IMU measurements with explicit gyroscope bias estimation. training data and may not always be available, we provide two workflows, while the second one illustrates the effec-tiveness of the metrics-aware visual pose covariance: 
+
+(a) With Learned IMU Model (fig. 5a): The learned IMU network processes raw IMU data to output corrected preintegration terms and predicted uncertainties (ηgyro , ηacc ).Since measurements are already corrected, IMU biases are not explicitly estimated in this workflow. 
+
+(b) Without Learned IMU Model (fig. 5b): Raw IMU data undergoes standard preintegration. Gyroscope bias bg is explicitly estimated during initialization, while accelerometer bias is ignored since it is coupled with the gravity vector and cannot be distinguished in a small motion. In addition, IMU uncertainty is pre-calibrated or manually tuned. 
+
+D. Gyroscope Bias and Extrinsic Rotation Estimation 
+
+When the learned IMU model is unavailable, we explicitly estimate the gyroscope bias bg at this stage. For the calibra-tion task, we also estimate the camera-IMU rotation qcb. This can be achieved by minimizing the difference between the rotation from vision and that from IMU integration. 
+
+min  
+
+> δbg,qcb
+
+X
+
+> k∈B
+
+Log (qbcqck+1  
+
+> ck
+
+(qbc)−1 ˆγbk 
+
+> bk+1
+
+) 2
+
+> Σrk
+
+,
+
+ˆγbk 
+
+> bk+1
+
+= γbk 
+
+> bk+1
+
+Exp 
+
+
+
+Jγ 
+
+> bg
+
+δbg
+
+
+
+,
+
+(8) where δbg is the increment of the gyroscope bias, initialized to zero so that bg = δbg , and B is the set of all the keyframes. γbk 
+
+> bk+1
+
+is the rotation preintegration of the raw measurements, ˆγbk 
+
+> bk+1
+
+is the first-order approximation of the rotation preintegration after gyroscope bias correction [24], and Σrk is the covariance of the residual. 
+
+E. Learned MAC-enhanced Joint Optimization 
+
+The final stage jointly estimates the state variables X in (1) by minimizing a weighted sum of visual and inertial residuals, each weighted by its metrics-aware covariance: 
+
+min 
+
+> X
+
+X
+
+> k∈B
+
+rvisual 
+
+> k
+> 2
+> Σvisual
+> k
+
++ rimu 
+
+> k
+> 2
+> Σimu
+> k
+
+. (9) 
+
+Visual Residual. Instead of constraining raw features, our visual residual constrains the relative pose, which preserves the feature uncertainty through the derived pose covariance while simplifying the nonlinear optimization, making it well suited to initialization. The visual residual rvisual  
+
+> k
+
+requires consistency between relative camera motion from visual odometry and motion induced by the estimated states: 
+
+rvisual  
+
+> k
+
+= Log (Tck 
+
+> ck+1
+
+Tcb(Tc0 
+
+> bk+1
+
+)−1Tc0 
+
+> bk
+
+Tbc). (10) For the covariance of the visual residual, we consider a left perturbation δξ of the estimated pose Tck 
+
+> ck+1
+
+, which gives the perturbed residual ˜rvisual  
+
+> k
+
+= Log (Exp (δξ )Exp (rvisual  
+
+> k
+
+)) ≈
+
+rvisual  
+
+> k
+
++ J−1 
+
+> l
+
+(rvisual  
+
+> k
+
+) δξ , then we have: 
+
+∂rvisual 
+
+> k
+
+∂δξ = lim 
+
+> δξ →0
+
+˜rvisual  
+
+> k
+
+− rvisual 
+
+> k
+
+δξ = J−1 
+
+> l
+
+(rvisual  
+
+> k
+
+),
+
+Σvisual  
+
+> k
+
+= ∂rvisual 
+
+> k
+
+∂δξ ΣTckck+1 
+
+( ∂rvisual 
+
+> k
+
+∂δξ )T
+
+= J−1 
+
+> l
+
+(rvisual  
+
+> k
+
+)ΣTckck+1 
+
+J−Tl (rvisual  
+
+> k
+
+),
+
+(11) where ΣTckck+1 
+
+is the visual pose covariance from (6) and 
+
+J−1 
+
+> l
+
+(rvisual  
+
+> k
+
+) is the inverse left Jacobian of SE(3) at rvisual  
+
+> k
+
+.TABLE I: Initialization errors and success rate (SR) for the 10KFs setting in EuRoC dataset.        
+
+> Trajectory MH02 MH04 V101 V103 V202 Avg. Vel(m/s) G.Dir( ◦) Vel(m/s) G.Dir( ◦) Vel(m/s) G.Dir( ◦) Vel(m/s) G.Dir( ◦) Vel(m/s) G.Dir( ◦) Vel(m/s) G.Dir( ◦) SR
+
+↑                                                                                                                                                    
+
+> VINS-Mono 0.085 1.093 0.367 1.447 0.107 1.582 0.187 2.748 0.100 1.182 0.169 1.611 0.318
+> DRT-t 0.104 0.962 0.261 1.159 0.080 0.966 0.145 1.679 0.081 0.918 0.134 1.137 0.633
+> DRT-l 0.065 0.967 0.189 1.091 0.057 1.018 0.269 2.235 0.109 1.206 0.138 1.303 0.640
+> sqrt-VINS mono ⋆0.059 1.792 0.121 0.857 0.048 0.841 0.075 1.119 0.062 0.753 0.073 1.072 0.704
+> FF-VIO-Init ⋆0.054 0.934 0.139 0.966 0.025 0.884 0.032 1.045 0.028 0.740 0.055 0.914 0.866
+> VINS-Fusion 0.023 2.191 0.050 1.905 0.019 1.943 0.041 2.467 0.024 2.080 0.031 2.117 0.582
+> ORB-SLAM 3 0.011 0.928 0.055 1.231 0.011 0.876 0.136 2.703 0.038 1.218 0.050 1.391 0.820
+> Stereo-NEC 0.011 0.946 0.038 1.363 0.008 0.926 0.101 2.946 0.026 1.404 0.037 1.517 0.823
+> sqrt-VINS stereo ⋆0.046 1.041 0.102 0.839 0.031 1.500 0.070 1.063 0.062 0.800 0.062 1.049 0.736
+> MAC-I 2w/o Learned IMU 0.011 0.820 0.022 0.800 0.010 0.872 0.025 1.149 0.020 0.804 0.018 0.889 0.999
+> MAC-I 2w/ Learned IMU 0.010 0.166 0.023 0.208 0.010 0.332 0.025 0.581 0.024 0.804 0.018 0.418 0.999
+> Monocular method. Stereo method. ⋆With good initial guess of IMU biases; performance degrades otherwise. Excluded from ranking.
+
+IMU Residual. The IMU residual rimu  
+
+> k
+
+= rT 
+
+> γk
+
+, rT 
+
+> βk
+
+, rT
+
+> αk
+
+T
+
+is derived from (2): 
+
+rγk = Log (Rbk+1  
+
+> c0
+
+Rc0 
+
+> bk
+
+˜γbk 
+
+> bk+1
+
+), (12) 
+
+rβk = Rbk 
+
+> c0
+
+Rc0 
+
+> bk+1
+
+vbk+1  
+
+> bk+1
+
+−vbk 
+
+> bk
+
+−Rbk 
+
+> c0
+
+gc0 ∆tkk +1 − ˜βbk 
+
+> bk+1
+
+, (13) 
+
+rαk = Rbk 
+
+> c0
+
+pc0 
+
+> bk+1
+
+−Rbk 
+
+> c0
+
+pc0 
+
+> bk
+
+−vbk 
+
+> bk
+
+∆tkk +1 (14) 
+
+− 12 Rbk 
+
+> c0
+
+gc0 ∆t2 
+
+> kk +1
+
+− ˜αbk 
+
+> bk+1
+
+,
+
+where ˜γbk 
+
+> bk+1
+
+, ˜βbk 
+
+> bk+1
+
+, ˜αbk 
+
+> bk+1
+
+denote the preintegration terms used in each workflow. With the learned IMU model, these are the network-corrected preintegrations and explicit bias estimation is unnecessary. Without the learned IMU model, these reduce to first-order bias-corrected terms in standard IMU preintegration [24]. The IMU residual covariance can be obtained from the predicted preintegration covariance. For all residuals above, we derive analytical Jacobians on the SO(3) /SE(3) manifolds for efficient optimization [27]. V. E XPERIMENTS 
+
+A. Experiment Setup 
+
+Datasets. We evaluate initialization on public benchmarks: EuRoC [28] and VBR [29]. EuRoC is an MAV dataset with diverse motions; VBR covers large-scale and dynamic scenarios, from which we use the 8 sequences with ground-truth poses. For camera-IMU extrinsic calibration, we use the 4 IMU calibration sequences from TUM-VI [30], which contain rapid motions exciting all six degrees of freedom. 
+
+Baselines. For initialization, we compare against several state-of-the-art geometric methods. VINS-Mono [1] estimates gravity and velocity in a loosely-coupled manner, whereas its stereo counterpart VINS-Fusion [31] optimizes tightly after gyroscope bias estimation. ORB-SLAM3 [2] uses an inertial-only initialization. DRT [15] decouples rotation and transla-tion and estimates gyroscope bias with the Normal Epipolar Constraint (NEC); we evaluate both its tightly-coupled ( DRT-t) and loosely-coupled ( DRT-l ) variants. Stereo-NEC [32] integrates NEC into ORB-SLAM3 . sqrt-VINS [33] recovers the minimal states in closed form without triangulation and refines them with a square-root filter, in both monocular and stereo configurations. FF-VIO-Init [8] eliminates explicit fea-ture tracking and formulates the initialization problem using constraints derived from up-to-scale point clouds predicted 
+
+Fig. 6: Comparison of gyroscope bias magnitude estimation on all the sequences of EuRoC dataset. by a feed-forward 3D model. For calibration, we compare with VINS-Mono , which provides a complete calibration solution, and use Kalibr [17] for ground truth. 
+
+Evaluation Metrics. For VI initialization, we consider:  
+
+> •
+
+Gravity direction error (G.Dir): arccos( gc0 · ˜gc0 ), where 
+
+gc0 , ˜gc0 denote the estimated and ground truth gravity.  
+
+> •
+
+Velocity RMSE: ∥vbk 
+
+> bk
+
+− ˜vbk 
+
+> bk
+
+∥/N , where vbk 
+
+> bk
+
+, ˜vbk 
+
+> bk
+
+denote the estimated and ground truth body velocity of frame 
+
+k, N is the total number of keyframes.  
+
+> •
+
+Gyroscope bias error: following [15], [16], the error is the relative deviation ∥bg ∥ − ∥ ¯bg ∥ /∥¯bg ∥, where ¯bg
+
+is the mean bias along the ground-truth trajectory.  
+
+> •
+
+Success rate (SR): the fraction of segments solved with G.Dir error < 2◦ and velocity RMSE < 0.1 m/s on EuRoC, < 0.3 m/s on VBR. For calibration, we evaluate the estimated extrinsics with:  
+
+> •
+
+Rotation error: ∥Log (( qbc)−1 ∗ ˜qbc)∥ · 180  
+
+> π
+
+, where qbc, ˜qbc
+
+denote the estimated and ground truth extrinsic rotation.  
+
+> •
+
+Translation error: ∥pbc − ˜pbc∥, where pbc, ˜pbc denote the estimated and ground truth extrinsic translation. 
+
+Training Details. The visual model is trained on the syn-thetic TartanAir dataset [25]. On EuRoC, the IMU model is trained on MH 01 , MH 05 , V2 01 , and V2 03 , with uncertainty fine-tuned on MH 03 and V1 02 .
+
+B. Initialization Accuracy and Robustness Evaluation 
+
+Each sequence is divided into 2.5-second segments, and initialization is performed on each segment with 10 TABLE II: Detailed initialization results for the 10KFs setting in VBR dataset. Vel is in m/s, G.Dir in degrees. 
+
+Trajectory cam0 cam1 cia0 cia1 col0 dia0 pin0 spa0 Avg. Vel G.Dir Vel G.Dir Vel G.Dir Vel G.Dir Vel G.Dir Vel G.Dir Vel G.Dir Vel G.Dir Vel G.Dir SR ↑
+
+VINS-Mono 2.149 2.077 2.763 2.222 4.474 2.052 3.008 1.730 1.084 1.055 0.426 0.925 0.514 0.903 0.522 0.913 1.771 1.457 0.080 
+
+sqrt-VINS mono 2.822 1.792 4.328 2.039 4.363 2.446 3.919 2.054 0.772 1.267 0.279 2.644 - - 0.812 0.795 3.423 1.991 0.000 
+
+VINS-Fusion 1.333 2.725 2.126 2.931 2.340 4.106 1.958 3.069 0.571 1.617 0.245 1.376 0.182 1.289 0.235 1.184 1.119 2.272 0.369 
+
+ORB-SLAM 3 0.303 1.561 0.409 1.152 0.541 1.406 0.420 0.985 0.240 1.803 0.134 1.232 0.072 1.010 0.110 0.862 0.280 1.251 0.561 
+
+Stereo-NEC 0.304 1.814 0.416 1.528 0.520 1.545 0.433 1.353 0.217 2.047 0.128 1.933 0.068 1.232 0.107 1.043 0.276 1.556 0.514 
+
+sqrt-VINS stereo 1.559 1.710 1.758 1.186 2.266 1.130 2.302 1.318 0.701 1.587 0.246 0.725 - - 0.584 0.815 1.722 1.363 0.030 
+
+MAC-I 2 w/o Learned IMU 0.135 1.521 0.215 1.105 0.165 0.959 0.126 0.653 0.272 1.348 0.186 1.184 0.128 1.111 0.296 1.194 0.191 1.136 0.803 
+
+Monocular method.  Stereo method. - The initialization fails on all segments. 
+
+keyframes. For our method with the learned IMU model, evaluation is restricted to sequences not used in training. On EuRoC (Table I), MAC-I 2 w/ Learned IMU attains an average gravity error of 0.418 ◦ and velocity RMSE of 0.018 m/s, improving over the best baseline on each metric, 
+
+DRT-t (1.137 ◦) and VINS-Fusion (0.031 m/s), by about 63% and 42%. Even without the learned IMU model, our method reaches 0.889 ◦ and 0.018 m/s, still outperforming all baselines. More notably, our method achieves a 0.999 success rate across all segments. The success rate gap is pronounced in challenging sequences: on V103, VINS-Mono , DRT-l , and 
+
+VINS-Fusion achieve success rates of only 0.040, 0.279, and 0.408, and even the strongest baseline, Stereo-NEC , drop to 0.537, while our method achieves 1.00. In addition, sqrt-VINS and FF-VIO-Init rely on a good initial guess of the IMU biases and degrade otherwise, so we report their results under a good bias initialization. We also evaluate gyroscope bias as it is critical to VI initialization [15]. Fig. 6 shows that our method estimates the gyroscope bias accurately and robustly across all sequences. On VBR (Table II), baselines largely fail: VINS-Mono and 
+
+sqrt-VINS fall below a 0.10 success rate, and even the best baseline ORB-SLAM3 reaches only 0.561. In contrast, our method reaches 0.803, and attains the lowest average errors of 1.136 ◦ and 0.191 m/s, demonstrating strong robustness. 
+
+C. Calibration Results 
+
+We evaluate calibration on the TUM-VI IMU calibration sequences, which contain aggressive six-DoF motions, re-peating each experiment 10 times per sequence. As shown in Fig. 7, our method produces accurate and consistent cali-bration across all trials, whereas VINS-Mono loses tracking in most trials and drifts substantially. This is because geometric feature-based methods are challenged by the highly aggres-sive motion patterns in the TUM-VI calibration sequences, which were originally designed for checkerboard-based cal-ibration. Under such conditions, our method remains robust and is able to deliver stable and accurate calibration results. VI. A BLATION STUDY 
+
+Effectiveness of the Learned Covariance: We ablate the learned visual and IMU covariances with four configurations: (i) Learned Vis + Learned IMU (our full model), (ii) Id Vis + Id IMU, (iii) Learned Vis + Id IMU, and (iv) Id Vis + Learned IMU, where “Id” denotes an identity covariance. We evaluate the initial gravity, velocity, and pose (Table III). 
+
+Fig. 7: Comparison of camera-IMU extrinsic calibration on TUM-VI calib-imu sequences. TABLE III: Initialization errors on the EuRoC dataset under different covariance settings.                                                                                                              
+
+> Metrics Methods MH02 MH04 V101 V103 V202 Avg
+> Velocity (m/s)
+> Id Vis+ Id IMU 0.013 0.031 0.010 0.026 0.022 0.021 Id Vis+ Learned IMU 0.040 0.073 0.037 0.061 0.056 0.053 Learned Vis+ Id IMU 0.011 0.021 0.011 0.027 0.029 0.020 Learned Vis+ Learned IMU 0.010 0.023 0.010 0.025 0.024 0.018 Gravity Direction (deg)
+> Id Vis+ Id IMU 0.239 0.284 0.353 0.671 0.766 0.463 Id Vis+ Learned IMU 0.284 0.459 0.385 0.655 0.865 0.530 Learned Vis+ Id IMU 0.231 0.248 0.346 0.768 0.810 0.481 Learned Vis+ Learned IMU 0.166 0.208 0.332 0.581 0.804 0.418 Body Rotation (deg)
+> Id Vis+ Id IMU 0.193 0.264 0.224 0.597 0.534 0.362 Id Vis+ Learned IMU 0.107 0.106 0.192 0.365 0.428 0.240 Learned Vis+ Id IMU 0.215 0.193 0.193 0.544 0.457 0.320 Learned Vis+ Learned IMU 0.084 0.099 0.161 0.362 0.368 0.215 Body Translation (m)
+> Id Vis+ Id IMU 0.009 0.034 0.008 0.043 0.024 0.024 Id Vis+ Learned IMU 0.024 0.048 0.026 0.055 0.042 0.039 Learned Vis+ Id IMU 0.010 0.033 0.008 0.043 0.024 0.024 Learned Vis+ Learned IMU 0.009 0.031 0.008 0.037 0.022 0.021
+
+TABLE IV: Initialization errors on the EuRoC dataset with and without the learned IMU model, and against AirIMU.                                                                                
+
+> Metrics Methods MH02 MH04 V101 V103 V202 Avg
+> Velocity (m/s)
+> w/o Learned IMU 0.011 0.022 0.010 0.025 0.020 0.017
+> AirIMU 0.013 0.031 0.008 0.028 0.020 0.020 Our Learned IMU 0.010 0.023 0.010 0.025 0.024 0.018
+> Gravity Direction (deg)
+> w/o Learned IMU 0.820 0.800 0.872 1.149 0.804 0.889 AirIMU 0.442 0.438 0.589 0.794 0.791 0.611 Our Learned IMU 0.166 0.208 0.332 0.581 0.804 0.418 Body Rotation (deg)
+> w/o Learned IMU 0.140 0.149 0.185 0.420 0.398 0.258 AirIMU 0.115 0.144 0.174 0.428 0.409 0.254 Our Learned IMU 0.084 0.099 0.161 0.362 0.368 0.215 Body Translation (m)
+> w/o Learned IMU 0.009 0.031 0.008 0.038 0.021 0.022 AirIMU 0.009 0.033 0.008 0.038 0.021 0.022 Our Learned IMU 0.009 0.031 0.008 0.037 0.022 0.021
+
+The results show that our learned covariance models consistently improve initialization accuracy across all metrics and sequences. The gains are most notable in initial pose estimation, where body rotation error drops from 0.362 ◦ to 0.215 ◦ (40.6% ↓) and body translation error from 0.024 m to 0.021 m (12.5% ↓). The learned visual covariance also benefits gyroscope bias estimation, reducing the average bias magnitude error from 3.9% to 2.0% (48.7% ↓). 
+
+Effectiveness of the Learned IMU Model: Table IV ab-lates the effect of the learned IMU model. Incorporating it yields consistent and significant improvements in orientation-related metrics, including gravity direction and body rotation errors, across all sequences. These gains stem not only from the learned IMU covariance, but also from the model’s correction of accelerometer measurements, which directly affects gravity alignment and long-term integration. We further compare against using AirIMU while keeping the visual covariance fixed (Table IV). Our covariance con-sistently outperforms AirIMU across all metrics, reducing the average gravity direction error from 0.611 ◦ to 0.418 ◦
+
+(31.6% ↓) and the body rotation error from 0.254 ◦ to 0.215 ◦ (15.4% ↓). Since AirIMU’s covariance misweights the inertial residuals during fusion, whereas our metrics-aware covariance reflects the reliability of each measurement and thus yields more accurate estimates. VII. C ONCLUSION 
+
+This paper presents MAC-I 2, which achieves robust VI fusion through learned metrics-aware covariances for both visual and inertial measurements, allowing vision and IMU to be weighted by their reliability rather than predefined uncertainties. As a showcase, we build a VI initialization and calibration system upon MAC-I 2, and demonstrate sub-stantial gains in robustness and accuracy over state-of-the-art methods across challenging environments. In future work, we will extend MAC-I 2 to full visual-inertial odometry and SLAM, as well as broader multi-sensor fusion settings. REFERENCES [1] T. Qin, P. Li, and S. Shen, “Vins-mono: A robust and versatile monoc-ular visual-inertial state estimator,” IEEE Transactions on Robotics ,vol. 34, no. 4, pp. 1004–1020, 2018. [2] C. Campos, R. Elvira, J. J. G. Rodriguez, J. M. Montiel, and J. D. Tar-dos, “Orb-slam3: An accurate open-source library for visual, visual– inertial, and multimap slam,” IEEE Transactions on Robotics , vol. 37, no. 6, pp. 1874–1890, 2021. [3] S. Leutenegger, S. Lynen, M. Bosse, R. Siegwart, and P. Furgale, “Keyframe-based visual–inertial odometry using nonlinear optimiza-tion,” The International Journal of Robotics Research , vol. 34, no. 3, pp. 314–334, 2015. [4] A. I. Mourikis and S. I. Roumeliotis, “A multi-state constraint kalman filter for vision-aided inertial navigation,” in Proceedings 2007 IEEE International Conference on Robotics and Automation , 2007, pp. 3565–3572. [5] P. Geneva, K. Eckenhoff, W. Lee, Y. Yang, and G. Huang, “Openvins: A research platform for visual-inertial estimation,” in 2020 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2020, pp. 4666–4672. [6] Y. Qiu, Y. Chen, Z. Zhang, W. Wang, and S. Scherer, “Mac-vo: Metrics-aware covariance for learning-based stereo visual odome-try mac-vo. github. io,” in 2025 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2025, pp. 3803–3814. [7] Y. Qiu, C. Wang, C. Xu, Y. Chen, X. Zhou, Y. Xia, and S. Scherer, “Airimu: Learning uncertainty propagation for inertial odometry,” 2023. [8] Y. Zhang, J. Yang, H. Zeng, C. Chen, H. Li, L. Li, D. Song, and X. Zuo, “Efficient feature-free initialization for monocular visual-inertial systems using a feed-forward 3d model,” arXiv preprint arXiv:2605.17327 , 2026. [9] N. S¨ underhauf and P. Protzel, “Switchable constraints for robust pose graph slam,” in 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems , 2012, pp. 1879–1884. [10] P. Agarwal, G. D. Tipaldi, L. Spinello, C. Stachniss, and W. Burgard, “Robust map optimization using dynamic covariance scaling,” in 2013 IEEE International Conference on Robotics and Automation , 2013, pp. 62–69. [11] U. Asil and E. Nasibov, “Adaptive covariance and quaternion-focused hybrid error-state ekf/ukf for visual-inertial odometry,” 
+
+International Journal of Computational Intelligence Systems , vol. 18, no. 1, p. 206, 2025. [Online]. Available: https://doi.org/10.1007/ s44196-025-00942-0 [12] X. Xie, R. Geng, J. Ma, and B. Zhou, “Akf-lio: Lidar-inertial odometry with gaussian map by adaptive kalman filter,” in 2025 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) ,2025, pp. 1274–1281. [13] Y. Xiao, X. Ruan, J. Chai, X. Zhang, and X. Zhu, “Online imu self-calibration for visual-inertial systems,” Sensors , vol. 19, no. 7, 2019. [Online]. Available: https://www.mdpi.com/1424-8220/19/7/1624 [14] R. Mur-Artal and J. D. Tardos, “Visual-inertial monocular slam with map reuse,” IEEE Robotics and Automation Letters , vol. 2, no. 2, pp. 796–803, 2017. [15] Y. He, B. Xu, Z. Ouyang, and H. Li, “A rotation-translation-decoupled solution for robust and efficient visual-inertial initialization,” in Pro-ceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2023, pp. 787–796. [16] C. Mu, Q. Zhang, L. Xie, and H. Zhang, “A robust and efficient visual-inertial initialization with probabilistic normal epipolar constraint,” 
+
+IEEE Robotics and Automation Letters , vol. 10, no. 2, pp. 1234–1241, 2025. [17] P. Furgale, J. Rehder, and R. Siegwart, “Unified temporal and spatial calibration for multi-sensor systems,” in 2013 IEEE/RSJ International Conference on Intelligent Robots and Systems , 2013, pp. 1280–1286. [18] Y. Yang, P. Geneva, and G. Huang, “Multi-visual-inertial system: Analysis, calibration, and estimation,” The International Journal of Robotics Research , vol. 43, no. 13, pp. 1995–2026, 2024. [19] J. Huang and M. Liu, “Online initialization and automatic camera-imu extrinsic calibration for monocular visual-inertial slam,” arXiv preprint arXiv:1808.03498 , 2018. [20] Y. Yang, P. Geneva, X. Zuo, and G. Huang, “Online self-calibration for visual-inertial navigation: Models, analysis, and degeneracy,” IEEE Transactions on Robotics , vol. 39, no. 5, pp. 3479–3498, 2023. [21] N. Yang, L. v. Stumberg, R. Wang, and D. Cremers, “D3vo: Deep depth, deep pose and deep uncertainty for monocular visual odometry,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , June 2020. [22] W. Liu, D. Caruso, E. Ilg, J. Dong, A. I. Mourikis, K. Daniilidis, V. Kumar, and J. Engel, “Tlio: Tight learned inertial odometry,” IEEE Robotics and Automation Letters , vol. 5, no. 4, pp. 5653–5660, 2020. [23] D. Solodar and I. Klein, “Vio-dualpronet: Visual-inertial odometry with learning based process noise covariance,” Engineering Applications of Artificial Intelligence , vol. 133, p. 108466, 2024. [Online]. Available: https://www.sciencedirect.com/science/article/pii/ S0952197624006249 [24] C. Forster, L. Carlone, F. Dellaert, and D. Scaramuzza, “On-manifold preintegration for real-time visual–inertial odometry,” IEEE Transac-tions on Robotics , vol. 33, no. 1, pp. 1–21, 2017. [25] W. Wang, D. Zhu, X. Wang, Y. Hu, Y. Qiu, C. Wang, Y. Hu, A. Kapoor, and S. Scherer, “Tartanair: A dataset to push the limits of visual slam,” in 2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2020, pp. 4909–4916. [26] A. Veicht, P.-E. Sarlin, P. Lindenberger, and M. Pollefeys, “GeoCalib: Single-image Calibration with Geometric Optimization,” in ECCV ,2024. [27] C. Wang et al. , “PyPose: A library for robot learning with physics-based optimization,” in IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2023. [28] M. Burri, J. Nikolic, P. Gohl, T. Schneider, J. Rehder, S. Omari, M. W. Achtelik, and R. Siegwart, “The euroc micro aerial vehicle datasets,” 
+
+The International Journal of Robotics Research , vol. 35, no. 10, pp. 1157–1163, 2016. [29] L. Brizi, E. Giacomini, L. Di Giammarino, S. Ferrari, O. Salem, L. De Rebotti, and G. Grisetti, “Vbr: A vision benchmark in rome,” in 2024 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2024, pp. 15 868–15 874. [30] D. Schubert, T. Goll, N. Demmel, V. Usenko, J. St¨ uckler, and D. Cre-mers, “The tum vi benchmark for evaluating visual-inertial odometry,” in 2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2018, pp. 1680–1687. [31] T. Qin, S. Cao, J. Pan, and S. Shen, “A general optimization-based framework for global pose estimation with multiple sensors,” 2019. [32] W. Wang, K. Li, Y. Chen, and M. Zhang, “Stereo-nec: Enhancing stereo visual-inertial slam initialization with normal epipolar con-straints,” in 2024 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2024, pp. 3456–3463. [33] Y. Peng, C. Chen, K. Wu, and G. Huang, “sqrtvins: Robust and ultrafast square-root filter-based 3d motion tracking,” arXiv preprint arXiv:2510.10346 , 2025. APPENDIX IANALYTICAL JACOBIANS 
+
+A. Notation 
+
+This appendix summarizes the analytical Jacobians used throughout our optimization. We linearize all residuals on 
+
+SO(3) and SE(3) using a left-multiplicative perturbation model and report derivatives with respect to minimal tangent-space coordinates. 
+
+a) SE(3) exponential/logarithm: For ξ =
+
+ρ⊤ ϕ⊤⊤ ∈ R6 we use Exp : R6 → SE(3) and 
+
+Log : SE(3) → R6 with standard Lie definitions. We denote the right/left Jacobians on SE(3) by Jr (ξ), Jl(ξ) ∈ R6×6
+
+and their inverses J−1 
+
+> r
+
+, J−1 
+
+> l
+
+.
+
+b) Adjoint of SE(3) : For T = ( p, R) ∈ SE(3) , the adjoint Ad T ∈ R6×6 acting on ξ =
+
+ρϕ
+
+
+
+(translation first) is 
+
+Ad T ≜
+
+R [p]×R0 R
+
+
+
+,
+
+Ad T
+
+ρϕ
+
+
+
+=
+
+[p]×Rϕ + Rρ
+
+Rϕ
+
+
+
+.
+
+(15) 
+
+B. Left perturbation model 
+
+The optimization variables include (main paper Eq. (1)): 
+
+Tc0 
+
+> bk
+
+=
+
+Rc0 
+
+> bk
+
+pc0
+
+> bk
+
+0⊤ 1
+
+
+
+∈ SE(3) ,
+
+vbk 
+
+> bk
+
+∈ R3, gc0 ∈ R3, bg , ba ∈ R3, Tbc ∈ SE(3) .
+
+(16) We write Rk ≜ Rc0 
+
+> bk
+
+and pk ≜ pc0 
+
+> bk
+
+. The inverse rotation is 
+
+Rbk 
+
+> c0
+
+= R⊤ 
+
+> k
+
+.
+
+a) Pose retraction (left): For δξk =
+
+δρk
+
+δϕk
+
+
+
+∈ R6,
+
+Tc0 
+
+> bk
+
+← Exp( δξk) Tc0 
+
+> bk
+
+. (17) To first order, 
+
+Rk ← Exp( δϕk)Rk, pk ← Exp( δϕk)pk + δρk. (18) Consequently, 
+
+R⊤ 
+
+> k
+
+← R⊤ 
+
+> k
+
+Exp( −δϕk). (19) 
+
+b) Euclidean variables: We use additive perturbations: 
+
+vbk 
+
+> bk
+
+← vbk 
+
+> bk
+
++ δvk,
+
+gc0 ← gc0 + δg,
+
+bg ← bg + δbg ,
+
+ba ← ba + δba.
+
+(20) 
+
+C. First-order identities used in the derivations a) Small-angle approximation: 
+
+Exp( δϕ) ≈ I + [ δϕ]×. (21) 
+
+b) Conjugation (SO(3)): For any R ∈ SO(3) and ϕ ∈
+
+R3,
+
+Exp( ϕ) R = R Exp( R⊤ϕ). (22) 
+
+c) Log linearizations (SO(3)): Let E ∈ SO(3) and r =Log( E) ∈ R3. For small δ ∈ R3:
+
+Log(Exp( δ)E) ≈ r + J−1 
+
+> l
+
+(r) δ, (23) 
+
+Log( E Exp( δ)) ≈ r + J−1 
+
+> r
+
+(r) δ. (24) 
+
+d) Log linearizations (SE(3)): Let T ∈ SE(3) and r =Log( T) ∈ R6. For small δξ ∈ R6:
+
+Log(Exp( δξ) T) ≈ r + J−1 
+
+> l
+
+(r) δξ, (25) 
+
+Log( T Exp( δξ)) ≈ r + J−1 
+
+> r
+
+(r) δξ. (26) 
+
+D. Gyroscope bias and camera-IMU rotation estimation (main paper Eq. (8) )
+
+Let qck+1  
+
+> ck
+
+be the visual relative rotation, and γbk 
+
+> bk+1
+
+∈
+
+SO(3) the IMU preintegrated rotation. The first-order bias correction is ˆγbk 
+
+> bk+1
+
+= γbk 
+
+> bk+1
+
+Exp( ϕg ),
+
+ϕg ≜ Jγbg δbg ∈ R3. (27) Define 
+
+Mk(qbc) ≜ qbc qck+1  
+
+> ck
+
+qcb ∈ SO(3) . (28) The SO(3) residual is 
+
+rgyro  
+
+> k
+
+≜ Log 
+
+
+
+Mk(qbc) ˆ γbk
+
+> bk+1
+
+
+
+∈ R3. (29) Perturb δbg ← δbg +∆ bg . Then ϕg ← ϕg +Jγbg ∆bg and, using the standard first-order composition Exp( ϕ + δϕ) ≈
+
+Exp( ϕ) Exp( Jr (ϕ)δϕ),
+
+ˆγ′ ≈ ˆγ Exp 
+
+
+
+Jr (ϕg )Jγbg ∆bg
+
+
+
+. (30) Let E = Mk(qbc) ˆ γ and E′ = Mk(qbc) ˆ γ′. We have E′ =
+
+E Exp( δ) with δ = Jr (ϕg )Jγbg ∆bg , and by (24) 
+
+∆rgyro  
+
+> k
+
+≈ J−1 
+
+> r
+
+(rgyro  
+
+> k
+
+) δ
+
+= J−1 
+
+> r
+
+(rgyro  
+
+> k
+
+) Jr (ϕg ) Jγbg ∆bg . (31) Hence 
+
+∂rgyro 
+
+> k
+
+∂ δ bg
+
+= J−1 
+
+> r
+
+(rgyro  
+
+> k
+
+) Jr (ϕg )Jγbg (32) Use a left perturbation qbc ← Exp( δθ)qbc. Then qcb ←
+
+qcb Exp( −δθ) and 
+
+E′ = Exp( δθ) Mk Exp( −δθ) ˆ γ
+
+= Exp( δθ) E
+
+
+
+ˆγ⊤ Exp( −δθ)ˆ γ
+
+
+
+. (33) Using ˆγ⊤ Exp( −δθ)ˆ γ = Exp( −ˆγ⊤δθ) (from (22)), 
+
+E′ = Exp( δθ) E Exp( −ˆγ⊤δθ). (34) Applying (23) and (24) and dropping second-order terms yields 
+
+∆rgyro  
+
+> k
+
+≈ J−1 
+
+> l
+
+(rgyro  
+
+> k
+
+) δθ − J−1 
+
+> r
+
+(rgyro  
+
+> k
+
+) ˆ γ⊤δθ. (35) Hence 
+
+∂rgyro 
+
+> k
+
+∂ δ θ = J−1 
+
+> l
+
+(rgyro  
+
+> k
+
+) − J−1 
+
+> r
+
+(rgyro  
+
+> k
+
+) ˆ γ⊤ (36) E. Visual pose-level residual (main paper Eq. (10) )
+
+Main paper Eq. (10) defines the pose-level visual residual (SE(3)): 
+
+rvis  
+
+> k
+
+≜ Log 
+
+
+
+Tck 
+
+> ck+1
+
+Tcb (Tc0 
+
+> bk+1
+
+)−1Tc0 
+
+> bk
+
+Tbc
+
+
+
+∈ R6, (37) where Tcb = ( Tbc)−1 and Tck 
+
+> ck+1
+
+is a measured visual relative motion. Define the shorthand 
+
+Ak ≜ Tck 
+
+> ck+1
+
+Tcb(Tc0 
+
+> bk+1
+
+)−1, (38) 
+
+Bk ≜ Tc0 
+
+> bk
+
+Tbc, (39) 
+
+Terr ≜ AkBk, rvis  
+
+> k
+
+= Log( Terr ). (40) Perturb Tc0 
+
+> bk
+
+← Exp( δξk)Tc0 
+
+> bk
+
+. Then 
+
+T′ 
+
+> err
+
+= Ak Exp( δξk) Bk
+
+=  Ak Exp( δξk)A−1
+
+> k
+
+ Terr 
+
+= Exp(Ad Ak δξk) Terr . (41) Using (25) with r = rvis  
+
+> k
+
+,
+
+∆rvis  
+
+> k
+
+≈ J−1 
+
+> l
+
+(rvis  
+
+> k
+
+) Ad Ak δξk, (42) hence 
+
+∂rvis 
+
+> k
+
+∂ δ ξk
+
+= J−1 
+
+> l
+
+(rvis  
+
+> k
+
+) Ad Ak (43) Perturb Tc0 
+
+> bk+1
+
+← Exp( δξk+1 )Tc0 
+
+> bk+1
+
+. Then (Tc0 
+
+> bk+1
+
+)−1 ←
+
+(Tc0 
+
+> bk+1
+
+)−1 Exp( −δξk+1 ) and 
+
+T′ 
+
+> err
+
+= Ak Exp( −δξk+1 ) Bk
+
+= Exp(Ad Ak (−δξk+1 )) Terr . (44) Therefore 
+
+∂rvis 
+
+> k
+
+∂ δ ξk+1 
+
+= −J−1 
+
+> l
+
+(rvis  
+
+> k
+
+) Ad Ak (45) Use left perturbation Tbc ← Exp( δξbc )Tbc. Then Tcb ←
+
+Tcb Exp( −δξbc ) and 
+
+T′ 
+
+> err
+
+= Tck 
+
+> ck+1
+
+Tcb
+
+| {z } 
+
+> ≜Sk
+
+Exp( −δξbc )( Tc0 
+
+> bk+1
+
+)−1Tc0 
+
+> bk
+
+Exp( δξbc )Tbc.
+
+(46) Let C ≜ Tcb and note that Terr = Sk(Tc0 
+
+> bk+1
+
+)−1Tc0 
+
+> bk
+
+C. We have 
+
+T′ 
+
+> err
+
+=  Sk Exp( −δξbc )S−1
+
+> k
+
+ Terr 
+
+ C−1 Exp( δξbc )C
+
+= Exp(Ad Sk (−δξbc )) Terr Exp(Ad C−1 δξbc ). (47) Using (25) and (26): 
+
+∆rvis  
+
+> k
+
+≈ J−1 
+
+> r
+
+(rvis  
+
+> k
+
+) Ad C−1 δξbc 
+
++ J−1 
+
+> l
+
+(rvis  
+
+> k
+
+) Ad Sk δ(−δξbc ), (48) hence 
+
+∂rvis 
+
+> k
+
+∂ δ ξbc 
+
+= J−1 
+
+> r
+
+(rvis  
+
+> k
+
+) Ad C−1
+
+− J−1 
+
+> l
+
+(rvis  
+
+> k
+
+) Ad Sk
+
+(49) 
+
+Other state Jacobians: rvis  
+
+> k
+
+does not depend on vbk 
+
+> bk
+
+, gc0 ,
+
+bg , or ba: their Jacobians are 0.
+
+F. IMU residuals (main paper Eqs. (12) –(14) )
+
+Let ∆t ≜ ∆tkk +1 . Recall Rk = Rc0 
+
+> bk
+
+, Rbk 
+
+> c0
+
+= R⊤ 
+
+> k
+
+. We denote vk ≜ vbk 
+
+> bk
+
+and g ≜ gc0 for brevity. In the main paper, ˜γbk 
+
+> bk+1
+
+, ˜βbk 
+
+> bk+1
+
+, ˜αbk 
+
+> bk+1
+
+denote the preintegration terms of whichever workflow is used; below we spell out the two cases separately, since the no-learned-IMU case additionally depends on the bias increments. 
+
+1) Rotation residual rγk (main paper Eq. (12) ): a) Learned-IMU case: Define 
+
+Eγ ≜ Rbk+1  
+
+> c0
+
+Rc0 
+
+> bk
+
+˜γbk 
+
+> bk+1
+
+= R⊤
+
+> k+1
+
+Rk ˜γbk 
+
+> bk+1
+
+,
+
+rγk ≜ Log( Eγ ) ∈ R3. (50) Apply left perturbations Rk ← Exp( δϕk)Rk and 
+
+Rk+1 ← Exp( δϕk+1 )Rk+1 . Using (19), 
+
+E′ 
+
+> γ
+
+= ( R′
+
+> k+1
+
+)⊤R′ 
+
+> k
+
+˜γ
+
+= R⊤ 
+
+> k+1
+
+Exp( −δϕk+1 ) Exp( δϕk)Rk ˜γ
+
+≈ R⊤ 
+
+> k+1
+
+Exp( δϕk − δϕk+1 )Rk ˜γ
+
+> (22)
+
+= Exp 
+
+
+
+R⊤
+
+> k+1
+
+(δϕk − δϕk+1 )
+
+
+
+R⊤
+
+> k+1
+
+Rk ˜γ
+
+= Exp 
+
+
+
+Rbk+1  
+
+> c0
+
+(δϕk − δϕk+1 )
+
+
+
+Eγ . (51) Then by (23), 
+
+∆rγk ≈ J−1 
+
+> l
+
+(rγk ) Rbk+1  
+
+> c0
+
+(δϕk − δϕk+1 ). (52) Therefore 
+
+∂rγk
+
+∂ δ ϕk
+
+= J−1 
+
+> l
+
+(rγk ) Rbk+1  
+
+> c0
+
+,∂rγk
+
+∂ δ ϕk+1 
+
+= −J−1 
+
+> l
+
+(rγk ) Rbk+1 
+
+> c0
+
+(53) and 
+
+∂rγk
+
+∂ δ ρk
+
+= 0,∂rγk
+
+∂ δ ρk+1 
+
+= 0.
+
+(54) 
+
+b) No-learned-IMU case: Now 
+
+rγk = Log 
+
+
+
+Rbk+1  
+
+> c0
+
+Rc0 
+
+> bk
+
+γbk 
+
+> bk+1
+
+Exp( ϕg )
+
+
+
+,
+
+ϕg ≜ Jγbg δbg .
+
+(55) The pose Jacobians w.r.t. δϕk, δ ϕk+1 are identical to the learned case above (replace ˜γ by γ Exp( ϕg )). For the gyro bias, perturb δbg ← δbg + ∆ bg . Then 
+
+Exp( ϕg ) right-multiplies by Exp( Jr (ϕg )Jγbg ∆bg ), hence by (24) 
+
+∂rγk
+
+∂ δ bg
+
+= J−1 
+
+> r
+
+(rγk ) Jr (ϕg ) Jγbg (56) 
+
+2) Velocity residual rβk (main paper Eq. (13) ): a) Learned-IMU case: Write 
+
+rβk = Rbk 
+
+> c0
+
+Rc0 
+
+> bk+1
+
+vk+1 − vk − Rbk 
+
+> c0
+
+g∆t − ˜βbk
+
+> bk+1
+
+= R⊤ 
+
+> k
+
+(Rk+1 vk+1 − g∆t) − vk − ˜β. (57) Define a ≜ Rk+1 vk+1 ∈ R3 (velocity expressed in c0). Using (19), R⊤ 
+
+> k
+
+← R⊤ 
+
+> k
+
+Exp( −δϕk) implies 
+
+R⊤ 
+
+> k
+
+Exp( −δϕk)y ≈ R⊤ 
+
+> k
+
+(y + [ y]×δϕk),
+
+⇒ δ(R⊤ 
+
+> k
+
+y) = R⊤ 
+
+> k
+
+[y]×δϕk. (58) Also, a′ = Exp( δϕk+1 )a ≈ a − [a]×δϕk+1 .Collecting first-order terms, 
+
+∂rβk
+
+∂ δ ϕk
+
+= R⊤ 
+
+> k
+
+[a]× − ∆t R⊤ 
+
+> k
+
+[g]×,∂rβk
+
+∂ δ ϕk+1 
+
+= −R⊤ 
+
+> k
+
+[a]×
+
+(59) and 
+
+∂rβk
+
+∂ δ ρk
+
+= 0,∂rβk
+
+∂ δ ρk+1 
+
+= 0.
+
+(60) Euclidean Jacobians: 
+
+∂rβk
+
+∂ vk
+
+= −I,∂rβk
+
+∂ vk+1 
+
+= R⊤ 
+
+> k
+
+Rk+1 ,∂rβk
+
+∂ g = −∆t R⊤ 
+
+> k
+
+.
+
+(61) 
+
+b) No-learned-IMU case: 
+
+rβk = R⊤ 
+
+> k
+
+Rk+1 vk+1 − vk − R⊤ 
+
+> k
+
+g∆t
+
+−
+
+
+
+β + Jβbg δbg + Jβba δba
+
+
+
+. (62) All Jacobians above remain unchanged, and additionally 
+
+∂rβk
+
+∂ δ bg
+
+= −Jβbg ,∂rβk
+
+∂ δ ba
+
+= −Jβba .
+
+(63) 
+
+3) Position residual rαk (main paper Eq. (14) ): a) Learned-IMU case: 
+
+rαk = Rbk 
+
+> c0
+
+pk+1 − Rbk 
+
+> c0
+
+pk − vk∆t − 12 Rbk 
+
+> c0
+
+g∆t2 − ˜αbk
+
+> bk+1
+
+= R⊤ 
+
+> k
+
+pk+1 − R⊤ 
+
+> k
+
+pk − vk∆t − 12 R⊤ 
+
+> k
+
+g∆t2 − ˜α.
+
+(64) The left pose update (18) rotates pk+1 :
+
+pk+1 ← Exp( δϕk+1 )pk+1 + δρk+1 
+
+≈ pk+1 − [pk+1 ]×δϕk+1 + δρk+1 . (65) 
+
+b) Jacobian w.r.t. pose at k: Using (18) and (19), one can check that the first-order δϕk terms in R⊤ 
+
+> k
+
+pk cancel (because both Rk and pk are rotated by the same left per-turbation), while R⊤ 
+
+> k
+
+pk+1 and R⊤ 
+
+> k
+
+g retain δϕk sensitivity. The result is 
+
+∂rαk
+
+∂ δ ϕk
+
+= R⊤
+
+> k
+
+
+
+[pk+1 ]× − 12 ∆t2[g]×
+
+
+
+,∂rαk
+
+∂ δ ρk
+
+= −R⊤ 
+
+> k
+
+.
+
+(66) 
+
+c) Jacobian w.r.t. pose at k+1 : Only pk+1 contributes: 
+
+∂rαk
+
+∂ δ ϕk+1 
+
+= −R⊤ 
+
+> k
+
+[pk+1 ]×,∂rαk
+
+∂ δ ρk+1 
+
+= R⊤ 
+
+> k
+
+.
+
+(67) 
+
+d) Euclidean Jacobians.: 
+
+∂rαk
+
+∂ vk
+
+= −∆t I,∂rαk
+
+∂ g = − 12 ∆t2 R⊤ 
+
+> k
+
+.
+
+(68) 
+
+e) No-learned-IMU case.: 
+
+rαk = R⊤ 
+
+> k
+
+pk+1 − R⊤ 
+
+> k
+
+pk − vk∆t − 12 R⊤ 
+
+> k
+
+g∆t2
+
+−
+
+
+
+α + Jαbg δbg + Jαba δba
+
+
+
+. (69) All Jacobians above remain unchanged, and additionally 
+
+∂rαk 
+
+∂ δ bg
+
+= −Jαbg ,∂rαk 
+
+∂ δ ba
+
+= −Jαba .
+
+(70) APPENDIX II VISUAL RESIDUAL COVARIANCE 
+
+The visual residual of main paper Eq. (10) is built from the relative pose Tck 
+
+> ck+1
+
+estimated by MAC-VO, so its co-variance is obtained in two steps: we first propagate the learned 3D keypoint uncertainties through the pose graph optimization (PGO) to a covariance on the estimated relative pose (section II-A), and then propagate that pose covariance through the Log map that defines the residual (section II-B). Throughout we keep the left-perturbation convention and the translation-first ordering δξ = δρ⊤ δϕ⊤⊤ of section I-B. 
+
+A. Covariance of the estimated relative visual pose 
+
+MAC-VO estimates the relative pose between consecutive frames by solving the PGO of main paper Eq. (5). Let 
+
+ˆT ≜ Tck 
+
+> ck+1
+> ⋆
+
+be its minimizer, with rotation part ˆR, and parametrize a neighbourhood of ˆT by the left perturbation 
+
+T(δξ) = Exp( δξ) ˆT, δξ ∈ R6. (71) The per-keypoint residual of the PGO is 
+
+ri,k (δξ) = pck,i − Exp( δξ) ˆT p ck+1 ,i ∈ R3. (72) a) Residual weight: MAC-VO predicts a 3D covariance 
+
+Σpk,i for every keypoint pck,i . The covariance of (72) at δξ =
+
+0 is, to first order, 
+
+Σi = Σpk,i + ˆR Σ pk+1 ,i ˆR⊤, (73) 
+
+b) Linearization at the optimum: Using Exp( δξ)q ≈
+
+q + δρ + [ δϕ]×q = q + δρ − [q]×δϕ with q ≜ ˆTp ck+1 ,i ,we obtain 
+
+ri,k (δξ) ≈ ri,k (0) − δρ + [ q]×δϕ
+
+= ri,k (0) + Ji,k δξ, (74) so that 
+
+Ji,k = ∂ri,k (δξ)
+
+∂ δ ξ δξ=0
+
+=
+
+h
+
+−I3×3 [ ˆTp ck+1 ,i ]×
+
+i
+
+(75) which is the Jacobian reported in main paper Eq. (6). 
+
+c) Laplace approximation: The negative log-likelihood of the PGO is 
+
+L(δξ) = 12
+
+X
+
+> i
+
+ri,k (δξ)⊤Σ−1 
+
+> i
+
+ri,k (δξ) + const . (76) Substituting the linearization (75) gives the quadratic model 
+
+L(δξ) ≈ L (0) + g⊤ 
+
+> k
+
+δξ + 12 δξ⊤Hk δξ,
+
+gk = X
+
+> i
+
+J⊤
+
+> i,k
+
+Σ−1 
+
+> i
+
+ri,k (0), Hk ≈ X
+
+> i
+
+J⊤
+
+> i,k
+
+Σ−1 
+
+> i
+
+Ji,k ,
+
+(77) where Hk is the Gauss-Newton (Fisher information) approx-imation of the Hessian, i.e. the term involving ∂2ri,k /∂δ ξ2
+
+is dropped, which is standard and vanishes at a zero-residual optimum. Because ˆT is a stationary point, gk ≈ 0, and 
+
+L reduces to a centered quadratic form. Exponentiating it yields the Laplace approximation of the posterior, δξ ∼N (0, ΣTckck+1 
+
+), whose covariance is the inverse of that quadratic form: 
+
+ΣTckck+1 
+
+= H−1 
+
+> k
+
+(78) which is main paper Eq. (6). Note that ΣTckck+1 
+
+lives in the tangent space at ˆT under the left perturbation (71). 
+
+B. Propagation to the pose-level residual 
+
+The estimated relative pose enters the pose-level residual of main paper Eq. (10) as a measurement . Writing the underlying true relative motion as a left perturbation of the estimate, 
+
+Tck 
+
+> ck+1
+
+= Exp( δξ) ˆTck 
+
+> ck+1
+
+, δξ ∼ N (0, ΣTckck+1 
+
+), (79) and reusing Terr of section I-E evaluated at the measured pose, the perturbed residual is 
+
+rvis  
+
+> k
+
+(δξ) = Log 
+
+
+
+Exp( δξ) ˆTck 
+
+> ck+1
+
+Tcb(Tc0 
+
+> bk+1
+
+)−1Tc0 
+
+> bk
+
+Tbc
+
+
+
+= Log   Exp( δξ) Terr 
+
+.
+
+(80) The measured pose is the leftmost factor of Terr , so its perturbation needs no adjoint transport, in contrast with the state Jacobians of section I-E where the perturbed factor sits in the middle and Ad Ak appears. Applying (25) directly, 
+
+rvis  
+
+> k
+
+(δξ) ≈ rvis  
+
+> k
+
++ J−1 
+
+> l
+
+(rvis  
+
+> k
+
+) δξ, (81) hence 
+
+∂rvis 
+
+> k
+
+∂ δ ξ = J−1 
+
+> l
+
+(rvis  
+
+> k
+
+) (82) and, by linear propagation of the Gaussian δξ through (82), 
+
+Σvisual  
+
+> k
+
+= J−1 
+
+> l
+
+(rvis  
+
+> k
+
+) ΣTckck+1 
+
+J−⊤  
+
+> l
+
+(rvis  
+
+> k
+
+) (83) which is main paper Eq. (11). APPENDIX III IMU R ESIDUAL COVARIANCE 
+
+The covariance of the IMU residual can be derived from the IMU preintegration covariance: 
+
+Σrγk = J−1 
+
+> r
+
+(rγk )Σ ∆Rk (J−1 
+
+> r
+
+(rγk )) T ,
+
+Σvβk = Σ ∆vk ,
+
+Σpαk = Σ ∆pk ,
+
+(84) APPENDIX IV LEARNED IMU M ODEL GRU 
+
+> Correction
+> Decoder
+> Raw IMU
+> Covariance
+> Decoder
+> CNN
+> Encoder
+> Data Buffer
+> Corrected IMU
+> Covariance
+> Learnable InitCov
+> Network
+> Integration Results
+
+Fig. 8: Network architecture of the learned imu model developed in this paper. 
+
+Network Architecture The network architecture of the learned imu model is illustrated in Fig. 8. Following AirIMU, we train a shared CNN encoder network to leverage the hidden relationship between IMU correction and uncertainty, while we do not use GRU-processed data to predict the uncertainty. In addition, a learnable init covariance is intro-duced. 
+
+IMU Preintegration Covariance Propagation Our model jointly supervises the integrated IMU state and the prop-agated covariance to train the model. The preintegration covariance propagation is as follows: 
+
+Σik +1 = AΣ ik AT + Bdiag (Σgyro , Σacc )BT
+
+= AΣ ik AT + Bg Σgyro BTg + BaΣacc BTa , (85) where Σgyro and Σacc are the measurement covariance, which is obtained with the uncertainty prediction of the network. The propagation starts from Σii = Σ0, where Σ0TABLE V: Pose estimation comparison on EuRoC between MAC-VO (vision only) and MAC-I 2 (visual-inertial fusion).                                                
+
+> Metrics Methods MH02 MH04 V101 V103 V202 Avg
+> Rotation Error ( ◦)
+> MAC-VO 0.211 0.189 0.195 0.541 0.459 0.319 MAC-I 2w/o Learned IMU 0.132 0.145 0.185 0.410 0.383 0.251 MAC-I 2w/ Learned IMU 0.082 0.095 0.159 0.317 0.313 0.193 Translation Error (m)
+> MAC-VO 0.010 0.033 0.008 0.043 0.024 0.024 MAC-I 2w/o Learned IMU 0.009 0.031 0.008 0.038 0.021 0.021 MAC-I 2w/ Learned IMU 0.009 0.031 0.008 0.035 0.019 0.020
+
+is the learned initial covariance. A and B can be computed by: 
+
+A =
+
+
+
+∆RTkk +1 03×3 03×3
+
+−∆Rik (a∧ 
+
+> k
+
+)∆ t I3×3 03×3
+
+−1/2∆ Rik (a∧ 
+
+> k
+
+)∆ t2 I3×3∆t I3×3
+
+ ,B = [ Bg , B a],Bg =
+
+Jkr ∆t
+
+03×3
+
+03×3
+
+ , Ba =
+
+
+
+03×3
+
+∆Rik ∆t
+
+1/2∆ Rik ∆t2
+
+ ,
+
+(86) 
+
+·∧ denotes the skew matrix, Σ ∈ R9×9 is the covariance matrix of the IMU preintegration term. Σgyro and Σacc 
+
+are the measurement covariance, which is obtained with the uncertainty prediction of the network. Jkr is the right Jacobian of SO (3) evaluated with the integrated rotation at the k-th time step. 
+
+Training Losses Given the IMU preintegratiown terms 
+
+γbi 
+
+> bj
+
+, βbi 
+
+> bj
+
+, αbi 
+
+> bj
+
+from frame bi to bj , the j-th state of the robot in the world frame {W } can be computed by: 
+
+qwbj = qwbi γbi 
+
+> bj
+
+,
+
+vwbj = vwbi + gw∆tij + Rwbi βbi 
+
+> bj
+
+,
+
+pwbj = pwbi + vwbi ∆tij + 12 gw∆t2 
+
+> ij
+
++ Rwbi αbi 
+
+> bj
+
+,
+
+(87) The correction loss is then designed as: 
+
+Lr = ∥Log (ˆ qbi 
+
+> w
+
+qwbi )∥h,Lv = ∥vwbi − ˆvwbi ∥h,Lp = ∥pwbi − ˆpwbi ∥h,
+
+(88) where ˆqbi 
+
+> w
+
+, ˆvwbi , and ˆpwbi are ground truth. The ∥ · ∥ h denotes the Huber function. The covariance loss Lcov adopts the Gaussian negative-log-likelihood form defined in main paper Eq. (7). Its residual covariances Σri,j , Σvi,j , Σpi,j are computed from the IMU preintegration covariances Σ∆ 
+
+> i,j
+
+as: 
+
+Σri,j = J−1 
+
+> r
+
+(Log (ˆ qbj 
+
+> w
+
+qwbj ))Σ ∆Ri,j J−1 
+
+> r
+
+(Log (ˆ qbj 
+
+> w
+
+qwbj )) T ,
+
+Σvi,j = Rwbi Σ∆vi,j (Rwbi )T ,
+
+Σpi,j = Rwbi Σ∆pi,j (Rwbi )T .
+
+(89) APPENDIX VPOSE ESTIMATION IMPROVEMENT VIA VI F USION 
+
+Table V compares pose estimates produced by our VI initialization against MAC-VO alone on EuRoC. For each initialization segment, the pose error is computed as the 
+
+Fig. 9: Per-segment pose error comparison between MAC-VO and our method on EuRoC MH02 (top) and V103 (bot-tom). In segments where MAC-VO exhibits large errors, our method produces more accurate estimates by shifting trust toward IMU measurements through covariance weighting. average rotation or translation error across all keyframes; the values are then averaged over all segments per sequence. Our framework consistently improves pose accuracy over MAC-VO across all sequences. The improvement is partic-ularly pronounced in rotation estimation, where MAC-I 2 w/ Learned IMU reduces the average rotation error from 0.319 ◦
+
+to 0.193 ◦ (39.5%), as the IMU gyroscope provides accurate short-term rotational information that complements visual estimates. Even without the learned IMU model, our method achieves a 21.3% reduction in rotation error. Translation improvements are more moderate (0.024 m to 0.020 m, 16.7%), because MAC-VO already provides strong visual translation constraints and the optimizer naturally assigns more trust to the more accurate source. Fig. 9 visualizes per-segment pose errors on two repre-sentative sequences. On MH02, MAC-VO suffers from oc-casional large rotation errors, while our method consistently maintains low errors. On V103, which involves aggressive motions and challenging visual conditions, MAC-VO ex-hibits frequent rotation error spikes. In these segments, the visual pose covariance increases to reflect the degraded visual quality, causing the optimizer to assign greater trust to the IMU and thereby producing more robust rotation estimates. APPENDIX VI COVARIANCE GENERALIZABILITY 
+
+A. Visual Covariance Generalization 
+
+Our visual covariance model is trained entirely on syn-thetic TartanAir with pinhole cameras and applied to real-world datasets without any fine-tuning . Fig. 10 evaluates generalization on two additional datasets. Fig. 10a shows the binning analysis on TartanAirV2, which features diverse unseen synthetic scenes; the predicted uncertainty closely follows the ideal y = x relationship, confirming generaliza-tion across scene types. Fig. 10b presents results on TUM-VI, a more challenging domain with fisheye cameras and hand-held motions. Despite this domain gap, the covariance model remains metrics-aware and reflects actual error magnitudes. (a) TartanAirV2 (unseen synthetic scenes, pinhole camera). 
+
+(b) TUM-VI (real-world, fisheye camera, handheld motion). 
+
+Fig. 10: Visual pose covariance binning analysis on (a) Tar-tanAirV2 and (b) TUM-VI. Despite being trained only on synthetic TartanAir with pinhole cameras, the covariance model remains metrics-aware across diverse scenes, sensor types, and motion regimes. 
+
+Fig. 11: IMU covariance binning analysis on held-out TUM-VI room sequences. The predicted covariance remains metrics-aware on a different sensor and motion regime than EuRoC. 
+
+B. IMU Covariance Generalization 
+
+The learned IMU model captures sensor-specific bias and noise characteristics, requiring per-sensor training analo-gous to standard IMU calibration. Within this setup, the model generalizes across diverse motion regimes on the same sensor. Fig. 11 shows the IMU covariance binning analysis on held-out TUM-VI room sequences, which involve handheld motions distinct from the EuRoC MAV trajectories. The predicted covariance remains well-calibrated and tracks actual integration errors. For scenarios where sensor-specific training data is unavailable, our framework provides a raw-IMU workflow that still achieves strong performance. APPENDIX VII SENSITIVITY TO KEYFRAME COUNT 
+
+We evaluate sensitivity to the number of keyframes by testing with 5, 10, and 20 keyframes on EuRoC (Table VI). All configurations achieve 100% success rate regardless of keyframe count. Performance improves with more keyframes but with diminishing returns: for gravity direction error with the learned IMU, increasing from 5 to 10 keyframes yields a 27.4% reduction (0.576 ◦ → 0.418 ◦), while further increasing to 20 brings only a 4.3% reduction (0.418 ◦ → 0.400 ◦). A TABLE VI: Sensitivity to keyframe count on EuRoC.                                                                                 
+
+> KFs Metrics Methods MH02 MH04 V101 V103 V202 Avg 5Vel (m/s) w/ Learned IMU 0.012 0.029 0.011 0.031 0.025 0.022 w/o Learned IMU 0.012 0.025 0.010 0.029 0.022 0.020 G.Dir (◦)w/ Learned IMU 0.267 0.432 0.395 0.785 0.999 0.576 w/o Learned IMU 0.842 0.854 0.914 1.197 0.871 0.936 10 Vel (m/s) w/ Learned IMU 0.010 0.023 0.010 0.025 0.024 0.018 w/o Learned IMU 0.011 0.022 0.010 0.025 0.020 0.018 G.Dir (◦)w/ Learned IMU 0.166 0.208 0.332 0.581 0.804 0.418 w/o Learned IMU 0.820 0.800 0.872 1.149 0.804 0.889 20 Vel (m/s) w/ Learned IMU 0.010 0.023 0.011 0.024 0.024 0.018 w/o Learned IMU 0.011 0.022 0.010 0.023 0.020 0.017
+> G.Dir (◦)w/ Learned IMU 0.138 0.183 0.348 0.556 0.775 0.400
+> w/o Learned IMU 0.827 0.802 0.816 1.083 0.821 0.870
+
+similar trend is observed for velocity RMSE and for the workflow without the learned IMU model.

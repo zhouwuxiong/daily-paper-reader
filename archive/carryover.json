@@ -1,12 +1,94 @@
 {
-  "generated_at": "2026-09-08T22:21:17.376240+00:00",
-  "updated_date": "20260908",
+  "generated_at": "2026-09-09T21:46:52.859039+00:00",
+  "updated_date": "20260909",
   "carryover_days": 9,
   "tag_states": {
     "d-slam": {
-      "updated_date": "20260908",
+      "updated_date": "20260909",
       "carryover_days": 9,
-      "items": []
+      "items": [
+        {
+          "id": "2609.09069v1",
+          "source": "arxiv",
+          "title": "Rethinking Learned Occupancy in Autonomous Active Mapping with Observation-Gated Filtering",
+          "abstract": "Autonomous 3D active mapping requires a space robot to choose where to sense while building the geometry needed for navigation. Learned occupancy completion extends spatial context beyond the current field of view, but one predicted map often serves two planning roles: it scores expected surface gain and constrains collision-free motion. Unsupported occupancy can therefore distort both where the robot looks and where it believes it can travel. We study this coupled interface in a controlled closed-loop benchmark by holding the active-mapping system fixed and varying only its planner-facing occupancy across observation-only, learned, oracle-corrected, and ground-truth conditions. Improving occupancy accuracy does not monotonically improve closed-loop coverage: across 25 starts, planning with ground-truth occupancy reaches 70% of the learned baseline's final coverage 12.7 steps earlier on average, while increasing final coverage by only 0.031. Guided by this diagnosis, we introduce an observation-gated filter that retains completion in insufficiently observed regions and suppresses predictions only after repeated frustum exposure without nearby RGB-D support. The filter improves both targeted failure-prone starts without retraining or ground truth. These results motivate online revision of planner-facing geometry during autonomous intervals between communication windows. The current study assumes benchmark RGB-D observations and sufficiently accurate pose estimates; planetary sensing conditions and accumulated localization drift remain to be evaluated.",
+          "authors": [
+            "Jiahui Zhang",
+            "Bonian Han",
+            "Gongbo Liang",
+            "Yu Zhang"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO",
+            "cs.CV"
+          ],
+          "published": "2026-09-08T17:23:37+00:00",
+          "link": "https://arxiv.org/pdf/2609.09069v1",
+          "tags": [
+            "keyword:d-slam",
+            "query:d-slam"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "Autonomous active mapping and learned occupancy prediction for environment geometry built for robot navigation",
+          "llm_evidence_cn": "面向机器人导航的环境几何自主主动建图与学习占用预测",
+          "llm_evidence": "面向机器人导航的环境几何自主主动建图与学习占用预测",
+          "canonical_evidence": "面向机器人导航的环境几何自主主动建图与学习占用预测",
+          "llm_tldr_en": "Autonomous active mapping uses learned occupancy to score surface gain and constrain motion, so unsupported predictions can distort planning. The paper proposes observation-gated filtering and shows in controlled closed-loop experiments that occupancy accuracy does not monotonically improve planning performance.",
+          "llm_tldr_cn": "自主主动建图通常需要同一个占用预测图同时用于评估表面增益和约束无碰撞运动，不准确的占用地会误导探索与行驶。论文提出观测门控滤波，用当前观测校准预测占用，并在受控闭环基准中比较不同占用条件。结果显示提升占用精度并不一定单调改善规划，揭示了占用规划界面的耦合问题，为主动建图的占用建模提供了新思路。",
+          "llm_tldr": "自主主动建图通常需要同一个占用预测图同时用于评估表面增益和约束无碰撞运动，不准确的占用地会误导探索与行驶。论文提出观测门控滤波，用当前观测校准预测占用，并在受控闭环基准中比较不同占用条件。结果显示提升占用精度并不一定单调改善规划，揭示了占用规划界面的耦合问题，为主动建图的占用建模提供了新思路。",
+          "llm_tags": [
+            "query:d-slam"
+          ],
+          "matched_query_tag": "query:d-slam",
+          "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+          "matched_requirement_id": "req-6",
+          "selection_source": "carryover_cache",
+          "paper_id": "2609.09069v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2609.07497v1",
+          "source": "arxiv",
+          "title": "Functional-SLAM: Interaction-Aware Mapping with Online Functional Scene Graphs",
+          "abstract": "Existing SLAM systems lack modeling of the functional relations required for fine-grained robotic interaction. Functional 3D scene graphs can represent relations between objects and interaction elements, but existing methods rely on offline reconstruction, making them inadequate for real-time interaction in real-world exploration. To address this limitation, we propose Functional-SLAM, the first framework that continuously and recursively maintains a functional scene graph as an online SLAM state. The framework combines anchor-keyframe geometry with functional-context constraints for persistent node maintenance, accumulates multi-frame evidence through temporal relations to commit stable functional edges, and supplements visual loop-closure candidates with functional topology in scenes with repetitive appearance or degraded texture. Experiments show that Functional-SLAM efficiently constructs stable functional maps online, substantially improving runtime over offline methods while maintaining highly competitive accuracy. Compared with peer SLAM systems, it further improves pose estimation accuracy through functional-topology-assisted loop closure. The code is publicly available at https://github.com/Hbelief1998/Functional-SLAM-CoRL_2026.",
+          "authors": [
+            "Xinggang Hu",
+            "Chenyangguang Zhang",
+            "Zihan Zhu",
+            "Ruida Zhang",
+            "Xiangkui Zhang",
+            "Xiangyang Ji"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO"
+          ],
+          "published": "2026-09-07T13:46:56+00:00",
+          "link": "https://arxiv.org/pdf/2609.07497v1",
+          "tags": [
+            "keyword:d-slam",
+            "query:d-slam"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "Online SLAM framework that maintains functional 3D scene graphs for robotic real-time interaction and exploration",
+          "llm_evidence_cn": "在线维护功能场景图的SLAM框架，用于机器人实时交互探索与建图",
+          "llm_evidence": "在线维护功能场景图的SLAM框架，用于机器人实时交互探索与建图",
+          "canonical_evidence": "在线维护功能场景图的SLAM框架，用于机器人实时交互探索与建图",
+          "llm_tldr_en": "Functional-SLAM is the first framework that continuously maintains a functional 3D scene graph as online SLAM state, combining anchor-keyframe geometry, temporal functional constraints, and visual loop closure for real-time robotic interaction and exploration.",
+          "llm_tldr_cn": "现有SLAM无法在线表达物体与交互元素之间的功能关系，而功能3D场景图多依赖离线重建，难以用于真实世界探索。Functional-SLAM将功能场景图作为在线SLAM状态持续维护：利用锚点关键帧几何与功能上下文约束维持节点，通过多帧时序证据积累来提交稳定功能边，并补充视觉回环检测。该方法突破了离线场景图构建的局限，使机器人在探索过程中实时获得可供交互理解的结构化地图，为交互感知的在线建图提供了新思路。",
+          "llm_tldr": "现有SLAM无法在线表达物体与交互元素之间的功能关系，而功能3D场景图多依赖离线重建，难以用于真实世界探索。Functional-SLAM将功能场景图作为在线SLAM状态持续维护：利用锚点关键帧几何与功能上下文约束维持节点，通过多帧时序证据积累来提交稳定功能边，并补充视觉回环检测。该方法突破了离线场景图构建的局限，使机器人在探索过程中实时获得可供交互理解的结构化地图，为交互感知的在线建图提供了新思路。",
+          "llm_tags": [
+            "query:d-slam"
+          ],
+          "matched_query_tag": "query:d-slam",
+          "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2609.07497v1",
+          "carry_days": 1
+        }
+      ]
     },
     "robot-nav": {
       "updated_date": "20260815-20260824",

@@ -1,0 +1,379 @@
+Title: Moment-Matching Probabilistic Data Association for Optimization-Based SLAM
+
+URL Source: https://arxiv.org/pdf/2609.05941v1
+
+Published Time: Wed, 09 Sep 2026 00:30:40 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# Moment-Matching Probabilistic Data Association for Optimization-Based SLAM 
+
+Khoa Nguyen ∗, Mitchell Turton ‡, and Florian Meyer ∗
+
+> ∗
+
+Department of Electrical and Computer Engineering, University of California San Diego, USA 
+
+> ‡
+
+Georgia Institute of Technology, Atlanta, GA Email: ktnguyen@ucsd.edu, mturton3@gatech.edu, and flmeyer@ucsd.edu. 
+
+Abstract —Optimization-based simultaneous localization and mapping (SLAM) makes it possible to reduce accumulated navigation errors of sensing platforms by returning to known areas (“loop closure”). In this paper, we present an approach to combine probabilistic data association (PDA) with optimization-based SLAM. Instead of associating a single measurement with each landmark, we follow the PDA paradigm from the multiobject tracking community. In particular, in a processing stage performed in addition to the nonlinear least-squares solver of optimization-based SLAM, our method (i) assigns multiple measurements to landmarks probabilistically, (ii) computes the mean and covariance of landmark distributions via moment matching by taking multiple measurement-to-landmark associ-ations into account, and (iii) establishes a virtual landmark measurement and a corresponding linear-Gaussian measurement model that leads to the mean and covariance matrix as moment-matching PDA in (ii). By converting the PDA update step into an equivalent linear-Gaussian measurement update step, PDA can be performed effectively within any optimization-based SLAM method. Our preliminary numerical evaluation in a scenario with false negatives and false positives indicates that incremental smoothing and mapping 2 (iSAM2), combined with the proposed PDA approach, can improve agent localization performance compared to conventional iSAM2. 
+
+Index Terms —SLAM, data association, state estimation, local-ization, mapping, smoothing 
+
+I. I NTRODUCTION 
+
+For landmark-based navigation, simultaneous localization and mapping (SLAM) [1]–[14] aims to jointly estimate an agent’s trajectory and a map of the surrounding environment using sensor measurements. A key aspect of many SLAM applications is loop closure: when the agent returns to pre-viously mapped landmarks, the estimation error for all agent states on the loop is significantly reduced. While loop closure is essential for reducing estimation errors, it requires the ability to update the joint state involving all landmark states and all agent states on the loop. This contrasts with multi-object tracking problems and related SLAM methods [11]– [14], where typically only the most recent state of objects or landmarks is updated. Optimization-based SLAM [1]–[5] can address the high-dimensional estimation problem with loop-closure constraints while maintaining favorable computational complexity by linearizing the system dynamics and solving the resulting linear-Gaussian estimation problem with least-squares solvers. Optimization-based SLAM methods, including batch SLAM and iSAM, rely on nonlinear least-squares optimization in which motion and observation measurements from sensors are incorporated as measurement factors in a factor graph [1]–[5]. Under Gaussian noise assumptions, these approaches provide accurate and computationally efficient state estimation and have become the standard for long-duration autonomy in agent deployments. A fundamental challenge in SLAM is data association (DA), which determines which measurements correspond to pre-viously observed landmarks. Traditional optimization-based SLAM typically performs “hard” DA using global nearest-neighbor assignments [1]–[5]. This approach is directly com-patible with popular nonlinear least-squares solvers but can be unreliable in the presence of false negatives (FNs) and false positives (FPs). It also results in overconfident uncer-tainty quantification. Incorrect hard associations are difficult to recover from, resulting in potential track loss and degraded map consistency [15]. In particular, traditional optimization-based SLAM is reduced to nonlinear least squares where the squared-residual objective causes a small number of grossly incorrect measurements to dominate the quadratic cost and drive the optimizer toward an incorrect trajectory and map estimate [15]. Robustness techniques are commonly divided into front-end [16], [17] and back-end approaches [18], [19]. Front-end approaches serve as preprocessing steps that reject outliers in sensor data by enforcing consistency constraints. Prominent examples include Random Sample Consensus (RANSAC) [16] and pairwise consistency maximization (PCM) [17]. Back-end approaches are robust optimization methods that mitigate the influence of remaining bad constraints [15]. A widely used approach is to replace the squared loss with a robust loss to re-duce, resulting from the Gaussian assumption of measurement noise, to reduce the contribution of large residuals by using losses with sub-quadratic growth [20]. These robust objectives are commonly optimized using Iterative Reweighted Least Squares (IRLS) [20]. In SLAM, this can improve resilience to outlier constraints. However, depending on the chosen kernel, the problem may become more nonconvex and can exhibit increased sensitivity to initialization and local minima [15]. PDA [21], [22] addresses limitations related to hard associ-ations by incorporating all possible measurement hypotheses within a Bayesian update step. This update step relies on a moment-matching approximation to transform the Gaussian mixture into a single Gaussian [21], [22], thereby correctly quantifying association uncertainty. However, PDA is not directly compatible with optimization-based SLAM methods. arXiv:2609.05941v1 [cs.RO] 5 Sep 2026 After marginalizing over all possible soft associations, the likelihood function of PDA consists of a weighted sum of individual likelihood functions, which cannot directly be used within a least-squares optimization framework. Classical JPDA explicitly enumerates all possible global associations. This scales exponentially with problem size and becomes infeasible in moderate-sized problems [23]. Scalable alternatives rely on Markov Chain Monte Carlo (MCMC) techniques [24] and loopy belief propagation (BP) [23]. Soft associations have been previously considered for SLAM problems within an expectation maximization (EM) framework [7], [25], [26]. EM is guaranteed to converge to a local maximum but cannot provide correct uncertainty quantification [27]. While not derived in the EM framework, the method in [13], similar to EM, iterates between sampling a likely single hard association for all time steps and performing optimization-based SLAM. The multi-hypothesis extension of iSAM2 [8] aims to maintain and optimize multiple hypotheses over time steps, similarly to the multi-hypothesis tracker (MHT) [28]. This paper presents a PDA approach for optimization-based SLAM that converts a PDA update step, based on all possible measurement hypotheses, into a virtual measurement and a corresponding linear-Gaussian measurement model. The information contribution of the virtual measurement exactly matches that of the PDA update step. The resulting measure-ment allows the association uncertainty to be incorporated into optimization-based SLAM. Our approach can be interpreted as performing expectation propagation (EP) [29] on the subgraph of the SLAM problem [11] that includes the variable nodes representing random associations. Our preliminary numerical results indicate that the proposed method can improve localiza-tion and mapping performance in scenarios with a significant number of FPs and FNs. II. B ACKGROUND ON OPTIMIZATION -B ASED SLAM In optimization-based SLAM, the statistical model of the estimation problem is typically represented by a factor graph with motion constraints and measurements defined as prob-abilistic factors that connect state variables [3], [5], [30]. A key feature of optimization-based SLAM is loop closure. Loop closure is essential for reducing estimation errors but it requires the ability to update the joint state that involves all landmark states and all agent states on the loop. 
+
+A. Batch SLAM 
+
+Batch Simultaneous Localization and Mapping (Batch SLAM) formulates localization and mapping as a global optimization problem in which the entire agent trajectory and all landmark states are estimated simultaneously [1], [2]. The Batch SLAM method incorporates all available measurements into a single least-squares system, allowing information from later observations to refine earlier agent state estimates. Let the joint state vector be defined as 
+
+s = xT1 , xT2 , . . . , xT 
+
+> K
+
+, ℓT1 , ℓT2 , . . . , ℓT
+
+> J
+
+T (1) where xk ∈ Rdx denotes the agent state at time step k, for 
+
+k = 1 , . . . , K , and ℓj ∈ Rℓ is the state of landmark j that represents the position of the landmark. The trajectory of the agent consists of agent states x1: K , and {ℓj }Jj=1 denotes the set of landmarks. Assuming Gaussian noise, the maximum a posteriori (MAP) estimate is obtained by minimizing a weighted nonlinear least-squares objective 
+
+s⋆ = arg min  
+
+> s
+
+∥x1 − μ1∥2
+
+> Σ−11
+
++
+
+> K
+
+X
+
+> k=2
+
+∥xk − g(xk−1, uk)∥2
+
+> Σ−1
+> u
+
++
+
+> M
+
+X
+
+> m=1
+
+∥zm − h(ℓjm , xkm )∥2
+
+> Σ−1
+> z
+
+(2) where μ1 and Σ1 denote the prior mean and covariance of the initial agent state, zm denotes the m-th measurement observation associated with agent state xkm and landmark 
+
+ℓjm , and M is the total number of measurements. Each term in (2), corresponds to a factor of the Gaussian factor graph representing the statistical model of the SLAM problem [30]. After linearization about the current estimate, the nonlinear model reduces to a linear least-squares problem [1] 
+
+s⋆ = arg min  
+
+> s
+
+∥As − b∥2 (3) where A is a sparse Jacobian matrix encoding all constraints and b is the stacked measurement residual vector. The batch least-squares system is formed by stacking the linearized constraint matrices associated with the prior, motion, and observation factors [5]. The resulting global Jacobian has the following structure A = [ P T GT HT]T. Here, P represents the prior factor, G encodes odometry-based motion constraints between consecutive agent states, and H corresponds to land-mark measurement constraints. Each constraint is weighted according to its measurement uncertainty. The optimal state estimate s⋆ is obtained by solving the linear least-squares problem using either QR factorization or Cholesky decomposition [1] 
+
+ATAs ⋆ = ATb. (4) QR factorization provides improved numerical stability, while Cholesky factorization exploits the symmetric positive-definite structure of the normal equations for computational efficiency. Both approaches yield identical MAP estimates when numer-ical conditioning is adequate [1]. A key observation is that the topology of the factor graph induces the sparsity structure of A. The fact that A has significant sparsity leads to a computation complexity that is reasonable even for SLAM problems with thousands of random variables. Although batch SLAM produces globally consistent es-timates [1], its computational cost grows with deployment length because the entire nonlinear least squares problem must be solved again if a factor, e.g., resulting from a new measurement, is added. This limitation motivates the need for incremental approaches, which can update the track of the agent efficiently without solving a complete batch SLAM problem. Sensor 
+
+> Measurements
+> Probabilistic
+> Data Association
+> Optimization-
+> Based SLAM
+> Multi-
+> Measurement
+> Update
+> Virtual
+> Measurement
+> Generation
+> Trajectory and
+> Landmark
+> Estimates
+> Moment
+> Matching Fig. 1: Flow diagram showing the proposed pipeline for integrating PDA with optimization-based SLAM.
+
+B. Incremental Smoothing and Mapping (iSAM) 
+
+iSAM methods aim to combine the ability to update the entire track of an agent with sequential processing as per-formed by a conventional filter. Both iSAM1 and iSAM2 can be developed based on QR factorization [3], [4] of the Jacobian 
+
+A, i.e., 
+
+A = Q
+
+R
+
+0
+
+
+
+. (5) In (5), the matrix R is an upper triangular matrix known as the square-root information matrix, which satisfies 
+
+RTR = ATA. (6) Some of the sparsity structure of A is preserved in R. The sparsity of R is determined by the factor-graph topology and the chosen variable ordering. Good orderings reduce fill-in and are central to the computational efficiency of square-root SLAM methods. In iSAM1 and iSAM2, the square-root information matrix is updated incrementally by appending new measurement constraints to the system and performing local operations to restore the upper triangular structure [3], [4]. In iSAM1 [3] the upper-triangular structure is restored using the Givens rotations. Givens rotations modify only the affected portions of R. In pure exploration problems with local measurements, the number of Givens rotations per update can remain bounded, leading to approximately constant-time updates. However, loop closures can introduce fill-in in R, making later updates more expensive. For this reason, iSAM1 periodically performs a periodic batch refactor-ization/reordering step in which the accumulated measurement Jacobian is rebuilt and refactorized using batch SLAM. iSAM1 periodically performs a batch reordering and refactorization step. The variable ordering is chosen to reduce fill-in in the triangular factor R, and nonlinear measurement functions can be relinearized during these batch steps. The new, sparse square-root information matrix R is then used as the starting point for subsequent incremental updates [3]. iSAM2 [4] can avoid any periodic batch refactoriza-tion/reordering steps by incrementally reordering variables and selective relinearization of only the variables affected by new measurements. The key concept that enables the iSAM2 method is a graphical model called Bayes tree. The Bayes tree encodes the square-root factorization as a tree of conditional densities. When new factors are added, iSAM2 identifies the affected cliques, removes the affected subtree, combines the new and relinearized factors with orphaned subtrees, and re-eliminates this local portion of the graph. This enables in-cremental variable reordering and fluid relinearization without periodic batch refactorization. III. PDA FOR OPTIMIZATION -B ASED SLAM 
+
+A. Review of PDA for SLAM 
+
+PDA provides a Bayesian framework for state estimation in the presence of DA uncertainty [21], [22]. The PDA approach has been adopted for SLAM within the framework of belief propagation (BP) [11]–[14], but not for optimization-based SLAM with loop-closure capabilities [1]–[5]. We consider a scenario where multiple measurements may be available at each time step, and it is unknown which measurement, if any, corresponds to a given landmark. PDA accounts for this uncertainty by probabilistically weighting all candidate measurements rather than choosing a single hard association. Let us assume that at time k, Gaussian representations of predicted posterior PDFs f (xk, ℓj |z1: k−1) = N (μk,j , Σk,j ),
+
+j = 1 , . . . , J are available. The covariance matrix Σk,j can be computed from the estimate and square-root information ma-trix R provided by optimization-based SLAM using dynamic programming [3], [4]. In addition, a sensor returns a vector of measurements zk = zT
+
+> k, 1
+
+, . . . , zT
+
+> k,m k
+
+T
+
+. Each measurement either originates from a mapped landmark or is a FP. In particular, for landmark j and under hypothesis a(j) 
+
+> k
+
+= m,a landmark-generated measurement is modeled as 
+
+zk,m = h(xk, ℓj ) + nk,m , nk,m ∼ N (0, Σz ). (7) Each landmark is detected with probability pd, and the number of FP measurements follows a Poisson PMF with mean μfp . FP measurements are assumed independent and identically distributed according to ffp (zk,m ) [22]. Because the origin of each measurement is unknown, an association variable is introduced for each landmark. For landmark j at time step k, the discrete association variable is defined as 
+
+a(j) 
+
+> k
+
+=
+
+(
+
+m, if meas. zk,m is generated by landmark j, 
+
+0, if landmark j is not detected .Since it is unknown which measurement corresponds to which landmark, a(j) 
+
+> k
+
+is a random variable. An accurate BP-based approximation [11] of the joint posterior PDF f (xk, ℓj |z1: k) can now be obtained as 
+
+f (xk, ℓj |z1: k) ≈ C(zk)f (xk, ℓj |z1: k−1)
+
+×
+
+> mk
+
+X 
+
+> a(j)
+> k=0
+
+g(xk, ℓj , a (j) 
+
+> k
+
+; zk)κk
+
+ a(j)
+
+> k
+
+
+
+(8) where the function 
+
+g(xk, ℓj , a (j) 
+
+> k
+
+; zk) = 
+
+
+
+pd f (zk,m |xk, ℓj )
+
+μfp ffp (zk,m ) , a (j) 
+
+> k
+
+= m, 
+
+(1 − pd), a(j) 
+
+> k
+
+= 0 ,
+
+(9) represents the measurement model, C(zk) is a constant that only depends on observed measurement zk, and κk(a(j) 
+
+> k
+
+) is a joint-association function that represents the influence of other objects in the environment. The term (1 − pd) in (9) corresponds to the FN hypothesis 
+
+a(j) 
+
+> k
+
+= 0 , where landmark j is not observed at time step k.When a(j) 
+
+> k
+
+= m, the likelihood term based on f (zk,m |xk, ℓj )
+
+favors agent and landmark states that align with measurement 
+
+zk,m . In (8), hypotheses are combined through a weighted sum over all measurements, so measurements that are more consistent with the predicted landmark observation model contribute more strongly [21], [22]. The factor κk(a(j) 
+
+> k
+
+) re-duces the weight of some association hypotheses when several landmarks “compete” for the same measurement [23], [31]– [33]. It can be computed by brute-force marginalization [21], MCMC techniques [24], or loopy BP [23]. Note that we can interpret the expression Pmk  
+
+> a(j)
+> k=0
+
+g(xk, ℓj , a (j) 
+
+> k
+
+; zk)κk
+
+ a(j)
+
+> k
+
+
+
+on the right-hand-side of (8) as a soft-association likelihood function. Following the joint probabilistic data association (JPDA) paradigm [21], [22], a Gaussian representation N (μk,j , Σk,j )
+
+of f (xk, ℓj |z1: k) can be obtained by moment matching. After linearization, the PDA posterior is represented as a Gaussian mixture with m+1 components: one Kalman-updated compo-nent for each candidate measurement and one FN component corresponding to a(j) 
+
+> k
+
+= 0 , for which the predicted Gaussian is retained. The mixture is next reduced to a single Gaussian 
+
+N (μk,j , Σk,j ) with the same mean and covariance matrix by using well-known JPDA update equations [21], [22]. This type of moment-matching approximation is referred to as EP in the graphical models literature [29] . A PDA update, as in (8), is well known to provide robustness in scenarios with FPs and FNs. However, it is not directly amenable to optimization-based SLAM, which expects a likelihood function that can be used within a least-squares objective (2). In the next section, we overcome this challenge by introducing a virtual landmark measurement and a corresponding linear-Gaussian measurement model that leads to the exact same mean μk and covariance matrix Σk of 
+
+f (xk, ℓj |z1: k) as obtained by the soft association and moment matching approach discussed above. 
+
+B. Proposed Virtual Measurement Generation 
+
+Consider the predicted and updated posterior related to the PDA update step discussed in the previous section, i.e., 
+
+f (xk, ℓj |z1: k−1) = N (μk,j , Σk,j ),f (xk, ℓj |z1: k) = N (μk,j , Σk,j ). (10) with Σk,j ≽ Σk,j ≻ 0.Our goal is to construct a virtual measurement model that is linear-Gaussian, i.e., 
+
+yk,j = Hk,j [xT 
+
+> k
+
+, ℓT 
+
+> j
+
+]T + vk,j , vk,j ∼ N (0, I), (11) such that f (xk, ℓj |z1: k−1, yk,j ) = f (xk, ℓj |z1: k), i.e., based on virtual measurement yk,j , we can reproduce the same Gaussian parameters μk,j , Σk,j obtained from the PDA update step as discussed in Section III-A within a least-squares cost function as in (2). To simplify the following derivation, we restrict the additive noise vk,j to be zero-mean and with identity-covariance. We also drop the time index k and the landmark index j to simplify the notation. For a linear-Gaussian virtual measurement to reproduce the updated Gaussian posterior, the parameters of the predicted and posterior PDF must satisfy the Kalman update in infor-mation form for the considered noise model [34], i.e., 
+
+Σ−1 = Σ−1 + HTH,
+
+Σ−1μ = Σ−1 μ + HTy. (12) Next, we introduce the information gain J = Σ−1 − Σ−1
+
+and information vector increment c = Σ−1μ − Σ−1 μ. It can easily be verified that J is positive semidefinite with the same rank as Σk − Σk.Based on (12), constructing the virtual measurement model reduces to finding H and y such that 
+
+J = HTH, c = HTy. (13) Since the information gain J is positive semidefinite it admits an eigenvalue decomposition, i.e., J = U ΛU T, where Λ =diag( λ1, . . . , λ d) with λi ≥ 0. Let r be the rank of J, and Ur
+
+contain the eigenvectors corresponding to eigenvalues λi > 0,i.e., J = Ur Λr U T 
+
+> r
+
+where Λr ∈ Rr×r is diagonal and positive definite. Based on the square root of Λr , i.e., Lr = Λ1/2 
+
+> r
+
+, we can express the information gain as J = ( Lr U T 
+
+> r
+
+)T(Lr U T 
+
+> r
+
+).By comparing this expression with (13), we directly obtain 
+
+H = Lr U T 
+
+> r
+
+∈ Rr×d. Next, we use this expression for H in the second equality in (13) and solve for y. In this way, we obtain the virtual measurement y = L−1 
+
+> r
+
+U T 
+
+> r
+
+c.
+
+It has been verified that if the consistency condition Σ ≽
+
+Σ ≻ 0 is satisfied, we can use the virtual measurement y and corresponding model H in a least-squares cost function (2) and obtain the PDA update μ and Σ up to machine precision. Based on the PDA update step and the virtual measurement model, we can directly establish optimization-based SLAM methods that perform a PDA update step. -200 -150 -100 -50 0 50 100 150 200 -200 -150 -100 -50 050 100 150 200 X-coordinate (m) Y-coordinate (m) (a) -200 -150 -100 -50 0 50 100 150 200 -200 -150 -100 -50 050 100 150 200 X-coordinate (m) Y-coordinate (m) (b) -200 -150 -100 -50 0 50 100 150 200 -200 -150 -100 -50 050 100 150 200 X-coordinate (m) Y-coordinate (m) (c) 
+
+Fig. 2: Comparison of agent state estimation results using different association strategies. The agent follows a repeated figure-eight trajectory. Ground truth is shown in black. Estimated trajectories are shown in green for oracle batch SLAM, blue for DA + iSAM2, and red for PDA + iSAM2. Landmark estimates are shown as dots with uncertainty ellipses. 
+
+IV. N UMERICAL RESULTS 
+
+In the simulations seen in Fig. 2, the agent follows a repeated figure-eight track within a 400 by 400 meter en-vironment that contains 10 randomly distributed landmarks. Landmark observations are limited to a sensing range of 100 meters from the agent and are modeled with additive zero-mean Gaussian noise with a standard deviation of 0.3 m. Velocity measurements are modeled with zero-mean Gaussian noise with a standard deviation of 0.3 m/s. The agent is initially located at the center of the scene and has perfect knowledge of its state. In our numerical validation, we considered both a MATLAB implementation of iSAM1 as well as iSAM2 provided by the GTSAM library [5]. Since both methods lead to identical esti-mation results in the considered linear Gaussian problem, we only report iSAM2 results. In addition to the proposed iSAM2 combined with moment-matching PDA (“PDA + iSAM2”), we also simulate a reference method that performs hard data association (“DA + iSAM2”) using a global nearest-neighbor approach [35]. Here, hard assignment costs are computed as 
+
+− log g xk, ℓj , a (j) 
+
+> k
+
+; zk
+
+, a(j) 
+
+> k
+
+∈ { 0, . . . , m k}. In this way, the parameters pd and μfp are correctly taken into account for hard assignments. It can easily be verified that for pd = 1 these hard assignment costs are equivalent to conventional costs based on the Mahalanobis distance. To evaluate performance in the presence of FPs and FNs, they are incorporated into the measurement process, where the probability of detection is set to pd = 0 .7. False measurements are generated according to a Poisson process with a mean number of FPs of 0.1.The simulation uses a heuristic landmark management pro-cess to control landmark initialization. Landmarks are assigned using an m/n logic [21], [22] with m = 3 and n = 5 . Fig. 2 shows the true and estimated agent states for one simulation run. The observed difference between Fig. 2c when compared to Fig. 2b demonstrates a significant improvement in agent state estimation when applying the PDA within the iSAM framework. In Fig. 3, the mean absolute error is plotted and compared pd = 0 .6       
+
+> λfp = 0 .20
+> pd= 0 .9
+> λfp = 0 .02
+> pd= 0 .8
+> λfp = 0 .05
+> pd= 0 .7
+> λfp = 0 .10
+
+PDA + iSAM2 DA + iSAM2 Batch SLAM (Oracle, no FNs) 0246810 12 14 16 Mean absolute error SLAM Performance Comparison 
+
+Fig. 3: Comparison of mean absolute error for different association strategies for different FP and FN settings, parameterized by the probability of detection pd and mean number of FPs μfp .
+
+across three estimators: PDA + iSAM2, DA + iSAM2, and Batch SLAM (Oracle DA, no FNs). The oracle batch SLAM baseline is an idealized lower-error reference that uses ground-truth associations and all true landmark detections while excluding false positives. The comparison is performed for four (pd, μ fp ) parameter settings, where pd denotes the prob-ability of detection and μfp denotes the mean number of false alarms: (0 .9, 0.02) , (0 .8, 0.05) , (0 .7, 0.10) , and (0 .6, 0.20) .These parameter changes produce increasingly more difficult DA conditions due to more FNs and higher levels of FP measurements. 300 simulation runs were performed. Across all four cases, Batch SLAM with known mea-surement associations and no FNs yields the lowest mean absolute error and remains essentially unchanged across all parameter settings as its associations are not affected by FNs and FPs. When measurement associations are known, the method serves as the lowest error reference for comparison TABLE I: Mean absolute error (in meters) for different (pd, μ fp )
+
+parameter settings. 
+
+(pd, μ fp ) PDA + iSAM2 DA + iSAM2 Batch (Oracle) 
+
+(0 .9, 0.02) 1.182 m 5.643 m 0.536 m 
+
+(0 .8, 0.05) 1.595 m 7.688 m 0.539m 
+
+(0 .7, 0.10) 1.887 m 9.761 m 0.572 m 
+
+(0 .6, 0.20) 2.515 m 11.961 m 0.513 m 
+
+with the other approaches. Under low association uncertainty in Fig. 3, the PDA + iSAM2 and DA + iSAM2 methods are comparable to the Batch SLAM reference method in mean absolute error. However, as pd decreases and μfp increases, the difference in performance between the two DA methods changes significantly. The DA + iSAM2 method becomes less accurate under more difficult measurement conditions, resulting in higher mean absolute errors. On the other hand, the PDA + iSAM2 method shows improved robustness and better accuracy than the DA + iSAM2 method when the parameter conditions become more challenging. In the most challenging setting of (pd, μ fp ) = (0 .6, 0.20) , PDA + iSAM2 achieves a lower mean absolute error of 2.515 m than DA + iSAM2 (11.961 m), while the batch SLAM reference remains at 0.513 m. Table I provides the mean absolute error results for PDA + iSAM2, DA + iSAM2, and batch SLAM methods (Oracle DA, no FNs) under each (pd, μ fp ) setting. V. C ONCLUSION AND FUTURE WORK 
+
+We proposed a probabilistic data association (PDA) ap-proach for optimization-based simultaneous localization and mapping (SLAM) that (i) assigns multiple measurements to landmarks probabilistically, (ii) computes the mean and covari-ance of landmark distributions via moment matching by taking multiple measurement-to-landmark associations into account, and (iii) establishes a virtual landmark measurement and a corresponding linear-Gaussian measurement model that leads to the exact same mean and covariance as the PDA update. The proposed method aims to provide robustness in sce-narios with a significant number of false positives (FPs) and false negatives (FNs) where “hard” data association (DA) is challenged. Numerical results show that the proposed PDA + iSAM2 method exhibits improved robustness and lower mean absolute error than the reference DA + iSAM2 method as the probability of detection decreases and the mean number of false positives increases. In addition, our results show that the PDA + iSAM2 method maintains performance comparable to a batch SLAM reference, which performs perfect “oracle-based” DA with no FNs, in challenging measurement conditions. Future research will evaluate the proposed method on larger and more diverse simulations and extend the framework to more complex SLAM scenarios with nonlinear measurement models and three-dimensional agent motion. Additional work will also study computational tradeoffs and compare the pro-posed approach with other probabilistic and multi-hypothesis DA methods for SLAM. We will also focus on applying the framework to real-world datasets and deployments [36], [37] and assess model robustness under realistic environmental and sensing uncertainty. ACKNOWLEDGMENT 
+
+This work was supported by the National Science Founda-tion (NSF) under CAREER Award No. 2146261. The authors thank Prof. Frank Dellaert for illuminating discussions. REFERENCES [1] F. Dellaert and M. Kaess, “Square root SAM: Simultaneous localization and mapping via square root information smoothing,” Int. J. Robot. Res. ,vol. 25, no. 12, pp. 1181–1203, 2006. [2] S. Thrun and M. Montemerlo, “The graph SLAM algorithm with applications to large-scale mapping of urban structures,” Int. J. Robot. Res. , vol. 25, no. 5-6, pp. 403–429, 2006. [3] M. Kaess, A. Ranganathan, and F. Dellaert, “iSAM: Incremental smooth-ing and mapping,” IEEE Trans. Robot. , vol. 24, no. 6, pp. 1365–1378, 2008. [4] M. Kaess, H. Johannsson, R. Roberts, V. Ila, J. J. Leonard, and F. Dellaert, “iSAM2: Incremental smoothing and mapping using the bayes tree,” Int. J. Robot. Res. , vol. 31, no. 2, pp. 216–235, 2012. [5] F. Dellaert, “Factor graphs and GTSAM: A hands-on introduction,” 
+
+Georgia Institute of Technology, Tech. Rep , vol. 2, no. 4, 2012. [6] C. Cadena, L. Carlone, H. Carrillo, Y. Latif, D. Scaramuzza, J. Neira, I. Reid, and J. J. Leonard, “Past, present, and future of simultaneous localization and mapping: Toward the robust-perception age,” IEEE Trans. Robot. , vol. 32, no. 6, pp. 1309–1332, Dec 2016. [7] S. L. Bowman, N. Atanasov, K. Daniilidis, and G. J. Pappas, “Proba-bilistic data association for semantic SLAM,” in Proc. IEEE Int. Conf. Robot. Autom. , May 2017, pp. 1722–1729. [8] M. Hsiao and M. Kaess, “MH-iSAM2: Multi-hypothesis iSAM using bayes tree and hypo-tree,” in Proc. IEEE ICRA-19 , Montréal, Canada, 2019, pp. 1274–1280. [9] Ebadi et al., “Present and future of SLAM in extreme environments: The DARPA SubT Challenge,” IEEE Trans. Robot. , vol. 40, pp. 936–959, Oct. 2023. [10] L. Carlone, A. Kim, T. Barfoot, D. Cremers, and F. Dellaert, Eds., SLAM Handbook. From Localization and Mapping to Spatial Intelligence .Cambridge University Press, 2026. [11] E. Leitinger, F. Meyer, F. Hlawatsch, K. Witrisal, F. Tufvesson, and M. Z. Win, “A belief propagation algorithm for multipath-based SLAM,” IEEE Trans. Wireless Commun. , vol. 18, no. 12, pp. 5613–5629, Dec. 2019. [12] E. Leitinger, A. Venus, B. Teague, and F. Meyer, “Data fusion for multipath-based SLAM: Combining information from multiple propa-gation paths,” IEEE Trans. Signal Process. , vol. 71, pp. 4011–4028, Sep. 2023. [13] Y. Ge, O. Kaltiokallio, Y. Xia, A. F. García-Fernández, H. Kim, J. Talvitie, M. Valkama, H. Wymeersch, and L. Svensson, “Batch SLAM with PMBM data association sampling and graph-based optimization,” 
+
+IEEE Trans. Signal Process. , vol. 73, pp. 2139–2153, 2025. [14] M. Liang, E. Leitinger, and F. Meyer, “Direct multipath-based SLAM,” 
+
+IEEE Trans. Signal Process. , vol. 73, pp. 2336–2352, Mar. 2025. [15] H. Yang, J. Mangelson, Y. Chang, J. Shi, and L. Carlone, “Robustness to incorrect data association and outliers,” in SLAM Handbook. From Localization and Mapping to Spatial Intelligence , L. Carlone, A. Kim, T. Barfoot, D. Cremers, and F. Dellaert, Eds. Cambridge University Press, 2026. [16] M. A. Fischler and R. C. Bolles, “Random sample consensus: Aparadigm for model fitting with applications to image analysis and automated cartography,” Commun. ACM , vol. 24, no. 6, pp. 381–395, 1981. [17] J. G. Mangelson, D. Dominic, R. M. Eustice, and R. Vasudevan, “Pairwise consistent measurement set maximization for robust multi-robot map merging,” in Proc. IEEE ICRA-18 , 2018, pp. 2916–2923. [18] N. Sünderhauf and P. Protzel, “Switchable constraints for robust pose graph SLAM,” in Proc IEEE IROS-12 , Vilamoura, Portugal, 2012, pp. 1879–1884. [19] P. Agarwal, G. D. Tipaldi, L. Spinello, C. Stachniss, and W. Burgard, “Robust map optimization using dynamic covariance scaling,” in Proc. IEEE ICRA-13 , Karlsruhe, Germany, 2013, pp. 62–69. [20] L. Peng, C. Kümmerle, and R. Vidal, “On the convergence of irls and its variants in outlier-robust estimation,” in Proc. CVPR-23 , Vancouver, Canada, 2023. [21] Y. Bar-Shalom and X.-R. Li, Multitarget-Multisensor Tracking: Princi-ples and Techniques . Storrs, CT: YBS Publishing, 1995. [22] Y. Bar-Shalom, P. K. Willett, and X. Tian, Tracking and Data Fusion: A Handbook of Algorithms . Storrs, CT: Yaakov Bar-Shalom, 2011. [23] F. Meyer, T. Kropfreiter, J. L. Williams, R. Lau, F. Hlawatsch, P. Braca, and M. Z. Win, “Message passing algorithms for scalable multitarget tracking,” Proc. IEEE , vol. 106, no. 2, pp. 221–259, Feb. 2018. [24] F. Dellaert, “Monte carlo EM for data-association and its applications in computer vision,” Sep. 2001. [25] S. J. Davey, “Simultaneous localization and map building using the probabilistic multi-hypothesis tracker,” IEEE Trans. Robot. , vol. 23, no. 2, pp. 271–280, 2007. [26] E. Michael, T. Summers, T. A. Wood, C. Manzie, and I. Shames, “Probabilistic data association for semantic SLAM at scale,” arXiv preprint arXiv:2202.12802 , 2022. [27] M. Jamshidian and R. I. Jennrich, “Standard errors for EM estimation,” 
+
+J. R. Stat. Soc. Ser. B Methodol. , vol. 62, no. 2, pp. 257–270, 01 2002. [28] P. Willett, T. Luginbuhl, and E. Giannopoulos, “MHT tracking for crossing sonar targets,” in Proc. SPIE , pp. 469–480. [29] T. P. Minka, “Divergence measures and message passing,” Microsoft Research, Cambridge, U.K., Tech. Rep. MSR-TR-2005-173, 2005. [30] F. R. Kschischang, B. J. Frey, and H.-A. Loeliger, “Factor graphs and the sum-product algorithm,” IEEE Trans. Inf. Theory , vol. 47, no. 2, pp. 498–519, Feb. 2001. [31] F. Meyer, P. Braca, P. Willett, and F. Hlawatsch, “A scalable algorithm for tracking an unknown number of targets using multiple sensors,” IEEE Trans. Signal Process. , vol. 65, no. 13, pp. 3478–3493, Jul. 2017. [32] F. Meyer and J. L. Williams, “Scalable detection and tracking of geometric extended objects,” IEEE Trans. Signal Process. , vol. 69, pp. 6283–6298, Oct. 2021. [33] J. Jang, F. Meyer, E. R. Snyder, S. M. Wiggins, S. Baumann-Pickering, and J. A. Hildebrand, “Bayesian detection and tracking of odontocetes in 3-d from their echolocation clicks,” J. Acoust. Soc , vol. 153, no. 5, pp. 2690–2705, 2023. [34] Y. Bar-Shalom, T. Kirubarajan, and X.-R. Li, Estimation with Applica-tions to Tracking and Navigation . New York, NY: Wiley, 2002. [35] I. S. Duff and J. Koster, “On algorithms for permuting large entries to the diagonal of a sparse matrix,” SIAM J. Matrix Anal. Appl. , vol. 22, no. 4, pp. 973–996, 2001. [36] K. Nguyen, M. Liang, E. Davenport, and F. Meyer, “AUV flight height detection and filtering from sidescan sonar images,” in Proc. FUSION-25 , Rio de Janeiro, Brasil, 2025. [37] E. Davenport, K. Nguyen, J. Jang, C. Ma, S. Fish, L. Lenain, and F. Meyer, “A landmark-aided navigation approach using side-scan sonar,” IEEE J. Ocean. Eng. , vol. 50, no. 4, pp. 2672–2686, 2025.

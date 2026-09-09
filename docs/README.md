@@ -41,7 +41,7 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-09-08</span>
+      <span class="dpr-home-dashboard-kicker">2026-09-09</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
     <strong class="dpr-home-dashboard-count">共 17 篇</strong>
@@ -51,7 +51,7 @@
     <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
     <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>11</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-09-08 22:26:12 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-09-09 21:53:18 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,9 +62,9 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日17篇论文中精读6篇，重点聚焦跨平台视觉导航与具身智能导航两大方向。</p>
-<p>最值得关注：CanonNav解耦导航行为与相机几何实现跨平台迁移，LightNav-0激发VLM空间智能用于通用导航。</p>
-<p>普通读者可从视觉语言导航与多机器人协作切入，关注如何用共享地图与空间推理提升真实场景适应性。</p>
+<p>今日聚焦17篇论文，精读2篇高分重磅，重点在3D高斯SLAM闭环优化与户外机器人导航。</p>
+<p>最值得看：LightSplat实现实时高保真三维重建与闭环，Obstacle-Aware方法解决障碍环境下的自主覆盖导航。</p>
+<p>建议优先精读这两篇论文，速读可关注NavArena基准与SHIFT表面融合等结合方向。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -76,9 +76,9 @@
     <strong class="dpr-home-dashboard-count">6 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="CanonNav: Disentangling Navigation Behavior from Camera Geometry in Cross-Platform Visual Navigation">CanonNav: Disentangling Navigation Behavior from Camera Geometry in Cross-Platform Visual Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="LightNav-0: Eliciting VLM Spatial Intelligence for Generalist Embodied Navigation">LightNav-0: Eliciting VLM Spatial Intelligence for Generalist Embodied Navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots">Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="LightSplat: Real-Time High-Fidelity 3D Gaussian SLAM with Loop Closure">LightSplat: Real-Time High-Fidelity 3D Gaussian SLAM with Loop Closure</span></li><li><span class="dpr-home-dashboard-paper-title" title="Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots">Obstacle-Aware Autonomous Coverage and Navigation for Outdoor Robots</span></li><li><span class="dpr-home-dashboard-paper-title" title="Moment-Matching Probabilistic Data Association for Optimization-Based SLAM">Moment-Matching Probabilistic Data Association for Optimization-Based SLAM</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>4</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>2</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>5</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>1</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -89,9 +89,9 @@
     <strong class="dpr-home-dashboard-count">11 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="SleepWalking: Privileged Representation Shaping for End-to-End Blind Locomotion in Legged Robots">SleepWalking: Privileged Representation Shaping for End-to-End Blind Locomotion in Legged Robots</span></li><li><span class="dpr-home-dashboard-paper-title" title="Connectivity-Aware Graph Extension for Decentralized Multi-Robot Exploration">Connectivity-Aware Graph Extension for Decentralized Multi-Robot Exploration</span></li><li><span class="dpr-home-dashboard-paper-title" title="Air-Ground Collaborative Vision-and-Language Navigation via Shared Bird&#x27;s-Eye Maps">Air-Ground Collaborative Vision-and-Language Navigation via Shared Bird&#x27;s-Eye Maps</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="NavArena: Automated Construction of Goal-Oriented Navigation Benchmarks from 3D Gaussian Splatting Reconstructions">NavArena: Automated Construction of Goal-Oriented Navigation Benchmarks from 3D Gaussian Splatting Reconstructions</span></li><li><span class="dpr-home-dashboard-paper-title" title="SHIFT: Surface-aware High-speed Integration For TSDFs">SHIFT: Surface-aware High-speed Integration For TSDFs</span></li><li><span class="dpr-home-dashboard-paper-title" title="Human-Aware Target Tracking and Navigation: Fusing Kinematic State Estimation with Structural Map Constraints">Human-Aware Target Tracking and Navigation: Fusing Kinematic State Estimation with Structural Map Constraints</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">robot-nav <strong>6</strong></span><span class="dpr-home-dashboard-tag">d-slam <strong>3</strong></span><span class="dpr-home-dashboard-tag">rl-motion <strong>2</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>6</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>5</strong></span></div>
 </section>
 </div>
 

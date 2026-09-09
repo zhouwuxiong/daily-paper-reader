@@ -1,0 +1,384 @@
+Title: MamMA: A Mamba-Based Pedestrian Trajectory Prediction Algorithm Considering Occupancy Map and Pedestrian Awareness States
+
+URL Source: https://arxiv.org/pdf/2609.08041v1
+
+Published Time: Wed, 09 Sep 2026 03:16:18 GMT
+
+Number of Pages: 7
+
+Markdown Content:
+# MamMA: A Mamba-Based Pedestrian Trajectory Prediction Algorithm Considering Occupancy Map and Pedestrian Awareness States 
+
+Juncen Long, Xiaofeng Jin, Gianluca Bardaro, Simone Mentasti, Matteo Matteucci 
+
+Abstract —Many pedestrian trajectory prediction algorithms have been proposed to improve the safety of navigation for mobile robots working in human-robot coexistence environments. Some pedestrian trajectory prediction algorithms extract information about obstacles near pedestrians from top-down view images to improve the accuracy of trajectory prediction. However, mobile robots typically create local occupancy maps using LiDAR, rather than top-down view images. Meanwhile, the vision sensors on board robots provide egocentric view images, which contain fine-grained behavioral information about the pedestrians near the robot. To better use the information collected by LiDAR and on-board vision sensors, we propose MamMA, a Mamba-based pedestrian trajectory prediction algorithm considering occupancy maps and pedestrian awareness states. MamMA divides the occupancy map by patches and extracts obstacle features from each patch to create map features. Pedestrian awareness states are divided and considered, as some studies show that awareness states affect the perception and speed of pedestrians. Furthermore, a Mamba-based model is proposed to predict the future trajectories of pedestrians based on different types of features. Experiments on the STCrowd, SiT, JRDB, ETH, and UCY datasets show that MamMA achieves better average displacement error and final displacement error than the state-of-the-art algorithms. 
+
+I. INTRODUCTION Many pedestrian trajectory prediction algorithms have been proposed to help mobile robots avoid potential collisions during navigation. Although some algorithms achieve high prediction accuracy, the data required by these algorithms may not match the data collected by sensors equipped on the robots. Most pedestrian trajectory prediction algorithms use datasets with top-down views, such as ETH [1] and UCY [2], to train networks and evaluate performance. To obtain in-formation about the environment for improving performance, some algorithms process top-down view images by semantic segmentation and deep neural networks to obtain features [3], [4]. However, using top-down view images is not realistic for deploying robots in the real world. As shown in Fig. 1, the mobile robot usually obtains egocentric view images with LiDAR data, rather than a top-down view image. Therefore, extracting environment features from LiDAR data can make the algorithm more suitable for real-world navigation. In addition, as shown in Fig. 1, the pedestrians in the egocentric view images are clearer than those in the top-down view images, which allows the algorithm to obtain more information about pedestrians, such as their awareness states. 
+
+The authors are with the Department of Electronics, Information and Bioengineering, Politecnico di Milano, Milan, Italy. Email: {juncen.long; xi-aofeng.jin; gianluca.bardaro; simone.mentasti; matteo.matteucci }@polimi.it. Top-down View Image 
+
+(a) The ETH dataset Egocentric View Image  
+
+> Occupancy Map LiDAR Data
+
+(b) The STCrowd dataset Fig. 1. Different types of pedestrian trajectory datasets. 
+
+(a) Normal Pedestrian  (b) Distracted Pedestrian Fig. 2. The trajectories of pedestrians with different awareness states in the STCrowd dataset. Green circles represent normal states, and red circles represent distracted states. 
+
+As shown in Fig. 2, when using egocentric view images, we can divide pedestrian awareness states into normal and distracted, which can affect their trajectories. In Fig. 2(a), the normal pedestrian always maintains a proper distance from obstacles by modifying its velocity. In contrast, the distracted pedestrian cannot detect obstacles until it is very close to them, then it has to modify velocity in a hurry, as shown in Fig. 2(b). To improve the algorithm’s adaptability to real-world de-ployment and multi-dimensional understanding of pedestrians, we propose MamMA, a Mamba-based pedestrian trajectory prediction algorithm considering occupancy maps and pedes-trian awareness states. MamMA uses the Mamba model [5] to extract features from occupancy maps created by LiDAR data and considers the influence of pedestrians’ awareness states on their trajectories. By using occupancy maps and pedestrian awareness states, MamMA has a better average displace-ment error (ADE) and final displacement error (FDE) than the state-of-the-art (SOTA) algorithms on the public dataset STCrowd [6], SiT [7], JRDB [8], ETH [1] and UCY [2]. The main contributions of this paper are as follows. 1) We propose a Mamba-based scanning method that effi-ciently leverages occupancy maps in pedestrian trajec-tory prediction for extracting environment features. arXiv:2609.08041v1 [cs.CV] 7 Sep 2026 2) We propose an embedding method that effectively inte-grates the information of pedestrian awareness state and position for pedestrian trajectory prediction. 3) We propose a Mamba-based pedestrian trajectory pre-diction network that extracts interaction features and trajectory features of pedestrians in temporal and spatial dimensions, as well as considers the effect of obstacles. II. RELATED WORKS 
+
+A. Spatio-temporal Graph 
+
+The spatio-temporal graph is used by many pedestrian tra-jectory prediction algorithms to describe pedestrian historical trajectories [9]–[11], because it can contain both temporal and spatial information about pedestrian trajectories. In the spatio-temporal graph, each node represents a pedestrian, and the correlations between different pedestrians are shown as edges [12]. The connection between two pedestrians can be represented in many forms, such as the difference of their velocities in Social-STGCNN [13]. After the spatio-temporal graph is constructed, the temporal features and spatial features of the trajectories are extracted from the graph based on different methods, such as convolutional neural networks [14], recurrent neural networks [15], and Transformer models [16]. Our proposed method uses spatio-temporal graphs to de-scribe the historical trajectories and interactions of pedestrians, and extracts features from the graphs based on Mamba models. 
+
+B. Pedestrian Awareness and Trajectory 
+
+Some studies have shown that the perception of pedestrians can be affected in some cases. [17] indicates that the use of mobile phones reduces the perception abilities of pedestrians and reduces their walking speed. [18] shows that pedestrians have increased reaction time and narrower perceptions of sur-roundings when using mobile phones. [19] shows that pedes-trians move significantly slower when using mobile phones. Such increased reaction time, narrowed perceptions and slower speed make significant differences in future trajectories of people with different awareness states, even though they have similar historical trajectories. [20] shows that it is very common for pedestrians to use mobile phones, leading to low awareness states. However, almost all the existing pedestrian trajectory prediction algo-rithms do not consider the effect of pedestrian awareness states on their future trajectories. Our proposed method improves prediction accuracy by considering this effect. 
+
+C. Dataset 
+
+ETH [1] and UCY [2] are widely used in existing pedestrian trajectory prediction algorithms [21]. These datasets annotate the positions of pedestrians from top-down view videos and lack fine-grained information about pedestrians and LiDAR data. In recent years, some multi-modal datasets have been proposed, such as STCrowd [6], SiT [7], and JRDB [8], which provide both LiDAR data and egocentric view images, together with 2D and 3D position annotations of pedestrians. In the STCrowd dataset, the sensors are placed on a static bracket, and in the SiT and JRDB datasets, the sensors are carried by a mobile robot. Some algorithms use convolutional neural networks to ex-tract information from top-down view images [22]. However, few existing algorithms use the information of pedestrian awareness states and occupancy maps, while our proposed approach is able to collect and use this information properly to improve prediction accuracy. III. METHODOLOGY 
+
+A. Problem Formulation 
+
+The information of the pedestrian i at time t is represented as Sit = ( P it , D it), where P it = ( px it, py it) is the position and 
+
+Dit is the awareness state. The historical information Hit0 and ground-truth future position F it0 of pedestrian i at time t0 can be represented as follows: 
+
+Hit0 = Sit0 , S it0−1, . . . , S it0−Tobs +1 (1) 
+
+F it0 =
+
+n
+
+P it0+1 , P it0+2 , . . . , P it0+Tpred 
+
+o
+
+(2) where Tobs and Tpred are the time step numbers of the histor-ical and predicted trajectories, respectively. Suppose there are 
+
+m pedestrians in the scene, then their historical and ground-truth future positions are denoted as H1: mt0 = {H1 
+
+> t0
+
+, ..., H mt0 }
+
+and F 1: mt0 = {F 1 
+
+> t0
+
+, ..., F mt0 }, respectively. For the occupancy map, the positions of occupied cells are represented as a set of points OBS = O1, O 2, . . . , O n , where Oi = ( ox i, oy i)
+
+is the position of the occupied cell i. MamMA inputs the H1: mt0
+
+and OBS , and outputs future trajectory predictions ˆF 1: mt0 .
+
+B. Algorithm Structure 
+
+The model structure of MamMA is shown in Fig. 3, which consists of three modules: the pedestrian encoding module, the map scanning module, and the trajectory prediction module. The pedestrian encoding module is used to properly em-bed the information of pedestrian position and pedestrian awareness state. The map scanning module is used to extract information about obstacles in each patch of the occupancy map. The trajectory prediction module is used to predict the future trajectories of pedestrians based on the features of pedestrian historical trajectories, pedestrian interactions, and occupancy maps, from both temporal and spatial dimensions. 
+
+C. Pedestrian Encoding Module 
+
+In this module, the features of single pedestrian and two-pedestrian interaction are first calculated. For each pedestrian, a fully connected layer is used to embed its feature as follows: 
+
+F p it = [ P it − P it0−Tobs +1 , P it − P it−1, D it], Ep it = ϕep (F p it)
+
+(3) where F p it is the information of the pedestrian i at time t,including its displacement and awareness state, ϕep is a fully connected layer with the PReLU activation function, whose dimensions of layers are [6 , n en ].FC  FC  FC  FC             
+
+> 𝐸𝑜 32,1 𝐸𝑜 32,2 𝐸𝑜 32,3 𝐸𝑜 32,4
+> 2
+> Mamba eo
+> 𝐸𝑜 32
+> E𝑝 11𝐸𝑝 21𝐸𝑝 31
+> Mamba vt
+> 12
+> 34
+> FC FC FC FC
+> 𝐸𝑜 31,1 𝐸𝑜 31,2 𝐸𝑜 31,3 𝐸𝑜 31,4
+> 1
+
+Map Scanning Module  
+
+> 1
+> 𝐹𝑝 11
+> 𝐹𝑝 21
+> 𝐹𝑝 31
+> FC
+> FC
+> FC 𝐸𝑖 11,2
+> 𝐸𝑖 21,2
+> 𝐸𝑖 31,2
+
+Pedestrian Encoding Module                              
+
+> 𝐸𝑝 12𝐸𝑝 22𝐸𝑝 32
+> Mamba vt
+> …
+> Normal Awareness Pedestrian Historical Trajectory
+> Distracted Pedestrian Historical Trajectory
+> Pedestrian Number
+> 1
+> Feature Fusion Operation
+> Concatenation Operation
+> FC MLP Mamba
+> Neural Network
+> 𝐸𝑜 11,1 𝐸𝑖 11,1 𝐸𝑝 12𝑃𝑑 11𝐴𝑡 𝑉𝑡
+> Vector and Matrix
+> Mamba eo
+> 𝐸𝑜 31
+> FC
+> FC
+> FC 𝐸𝑝 11
+> 𝐸𝑝 21
+> 𝐸𝑝 31
+> 12
+> 𝐹𝑖 11,2
+> 𝐹𝑖 21,2
+> 𝐹𝑖 31,2
+> Mamba at
+> Mamba ap
+> 𝐸𝑖 31,1 𝐸𝑖 31,2 𝐸𝑖 31,3 𝐸𝑖 31,4
+> Mamba ap
+> 𝐸𝑖 21,1 𝐸𝑖 21,2 𝐸𝑖 21,3 𝐸𝑖 2
+> 1,4
+> Mamba ap
+> 𝐸𝑖 11,1 𝐸𝑖 11,2 𝐸𝑖 11,3 𝐸𝑖 11,4
+> 𝑉𝑡
+> Mamba at
+> Mamba ap
+> 𝐸𝑖 32,1 𝐸𝑖 32,2 𝐸𝑖 32,3 𝐸𝑖 32,4
+> Mamba ap
+> 𝐸𝑖 22,1 𝐸𝑖 22,2 𝐸𝑖 22,3 𝐸𝑖 2
+> 2,4
+> Mamba ap
+> 𝐸𝑖 12,1 𝐸𝑖 12,2 𝐸𝑖 12,3 𝐸𝑖 12,4
+> …
+
+## …  
+
+> 𝐴𝑡
+> 𝑉𝑖
+> 𝐸𝑜 31
+> 𝐸𝑜 32
+> 𝐸𝑜 33
+> 𝐸𝑜 34
+> Mamba pd
+> 𝑃𝑑 1
+> 1𝑃𝑑 21𝑃𝑑 31
+
+## …𝑃𝑑 12 𝑃𝑑 22 𝑃𝑑 32
+
+Trajectory Prediction Module Fig. 3. MamMA consists of three modules. The map scanning module extracts static obstacle features from the occupancy map. The pedestrian encoding module encodes the awareness state and positions of pedestrians. The trajectory prediction module fuses the features extracted by the other two modules and outputs the trajectory predictions. 
+
+For the interaction of two pedestrians, we first determine their interaction type Iij t based on their awareness states. The pedestrian interaction types include normal state to normal state, normal state to distracted state, and distracted state to all states, and each interaction type has a unique Iij t code. Then, a fully connected layer is used to embed the interac-tion features for each pedestrian pair as follows: 
+
+F i ij t = [ P it − P jt , ∆P it − ∆P jt , I ij t ], Ei ij t = ϕei (F i ij t ) (4) where F i ij t is the interaction feature between pedestrian i and pedestrian j at time t, including the difference in position and velocity and their interaction type, ∆P it = P it − P it−1, ϕei is a fully connected layer with the PReLU activation function, whose dimensions of layers are [7 , n en ].
+
+D. Map Scanning Module 
+
+With the map scanning module, the influence of static obstacles on pedestrian trajectories can be considered. Suppose the map is divided into np patches with an edge length of dp, and up to no obstacles in each patch. For patch 
+
+k, the position set of obstacles in it can be represented as 
+
+OBS k = Ok1 , O k2 , . . . , O kno .We first generate Eo i,k j
+
+t , the influence features of obstacle 
+
+j in patch k to pedestrians i at time t. Two fully connected layers are used to embed the relative positions and velocities of obstacles to the pedestrian, and Eo i,k j
+
+t is calculated by the Hadamard product. The process is shown as follows: 
+
+Eop i,k j
+
+t = ϕeop (P it − Okj ), Eov i,k j
+
+t = ϕeov (∆ P it ) (5) 
+
+Eo i,k j
+
+t = Eop i,k j
+
+t ⊙ Eov i,k j
+
+t (6) where ϕeop and ϕeov are the fully connected layers with the PReLU activation functions, whose dimensions of layers are both [2 , n eo ], ⊙ represents the Hadamard product. Then, we use a fully connected layer to combine the features of all obstacles in patch k to generate the patch feature Eo i,k t .The calculation of Eo i,k t is shown as follows: 
+
+Eo i,k t = ϕeok ([ Eo i,k 1
+
+t , Eo i,k 2
+
+t , . . . , Eo i,k no 
+
+t ]) (7) where ϕeok is the fully connected layer with the PReLU acti-vation function, whose dimensions of layers are [neo ∗no, n en ].Finally, we use a Mamba model to scan all patches of the map and generate Eo it, the map features for pedestrians i at time t. The process is shown as follows: 
+
+Eo it = M am eo (Eo i, (1: np)
+
+t ) (8) where M am eo is a Mamba model with state dimension of 
+
+ns, and Eo i, (1: np)
+
+t represents a feature sequence from Eo i, 1
+
+t
+
+to Eo i,n p
+
+t . The map scanning module generates Eo it0 for all patches with all pedestrians at time t0.
+
+E. Trajectory Prediction Module 
+
+The trajectory prediction module is used to combine the information obtained from the former two modules and output the trajectory prediction. A spatio-temporal graph is first created, which has a node matrix V with dimensions of 
+
+[Tobs , m, n en ] and an adjacency matrix A with dimensions of [Tobs , m, m, n en ]. The assignment rules of V and A are 
+
+Vt,i, : = Ep it and At,i,j, : = Ei ij t .Then, Mamba models are used to extract features from V
+
+and A along both temporal and spatial dimensions. For V ,features are extracted along the temporal dimension. For A,features are extracted using Mamba models along spatial and then temporal dimensions. The process is shown as follows: 
+
+V t t,i, : = M am vt (V1: t,i, :) (9) 
+
+Ap t,i,j, : = M am ap (At,i, 1: j, :) (10) 
+
+At t,i,j, : = M am at (Ap 1: t,i,j, :) (11) where M am vt , M am ap , and M am at are Mamba models with state dimension of ns. V t and At are matrices after feature extraction and have the same dimensions as V and 
+
+A, respectively. Then V i is calculated by fusing the features contained in 
+
+V t and At . V i has the same dimensions as V and considers the influence of other pedestrians and static obstacles. The calculation rule of V i is as follows: 
+
+V i t,i,k = V t t,i,k +
+
+> m
+
+X
+
+> j=1
+> nen
+
+X
+
+> c=1
+
+V t t,j,k · At t,i,j,c (12) After the batch normalization of V i , we concatenate V i 
+
+and Eo it0 as V o , and use a multilayer perceptron (MLP) to process it along the first dimension to obtain the matrix V d 
+
+for decoding. The process is shown as follows: 
+
+V d = ψvd (V o ) (13) where ψvd is a two-layer MLP with PReLU activation func-tions, whose dimensions of layers are [Tobs + 1 , T pred , T pred ].
+
+V o has dimensions of [Tobs + 1 , m, n en ], while V d has dimensions of [Tpred , m, n en ].Finally, a Mamba model and an MLP are used to decode 
+
+V o and output the predicted displacement of pedestrian i at time t. The process is shown as follows: 
+
+P d it = M am pd (V d 1: t,i, :), ∆ ˆP it = ψp(P d it) (14) 
+
+ˆP it = ˆP it−1 + ∆ ˆP it (t = 1 , 2, . . . , T pred ) (15) where M am pd is a Mamba model with state dimension of ns,and ψp is a two-layer MLP with PReLU activation functions, whose dimensions of layers are [nen , n en , 2] . ∆ ˆP it and ˆP it are the displacement and position predictions of pedestrian i at time t, respectively. IV. EXPERIMENTS AND ANALYSIS 
+
+A. Experiment Settings 
+
+We compare MamMA with the following SOTA algo-rithms: DSTIGCN [11] (2025), STIGCN [9] (2024), IMGCN [23] (2024), MRGT [16] (2023), Social-Implicit [21] (2022), SGCN [14] (2021), Social-STGCNN [13] (2020). For the STCrowd [6], SiT [7] and JRDB [8] datasets, as test set labels are not provided, we train all the algorithms on the training set, and evaluate them on the validation set. For the ETH [1] and UCY [2] datasets, we train MamMA on the training set and report the test set results for the weights with the best validation set performance, and we use the weights provided by the authors for the SOTA algorithms. To evaluate the performance of the algorithm in more detail, we further divide the samples into All, Sdis , and Sobs 
+
+for the STCrowd, SiT, and JRDB datasets. The samples of pedestrians who show distracted states during the observation time are denoted as Sdis . The samples whose ground-truth future trajectories F it are less than 1 meter away from the nearest obstacle are denoted as Sobs , which have potential interaction with static obstacles. We annotate the pedestrian awareness states for the STCrowd, SiT, and JRDB datasets. The loss function of MamMA minimizes the average dis-placement error (ADE) between the prediction ˆF 1: mt0 and the ground-truth trajectory F 1: mt0 . ADE and FDE are used as metrics in experiments, whose calculation methods are shown in [13]. Referring to [24], for MamMA and the SOTA algo-rithms, we output 3 trajectories and select the trajectory with the best ADE and FDE to calculate metrics, that is, minADE 3
+
+and minFDE 3. In addition, we calculate the proportion of trajectory predictions that collide with static obstacles among all predictions, denoted as pcoll . pcoll shows the rationality of the algorithm’s predictions, as the ground-truth trajectories do not collide with static obstacles. We use LiDAR data to generate occupancy grid maps with a resolution of 0.1 meters. The length and width of the map are 48 meters and 30 meters, respectively. We set dp = 3 when dividing the patches, so np = 160 . The structural parameters of the network are set as neo = 16 , no = 75 , nen = 64 ,
+
+ns = 64 . The learning rate is set to 0.001, the batch size is set to 8, and the epoch number is set to 120. We use the same observation time and prediction time settings as the SOTA algorithms, that is, 3.2 seconds for observation and 4.8 seconds for prediction. All the datasets annotate the data at a rate of 2.5 FPS, so Tobs = 8 and Tpred = 12 .
+
+B. Quantitative Experiments and Analysis 
+
+As shown in Table I, MamMA has the best minADE 3,minFDE 3, and pcoll for the STCrowd, SiT and JRDB datasets, which shows that MamMA is well adapted to data collected by real-world robots. For the STCrowd dataset, the minADE 3 and minFDE 3 for 
+
+Sdis of the SOTA algorithms except for Social-STGCNN rise by over 0.04 meters and 0.1 meters compared to those for all samples, while those of MamMA rise by only 0.02 meters. TABLE I THE RESULTS FOR THE STC ROWD , S IT AND JRDB DATASETS . BOLD AND UNDERLINE MARK THE BEST AND SECOND -BEST RESULTS , RESPECTIVELY .Dataset STCrowd SiT JRDB Metric minADE 3/minFDE 3 ↓ pcoll ↓ minADE 3/minFDE 3 ↓ pcoll ↓ minADE 3/minFDE 3 ↓ pcoll ↓
+
+Sample All Sdis Sobs All All Sdis Sobs All All Sdis Sobs All Social-STGCNN 0.68/1.18 0.63/1.09 0.80/1.43 4.14% 0.62/1.09 0.85/1.47 0.64/1.14 8.86% 0.87/1.50 1.28/2.40 0.98/1.71 2.49% SGCN 0.38/0.69 0.43/0.81 0.49/0.92 2.49% 0.44/0.81 0.74/1.35 0.47/0.87 5.09% 0.68/1.23 0.94/1.91 0.89/1.52 1.92% Social-Implicit 0.38/0.76 0.42/0.86 0.48/0.99 1.72% 0.44/0.85 0.64/1.20 0.47/0.92 4.66% 0.69/1.35 1.14/2.35 0.83/1.64 1.56% MRGT 0.39/0.77 0.43/0.84 0.49/0.99 2.23% 0.44/0.86 0.64/1.22 0.47/0.92 6.63% 0.68/1.32 1.03/2.12 0.80/1.54 1.63% IMGCN 0.42/0.76 0.48/0.86 0.55/1.02 2.30% 0.45/0.81 0.69/1.25 0.47/0.87 4.68% 0.71/1.28 0.95/1.90 0.89/1.56 2.04% STIGCN 0.39/0.71 0.45/0.86 0.51/0.96 2.25% 0.44/0.82 0.64/1.16 0.46/0.86 4.51% 0.69/1.24 0.95/1.92 0.91/1.55 1.85% DSTIGCN 0.41/0.72 0.47/0.82 0.53/0.97 2.41% 0.42/0.77 0.67/1.23 0.44/0.83 4.22% 0.71/1.26 0.96/1.96 0.83/1.48 1.93% MamMA 0.27 /0.49 0.29 /0.51 0.32 /0.59 0.87% 0.36 /0.68 0.55 /1.05 0.38 /0.74 2.63% 0.55 /1.05 0.76 /1.59 0.66 /1.27 1.03% 
+
+TABLE II THE MODEL PARAMETERS , MODEL SIZE , AND INFERENCE TIME OF THE ALGORITHMS FOR THE STC ROWD DATASET .parameters size inference time Social-STGCNN 7563 44 KB 1.34 ms SGCN 25369 144 KB 3.04 ms Social-Implicit 5836 72 KB 1.22 ms MRGT 4358926 17061 KB 4.45 ms IMGCN 23384 104 KB 3.37 ms STIGCN 27564 125 KB 2.12 ms DSTIGCN 17767 97 KB 7.41 ms MamMA 347333 1390 KB 2.64 ms 
+
+The minADE 3 and minFDE 3 for Sobs of the SOTA algorithms rise by over 0.1 meters and 0.18 meters compared to those for all samples, respectively, while those of MamMA rise by only 0.05 meters and 0.1 meters. For the SiT and JRDB datasets, the performance degradation of MamMA for Sdis and Sobs 
+
+is less than that of the almost SOTA algorithms. The results show that MamMA better considers the effects of obstacles and awareness states on pedestrians than the SOTA algorithms. In addition, the pcoll of MamMA is significantly lower than that of the SOTA algorithms. The pcoll of MamMA is almost less than half of the SOTA algorithms in the STCrowd dataset, and less than two-thirds of the SOTA algorithms in the SiT and JRDB datasets. MamMA’s lower pcoll means the trajectories predicted by MamMA are less likely to hit obstacles. When the ground-truth future trajectory of a pedestrian is close to obstacles, accurately predicting this trajectory becomes difficult because it is more likely to be affected by obstacles. To study the effect of obstacles on the prediction accuracy of the algorithms, we calculated the minADE 3 of the algorithms when the minimum distance between the ground-truth trajectory and obstacles satisfies different conditions. The results are shown in Fig. 4. When the minimum distance between the ground-truth trajectory and obstacles decreases from 3 meters to 0.5 meters, the minADE 3 of MamMA increases by only about 0.04 me-ters, and prediction accuracy decreases by only about 13.5%, which is the smallest decay amount and decay ratio among the algorithms. For SOTA algorithms, even the SGCN, the least affected algorithm, has a minADE 3 increase of about 00.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.2                   
+
+> 0.25
+> 0.3 0.35 0.4 0.45
+> 0.5
+> 0.55 0.6 <3 <2.5 <2 <1.5 <1 <0.75 <0.5 Accuracy Decay Rate minADE3 Minimum distance between the ground-truth trajectory and obstacles SGCN-decay Social-Implicit-decay MRGT-dec IMGCN-decay STIGCN-decay DSTIGCN-decay MamMA-decay SGCN Social-Implicit MRGT IMGCN STIGCN DSTIGCN MamMA
+
+Fig. 4. The minADE 3 and prediction accuracy decay ratio of MamMA and some SOTA algorithms when the minimum distance between the ground-truth trajectory and obstacles satisfies different conditions. “ < 3” denotes the set of all the samples where the minimum distance between the ground-truth trajectory and obstacles is less than 3 meters. 
+
+0.08 meters and an accuracy decay ratio of about 18.3%. The results indicate that the prediction accuracy of MamMA is least affected by obstacles. Table II shows the model parameters, the model size, the average inference time of the algorithms. The inference time is calculated based on RTX 5090 and Ryzen 7 7700. Although MamMA has a relatively large model size, it still has an acceptable inference time compared to the SOTA algorithms. 
+
+C. Qualitative Analysis 
+
+The prediction results of some scenes are shown in Fig. 5. MamMA makes trajectory predictions more accurate and less likely to hit static obstacles by scanning maps with Mamba models. In scenes A, B, and C, some trajectories predicted by the SOTA algorithms collide with static obstacles. MamMA also accurately predicts the future trajectory of pedestrians who interact with other pedestrians. In scene G, when the four pedestrians meet at the intersection, MamMA correctly predicts that pedestrian 1 and pedestrian 2 go straight but pedestrian 3 and pedestrian 4 turn right, while the trajec-tories predicted by SGCN and Social-Implicit collide. Also, in scene H, when the four pedestrians meet head-on, MamMA correctly predicts that pedestrian 3 and pedestrian 4 turn to avoid pedestrian 1 and pedestrian 2, while SGCN and Social-Implicit fail to do that. 1
+
+> 2
+> 1
+> 1
+> 1
+> 2
+> 3
+> 4
+> 1
+> 2
+> 3
+> 4
+> Historical trajectory
+> Ground truth trajectory
+> MamMA prediction
+> SGCN prediction
+> Social-Implicit prediction
+> Target pedestrian
+
+A
+
+B
+
+C
+
+HG
+
+D
+
+> Distracted state
+> 1
+> 2
+> 1
+
+E
+
+F
+
+> 1
+
+Fig. 5. The prediction results of MamMA and some SOTA algorithms. TABLE III THE ABLATION STUDY RESULTS ON STC ROWD . BOLD AND UNDERLINE MARK THE BEST AND SECOND -BEST RESULTS , RESPECTIVELY .Metric minADE 3/minFDE 3 ↓ pcoll ↓
+
+Sample All Sdis Sobs All Mam 0.32/0.61 0.38/0.73 0.39/0.74 1.83% MamM 0.28/0.50 0.31/0.54 0.34/0.62 1.11% MamMA 0.27 /0.49 0.29 /0.51 0.32 /0.59 0.87% 
+
+TABLE IV THE ABLATION STUDY RESULTS ON STC ROWD . BOLD AND UNDERLINE MARK THE BEST AND SECOND -BEST RESULTS , RESPECTIVELY .Metric minADE 3/minFDE 3 ↓ pcoll ↓
+
+Sample All All MamMA w/o M am vt 0.29/0.54 1.15% MamMA w/o M am ap 0.30/0.56 1.19% MamMA w/o M am at 0.31/0.56 1.18% MamMA w/o M am pd 0.30/0.54 1.25% MamMA w/o M am vt , M am pd 0.32/0.59 1.40% MamMA w/o M am ap , M am at 0.51/0.89 1.92% MamMA w/o Mamba 0.88/1.60 3.27% MamMA 0.27 /0.49 0.87% 
+
+MamMA achieves accurate trajectory prediction of dis-tracted pedestrians by encoding the pedestrian awareness. MamMA accurately predicts that the future trajectories of the two distracted pedestrians are closer to each other in scene D, and properly predicts that the future trajectories of distracted pedestrians are closer to static obstacles in scenes E and F. The qualitative analysis indicates that MamMA has a higher prediction accuracy than the SOTA algorithm and can effec-tively take into account the effects of static obstacles and awareness states on the future trajectories of pedestrians. 
+
+TABLE V THE ABLATION STUDY RESULTS ON THE ETH AND UCY DATASETS .
+
+BOLD AND UNDERLINE MARK THE BEST AND SECOND -BEST RESULTS ,
+
+> RESPECTIVELY
+
+.Metric minADE 3/minFDE 3 ↓
+
+Dataset HOTEL UNIV ZARA1 ZARA2 Social-STGCNN 0.60/1.10 0.62/1.18 0.48/0.87 0.43/0.77 SGCN 0.45/0.85 0.49/0.98 0.40/0.78 0.29/0.59 Social-Implicit 0.47/0.89 0.51/1.06 0.41/0.83 0.37/0.70 MRGT 0.41/0.77 0.64/1.25 0.42/0.84 0.39/0.78 IMGCN 0.46/0.83 0.48/0.97 0.41/0.81 0.34/0.66 STIGCN 0.43/0.83 0.52/1.00 0.39/0.76 0.50/0.97 DSTIGCN 0.46/0.91 0.46/0.92 0.36/0.72 0.30/0.60 Mam 0.31 /0.59 0.45 /0.91 0.32 /0.66 0.25 /0.54 
+
+D. Ablation Study 
+
+We first study the effect of using maps and pedestrian awareness states on the performance of MamMA by Table III, where MamM denotes that MamMA only uses occupancy maps, and Mam denotes MamMA without using occupancy maps and pedestrian awareness states. As shown in Table III, MamMA has better performance than the other algorithms due to the use of maps and awareness state information. The minADE 3, minFDE 3 and pcoll of Mam are worse than those of MamM, due to the lack of using maps. Due to the lack of using awareness states, minADE 3 and minFDE 3
+
+for Sdis of MamM are worse than those of MamMA. The results show that using maps and pedestrian awareness states can effectively improve the performance of MamMA. Then, we study the effect of different models in MamMA by Table IV, where MamMA w/o M am vt denotes MamMA without using M am vt , namely let V t t,i, : = Vt,i, :, and MamMA w/o Mamba denotes MamMA without using M am vt , M am ap , M am at and M am pd .As shown in Table IV, when any one of the Mamba models is removed, the minADE 3 and minFDE 3 of MamMA increase by at least 0.02 and 0.05 meters, respectively. The absence of both M am vt and M am pd causes some performance degra-dation of MamMA, and the absence of both M am ap and 
+
+M am at makes the performance of MamMA worse than al-most all the SOTA algorithms. The results indicate the positive impact of Mamba models on the network performance. Further, we compare the performance of algorithms on the ETH and UCY datasets. These datasets do not provide LiDAR data, and pedestrian awareness states are difficult to annotate because pedestrians are not clear enough in the top-down view videos. Therefore, we use Mam rather than MamMA, as MamMA has to use occupancy maps and pedestrian awareness states. Table V shows the prediction performance of the algorithms on the ETH and UCY datasets. Despite the lack of occupancy maps and awareness states, Mam still achieves the best performance in the ETH and UCY datasets, which shows that our method still has good performance even without map and awareness state information. This result is consistent with the results shown in Tables I and III, where Mam performs better than the SOTA algorithms for the STCrowd dataset. V. CONCLUSION In this paper, we propose MamMA, a Mamba-based tra-jectory prediction algorithm that leverages occupancy maps (derived from LiDAR) and pedestrian awareness states (ex-tracted from egocentric images). By utilizing data collected by on-board sensors, MamMA achieves better adaptation to real-world robot deployments and improves prediction accuracy. We propose an encoding method to combine pedestrian trajectory information and pedestrian awareness information, and propose a method that uses the Mamba model to extract information about obstacles from occupancy maps. MamMA uses a Mamba-based model to extract pedestrian trajectory features and interaction features in both temporal and spatial dimensions and predict future trajectories. Experiments on the STCrowd, SiT, JRDB, ETH and UCY datasets show that MamMA has better performance and similar inference time compared to the SOTA algorithms. REFERENCES [1] S. Pellegrini, A. Ess, K. Schindler, and L. Van Gool, “You’ll never walk alone: Modeling social behavior for multi-target tracking,” in 2009 IEEE 12th international conference on computer vision . IEEE, 2009, pp. 261–268. [2] A. Lerner, Y. Chrysanthou, and D. Lischinski, “Crowds by example,” in 
+
+Computer graphics forum , vol. 26, no. 3. Wiley Online Library, 2007, pp. 655–664. [3] W. Xiang, Y. Haoteng, H. Wang, and X. Jin, “Socialcvae: predicting pedestrian trajectory via interaction conditioned latents,” in Proceedings of the AAAI Conference on Artificial Intelligence , vol. 38, no. 6, 2024, pp. 6216–6224. [4] I. Bae, Y.-J. Park, and H.-G. Jeon, “Singulartrajectory: Universal trajec-tory predictor using diffusion model,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , 2024, pp. 17 890–17 901. [5] A. Gu and T. Dao, “Mamba: Linear-time sequence modeling with selective state spaces,” arXiv preprint arXiv:2312.00752 , 2023. [6] P. Cong, X. Zhu, F. Qiao, Y. Ren, X. Peng, Y. Hou, L. Xu, R. Yang, D. Manocha, and Y. Ma, “Stcrowd: A multimodal dataset for pedestrian perception in crowded scenes,” in Proceedings of the IEEE/CVF Con-ference on Computer Vision and Pattern Recognition , 2022, pp. 19 608– 19 617. [7] J. W. Bae, J. Kim, J. Yun, C. Kang, J. Choi, C. Kim, J. Lee, J. Choi, and J. W. Choi, “Sit dataset: socially interactive pedestrian trajectory dataset for social navigation robots,” Advances in Neural Information Processing Systems , vol. 36, 2024. [8] R. Martin-Martin, M. Patel, H. Rezatofighi, A. Shenoi, J. Gwak, E. Frankel, A. Sadeghian, and S. Savarese, “Jrdb: A dataset and benchmark of egocentric robot visual perception of humans in built environments,” IEEE transactions on pattern analysis and machine intelligence , vol. 45, no. 6, pp. 6748–6765, 2021. [9] W. Chen, H. Sang, J. Wang, and Z. Zhao, “Stigcn: spatial–temporal interaction-aware graph convolution network for pedestrian trajectory prediction,” The Journal of Supercomputing , vol. 80, no. 8, pp. 10 695– 10 719, 2024. [10] K. Ke, Z. Li, H. Chen, H. Wang, X. Wei, J. Yang, and X. Tang, “Con-tinuous geodesic self-attention models with gated fusion for trajectory prediction,” in 2024 International Joint Conference on Neural Networks (IJCNN) . IEEE, 2024, pp. 1–7. [11] W. Chen, H. Sang, J. Wang, and Z. Zhao, “Dstigcn: Deformable spatial-temporal interaction graph convolution network for pedestrian trajectory prediction,” IEEE Transactions on Intelligent Transportation Systems ,2025. [12] S. Haddad, M. Wu, H. Wei, and S. K. Lam, “Situation-aware pedes-trian trajectory prediction with spatio-temporal attention model,” arXiv preprint arXiv:1902.05437 , 2019. [13] A. Mohamed, K. Qian, M. Elhoseiny, and C. Claudel, “Social-stgcnn: A social spatio-temporal graph convolutional neural network for human trajectory prediction,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , 2020, pp. 14 424–14 432. [14] L. Shi, L. Wang, C. Long, S. Zhou, M. Zhou, Z. Niu, and G. Hua, “Sgcn: Sparse graph convolution network for pedestrian trajectory prediction,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , 2021, pp. 8994–9003. [15] Z. Huang, R. Li, K. Shin, and K. Driggs-Campbell, “Learning sparse interaction graphs of partially detected pedestrians for trajectory predic-tion,” IEEE Robotics and Automation Letters , vol. 7, no. 2, pp. 1198– 1205, 2021. [16] Y. Peng, G. Zhang, J. Shi, X. Li, and L. Zheng, “Mrgtraj: A novel non-autoregressive approach for human trajectory prediction,” IEEE Transactions on Circuits and Systems for Video Technology , vol. 34, no. 4, pp. 2318–2331, 2023. [17] A. K. Yadav and N. R. Velaga, “A systematic review of observational studies investigating the influence of mobile phone distraction on road crossing behaviour of pedestrians,” Transportation research part F: traffic psychology and behaviour , vol. 91, pp. 236–259, 2022. [18] E. Kim, H. Kim, Y. Kwon, S. Choi, and G. Shin, “Performance of ground-level signal detection when using a phone while walking,” 
+
+Accident Analysis & Prevention , vol. 151, p. 105909, 2021. [19] H. A. Mohammed, “Assessment of distracted pedestrian crossing behav-ior at midblock crosswalks,” IATSS research , vol. 45, no. 4, pp. 584–593, 2021. [20] P. Ning, C. Xie, P. Cheng, L. Li, D. C. Schwebel, Y. Yang, J. He, J. Li, and G. Hu, “Validity across four common street-crossing distraction indicators to predict pedestrian safety,” BMC public health , vol. 24, no. 1, p. 241, 2024. [21] A. Mohamed, D. Zhu, W. Vu, M. Elhoseiny, and C. Claudel, “Social-implicit: Rethinking trajectory prediction evaluation and the effective-ness of implicit maximum likelihood estimation,” in European Confer-ence on Computer Vision . Springer, 2022, pp. 463–479. [22] K. Chen, X. Song, H. Yuan, and X. Ren, “Fully convolutional encoder-decoder with an attention mechanism for practical pedestrian trajectory prediction,” IEEE Transactions on Intelligent Transportation Systems ,vol. 23, no. 11, pp. 20 046–20 060, 2022. [23] W. Chen, H. Sang, J. Wang, and Z. Zhao, “Imgcn: interpretable masked graph convolution network for pedestrian trajectory prediction,” 
+
+Transportmetrica B: Transport Dynamics , vol. 12, no. 1, 2024. [24] P. Kothari, S. Kreiss, and A. Alahi, “Human trajectory forecasting in crowds: A deep learning perspective,” IEEE Transactions on Intelligent Transportation Systems , vol. 23, no. 7, pp. 7386–7400, 2021.

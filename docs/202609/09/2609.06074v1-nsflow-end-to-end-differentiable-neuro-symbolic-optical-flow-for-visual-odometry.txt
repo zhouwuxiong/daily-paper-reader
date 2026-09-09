@@ -1,0 +1,684 @@
+Title: NSFlow: End-to-End Differentiable Neuro-Symbolic Optical Flow for Visual Odometry
+
+URL Source: https://arxiv.org/pdf/2609.06074v1
+
+Published Time: Wed, 09 Sep 2026 00:54:11 GMT
+
+Number of Pages: 14
+
+Markdown Content:
+> 1
+
+# NSFlow: End-to-End Differentiable Neuro-Symbolic Optical Flow for Visual Odometry 
+
+Yicheng Lin, Yuxiu Xu, WenDong Chen, Cong Li, and Bin Han, Senior Member, IEEE 
+
+Abstract —Sparse optical flow provides stable inter-frame cor-respondence, playing a key role in Visual Odometry (VO) and Visual-Inertial Odometry (VIO). Classical optimization-based methods, such as Lucas-Kanade (LK), perform well under small displacements but are sensitive to large motions and illumination changes. Modern regression-based learning methods, while more robust in complex scenes, are often computationally heavy and lack explicit geometric consistency, making them less suitable for efficient VO/VIO front-ends. To bridge this gap, we propose a hybrid neuro-symbolic framework that combines the strengths of both paradigms. Our method uses a Convolutional Neural Network (CNN) to extract robust feature representations, which is fed into a differentiable LK optimizer to estimate optical flow in an end-to-end trainable manner. Through implicit differentiation, gradients are propagated across the iterative solver, enabling joint optimization of feature extraction and flow estimation. The result-ing system integrates seamlessly into existing VO/VIO pipelines and runs in real-time on embedded platforms. Experiments show that our method outperforms conventional optimization-based flow in challenging conditions such as dynamic lighting and low texture, while also achieving higher accuracy and lower latency than purely regression-based alternatives. When deployed in a VIO system, our method demonstrates significant performance improvement, achieving an average error reduction of 42% on challenging datasets while enhancing tracking stability. The code is publicly available. 1
+
+Index Terms —Sparse optical flow, Neuro-Symbolic Learning, Implicit differentiation, Visual odometry, End-to-end learning, Robotic navigation 
+
+I. I NTRODUCTION 
+
+# VISUAL Odometry (VO) and Visual-Inertial Odometry (VIO) are techniques that estimate a device’s or robot’s own movement trajectory in environments where GPS is unavailable. This forms a core capability for autonomous navigation [1], [2]. The accuracy and stability of these systems depend heavily on inter-frame correspondence—the process of matching pixels or features between consecutive images to provide geometric constraints for motion estimation [3], [4]. However, in real-world conditions, factors such as, changing lighting, motion blur, and low-texture areas can severely de-grade the quality of these matches. This leads to accumulated 
+
+This work was supported National Nature Science Foundation of China (52375015) and in part by the Interdisciplinary Research Program of HUST (2024JCYJ037). (Yicheng Lin and Zhuohao Li contributed equally to this work.)(Corresponding author: Bin Han.) Y. Lin, Y. Xu, C. Li, X. Jiao, and B. Han are with the State Key Laboratory of Intelligent Manufacturing Equipment and Technology, School of Mechani-cal Science and Engineering, Huazhong University of Science and Technology, Wuhan 430074, China (e-mail: yichenglin, yuxiuxu, wendongchen, congli, and binhan@hust.edu.cn). 
+
+> 1
+
+Code: https://anonymous.4open.science/status/LET-NET2-Review. 
+
+Fig. 1. A Framework for End-to-End Trained Neuro-Symbolic Optical Flow. In the forward pass, a convolutional network extracts image features for an iteratively optimized LK algorithm to solve optical flow; during backpropagation, gradients through this optimization are computed via the implicit function theorem to enable error propagation and joint training. 
+
+drift in the estimated trajectory and, ultimately, a loss of localization stability [5], [6]. Therefore, achieving robust and reliable inter-frame correspondence under challenging visual conditions remains a key obstacle to the practical deployment of VO/VIO systems. Image correspondence methods are generally categorized into direct and indirect approaches [5], [7]. Direct methods perform image registration by minimizing photometric errors at the pixel level. This approach typically relies on the assump-tions of brightness constancy and the presence of sufficient tex-ture. Indirect methods follow a two-step process: establishing feature correspondences or optical flow first, then leveraging them for geometric optimization. They are typically regarded as more adaptable to diverse and difficult environments as a result [2], [3]. Here, we focus on optical flow, which is based on the principle of video continuity to measure the subtle, sub-pixel displacements of keypoints across frames. This enables robust and continuous pose estimation. Hence, optical flow is a popular choice for correspondence in systems ranging from classics like VINS-Mono [4] and MSCKF [8] to modern learning-based models like DROID [9], [10]. Yet, despite its widespread use, its robustness can be severely compromised by illumination variations, large displacements, and the constraints of real-time computation. Optical flow estimation methods can be broadly catego-rized into optimization-based and regression-based paradigms. Optimization-based methods (e.g., Lucas-Kanade) estimate motion by solving an energy function derived from photo-metric and spatial constraints [11], [12]. This formulation ensures efficiency and geometric consistency, but its reliance on explicit assumptions (e.g., brightness constancy) limits robustness under large motions or illumination changes. In contrast, regression-based methods use deep networks to arXiv:2609.06074v1 [cs.CV] 5 Sep 2026 2
+
+directly predict flow from image pairs. Trained on large datasets, they capture complex motion patterns and show strong robustness to appearance variations [13]–[15]. However, as noted in [9], their outputs often lack explicit geometric consistency, making them less suitable for visual odometry without post-processing. Recent hybrid approaches integrate global optimization (e.g., bundle adjustment) into learning frameworks to enhance geometric consistency [9], [16], [17]. Yet, these iterative refinements incur high computational and memory costs, leaving a critical trade-off among robustness, accuracy, and efficiency—especially for real-time embedded VO/VIO systems. To address this trade-off, we introduce a neuro-symbolic learning framework for end-to-end trainable sparse optical flow, as shown in Fig.1. As introduced in [18], neuro-symbolic learning refers to a category of methods that embed inter-pretable symbolic modules into data-driven models. Our de-sign effectively merges the geometric clarity of optimization-based methods with the adaptive power of data-driven learn-ing. In the forward pass, this synergy is realized by replacing the conventional photometric error with a feature-based ob-jective. A lightweight CNN extracts robust feature maps, and the LK algorithm iteratively minimizes the difference between feature vectors at warped locations to solve for optical flow. To enable gradient flow in the backward pass, we rely on a key property from the forward optimization: once the solver converges to a solution, the gradient there is zero. We then use the implicit function theorem on this optimality condition. This allows us to directly compute how the flow changes with respect to the input CNN features. Consequently, the entire LK optimization becomes differentiable, permitting end-to-end training. Overall, the contributions of this paper include, 1) A neuro-symbolic framework that unites a data-driven CNN feature extractor with an optimization-based differ-entiable LK solver, enabling end-to-end trainable sparse optical flow. 2) A fully differentiable LK layer implemented via im-plicit differentiation, allowing stable gradient propagation through the iterative optimizer. 3) Effective learning from synthetic data only, which achieves robust zero-shot generalization to real-world scenes. 4) Real-time VIO integration that improves odometry accu-racy, reduces tracking failures, and maintains stable per-formance under challenging visual conditions. The rest of the paper is organized as follows. Section II reviews related work in deep learning enhanced visual odometry, learned optical flow for VO/VIO, and differentiable optimization methods. Section III details our proposed method, including the system overview, descriptor-based LK optical flow estimation, backpropagation through the LK solver, and the end-to-end training procedure. Experimental setup, optical flow analysis, comparison with state-of-the-art methods, and integration into a VIO system are presented in Section IV. Finally, Section V concludes the paper . II. RELATED WORK To address the trade-off between robustness, accuracy, and efficiency in image correspondence for VO/VIO, we propose an end-to-end trainable neuro-symbolic learning system for sparse optical flow estimation. Our approach builds upon and relates to three key lines of prior work: (1) deep learning-enhanced visual odometry, (2) learned optical flow for odom-etry, and (3) differentiable optimization methods. 
+
+A. Deep Learning Enhanced Visual Odometry 
+
+The growing availability of both computational power and high-quality image datasets has led to considerable research into learning-based methods for visual odometry [19]. Among these, some replace specific components of the VO pipeline with data-driven modules [20], while others directly regress depth and pose from the network [21]. The first approach effectively utilizes mature VO frameworks and improves ro-bustness. However, simply replacing modules in SLAM with deep learning methods often yields suboptimal results. For instance, [22], [23] point out that integrating SuperPoint [24] and LightGlue [25] with visual odometry does not always lead to improved accuracy. The second approach estimates the optimal outcome in an end-to-end manner, but is often considered to have limited generalization. This observation prompts us to consider a fundamental problem: How can we design an approach that not only harnesses the strengths of end-to-end learning but also generalizes robustly to unseen scenarios? 
+
+A recent finding shows that using learned optical flow as an intermediate representation for pose estimation deliv-ers optimal accuracy and generalization together. DROID-SLAM [9] was the first to integrate bundle adjustment (BA) and optical flow estimation into a single network, iteratively optimizing depth and relative pose. Remarkably, it achieved strong generalization performance even when trained solely in a simulated environment. Subsequently, several state-of-the-art visual odometry systems, such as DPVO [16], TartanVO [17], and MAC-VO [26], have adopted optical flow as an inter-mediate estimation result. Therefore, despite the many deep learning and SLAM combinations, we find that estimating optical flow first and then optimizing pose iteratively is a very promising path. These methods estimate dense flow through network regression, which often lacks geometric consistency. More importantly, their low efficiency limits direct use on robots. 
+
+B. Learned Optical Flow for Visual Odometry 
+
+Optical flow is a key intermediate step in visual odometry. It is commonly divided into two types: optimization-based and regression network-based methods. Optimization-based optical flow works in two steps. First, it defines an objective function based on assumptions like brightness constancy [12]. Then, it solves the equation iteratively to get the flow result. Later methods improve robustness and accuracy by manu-ally designing different objective functions. These methods provides high geometric consistency, making it suitable for direct pose estimation and widely adopted in VO/VIO systems [4], [8], [27]. However, relying on manual objective design, optimization methods adapt poorly to severe lighting and 3−1 ⋅                 
+
+> Differentiable LK layer Encoder Image Pairs
+> GFTT Loss IFT-based Backpropagation
+> Cov 3 ×3Cov 1 ×1LK-based Forward propagation
+> 3
+> shared weight
+> 8816
+> Descriptor Map1 IA IB IA IB PA PAB PB
+> Error Gradient Flow Tensor
+> −1
+> −1()H( )J( )
+> −1/
+> next iteration Multiple checks to decide continuation Diffable Non-diffable Eq. 6 Eq. 5 Descriptor Map2
+> Fig. 2. The pipeline of the proposed method. Images IAand IBare two consecutive frames in a sequence. Sparse keypoints are first detected in IA
+> using the GFTT [30] detector. A shared-weight convolutional network is then used to extract descriptor maps. In the forward flow estimation, a standard LM optimization routine computes the flow from the descriptor maps, where the two orange-colored steps are non-differentiable. For backward propagation, derivatives are calculated by leveraging the optimality condition (where the gradient of the objective w.r.t. flow equals zero). The dashed orange arrows illustrate the corresponding gradient flow. The loss is computed from the error between the estimated optical flow and the ground truth.
+
+viewpoint changes, which holds back the development of VO systems. Regression-based optical flow estimation uses a neural network to directly predict flow results from image pairs, bypassing the need for manually defined objectives. Dense optical flow results are typically obtained directly, unlike sparse optical flow. The model learns complex motion patterns directly from training data, allowing it to handle challenging scenarios where traditional assumptions break down. This leads to strong generalization and greater robustness in prac-tice. FlowNet [13] is the first end-to-end trainable architecture. Building upon this, RAFT [15] introduced a framework that estimates optical flow in two stages: first by building a 4D cost volume to capture pixel-wise correlations, and then by refining the flow through iterative updates. This is an accurate and highly generalizable design, as it follows the fundamental approach of iterative optimization. Subsequent methods like GMA [28] and FlowFormer [29] have advanced performance by leveraging large-scale datasets and attention modules. This enables them to capture richer contextual information, thus improving the robustness and precision of flow estimation. Despite the significant strides of regression-based optical flow in accuracy and robustness, its per-pixel accuracy may be insufficient for direct use in VO without geometric post-processing, as reported in DROID-SLAM [9]. We note that this observation is based on evidence under sparse keypoint tracking protocols and does not imply a general conclusion that all dense neural flow methods are geometrically inconsistent for VO. 
+
+C. Differentiable Optimization 
+
+While implicit learning capabilities have attracted increasing attention, autonomous robotic systems still face significant challenges in achieving interpretable learning. This is es-pecially evident in tasks involving geometric, physical, and logical learning. Overcoming these obstacles and integrating interpretable symbolic learning into data-driven models—a direction known as neuro-symbolic learning—holds strong potential to significantly enhance robotic autonomy [18]. Many studies have attempted to combine traditional iter-ative optimization algorithms with learning-based methods to achieve improved accuracy and generalization. Traditional iterative algorithms are typically non-differentiable because step sizes and iteration counts are determined by heuris-tic rules. Differentiable formulations are generally realized through either unrolled or implicit differentiation. The unrolled differentiation method approximates derivatives by unrolling and truncating the optimization after a fixed number of itera-tions, following the approach used in BA-Net [10], DROID-SLAM [9], and iSLAM [31]. Unlike explicit methods which track the entire optimization path, implicit differentiation uses a key shortcut: at an optimum, the derivative is zero. This allows derivatives to be calculated directly, improving both efficiency and numerical stability. This approach is widely adopted in differentiable optimization libraries such as Theseus [32], [33]. While these methods have enabled many end-to-end neuro-symbolic systems, to our knowledge, a differentiable formulation of the LK method for optical flow estimation has not yet been developed. III. METHOD In this subsection, we systematically describe the proposed end-to-end trainable sparse optical flow method. First, we describe the unified system framework, including the network design and how it couples with the differentiable LK layer to estimate flow jointly. Next, we delve into two key components of the framework: the iterative optimization of optical flow from descriptor maps includes a forward process, along with its corresponding backward pass. Then, we introduce the end-to-end training procedure and the associated loss functions. As a final step, we implement the neuro-symbolic optical flow method within a complete VIO system. 4
+
+A. Overview of the System Architecture 
+
+The proposed system, illustrated in Fig. 2, comprises two parts: a neural component and a symbolic component. The former is a network encoder that extracts image descriptor maps; the latter is a differentiable LK layer that iteratively estimates optical flow from these maps. First, we introduce the network encoder in detail. 
+
+1) Encoder Network: The adopted network encoder uses an identical architecture to LET-Net [34], consisting of two 
+
+3 × 3 and two 1 × 1 convolutional layers. Notably, both methods share the same network structure and are trained on the same dataset (TartanAir [35]), with the only difference being the training paradigm: LET-Net relies on a manually designed descriptor-level loss, whereas our method trains end-to-end through the differentiable LK solver. Comparisons between the two, distributed across Sections IV-B, IV-C, and IV-D, therefore serve as ablation evidence for the effect of differentiable LK training. As shown in Fig. 2, the image feature encoder maps the input image I ∈ RW ×H×3 to a descriptor map of size 
+
+W × H × d. The first two convolutional layers use 3 × 3
+
+kernels and expand the shared feature map to 8 channels. Then, a 1 × 1 convolution is applied to increase the number of channels to 16. Finally, another 1 × 1 convolution is used to reduce the channels of the descriptor map to d. A ReLU activation function [36] is applied after each convolution, and the original image resolution is preserved throughout all convolutional operations. With the descriptor maps available, an optimization-based solver is then used to estimate the optical flow from them. 
+
+2) Descriptor-Based LK Method: To estimate optical flow from descriptor maps D ∈ RW ×H×d, we need to modify the original LK method. Specifically, the classical LK method computes optical flow by minimizing the pixel intensity dif-ference between two frames, i.e., 
+
+u∗ = arg min 
+
+> u
+
+X
+
+> x
+
+∥I2(x + u) − I1(x)∥2, (1) where u ∈ R2 denotes the flow vector, x ∈ R2 is the initial keypoints location. However, in scenarios with dynamic illumination, weak textures, or noise, the brightness constancy assumption often does not hold. Therefore, we modify the ob-jective function to minimize the distance between descriptors of the two frames, i.e., 
+
+u∗ = arg min 
+
+> u
+
+X
+
+> x
+
+∥D2(x + u) − D1(x)∥2, (2) where D1 and D2 are the descriptor maps of the first and second frames, respectively. The detailed steps to solve this optimization problem as well as the computation of its deriva-tives will be described in the following sections. 
+
+B. Forward Pass of the Differentiable LK Layer 
+
+As described in Subsection III-A2, the objective function of the LK solver is modified from minimizing pixel intensity dif-ferences to minimizing the euclidean distance between image descriptors. This constitutes a typical nonlinear optimization problem. Following prior work, we adopt the Levenberg-Marquardt (LM) method for its solution. The LM algorithm iteratively solves nonlinear least-squares problems. A key feature is that it approximates the hessian matrix using only the jacobian (first derivatives), which guides the parameter updates toward the optimum. Accordingly, we first present the computation of the first-order derivatives of the proposed descriptor-based error function, and then describe the LM iterative solution procedure, highlighting the components that are non-differentiable. 
+
+1) First-Order Derivatives of the Descriptor-Based Error Function: First, we define the descriptor difference between the two images as the error function, as follows 
+
+f (x, u) = D2(x + u) − D1(x). (3) To approximate the first-order derivative of the error function, we make a second assumption — that the optical flow δu
+
+between consecutive frames is small, i.e., δu ≈ 0. By applying the Taylor expansion at δu = 0 , we obtain, 
+
+f (x, u + δu) = f (x, u) + f ′
+
+(x, u)δu
+
+= D2(x + u) − D1(x) + ∂D2(x + u)
+
+∂x + u δu,
+
+(4) where ∂D2(x+u) 
+
+> ∂x+u
+
+∈ R2×2 represents the gradient information of the descriptor of image 2 in different directions, that is, 
+
+∂D2(x + u)
+
+∂x + u =
+
+∇Dx 
+
+> 2
+
+(x + u) 00 ∇Dy 
+
+> 2
+
+(x + u)
+
+
+
+≡ J, (5) where ∇Dx 
+
+> 2
+
+represents the derivative of the descriptor map 
+
+D2 in the x-direction, while ∇Dy 
+
+> 2
+
+represents the derivative in the y-direction. 
+
+Algorithm 1 Descriptor-Based LM Optical Flow Algorithm 
+
+Require: Initial parameter u(0) , initial damping λ(0) > 0,tolerance ε, max iterations Kmax , factor ν > 1
+
+Ensure: Estimate u∗ 
+
+> 1:
+
+Define f (u) and S(u) = 12 ∥f (u)∥22. 
+
+> 2:
+
+for k = 0 , 1, . . . , K max − 1 do  
+
+> 3:
+
+Compute J(k) and f (u(k)). 
+
+> 4:
+
+Solve Eq. (6) for δu. 
+
+> 5:
+
+ucand = u(k) + δu. 
+
+> 6:
+
+if S(ucand ) < S (u(k)) then  
+
+> 7:
+
+Accept: u(k+1) = ucand , set λ(k+1) = λ(k)/ν . 
+
+> 8:
+
+else  
+
+> 9:
+
+Reject: u(k+1) = u(k), set λ(k+1) = λ(k) · ν. 
+
+> 10:
+
+end if  
+
+> 11:
+
+if ∥∆u∥2 < ε (1 + ∥u(k)∥2) or ∥J(k)⊤f (u(k))∥∞ < ε 
+
+then  
+
+> 12:
+
+break  
+
+> 13:
+
+end if  
+
+> 14:
+
+end for  
+
+> 15:
+
+return u(k)
+
+2) The Iterative Levenberg-Marquardt Optimization: After obtaining the taylor expansion of the error function, the optimal optical flow can then be solved using the LM method. The standard LM iteration formula is given by 
+
+(H + λI)δu = −J⊤f (x + u), (6) 5
+
+where H = J⊤J ∈ R2×2 is the approximated hessian matrix obtained from the first-order derivatives, and λ is an adjustable damping factor that ensures the positive definiteness of the matrix (H + λI). The classical LM optimization process is illustrated in Algorithm 1, in which two components are non-differentiable. Fig. 2 visualizes the iterative process of the LM algorithm. Different colors distinguish between the differentiable and non-differentiable parts. This provides an intuitive illustration. 1) The iterative process terminates once a predefined conver-gence threshold is reached. This if-else–based termination strategy makes the output non-differentiable with respect to the input. 2) In each iteration, the algorithm updates the damping factor λ based on the current value of the objective function. If a step fails to reduce the objective, λ is increased; otherwise, it is decreased. This if-else decision mechanism likewise introduces non-differentiability. BA-Net [10] was the first to identify the sources of non-differentiability in the optimization process. It addresses the first issue by adopting a fixed number of iterations, terminating regardless of the optimization quality. Moreover, it introduces a neural network–based update for the parameter λ, thereby avoiding the non-differentiable nature of the heuristic update process. Although such modifications can achieve differen-tiability, they introduce issues such as inconsistency between training and inference. We will introduce the implicit differen-tiation method, which requires no modification to the original algorithm. 
+
+C. Backpropagating the Differentiable LK Layer 
+
+Before presenting the proposed method, we first provide a brief introduction to the Implicit Function Theorem to facilitate a better understanding of our approach. 
+
+1) Implicit Function Theorem (IFT): 
+
+Theorem 1 ( [37]) . Consider a continuously differentiable mapping f : Rn+m → Rm, with input (a, b) ∈ Rn × Rm.Suppose there exists a point (a∗, b∗) such that 
+
+f (a∗, b∗) = 0. (7) 
+
+Furthermore, assume that the Jacobian matrix ∂f ∂b (a∗, b∗) is invertible. Then, by the IFT, there exists an open set V ⊂
+
+Rn containing a∗ and a unique continuously differentiable function g(a) : Rn → Rm such that b∗ = g(a∗) and 
+
+f (a′, g (a′)) = 0 , ∀a′ ∈ V. (8) 
+
+Moreover, for all a′ ∈ V , the Implicit Function Theorem states that the Jacobian matrix of g is given by 
+
+∂g ∂a (a′
+
+) = −
+
+ ∂f ∂b (a′
+
+, g (a′
+
+)) 
+
+−1  ∂f ∂a (a′
+
+, g (a′
+
+)) 
+
+
+
+(9) 
+
+.
+
+In practice, the IFT offers a systematic method for com-puting the derivative of an implicitly defined function g(a)
+
+with respect to its input a, even when g cannot be expressed in a closed-form expression. This is done by differentiating the constraint f (a, g (a)) = 0. Solving this yields the jacobian of g. With the jacobian, we can perform sensitivity analysis and gradient-based optimization. This approach is key when explicit formulas are not available. 
+
+2) Computation of Derivatives: This method enables the learning of useful descriptors without a manually defined loss. It works by using the optical flow estimation error as a training signal to directly compute gradients for the descriptors via backpropagation. Therefore, we aim to compute 
+
+∂u
+
+∂D1
+
+∈ RW ×H×d×2P , and ∂u
+
+∂D2
+
+∈ RW ×H×d×2P , (10) where ui is the i-th optical flow estimate obtained as described in Sec. III-B, and D1, D2 are the descriptor maps extracted by the convolutional network from images 1 and 2, respectively. However, as discussed earlier, this process is non-differentiable and cannot be expressed in a closed form. To compute the derivatives above, we first define the objective function 
+
+o(D1, D2, u) = 
+
+> n
+
+X
+
+> i=1
+
+∥D1(xi) − D2(xi + ui)∥2, (11) where xi denotes the coordinate of the i-th keypoint in image 1. Using the LM algorithm described in Sec. III-B, the locally optimal optical flow estimate u∗ 
+
+> i
+
+satisfies 
+
+∂o (D1, D2, u)
+
+∂u u=u∗
+
+= 0 ∈ Rn×2. (12) This is an implicit function expression, which can be defined as f (D1, D2, u). There exists a point (D1, D2, u∗) such that 
+
+f (D1, D2, u∗) = 0, (13) where u∗ is the optical flow result corresponding to the local minimum obtained from D1 and D2. Hence, this function satisfies the IFT and can be differentiated implicitly. Be-fore differentiation, we expand the function for clarity. Let 
+
+f (D1, D2, u) = [ f1, · · · , f P ], where fi ∈ R2 and i ∈ [1 , P ).Thus, the function can be further expanded as 
+
+fi = ∂o (D1, D2, u)
+
+∂ui
+
+= −2( D1(xi) − D2(xi + ui)) ∂D2(xi + ui)
+
+∂ui
+
+, (14) where ∂D2(xi+ui) 
+
+> ∂ui
+
+denotes the derivatives of the learned de-scriptor map with respect to the x and y optical flow directions, i.e., the descriptor gradient information, which can also be represented as ∇D2(xi + ui).After obtaining the explicit expression of f (D1, D2, u), the derivatives can be computed using the IFT. According to the theorem, there exists a continuously differentiable function 
+
+u′
+
+= g(D′
+
+> 1
+
+, D′
+
+> 2
+
+), (15) and the partial derivatives in the neighborhood can be ex-pressed as 
+
+∂u
+
+∂D1
+
+= −
+
+ ∂f ∂u
+
+−1  ∂f ∂D1
+
+
+
+∂u
+
+∂D2
+
+= −
+
+ ∂f ∂u
+
+−1  ∂f ∂D2
+
+, (16) 6
+
+Algorithm 2 End-to-End Training via Implicit Differentiation 
+
+Require: Consecutive frames {(I1, I 2)}, ground truth ugt , descriptor CNN ϕθ , LM solver, optimizer (e.g., Adam), illumination aug-menter A, Harris detector H, perturbation std σ, epochs T , batch size B, keypoints per image P
+
+Ensure: Trained descriptor parameters θ 
+
+> 1:
+
+Define loss L(ˆ u, ugt ) = 1
+
+> P
+
+PPi=1 ρ(∥ˆui − ugt  
+
+> i
+
+∥2) and feature objective o(D1, D2, u) = PPi=1 ∥D1(xi) − D2(xi + ui)∥22. 
+
+> 2:
+
+for t = 1 to T do  
+
+> 3:
+
+for each mini-batch of size B do  
+
+> 4:
+
+Sample B frame pairs (I1, I 2) 
+
+> 5:
+
+Apply illumination perturbation: ( ˜I1, ˜I2) = A(I1, I 2) 
+
+> 6:
+
+Detect Harris keypoints {xi}Pi=1 ← H ( ˜I1) 
+
+> 7:
+
+Compute xgt  
+
+> i
+
+= xi + ugt (xi) 
+
+> 8:
+
+Initialize u(0)  
+
+> i
+
+= ( xgt  
+
+> i
+
+− xi) + εi, with εi ∼ N (0, σ 2I2) 
+
+> 9:
+
+Extract feature map: D1 = ϕθ ( ˜I1), D2 = ϕθ ( ˜I2) 
+
+> 10:
+
+Estimate flow: ˆu ← LM  o(D1, D2, u), u(0)  
+
+> 11:
+
+Compute training loss L = L(ˆ u, ugt ) (mask invalid points) 
+
+Backward: Implicit Differentiation  
+
+> 12:
+
+Form f (D1, D2, ˆu) = ∂o ∂u ˆu, with Jacobian Ju = ∂f ∂u 
+
+> 13:
+
+Compute: ∂ ˆu 
+
+> ∂D1
+
+= −J−1
+
+> u
+
+h ∂f ∂D1
+
+i
+
+, ∂ ˆu 
+
+> ∂D2
+
+= −J−1
+
+> u
+
+h ∂f ∂D2
+
+i 
+
+> 14:
+
+Obtain gradient by chain rule: ∂L 
+
+> ∂θ
+
+= ∂L  
+
+> ∂ˆu
+
+, ∂ ˆu 
+
+> ∂D1
+> ∂D1
+> ∂θ
+
++  
+
+> ∂ˆu
+> ∂D2
+> ∂D2
+> ∂θ
+> 15:
+
+Update parameters: θ ← OptimizerStep (θ, ∇θ L) 
+
+> 16:
+
+end for  
+
+> 17:
+
+end for  
+
+> 18:
+
+return θ
+
+where, since the explicit form of f is known, these derivatives can be analytically solved. 
+
+D. End-to-end learning with Differentiable LK Layer 
+
+The differentiability of the LK layer is what makes end-to-end training possible. This is a key advantage over prior works that depended on manually designed loss functions to indirectly supervise descriptor learning, often leading to sub-optimal performance. End-to-end training directly optimizes all components for the final objective. The proposed training pipeline (Algorithm 2) enables fully differentiable, end-to-end sparse optical flow estimation. It achieves this by integrating LM optimization with implicit differentiation within a unified framework. The overall training flow is shown in Fig. 2. To enhance robustness, we begin by applying illumination perturbations to a pair of consecutive input frames. Harris keypoints are detected in the first frame, and their correspondences in the second are established using either ground-truth optical flow or a known geometric warp. Aimed at refining these matches, we initialize perturbed flows around them and optimize directly in a convolutional feature space using our LM-based solver. The resulting flow estimates then contribute to a robust matching loss. Crucially, for end-to-end learning, gradients are propagated through the entire LM optimization via the implicit function theorem. This allows the descriptor network and the flow solver to be trained jointly, maximizing the consistency and accuracy of the final estimates. Camera(30hz) IMU(30hz) Keypoints Detection Motion BA Pre-integration LK Flow Estimate Camera(30hz) IMU(30hz) Keypoints Detection Motion BA Pre-integration CNN Feature Map LM Optimizer Original Front-End Learnable Front-End   
+
+> Fig. 3. Comparison between the original and the proposed learnable front-end in VINS-Fusion. The original system (top) employs a hand-crafted LK optical flow for feature tracking, while the proposed version (bottom) replaces it with a learnable LM-optimized optical flow module guided by a descriptor network, enabling end-to-end trainability and improved robustness.
+
+E. VIO System with Neuro-Symbolic Optical Flow 
+
+As illustrated in Fig. 3, the proposed neuro-symbolic optical flow is integrated into the VINS-Fusion [4] framework. The original VINS-Fusion [4] pipeline consists of a visual front-end and an optimization-based back-end. In the visual front-end, consecutive image frames are processed to extract and track sparse keypoints using a classical LK optical flow method. These tracked keypoints are then used to estimate camera motion between frames. Simultaneously, the Inertial Measurement Unit (IMU) data are pre-integrated to provide motion priors and temporal constraints. In the back-end, both the visual measurements and the IMU pre-integration results are jointly optimized in a sliding-window pose graph to recover accurate camera poses and generate a local map. Rather than using a manual optical flow tracker, we employ a learnable LK module that works directly on descriptor maps. Given consecutive frames, a neural network first extracts descriptor representations that are robust to illumination and texture variations. The optical flow is then refined by adifferentiable LM optimizer, which uses these descriptor maps to solve a nonlinear least-squares problem, enabling precise flow estimation. The resulting flow fields provide precise inter-frame feature associations that are subsequently fused with IMU pre-integration results in the back-end. This integration enables the VINS-Fusion [4] system to adaptively learn descriptor representations aligned with its op-timization objective, resulting in improved keypoints tracking accuracy, reduced drift, and stronger robustness to illumination and motion variations. IV. E XPERIMENTS 
+
+In this section, we provide a comprehensive description of our experimental study. We first introduce the experimental setup, including the training datasets, implementation details, and evaluation benchmarks. Next, the fundamental properties of optical flow are analyzed. The capability of the proposed method to preserve spatial sparsity while maintaining accuracy under varying motion and illumination is demonstrated. In subsection IV-C, we present a comparative evaluation between 7                                                                                                                       
+
+> TABLE I SUMMARY OF BASELINE METHODS USED IN SECTIONS IV-B, IV-C, AND IV-D.
+> Method Type Training data / Weights Eval. modality Scale Hardware
+> Image-pair methods (Sec. IV-B and IV-C)
+> Harris + LK [12], [30] Handcrafted None (algorithmic) ––CPU SuperPoint [24] Sparse matching Off-the-shelf (MS-COCO + synthetic) ––GPU/CPU ALIKE-T [38] Sparse matching Off-the-shelf (official weights) ––GPU/CPU DISK [39] Sparse matching Off-the-shelf (official weights) ––GPU/CPU XFeat [40] Sparse matching Off-the-shelf (official weights) ––GPU/CPU Key.Net [41] Sparse matching Off-the-shelf (official weights) ––GPU/CPU SFD2 [42] Sparse matching Off-the-shelf (official weights) ––GPU/CPU R2D2 [43] Sparse matching Off-the-shelf (official weights) ––GPU/CPU LightGlue [25] Learned matcher Off-the-shelf (official weights) ––GPU/CPU RAFT [15] Dense flow Off-the-shelf (FlyingChairs + FlyingThings) ––GPU SEA-RAFT [44] Dense flow Off-the-shelf (mixed dataset) ––GPU LET-Net [34] Sparse flow TartanAir (trained from scratch) ––GPU/CPU
+> NSFlow (Ours) Sparse flow TartanAir (trained from scratch) ––GPU/CPU
+> VIO/VO systems (Sec. IV-D)
+> PL-SLAM [45] VIO system None (handcrafted features) Stereo Metric CPU ORB-SLAM3 [46] VIO system None (handcrafted ORB) Stereo-inertial 1Metric CPU Basalt [47] VIO system None (handcrafted KLT) Stereo-inertial Metric CPU OKVIS [48] VIO system None (handcrafted BRISK) Stereo-inertial Metric CPU DROID-SLAM [9] VO system TartanAir (trained from scratch) Stereo (no IMU) Up-to-scale GPU AirSLAM [20] VIO system Off-the-shelf (SuperPoint features) Stereo-inertial Metric GPU VINS [4] VIO system None (handcrafted LK) Stereo-inertial 1Metric CPU LET-VINS [34] VIO system TartanAir (desc.-level loss) Stereo-inertial 1Metric GPU/CPU
+> Ours (VIO) VIO system TartanAir (end-to-end diff. LK) Stereo-inertial 1Metric GPU/CPU
+> 1Monocular-inertial on the AQUALOC benchmark (Table VI).
+> Hardware : GPU: NVIDIA RTX 3080; CPU: AMD R7 5800H.
+> Failure rule : No method-specific failure handling is applied; a trajectory that diverges or loses tracking is reported as “F” (failure). The loop closure module is disabled for all methods in Tables V–VI to ensure a fair comparison of front-end tracking quality.
+
+our proposed sparse optical flow approach and several state-of-the-art (SOTA) methods, highlighting its superior perfor-mance in both precision and computational efficiency. Finally, subsection IV-D details the integration of our neuro-symbolic flow module into the VINS-Fusion [4] framework, showing consistent improvements in pose estimation accuracy and robustness. 
+
+A. Experimental Setup 
+
+Before presenting the experimental results, we provide a unified description of the experimental settings. These settings remain consistent across all subsequent experiments to avoid repetitive explanations. They mainly include an introduction to the training data, details and parameters of the network training, descriptions of the datasets used for inter-frame relative pose estimation, the datasets and hardware used in the odometry experiments, as well as information about the computing devices employed. 
+
+1) Training data: We adopt the TartanAir dataset [35] for training our sparse optical flow network. TartanAir is a large-scale, photo-realistic dataset generated using the AirSim simu-lation platform, providing diverse indoor and outdoor environ-ments with ground-truth depth, optical flow, and camera pose information. The dataset features varied lighting conditions, weather effects, and motion patterns, enabling our network to learn robust representations against illumination changes and texture ambiguities. For fair comparison, the training data, evaluation modality, scale handling, and hardware of all baseline methods used in Sections IV-B, IV-C, and IV-D are summarized in the new Table I. 
+
+2) Training details: The proposed network is implemented in PyTorch and trained on the TartanAir dataset using color image pairs of resolution 640 × 480 . Each batch contains 1 sample, and up to 200 salient keypoints are detected per image based on corner strength. The differentiable LK layer is unrolled for up to 50 iterations within a window size of 11 ×11 .The model was trained on an NVIDIA RTX 4090 GPU for approximately 1 day to obtain the final network weights. Optimization is performed using the Adam optimizer with a learning rate of 1 × 10 −3 for 1000 epochs. The model with the lowest training loss is saved as the final checkpoint for subsequent evaluations. 
+
+3) Evaluation Datasets: For evaluation of both inter-frame correspondence and odometry performance, we employ adiverse set of six publicly available benchmarks covering different scenes and motion/illumination regimes. 
+
+Optical flow evaluation:  
+
+> •
+
+HPatches [49] – The Homography-Patches dataset com-prises 116 image sequences of 6 frames each, with controlled illumination changes (57 sequences) and view-point changes (59 sequences). It provides ground-truth homographies for matching and descriptor benchmarking.  
+
+> •
+
+TartanAir [35] – A large-scale, photo-realistic synthetic dataset collected in Unreal Engine environments, provid-ing RGB (and other modalities) image sequences with ground-truth poses, depths, optical flow and challenging lighting, weather and motion patterns. 8a. Original LK Method b. LET-Net b. Ours   
+
+> Fig. 4. Comparison of trackable regions among different methods. Red areas indicate regions that are easy to track, while blue areas denote low-texture or ambiguous regions that are difficult to track. Compared with the Original LK Method (a) and LET-Net (b), our approach (c) produces a broader and more consistent distribution of trackable regions, demonstrating stronger robustness under varying illumination and surface texture conditions.
+
+Odometry / visual-inertial benchmark datasets: 
+
+1) EuRoC MAV [50] – A visual-inertial dataset recorded from a micro aerial vehicle in indoor environments, containing synchronized stereo images, IMU data and accurate ground-truth trajectories across sequences of varying difficulty. 2) KITTI Odometry [51] – A real-world automotive dataset recorded in urban and rural driving environments, with stereo images, LiDAR/IMU/GPS sensors and ground-truth poses for odometry benchmarking. 3) UMA-VI [52] – A handheld visual-inertial dataset cap-tured in indoor/outdoor mixed scenarios with challenging lighting and low-texture conditions, over 80 minutes of data, suitable for VIO algorithm evaluation. 4) AQUALOC [53] – An underwater visual-inertial-pressure dataset for localization near the seabed, recorded with a monocular camera, IMU and pressure sensor in harbor and deep-water archaeological sites – extending evaluation to extreme environments. By covering synthetic and real domains, aerial and ground vehicles, high-texture and low-texture scenes, and even under-water settings, this collection allows us to comprehensively assess the robustness, generalization and domain transfer ca-pability of our proposed method. 
+
+B. Analysis of Optical Flow Properties 
+
+Since the proposed method builds upon the traditional LK optical flow by incorporating end-to-end learning, a natural question arises: why does this combination lead to better performance, and how does it achieve such improvement? To address this, we first conduct an in-depth analysis of several fundamental properties of the proposed optical flow method. 
+
+1) Trackability Analysis: We evaluate the trackability of different algorithms by measuring the size of easily trackable regions within an image. Specifically, all pixels are selected as keypoints, and random perturbations of 15 pixels are added to their positions. The proposed optical flow algorithm is then used to recover the true correspondences from these noisy                                      
+
+> TABLE II MEDIAN PROPORTION (%) OF TRACKABLE REGIONS UNDER DIFFERENT PIXEL ERROR THRESHOLDS . E ACH CELL SHOWS THE RESULTS FOR <1PX
+> /<2PX /<3PX .Seq. Trackable Regions @1/@2/@3 ↑
+> LK Method LET-Net [34] Ours MH000 0.02 / 0.05 / 0.08 6.78 / 8.31 / 8.69 19.90 / 24.48 / 27.12
+> MH001 0.35 / 0.79 / 1.03 13.70 / 17.43 / 18.48 13.29 / 17.76 / 20.41
+> MH002 0.01 / 0.02 / 0.02 10.79 / 12.38 / 12.64 17.08 / 20.03 / 22.04
+> MH003 0.12 / 0.21 / 0.25 10.93 / 13.10 / 13.58 26.11 / 31.04 / 33.90
+> MH004 0.02 / 0.09 / 0.13 2.60 / 3.65 / 3.95 3.55 / 4.75 / 5.51
+> MH005 0.83 / 1.40 / 1.58 8.17 / 11.95 / 12.71 11.89 / 15.81 / 17.91
+> MH006 0.04 / 0.12 / 0.17 11.05 / 13.33 / 13.89 25.17 / 29.78 / 32.69
+> MH007 0.09 / 0.19 / 0.26 14.81 / 17.34 / 18.00 24.72 / 29.82 / 32.72
+
+initializations. If the correct correspondence can be accurately recovered, the location is considered trackable; otherwise, it is regarded as non-trackable. Eight test sequences from the TartanAir dataset are used for this experiment, which are different from those employed during training. This analysis evaluates the spatial distribution and robust-ness of trackable regions generated by different optical flow methods. We measure the proportion of pixels whose tracking errors remain below specific thresholds (e.g., <1, <2, <3pixels), reflecting how well each algorithm maintains stable feature correspondences under varying texture and illumina-tion conditions. As shown in Fig. 4 and Table II, our learnable LK approach produces a broader and more consistent range of trackable regions, especially in low-texture or partially il-luminated areas. This indicates stronger feature discrimination and better local convergence behavior compared to classical LK and descriptor-based methods. A deeper question concerns why the proposed method performs better and how the network collaborates with the optimization algorithm to estimate optical flow. To explore the possible reasons, we rescale the network outputs to the range of 0–255 and visualize them as RGB images, as shown in Fig. 5. From the visualization, it can be observed that the network primarily performs three tasks: 1) extracting edge information, including both intensity and orientation; 2) enhancing weakly textured regions; 3) gradually propagating edge cues to surrounding areas, which likely improves convergence under large viewpoint changes. These functionalities are automatically learned through end-to-end training rather than manually designed, thereby enhancing the robustness of optical flow estimation under varying illu-mination, weak textures, and large perspective variations. 
+
+2) Convergence Behavior Analysis: Our end-to-end train-ing approach means that the proposed network not only extracts illumination-robust features such as edge information but is also optimized specifically for the LK iterative optical flow process. Therefore, for the same optical flow estimation, our method is expected to achieve faster convergence and smaller error. To verify this, we conducted experiments on the TartanAir test dataset, setting the initial optical flow error to 5 pixels. 9a. Original Image b. Ours              
+
+> Raw Image Raw Image Descriptor Descriptor
+> Weak Texture Enhancement Gradient Information Diffusion
+> Fig. 5. Descriptor map visualization . The top two images are the original images, and the bottom two are the descriptor maps, corresponding to an indoor scene and an underwater weak-texture environment. From the magnified regions, it can be observed that the proposed method enhances the nearly textureless areas of the original images, strengthens the image gradient information, and propagates these gradients to the surrounding regions.
+
+020406080100012345 8890929496981000.00.30.60.9 Error (pixel)Iteration Error (pixel)Iteration  Ours LK Method LET-NET   
+
+> Fig. 6. Optical flow error curves over iterations. The plot compares the convergence behavior of different methods (LK Method [12], LET-NET [34], and Ours). The proposed method achieves faster error reduction and lower final error, demonstrating better stability and accuracy during iterative refinement.
+
+As shown in Fig. 6, the convergence behavior of the proposed method is compared with the traditional LK [12] Method and the LET-NET [34] model. Our method achieves faster error reduction and reaches a lower steady-state error compared to the other two. In the experiments, we found that the proposed method actively enhances weak-texture regions and propagates gradient information to their surrounding areas. This not only facilitates better optimization during the iterative process but also significantly reduces tracking errors in low-texture regions. As a result, both the convergence speed and accuracy are improved simultaneously. 
+
+3) Inference Efficiency Analysis: The proposed sparse op-tical flow model is highly lightweight and can be efficiently deployed on mobile CPU or GPU devices. As shown in Table III, the proposed method achieves the best inference efficiency among all compared networks. With only 1.01 ×
+
+10 −3M parameters and 0.27 GFLOPs, it is much lighter than existing methods such as SuperPoint [24] and XFeat [40]. The “Net forward” columns report the time from image input to descriptor output. The “LK optimizer” columns report the subsequent LK optimization step: 30 iterations per pyramid                                   
+
+> TABLE III INFERENCE EFFICIENCY COMPARISON
+> Method Params (M) GFLOPs Net forward (ms) LK optimizer GPU CPU Iters ms
+> SuperPoint [24] 22.23 1.30 8.22 114.72 ––ALIKE-T [38] 1.82 0.83 49.95 94.81 ––DISK [39] 98.97 1.09 116.36 589.78 ––XFeat [40] 1.10 0.64 4.26 11.17 ––Ours 1.01e-3 0.27 0.84 5.21 30 0.4
+
+level, adding 0.4 ms on CPU (measured with 141 keypoints), which constitutes about 10% of the total runtime. During training, the differentiable LM solver is unrolled for up to 50 iterations. These results demonstrate that our method can run in real time even on low-power devices. Classical end-to-end optical flow methods are typically composed of an encoder and an iterative refinement module, making their computational efficiency highly dependent on the image matching difficulty. This paradigm differs signifi-cantly from our proposed approach; hence, a direct efficiency comparison is not meaningful. For an intuitive reference, we take the classical RAFT [15] model as an example — it contains tens of millions of parameters and requires over 10 GFLOPs per frame. In contrast, our method is extremely lightweight, with minimal computational cost and memory footprint, making it highly efficient and easy to deploy on various devices. 
+
+C. Comparison with State-of-the-Art Methods 
+
+To further assess the advantages of the proposed image matching method in terms of accuracy and efficiency, com-parisons are made with existing state-of-the-art learning-based optical flow, handcrafted optical flow, and learned sparse matching methods. Specifically, we first compare the classical image matching methods commonly used in SLAM on the HPatches [49] dataset, demonstrating the robustness of the pro-posed method to changes in viewpoint and illumination. Then, the fundamental matrix estimation error is used to compare the latest learning-based optical flow and learned sparse matching methods on the test sequences of the TartanAir [35] dataset. Finally, to visually demonstrate the advantages of the proposed method in VO applications, a very simple visualization result is presented. 
+
+1) Tracking Error: In this experiment, we compared the robustness of common image matching methods in classical VO systems to changes in viewpoint and illumination. In the experiment, 1000 keypoints were first extracted from the first frame with a NMS size of 6. Then, the reference positions of the keypoints in the second frame were calculated using the ground-truth homography matrix provided by the dataset. Both the ALIKE [38] and SuperPoint [24] methods extracted learned descriptors and computed the matching relationship between the two frames using brute-force matching, while the classic Harris [30] keypoints used LK optical flow to obtain the matching relationship. Note that SuperPoint is evaluated using its official off-the-shelf weights (pretrained on MS-10                                                                                                                                                                                                                                                                      
+
+> TABLE IV EVALUATION RESULTS OF FEATURE MATCHING ON THE TARTAN AIR TEST SEQUENCES . R ED AND GREEN INDICATE THE BEST AND SECOND -BEST RESULTS ,RESPECTIVELY .%Inlier ↑Error ↓
+> H00 H01 H02 H03 H04 H05 H06 H07 H00 H01 H02 H03 H04 H05 H06 H07 RAFT [15] 23.3 17.9 17.1 12.1 11.9 20.2 15.7 22.3 12.02 15.48 16.29 25.81 31.46 15.33 28.17 15.82 SEA-RAFT(M) [44] 20.6 16.0 14.8 10.7 12.4 17.3 17.4 22.1 15.30 16.28 19.55 19.89 19.99 21.16 16.46 14.22 SEA-RAFT(S) [44] 21.1 16.0 16.9 11.9 11.4 20.5 17.8 22.9 14.45 16.19 16.06 17.81 22.13 16.63 16.21 12.71 Key.Net(MS) [41] 25.5 20.0 23.4 16.8 14.6 26.8 20.0 25.3 10.14 11.74 9.47 13.71 23.19 7.89 12.62 10.52 ALIKE-T [38] 25.3 22.6 24.0 16.5 14.9 26.3 19.6 25.6 9.58 10.94 9.33 13.95 21.23 7.90 12.90 10.47 SuperPoint [24] 26.1 20.3 23.6 17.5 14.1 26.7 20.2 25.4 9.36 11.50 9.35 13.41 21.93 8.00 12.53 10.49 DISK [39] 29.4 27.6 24.5 21.1 14.8 28.4 20.0 26.8 9.66 9.01 9.23 12.14 19.72 7.18 12.59 9.49 XFeat [40] 25.8 21.0 23.4 16.1 14.4 26.5 19.3 25.4 9.59 11.85 9.77 14.33 21.8 7.89 13.42 10.82 SFD2 [42] 26.7 21.6 24.1 17.3 15.4 26.6 20.0 25.5 9.92 11.10 9.18 13.38 20.91 7.83 12.54 10.42 R2D2 [43] 27.2 21.1 23.3 17.1 14.8 27.2 20.2 26.8 9.21 11.10 9.53 13.19 21.61 7.84 12.60 9.48 DISK [39]+LightGlue [25] 29.2 26.5 21.9 21.9 12.9 27.2 18.6 18.6 9.19 9.74 11.73 11.15 22.21 8.64 16.34 16.34 SuperPoint [24]+LightGlue [25] 23.8 17.3 18.9 13.3 12.7 19.4 17.5 23.3 10.84 15.98 12.85 17.82 21.75 16.66 18.15 12.61 Harris [30] + LK [12] 26.9 21.2 23.8 16.8 14.9 27.3 19.5 25.3 9.58 11.38 9.80 13.61 21.65 7.78 12.84 10.62 LET-NET [34] 28.1 21.6 26.7 20.1 16.8 28.2 21.9 27.9 8.71 11.00 7.95 10.65 14.65 7.18 10.15 9.21 Ours 28.9 23.0 27.4 21.2 18.2 27.9 23.0 28.4 8.17 9.51 7.75 9.72 12.00 7.39 9.19 8.82 AllIlluminationViewpoint02040Track Error (pix)  ALIKE Harris SuperPoint LET-Net Ours
+> Fig. 7. Boxplot of optical flow tracking matching results. The validation was carried out in illumination, viewpoint, and all images, respectively, based on the HPatches [49] dataset. The smaller tracking error means that the proposed features are easier to track. The proposed method achieves lower error results in both illumination and viewpoint varying datasets.
+
+COCO and synthetic shapes without TartanAir fine-tuning), while LET-Net and the proposed method are both trained on TartanAir. The error statistics obtained by calculating the absolute matching errors of all keypoints are shown in Fig. 7. The experimental results indicate that our method performs slightly better than LET-NET [34] and clearly outperforms other methods, whether in image pairs with viewpoint changes or illumination changes. This is because both LET-NET [34] and our method use the same combination of learning and symbolic approaches. Additionally, the HPatches dataset con-sists of texture-rich and clear data, making it difficult to clearly show the differences between the two methods. 
+
+2) Fundamental Matrix Error: Optical flow tracking error is the most intuitive measure, yet it is not entirely accurate, as the goal of this paper is applications such as visual odometry. A simpler approach is to evaluate the performance of the pro-posed method through the accuracy of the fundamental matrix estimation between consecutive frames. Therefore, we used test sequences from the TartanAir [35] dataset to compare the accuracy of the latest optical flow estimation methods, sparse image matching, and other approaches in the fundamental matrix estimation task. In the experiment, two adjacent frames of the image se-quence are considered as a pair. A maximum of 1000 keypoints are extracted from the previous frame, with NMS set to 6. For dense optical flow estimation algorithms such as RAFT [15] and SEA-RAFT [44], we used the classic Harris [30] keypoints for a unified evaluation. Importantly, the evaluation protocol is not Harris-only for all methods. Sparse matching methods that natively provide their own keypoint detection (e.g., SuperPoint, ALIKE, DISK) are evaluated using their respective keypoints and brute-force matching. Only dense optical flow methods (RAFT, SEA-RAFT) rely on Harris keypoints, as they produce dense flow outputs without native sparse point selection. For image matching methods based on descriptor matching, we also used brute-force matching to obtain the association results between the two frames. Additionally, some of the latest graph convolution network-based methods, such as LightGlue [25], are capable of directly obtaining the matching results. Since directly calculating the error between the fundamental matrices is challenging, the inlier rate of keypoints and the average distance of features to the epipolar line are used to represent the fundamental matrix error, as referenced in [54]. The keypoints in the first frame of the image are projected onto the second image using the fundamental matrix, which results in a straight line, called the epipolar line. According to the geometric projection relationship, the correctly tracked positions in the second frame will lie on this epipolar line. Therefore, keypoints whose vertical distance to the epipolar line is less than a threshold are called inliers. The percentage of inliers among all keypoints in the first frame is referred to as the inlier rate. Additionally, the mean of all the vertical distances between inliers and the epipolar line is calculated as the fundamental matrix error. Table IV shows the inlier rate and error results, including a variety of the latest image matching methods. Among them, SEA-RAFT [44] and RAFT [15] represent the latest methods 11 # 0 # 0 # 0 # 60 # 60 # 60 # 60 # 60 # 60 Ours Ours Ours SEA_RAFT SEA_RAFT SEA_RAFT   
+
+> Fig. 8. Schematic diagram of the position change of sparse keypoints in continuous tracking. The middle image shows the initial keypoint positions. The left and right images respectively display the keypoint positions after 60 consecutive tracking iterations using our method and the latest optical flow regression estimation algorithm, SEA RAFT [44]. The sparse keypoints estimated by SEA RAFT [44] exhibit noticeable drift (as shown in the zoomed-in images). In contrast, the proposed method maintains keypoint accuracy even after 60 tracking iterations.
+
+that directly obtain dense optical flow results through the network. Both of these methods show significantly lower inlier counts and higher errors compared to the proposed method. We believe that the difficulty of optical flow estimation between consecutive frames is lower, and our method achieves higher accuracy in such cases. We will elaborate on this point further in the next experiment. Additionally, methods like ALIKE [38], SuperPoint [24], and DISK [39] represent approaches that use learning-based keypoint and descriptor matching trained in different ways. These methods perform well on certain sequences but are outperformed by the proposed method on most sequences. We believe this is because they typically do not account for the continuity between images and rely solely on descriptor matching. Learning-based keypoint methods and LightGlue [25] represent the current state-of-the-art image matching methods, which have been tried in VO systems. However, they do not significantly improve the fundamental matrix results. They are better suited for solving large baseline image matching problems in 3D reconstruction and do not improve estimation accuracy in small baseline images. Therefore, the proposed method performs better in the fundamental matrix estimation task across the majority of sequences between consecutive frames and significantly out-performs non-end-to-end methods with similar ideas (such as LET-NET [34]). 
+
+3) Visualization Experiment: End-to-end learned dense op-tical flow often uses larger training datasets and more com-putational resources. However, it performs poorly in our experiments, which may seem puzzling. To address this, we aim to demonstrate the key advantage of the proposed sparse optical flow through a simple and intuitive small experiment. We believe that regression-based optical flow estimation methods like RAFT [15] are well-suited for handling difficult flow estimation tasks but may struggle with simpler tasks, where optimization-based methods like LK perform better. On the other hand, end-to-end dense methods aim to obtain an optical flow field that minimizes the global error for the entire image. However, the per-pixel accuracy of such methods is often insufficient. It is precisely this pixel-level accuracy that is of greater concern for VO tasks. To test this, we conducted a small experiment using the real EuRoC [50] dataset, randomly selecting 60 consecutive frames. In the first frame, 20 keypoints were extracted as the initial positions. Then, the optical flow between each pair of frames was estimated step by step, transferring the keypoints from the first frame to the last (the 60th frame). This process simulates a real VO scenario and amplifies the optical flow tracking errors through cumulative mistakes, making them easier to observe. As shown in Fig. 8, we visually present the cumulative op-tical flow error results. The three enlarged boxes in the figure show a comparison between our method and SEA RAFT [44]. It can be observed that the proposed method, which combines end to end learning and optimization-based solutions, main-tains higher accuracy over multiple tracking steps, while under sparse keypoint evaluation methods that directly obtain optical flow results from the network do not perform as well. In VO applications, even small optical flow errors in simple scenes can lead to the gradual accumulation of pose estimation errors. This result more intuitively highlights the accuracy difference between the two methods and explains why the proposed method performs better. Therefore, the proposed sparse optical flow can be directly integrated into VO systems, whereas DROID [9] requires multiple iterations to estimate the pose. 
+
+D. VIO Evaluation on Public Datasets 
+
+The proposed optical flow is designed for VO/VIO tasks and has been integrated into the classical VINS-Fusion [4] framework. Therefore, evaluating the performance of the pro-posed VIO system against state-of-the-art VIO algorithms is essential. To validate its robustness under dynamic lighting and weak-texture conditions, we conducted extensive experiments on the enhanced EuRoC dataset [50], the dynamic-lighting UMA-VI [52] dataset, and a weak-texture underwater dataset [53]. Note that the comparison in this subsection serves to validate the practical benefit of the proposed neuro-symbolic optical flow on downstream trajectory estimation, rather than to claim a superior VIO system. The main contribution of this paper is the differentiable optical flow module itself. Following most VO/VIO papers, we use the ATE (Absolute Trajectory Error) between the estimated and ground-truth trajectories as the evaluation metric. ATE measures the global consistency of the entire trajectory and is defined as the root mean square of the position errors between the estimated and ground-truth trajectories at corresponding timestamps after optimal rigid alignment. 
+
+1) Experiments on the Enhanced EuRoC Dataset: EuRoC is a classical dataset widely used for evaluating VIO systems. However, its lighting variations and motion dynamics are relatively limited, making it less challenging. Therefore, we enhanced the EuRoC dataset with varying degrees of illumi-nation changes to evaluate the upper performance limits of 12 
+
+TABLE V COMPARISON OF MEAN /MEDIAN ATE ( M) ON EUROC SEQUENCES UNDER DIFFERENT ILLUMINATION DISTURBANCES . A LL VALUES ARE IN METERS 
+
+(M). E ACH CELL SHOWS MEAN /MEDIAN ATE, AND THE BEST RESULT IS IN BOLD .
+
+Seq. None (m) Small (m) Large (m) 
+
+VINS [4] LET-VINS [34] Ours VINS [4] LET-VINS [34] Ours VINS [4] LET-VINS [34] Ours MH 01 0.24/0.26 0.26/0.27 0.22/0.24 0.27/0.26 0.25/0.24 0.25/0.25 0.51/0.49 0.48/0.45 0.39/0.37 
+
+MH 02 0.17/0.17 0.18/0.18 0.17/0.17 0.18/0.16 0.21/0.23 0.17/0.16 0.48/0.47 0.41/0.39 0.32/0.30 
+
+MH 03 0.24/0.22 0.22/0.22 0.23/0.23 0.25/0.23 0.27/0.25 0.23/0.25 1.27/1.13 0.38/0.38 0.26/0.26 
+
+MH 04 0.42/0.43 0.35/0.29 0.42/0.44 0.57/0.53 0.50/0.48 0.41/0.41 F 0.81/0.80 0.45/0.46 
+
+MH 05 0.28/0.25 0.29/0.26 0.28/0.24 0.30/0.26 0.35/0.30 0.30/0.28 F 0.67/0.63 0.35/0.28 
+
+V1 01 0.10/0.11 0.10/0.11 0.11/0.11 0.13/0.13 0.13/0.13 0.11/0.11 0.25/0.23 0.24/0.22 0.14/0.14 
+
+V1 02 0.10/0.10 0.10/0.10 0.09/0.08 0.10/0.09 0.10/0.09 0.08/0.08 F 0.46/0.45 0.09/0.08 
+
+V1 03 0.10/0.09 0.11/0.10 0.08/0.06 0.12/0.11 0.10/0.10 0.08/0.08 F 0.58/0.47 0.40/0.34 
+
+V2 01 0.09/0.07 0.10/0.08 0.10/0.07 0.10/0.08 0.08/0.07 0.11/0.08 F 0.64/0.61 0.11/0.10 
+
+V2 02 0.10/0.09 0.10/0.08 0.07/0.06 0.11/0.08 0.12/0.11 0.10/0.08 1.02/0.99 0.48/0.44 0.10/0.08 
+
+V2 03 0.26/0.27 0.28/0.30 0.39/0.42 0.37/0.35 0.32/0.32 0.24/0.24 5.78/5.74 F 1.57/1.37 
+
+TABLE VI COMPARISON OF MEAN /MEDIAN ATE ( M) ON UMA-VI SEQUENCES UNDER DIFFERENT ILLUMINATION AND ENVIRONMENTAL CONDITIONS . A LL VALUES ARE IN METERS (M). E ACH CELL SHOWS MEAN /MEDIAN ATE, THE BEST RESULT IS MARKED IN RED , AND THE SECOND -BEST RESULT IS MARKED IN GREEN . PL-SLAM AND DROID-SLAM RELY SOLELY ON VISUAL INPUTS ; ALL OTHER METHODS UTILIZE STEREO -INERTIAL DATA WITH 
+
+IMU PRE -INTEGRATION .
+
+Sequence PL-SLAM [45] ORB-SLAM3 [46] Basalt [47] OKVIS [48] DROID [9] AirSLAM [20] VINS [4] Ours 
+
+two-floors-csc1 F F 0.760 0.154 0.341 0.066 0.335 0.150 two-floors-csc2 F F 1.211 0.679 0.299 0.190 1.108 0.700 third-floor-csc1 4.478 0.863 0.420 0.287 0.048 0.070 0.047 0.047 third-floor-csc2 6.068 0.149 0.590 0.271 0.890 0.127 0.106 0.068 long-walk-eng F F 5.046 3.005 F 1.801 2.382 0.353 lab-module-csc F F 0.403 0.579 0.319 0.979 0.570 0.173 lab-module-csc-rev F 0.063 0.486 0.861 0.364 0.504 0.302 0.399 conference-csc1 2.697 F 1.270 1.118 0.711 0.490 0.494 0.479 conference-csc2 1.596 F 0.682 0.470 0.135 0.091 0.283 0.106 conference-csc3 F 0.426 0.469 0.088 0.724 0.088 0.042 0.044 c. Large # 1000 # 1001 # 1002 # 1003 # 1004 
+
+b. Small # 1000 # 1001 # 1002 # 1003 # 1004 
+
+a. None # 1000 # 1001 # 1002 # 1003 # 1004 
+
+Fig. 9. Illumination augmentation on the EuRoC dataset. The last row shows the sequences with large illumination disturbances, the middle row shows those with small disturbances, and the bottom row shows the original sequences. The illumination perturbations are generated by applying absolute and relative pixel transformations to the images using two random variables. 
+
+different algorithms. Specifically, we introduced varying levels of illumination changes into the image sequences to simulate realistic dynamic lighting conditions. Fig. 9 shows illumination disturbances of different mag-nitudes, including three sequences with large, small, and no perturbation. The sequences with large and small disturbances are augmented with varying degrees of absolute and relative il-lumination changes, which pose challenges to image matching in VIO algorithms. Table V compares the results of VINS with the proposed optical flow module, the original VINS [4], and LET-VINS [34]. In the case without illumination disturbance, LET-VINS [34] and our method achieve comparable performance, and the original unmodified VINS [4] obtains the best result on sequence V2 03. This is because V2 03 contains severe motion blur, and our method, which attempts to obtain as many matches as possible, introduces more incorrect cor-respondences in this scenario. Nevertheless, our method is still the best on average. Under small and large illumina-tion disturbances, its advantage becomes more pronounced, achieving the lowest error on all sequences. In particular, under large disturbances, the original VINS [4] system loses tracked feature points on multiple sequences and thus fails to estimate a complete trajectory. Since the only difference among the three methods lies in the optical flow tracking module, these results provide strong evidence for the effectiveness of directly integrating the proposed optical flow module into a VIO system. 
+
+2) Experiments on the UMA-VI Dataset: To further com-pare the proposed VIO method with mainstream approaches, including both classical and learning-based methods, we con-ducted a more detailed evaluation on the UMA-VI [52] dataset. The UMA-VI [52] dataset contains multiple sequences with large viewpoint variations and dynamic lighting conditions, making it highly challenging. Table VI shows the comparison results of different algo-rithms. Among them, ORB-SLAM3 [46], Basalt [47], and 13 
+
+TABLE VII COMPARISON OF MEAN ATE ACROSS DIFFERENT METHODS ON THE 
+
+AQUALOC DATASET . A LL VALUES ARE IN METERS (M). T HE BEST RESULTS ARE IN BOLD . A LL LISTED METHODS UTILIZE MONOCULAR -INERTIAL DATA WITH IMU PRE -INTEGRATION .
+
+Method 01 02 03 04 05 06 
+
+ORB-SLAM3 [46] F F F F 0.063 0.910 VINS [4] 0.633 0.437 F F 0.849 0.963 LET-VINS [34] 0.672 0.684 1.774 0.911 0.527 FOurs 0.564 0.350 0.667 0.641 0.255 0.784 
+
+OKVIS [48] represent classical VIO pipelines. DROID rep-resents the current end-to-end trained VO algorithm, while AirSLAM [20] combines learned image matching with clas-sical methods. All evaluated algorithms use the stereo mode, and the loop detection module is disabled to ensure fairness. From the results, it can be seen that the robustness of feature-based methods like PL-SLAM [45] and ORB-SLAM3 [46] is the weakest, struggling to handle challenging environments. Algorithms based on LK optical flow, such as Basalt [47], OKVIS [48], and VINS [4], exhibit stronger robustness, but still show relatively high errors. The latest learning-based methods perform better. Specifically, AirSLAM [20] uses point and line features extracted by deep learning, while DROID [9] uses dense learned optical flow similar to RAFT [15]. Our method performs exceptionally well in the vast majority of se-quences, achieving the lowest average error. This demonstrates the advantages of the proposed optical flow in robustness, accuracy, and matching capability, and indirectly validates that our method is designed with a thorough consideration of VO task requirements. 
+
+3) Experiments on the AQUALOC Dataset: Underwater robots represent another challenging VO application scenario, which involves underwater blur and dynamic sediment in-terference. Therefore, we conducted an evaluation on the AQUALOC [53] dataset, which is collected underwater. Since the dataset only provides monocular and IMU data, all se-quences were run in monocular mode. In systems with scale, ORB-SLAM3 [46] performed well on sequence 05 but failed in most other sequences. The original VINS [4] also failed on sequences 03 and 04. Our proposed method achieved the best results in the vast majority of sequences and demonstrated higher robustness. V. CONCLUSION In this study, we propose a sparse optical flow algorithm that combines neural networks and symbolic systems, and integrate it into a VIO system. Through implicit differentiation rules, we compute the derivative of the symbolic expres-sion for the optical flow solving process, enabling end-to-end training. The proposed method improves the robustness of optical flow while maintaining high accuracy in simple scenes, and can be directly inserted into VO/VIO systems. Thanks to the combination with the symbolic system, training with simulated data alone allows the method to generalize across multiple real-world scenarios. In the experiments, we demonstrate the advantages of end-to-end training, which sig-nificantly improves performance in challenging environments and enhances the VIO system’s capabilities. We also validate the core hypothesis that optical flow regressed from the network is better suited for handling large viewpoint changes but lacks sufficient accuracy for direct use in VO/VIO tasks with consecutive frames. However, our method’s performance is constrained by its tendency to converge to local minima, particularly on challenging optical flow datasets where the optimization landscape is complex. Additionally, it does not account for the uncertainty of optical flow estimation, nor does it attempt to directly train better optical flow results from pose estimation. Therefore, future work will proceed in three directions. First, we will explore its combination with regression-based methods. Second, we will investigate learning optical flow directly from relative pose constraints. Third, we will estimate the uncertainty of optical flow to enable better fusion with other sensors. REFERENCES [1] D. Scaramuzza and F. Fraundorfer, “Visual odometry [tutorial],” IEEE Robotics & Automation Magazine , vol. 18, no. 4, pp. 80–92, 2011. [2] C. Forster, Z. Zhang, M. Gassner, M. Werlberger, and D. Scaramuzza, “Svo 2.0: Semi-direct visual odometry for monocular and multi-camera systems,” in IEEE Intl. Conf. Robotics and Automation (ICRA) , 2017, pp. 691–697. [3] R. Mur-Artal, J. M. M. Montiel, and J. D. Tard´ os, “Orb-slam: A versatile and accurate monocular slam system,” IEEE Trans. Robotics , vol. 31, no. 5, pp. 1147–1163, 2015. [4] T. Qin, P. Li, and S. Shen, “Vins-mono: A robust and versatile monocular visual–inertial state estimator,” IEEE Trans. Robotics , vol. 34, no. 4, pp. 1004–1020, 2018. [5] J. Engel, V. Koltun, and D. Cremers, “Direct sparse odometry,” IEEE Trans. Pattern Anal. Mach. Intell. , vol. 40, no. 3, pp. 611–625, 2018. [6] Y. Chen, C. Tang, and S. Shen, “Vist: Vision transformer for robust and generalizable visual–inertial state estimation,” in IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2023. [7] J. Engel, T. Sch¨ ops, and D. Cremers, “Lsd-slam: Large-scale direct monocular slam,” in European Conference on Computer Vision , 2014, pp. 834–849. [8] A. I. Mourikis and S. I. Roumeliotis, “A multi-state constraint kalman filter for vision-aided inertial navigation,” in IEEE Intl. Conf. Robotics and Automation (ICRA) , 2007, pp. 3565–3572. [9] Z. Teed and J. Deng, “Droid-slam: Deep visual slam for monocular, stereo, and rgb-d cameras,” in Adv. Neural Inf. Process. Syst. , 2021, pp. 16 558–16 569. [10] C. Tang and P. Tan, “Ba-net: Dense bundle adjustment network,” in 
+
+International Conference on Learning Representations (ICLR) , 2019. [11] B. K. P. Horn and B. G. Schunck, “Determining optical flow,” Artificial Intelligence , vol. 17, no. 1-3, pp. 185–203, 1981. [12] B. D. Lucas and T. Kanade, “An iterative image registration technique with an application to stereo vision,” in Int. Joint Conf. Artif. Intell. ,1981, pp. 674–679. [13] A. Dosovitskiy, P. Fischer, E. Ilg, P. Hausser, C. Hazirbas, V. Golkov, P. van der Smagt, D. Cremers, and T. Brox, “Flownet: Learning optical flow with convolutional networks,” in IEEE Int. Conf. Comput. Vis. (ICCV) , 2015, pp. 2758–2766. [14] E. Ilg, N. Mayer, T. Saikia, M. Keuper, A. Dosovitskiy, and T. Brox, “Flownet 2.0: Evolution of optical flow estimation with deep networks,” in IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2017, pp. 2462– 2470. [15] Z. Teed and J. Deng, “Raft: Recurrent all-pairs field transforms for optical flow,” in European Conference on Computer Vision , 2020, pp. 402–419. [16] ——, “Deep patch visual odometry,” in IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2023. [17] P. Wenzel, A. Oˇ sep, L. Leal-Taix´ e, and C. Stachniss, “Tartanvo: A generalizable learning-based vo,” IEEE Robot. Autom. Lett. (RA-L) ,vol. 7, no. 2, pp. 3200–3207, 2022. [18] C. Wang, K. Ji, J. Geng, Z. Ren, T. Fu, F. Yang, Y. Guo, H. He, X. Chen, Z. Zhan, et al. , “Imperative learning: A self-supervised neuro-symbolic learning framework for robot autonomy,” Int. J. Rob. Res. , 2024. 14 
+
+[19] Z. Teed, B. C. Jia Deng, J. Revaud, F. Wimbauer, and D. Cremers, “Boosting SLAM with deep learning,” in SLAM Handbook. From Localization and Mapping to Spatial Intelligence , L. Carlone, A. Kim, T. Barfoot, D. Cremers, and F. Dellaert, Eds. Cambridge University Press, 2026. [20] K. Xu, Y. Hao, S. Yuan, C. Wang, and L. Xie, “AirSLAM: An efficient and illumination-robust point-line visual slam system,” IEEE Trans. Robotics , 2024. [21] S. Wang, R. Clark, H. Wen, and N. Trigoni, “Deepvo: Towards end-to-end visual odometry with deep recurrent convolutional neural networks,” in IEEE Intl. Conf. Robotics and Automation (ICRA) , 2017, pp. 2043– 2050. [22] Y. Liu, “Superpoint & superglue for feature tracking: A good idea for robust visual inertial odometry?” 2024, technical report / ResearchGate. [23] Authors, “Practical deep feature-based visual-inertial odometry,” in 
+
+SCITEPRESS / conference 2024 , 2024. [24] D. DeTone, T. Malisiewicz, and A. Rabinovich, “Superpoint: Self-supervised interest point detection and description,” in 2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW) , 2018, pp. 337–33 712. [25] P. Lindenberger, P.-E. Sarlin, and M. Pollefeys, “LightGlue: Local Feature Matching at Light Speed,” in IEEE Int. Conf. Comput. Vis. (ICCV) , 2023. [26] Z. Zhang, Y. Chen, L. Wang, and K. Jia, “Mac-vo: Memory-aware cost volume for robust visual odometry,” in IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2024. [27] M. Ferrera, A. Eudes, J. Moras, M. Sanfourche, and G. Le Besnerais, “OV 2SLAM : A fully online and versatile visual SLAM for real-time applications,” IEEE Robot. Autom. Lett. (RA-L) , 2021. [28] S. Chen, Z. Liu, L. Zhang, C. Wang, T. Xu, R. Xu, and S. Zhu, “Gma: Optical flow estimation via graph matching,” in IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2021, pp. 2818–2827. [29] Z. Zhu, Y. Zhang, K. Li, W. Wei, Z. Zhang, and Y. Chen, “Flowformer: A transformer-based model for optical flow estimation,” in IEEE Int. Conf. Comput. Vis. (ICCV) , 2021, pp. 2749–2758. [30] C. Harris, M. Stephens, et al. , “A combined corner and edge detector,” in Alvey vision conference , vol. 15, no. 50, 1988, pp. 10–5244. [31] T. Fu, S. Su, Y. Lu, and C. Wang, “iSLAM: Imperative SLAM,” IEEE Robot. Autom. Lett. (RA-L) , 2024. [32] L. Pineda, T. Fan, M. Monge, S. Venkataraman, P. Sodhi, R. T. Chen, J. Ortiz, D. DeTone, A. Wang, S. Anderson, J. Dong, B. Amos, and M. Mukadam, “Theseus: A Library for Differentiable Nonlinear Optimization,” Advances in Neural Information Processing Systems ,2022. [33] C. Wang, D. Gao, K. Xu, J. Geng, Y. Hu, Y. Qiu, B. Li, F. Yang, B. Moon, A. Pandey, Aryan, J. Xu, T. Wu, H. He, D. Huang, Z. Ren, S. Zhao, T. Fu, P. Reddy, X. Lin, W. Wang, J. Shi, R. Talak, K. Cao, Y. Du, H. Wang, H. Yu, S. Wang, S. Chen, A. Kashyap, R. Bandaru, K. Dantu, J. Wu, L. Xie, L. Carlone, M. Hutter, and S. Scherer, “PyPose: A library for robot learning with physics-based optimization,” in IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2023. [34] Y. Lin, S. Wang, Y. Jiang, and B. Han, “Breaking of Brightness Consistency in Optical Flow With a Lightweight CNN Network,” IEEE Robot. Autom. Lett. (RA-L) , vol. 9, no. 8, pp. 6840–6847, 2024. [35] W. Wang, D. Zhu, X. Wang, Y. Hu, Y. Qiu, C. Wang, Y. Hu, A. Kapoor, and S. Scherer, “TartanAir: A Dataset to Push the Limits of Visual SLAM,” 2020. [36] X. Glorot, A. Bordes, and Y. Bengio, “Deep sparse rectifier neural networks,” in Proceedings of the 14th International Conference on Artificial Intelligence and Statistics (AISTATS) , 2011, pp. 315–323. [37] S. G. Krantz and H. R. Parks, The Implicit Function Theorem, History, Theory, and Applications . Birkh¨ auser, New York, NY, 2012. [38] X. Zhao, X. Wu, J. Miao, W. Chen, P. C. Chen, and Z. Li, “Alike: Accurate and lightweight keypoint detection and descriptor extraction,” 
+
+IEEE Trans. Multimed. , 2022. [39] M. Tyszkiewicz, P. Fua, and E. Trulls, “DISK: Learning local features with policy gradient,” Adv. Neural Inf. Process. Syst. , vol. 33, pp. 14 254– 14 265, 2020. [40] G. Potje, , F. Cadar, A. Araujo, R. Martins, and E. R. Nascimento, “XFeat: Accelerated Features for Lightweight Image Matching,” in IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2024. [41] A. Barroso-Laguna, E. Riba, D. Ponsa, and K. Mikolajczyk, “Key. net: Keypoint detection by handcrafted and learned cnn filters,” in IEEE Int. Conf. Comput. Vis. (ICCV) , 2019, pp. 5836–5844. [42] F. Xue, I. Budvytis, and R. Cipolla, “SFD2: Semantic-guided Feature Detection and Description,” in IEEE Conf. Comput. Vis. Pattern Recog-nit. (CVPR) , 2023, pp. 5206–5216. [43] J. Revaud, C. De Souza, M. Humenberger, and P. Weinzaepfel, “R2D2: Repeatable and Reliable Detector and Descriptor,” Adv. Neural Inf. Process. Syst. , vol. 32, 2019. [44] Y. Wang, L. Lipson, and J. Deng, “Sea-raft: Simple, efficient, accurate raft for optical flow,” in European Conference on Computer Vision , 2024, pp. 36–54. [45] R. Gomez-Ojeda, F.-A. Moreno, D. Zu˜ niga-No¨ el, D. Scaramuzza, and J. Gonzalez-Jimenez, “PL-SLAM: A Stereo SLAM System Through the Combination of Points and Line Segments,” IEEE Trans. Robotics ,vol. 35, no. 3, pp. 734–746, 2019. [46] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. M. Montiel, and J. D. Tard´ os, “ORB-SLAM3: An Accurate Open-Source Library for Visual, Visual–Inertial, and Multimap SLAM,” IEEE Trans. Robotics ,vol. 37, no. 6, pp. 1874–1890, 2021. [47] V. Usenko, N. Demmel, D. Schubert, J. Stueckler, and D. Cremers, “Visual-Inertial Mapping with Non-Linear Factor Recovery,” IEEE Robot. Autom. Lett. (RA-L) , vol. 5, no. 2, pp. 422–429, 2020. [48] A. Kasyanov, F. Engelmann, J. St¨ uckler, and B. Leibe, “Keyframe-based visual-inertial online SLAM with relocalization,” in IEEE/RSJ Intl. Conf. Intelligent Robots and Systems (IROS) , 2017, pp. 6662–6669. [49] V. Balntas, K. Lenc, A. Vedaldi, and K. Mikolajczyk, “HPatches: A benchmark and evaluation of handcrafted and learned local descriptors,” in IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2017. [50] M. Burri, J. Nikolic, P. Gohl, T. Schneider, J. Rehder, S. Omari, M. W. Achtelik, and R. Siegwart, “The EuRoC micro aerial vehicle datasets,” 
+
+Int. J. Rob. Res. , vol. 35, no. 10, pp. 1157–1163, 2016. [51] A. Geiger, P. Lenz, and R. Urtasun, “Are we ready for Autonomous Driving? The KITTI Vision Benchmark Suite,” in IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2012, pp. 3354–3361. [52] D. Zu˜ niga-No¨ el, R. G. Ojeda, J. Diez, C. Campos, and M. A. Sotelo, “The UMA-VI dataset: Visual–inertial odometry in low-textured and dynamic illumination environments,” Int. J. Rob. Res. , 2020. [53] M. Ferrera, V. Creuze, J. Moras, and P. Trouv´ e-Peloux, “AQUALOC: An Underwater Dataset for Visual-Inertial-Pressure Localization,” Int. J. Rob. Res. , vol. 38, no. 14, pp. 1549–1559, 2019. [54] J.-W. Bian, Y.-H. Wu, J. Zhao, Y. Liu, L. Zhang, M.-M. Cheng, and I. Reid, “An Evaluation of Feature Matchers for Fundamental Matrix Estimation,” in British Machine Vision Conference (BMVC) , 2019.

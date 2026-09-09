@@ -1,0 +1,767 @@
+Title: PLATO: Preintegration Learning from Accurate Trajectory Observations for Neural Inertial Odometry
+
+URL Source: https://arxiv.org/pdf/2609.06450v1
+
+Published Time: Wed, 09 Sep 2026 01:33:57 GMT
+
+Number of Pages: 14
+
+Markdown Content:
+# PLATO: Preintegration Learning from Accurate Trajectory Observations for Neural Inertial Odometry 
+
+Haoying Li, Qihang Liu, Yifan Peng, Keyan Miao, and Junfeng Wu Abstract: Neural inertial odometry has demonstrated strong potential for mo-tion estimation in challenging environments, yet inertial-only preintegration re-mains sensitive to IMU bias and uncertainty. To this end, this paper intro-duces PLATO : Preintegration Learning from Accurate Trajectory Observations ,a likelihood-based framework that leverages accurate trajectory observations to jointly learn IMU bias dynamics modeled by a neural ordinary differential equa-tion (NODE) and gyroscope and accelerometer noise covariances. Optimiza-tion exploits the sparse structure of the negative log-likelihood, with IMU noise-parameter gradients computed by forward differentiation. A tailored double-adjoint scheme couples a discrete invariant-error adjoint with a continuous-time adjoint for the bias NODE, enabling memory-efficient likelihood optimization over the nested bias-dynamics and IMU-preintegration rollouts. Validation on EuRoC shows improved performance, and underwater robot experiments demon-strate applicability under intermittent lighting failures and visual degradation. 
+
+Keywords: Neural inertial odometry; likelihood-based learning; uncertainty-aware preintegration. 
+
+## 1 Introduction 
+
+Inertial measurement units (IMUs) are low-cost, low-power proprioceptive sensors that provide high-rate measurements of a robot’s angular velocity and linear acceleration, which are insensi-tive to external environmental conditions. However, correctly using IMU measurements requires accounting for accelerometer and gyroscope biases, whose misspecifications accumulate rapidly through high-rate integration and soon manifest as pose-estimation drift. Although most modern inertial odometry systems estimate IMU biases online [1, 2], reliable bias correction depends on exteroceptive sensor constraints. Thus, when such sensors fail, the estimator will rapidly degrade. Learning-based methods have shown strong potential to better leverage IMU measurements and im-prove system robustness. Existing neural inertial odometry (NIO) methods can be broadly grouped into the following two lines. The first type is called neural displacement priors (NDPs), which learn to map raw IMU measurements to displacement [3]. RoNIN learns the 2D motion of pedestrians from raw IMU sequences [4]. TLIO regresses 3D displacement and covariance using Residual Net-work (ResNet) from a buffer of IMU measurements, and tightly fuses the learned relative-motion measurements in an extended Kalman filter (EKF) [5]. IDOL improves pedestrian localization by learning device orientation using a recurrent neural network [6]. Another line of work employs neural networks to debias IMU measurements. Brossard et al. [7] use past gyroscope and ac-celerometer measurements to learn gyroscope corrections and use them for open-loop orientation estimation. AirIMU learns IMU correction and uncertainty propagation through a differentiable inertial integrator [8]. Zhou et al. [9] model IMU bias using a diffusion model, emphasizing its stochastic nature. Altawaitan et al. [10] predict IMU biases from inertial histories by minimizing the discrepancy between bias-corrected preintegrated states and ground-truth states, and then use the estimated biases within an invariant visual-inertial odometry (VIO). Rather than directly mapping local inertial-measurement windows to instantaneous bias estimates, some works advocate learning the temporal evolution of IMU biases. Buchanan et al. [11] learn the IMU bias evolution model from the ground-truth bias labels, and illustrate that the dynamics-based formulation encourages the arXiv:2609.06450v1 [cs.RO] 6 Sep 2026 Figure 1: PLATO framework for ATO-supervised neural inertial preintegration. network to capture sensor-intrinsic drift behavior instead of motion-specific correlations, thereby improving generalization to unseen motion patterns. Recent work [12] models IMU bias evolution using a neural ordinary differential equation (NODE) from ground-truth poses. This paper learns IMU bias dynamics and measurement uncertainty to refine the IMU measurement model, which is more interpretable than directly learning the full IMU-to-pose mapping from data. The most closely related work is [12], which trains the bias NODE by minimizing the mean-squared error (MSE) between debiased IMU rollout trajectories and ground-truth poses. In contrast, this paper casts training as likelihood maximization, enabling joint optimization of bias dynamics and noise statistics while exploiting the problem structure for efficient gradient computation. To this end, this paper proposes PLATO : Preintegration Learning from Accurate Trajectory Observations for neural inertial odometry, whose overview is shown in Fig. 1. PLATO treats trajectory infor-mation from different sources, such as motion-capture ground truth and visual odometry estimates, uniformly as accurate trajectory observations (ATOs). By explicitly accounting for their observation models and uncertainties, PLATO incorporates these observations into a unified marginal negative log-likelihood objective for jointly learning IMU bias dynamics and noise statistics. The learned IMU model then enables more reliable inertial-only preintegration when external trajectory obser-vations become degraded or unavailable. The contributions of this paper are summarized as follows: • Sparse marginal-likelihood training from ATOs. The inertial trajectory is treated as a sequence of latent variables driven by NODE-based IMU bias dynamics. The resulting marginal-likelihood enables joint learning of bias dynamics and IMU noise statistics from ATO supervision, supporting ground-truth trajectories and noisy pose observations. • Structured derivative computation for efficient training. Efficient derivatives are de-rived by exploiting the sparse negative log-likelihood and IMU rollout structure. The noise-parameter update uses forward differentiation through the covariance terms in the information-form likelihood. For bias-dynamics training, a dedicated double-adjoint scheme is developed. By coupling an outer invariant-error adjoint with an inner bias ad-joint, the scheme avoids direct reverse-mode automatic differentiation over the full nested rollout spanning both NODE solver and IMU propagation steps. • Validation on public and self-collected underwater datasets. Experiments on the Eu-RoC and the self-collected underwater robot dataset A QUA LUX demonstrate improved inertial propagation and better downstream OpenVINS performance. A QUA LUX will be released as a benchmark for inertial-only odometry under intermittent visual failures. 
+
+## 2 Preliminaries 
+
+2.1 Matrix Lie Group 
+
+The Lie group and Lie algebra preliminaries [13] used throughout this paper are briefly reviewed. Let G be a matrix Lie group with Lie algebra g. We abuse the notation (·)∧ to denote the mapping 2from the vector space to the corresponding Lie algebra with its inverse map (·)∨. The exponential map is defined as exp( ξ) ≜ exp m(ξ∧) : g → G, where exp m(·) denotes the matrix exponential. The inverse mapping of the exponential is the Lie logarithm, denoted by log( ·). The special orthogonal group SO (3) represents the set of all possible rotations of a rigid body in three-dimensional space. The special Euclidean group SE (3) (rigid-body transformations), and SE 2(3) are defined as                   
+
+> SE(3) ≜
+>  Rp
+> 01
+> 
+> R∈SO(3) , p ∈R3
+> 
+> ,SE 2(3) ≜
+>  Rvp
+> 0I
+> 
+> R∈SO(3) , p, v ∈R3
+> 
+> .
+
+where 0 and I denote the zero matrix and the identity matrix. For x∧, y ∧ ∈ g and ∥x∥ small, their compounded exponentials can be approximated to exp( x) exp( y) ≈ exp(dexp −1 
+
+> y
+
+x + y), where 
+
+dexp x is the left Jacobian of x. Let M be the smooth manifold of a Lie group. For any X1, X 2 ∈ M 
+
+and tangent vector ξ ∈ Rdim M, define the plus and minus operators, X1 ⊞ ξ and X1 ⊟ X2, and in the left case, X1 ⊞ ξ = exp( ξ)X1, X 1 ⊟ X2 = log( X1X−12 ). The uncertainty of X ∈ M is modeled in the tangent space by a Gaussian distribution. Let ξ ∼ N (0 , Σ) , the induced distribu-tion is NL( ¯X, Σ) ≜ α exp  − 12 (X ⊟ ¯X)⊤Σ−1(X ⊟ ¯X) , and α is the normalization coefficient. Hereafter, X ∈ SE 2(3) denotes a state, whereas T ∈ SE(3) denotes a pose. 
+
+## 3 Problem Formulation 
+
+IMU measurements are commonly incorporated through the following rigid-body kinematics: 
+
+˙R(t) = R(t) ω(t)∧ , ˙p(t) = v(t), ˙v(t) = a(t), (1) in which the measurement model of IMU is given by 
+
+˜ω(t) = ω(t) + bg (t) + ng (t), ˜a(t) = R(t)⊤(a(t) − g) + ba(t) + na(t), (2) where ω(t) and a(t) denote the angular velocity and linear acceleration of the rigid body, g denotes the gravity, bg (t) and ba(t) denote the gyroscope and accelerometer bias, ng (t) and na(t) are the corresponding white Gaussian noises, and ˜ω(t), ˜a(t) are the IMU measurements. Denote the IMU measurement sequence U = {u0, . . . , u N } with uk = (˜ ak, ˜ωk) obtained at timestamp tk. Define 
+
+U τt as the collection of discrete IMU measurements from the time interval (t − τ, t ], τ > 0. The initial state X0 ∈ SE 2(3) and the initial bias b0 = vec( ba 
+
+> 0
+
+, b g
+
+> 0
+
+) are provided by the initialization procedure. The IMU biases are modeled as deterministic variables governed by a NODE as follows: 
+
+˙b(t) = fθ
+
+ b(t), U τt , t , b(t0) = b0, (3) where θ denotes the neural dynamics parameters. Let ψ specify the covariance of the accelerome-ter and gyroscope noises, Q(ψ) = cov( n) and n = vec( na, n g ). All the learnable parameters are collectively denoted as Θ ≜ (θ, ψ ). Let Ω denote the admissible parameter set, which encodes con-straints such as boundedness and positivity of the noise covariance parameters. During training, a set of ATOs is available, denoted by Y s ≜ {Ys1 , Y s2 , · · · , Y sM }, sampled at time tsj , j = 1 , · · · , M .The overall parameter-learning problem is thus formulated as follows: 
+
+Problem 1 Given the IMU sequence U , the ATO sequence Y s, and the initial conditions X0 and 
+
+b0, estimate the admissible parameters Θ ∈ Ω by maximizing the marginal likelihood 
+
+ˆΘ = arg max  
+
+> Θ∈Ω
+
+p Y s | U , X 0, b 0, Θ. (4) To solve Problem 1, a latent trajectory is introduced as the collection of states that are supervised by ATOs, represented as Xs ≜ {Xs1 , · · · , X sM }. Marginalizing over the latent trajectory gives: 
+
+p Y s | U , X 0, b 0, Θ =
+
+Z
+
+p(Y s | Xs)p(Xs | U , X 0, b 0, Θ)d Xs. (5) In the following, Section 4 presents a sparsity-exploiting likelihood evaluation strategy induced by the IMU rollout, and Section 5 provides an efficient derivative computation scheme for training. 34 Likelihood Evaluation from Pure IMU Rollout 
+
+4.1 Pure IMU Rollout as a Latent Trajectory 
+
+The pure IMU preintegration is used to compute p(Xs | U , X 0, b 0, Θ) required in (5). The bias is obtained by integrating (3), and the bias-corrected inertial inputs are then used to propagate a nomi-nal motion trajectory according to (1), represented by ¯X = { ¯X0, ¯X1, . . . , ¯XN }, ¯Xk ∈ SE 2(3) . De-fine the right-invariant error ηk = Xk ¯X−1 
+
+> k
+
+and its logarithmic coordinate ξk = log( ηk). As shown by [14], for the group-affine inertial kinematics in (1), the deterministic part of the right-invariant error dynamics is independent of the nominal state. Accordingly, the propagated uncertainty is evaluated in the corresponding Lie algebra and the first-order discretization is as follows 
+
+¯Pk+1 = Fk ¯PkF ⊤ 
+
+> k
+
++ GkQ(ψ)G⊤ 
+
+> k
+
+, nk ∼ N (0 , Q (ψ)) , (6) where ∆tk = tk+1 −tk, Fk = Φ(∆ tk) = exp m(A∆tk), with A =
+
+h 0 0 0    
+
+> g∧0 0 0I0
+
+i
+
+, and Gk is the first-order noise-input matrix evaluated along the nominal rollout [15]. The pure IMU preintegration induces an approximate distribution p Xs | U , X 0, b 0, Θ ≈ N L
+
+  ¯Xs, ¯P s, where the joint covariance ¯P s
+
+is induced by the corresponding linear Gaussian Markov chain and includes the cross-covariances among retained states. 
+
+4.2 Marginal Likelihood Evaluation 
+
+This subsection presents the sparse information-form evaluation of the marginal likelihood. Al-though ¯P s is generally dense, the information matrix ¯Λs = ( ¯P s)−1 is block-tridiagonal due to the linear Gaussian Markov structure of inertial preintegration [16]. To make this sparse precision explicit, for r ≥ q, define Φr←q ≜ Fr−1Fr−2 · · · Fq , Φq←q = I. For two consecutive supervised time index si and si+1 , define Φsi ≜ Φsi+1 ←si and the accumulated process covariance 
+
+Qsi ≜ Psi+1 −1 
+
+> k=si
+
+Φsi+1 ←k+1 GkQ(ψ)G⊤ 
+
+> k
+
+Φ⊤
+
+> si+1 ←k+1
+
+. (7) The nonzero blocks of ¯Λs are ¯Λs 
+
+> 11
+
+= ( P s 
+
+> 1
+
+)−1 + (Φ s
+
+> 1
+
+)⊤(Qs
+
+> 1
+
+)−1Φs
+
+> 1
+
+, ¯ΛsM M = ( QsM −1)−1, ¯Λsii =(Qsi−1)−1 + (Φ si )⊤(Qsi )−1Φsi for i = 2 , . . . , M − 1, and ¯Λsi,i +1 = −(Φ si )⊤(Qsi )−1, ¯Λsi+1 ,i =
+
+−(Qsi )−1Φsi for i = 1 , . . . , M − 1, where P s 
+
+> 1
+
+≻ 0 denote the prior covariance. For an ATO Ysi associated with the state Xsi , the residual is defined as ri(Θ) = Ysi ⊟ hi( ¯Xsi ).
+
+Let Hi be the Jacobian of the residual with respect to the invariant error, and vi ∼ N (0, W i)
+
+denotes the Gaussian measurement noise. Stacking all residuals gives r = vec( r1, . . . , r M ), H =blkdiag( H1, . . . , H M ) and W = blkdiag( W1, . . . , W M ). Under the Gaussian approximation, the stacked residual is distributed as r ∼ N (0, S), where S = H ¯P sH⊤ +W . Up to additive constants independent of Θ, the corresponding negative log-likelihood (NLL) is 
+
+LNLL (Θ) = 12 r⊤S−1r + 12 log det S. (8) This general NLL (8) is specialized to two ATO settings: noise-free and noisy pose supervision. The noise-free setting uses ground-truth poses, such as those from motion-capture-covered segments, to train the network for robust inertial propagation when such supervision is unavailable. Since the supervision noise covariance is set to W = 0, one has S = H ¯P sH⊤, thus H is required to be locally invertible. Accordingly, ground-truth pose observations are lifted to full states on SE 2(3) ,with velocities estimated by finite differences of positions. With ˜r = H−1r, the NLL reduces to 
+
+Lgt NLL (Θ) = 12 ˜r⊤ ¯Λs ˜r − 12 log det ¯Λs + log | det H|. (9) For noisy pose supervision, the ATO residuals are modeled with a positive-definite supervision covariance W ≻ 0, and the marginal NLL is evaluated in sparse information form [16]. Let 
+
+K ≜ ¯Λs + H⊤W −1H, γ ≜ H⊤W −1r, and Kz = γ. The resulting NLL is 
+
+Lpose NLL (Θ) = 12 r⊤W −1r − 12 γ⊤z + 12 log det W + 12 log det K − 12 log det ¯Λs. (10) 4Both NLL evaluations can be computed efficiently in sparse information form, without explicitly forming ¯P s or S; details are in Appendix B. The next section exploits the rollout and likelihood structures to derive efficient gradients for the bias-dynamics and noise-covariance parameters. 
+
+## 5 Optimization Procedure 
+
+5.1 Overall Training Strategy 
+
+Before optimizing LNLL , the bias dynamics parameters θ are first trained with the MSE objective 
+
+LMSE (θ) = 12
+
+PMi=1 ∥ri(θ)∥22. This serves as the warm-up for the subsequent NLL optimization, and stabilizes the bias trajectory mean before covariance parameters are optimized, preventing the use of covariance inflation to absorb large residuals [5, 17]. After the MSE warm-up, training switches to the marginal NLL and alternates between the two parameter blocks, as summarized in Fig. 2. The following subsections derive the ψ-update based on forward covariance sensitivities and the θ-update based on the double-adjoint method. Efficient gradient computations for ψ and θ are derived next and are previewed in Figure 2. 
+
+Figure 2: Training strategy and structured gradient computation. 
+
+5.2 Forward Sensitivity for Covariance Training 
+
+During the optimization of ψ, the bias-dynamics parameters θ are fixed. Consequently, the nominal states, the residuals, and the linearized propagation matrices Fk and Gk are fixed. The dependence of LNLL on ψ is therefore only through the IMU noise covariance Q(ψ), the induced interval covari-ances Qsi (ψ), and the corresponding precision blocks in ¯Λs. For each supervisory interval [si, s i+1 ],the interval covariance (7) can be computed by a local covariance recursion 
+
+Σi,k +1 = FkΣi,k F ⊤ 
+
+> k
+
++ GkQ(ψ)G⊤ 
+
+> k
+
+, k = si, . . . , s i+1 −1, (11) where Σi,s i = 0 and the recursion gives that Qsi = Σ i,s i+1 . Then differentiating (11) term by term: 
+
+∂Σi,k +1 
+
+∂ψ j
+
+= Fk
+
+∂Σi,k 
+
+∂ψ j
+
+F ⊤ 
+
+> k
+
++ Gk
+
+∂Q (ψ)
+
+∂ψ j
+
+G⊤ 
+
+> k
+
+, k = si, . . . , s i+1 −1, (12) where ∂Σi,s i 
+
+> ∂ψ j
+
+= 0, ∂Q si 
+
+> ∂ψ j
+
+= ∂Σi,s i+1  
+
+> ∂ψ j
+
+. The interval-covariance sensitivities are assembled to obtain 
+
+∂ ¯Λs/∂ψ j in subsection 4.2, preserving the same sparse block-tridiagonal structure. Therefore, by the chain rule, the derivative w.r.t ψ is computed as ∂LNLL  
+
+> ∂ψ j
+
+=
+
+D ∂LNLL   
+
+> ∂¯Λs
+
+, ∂ ¯Λs
+
+> ∂ψ j
+
+E
+
+. Due to the low di-mension of ψ and the fixed Fk, Gk, these forward sensitivities require a small number of additional covariance recursions and do not store the high-rate covariance rollout in a reverse-mode computa-tion graph, leading to a more time- and memory-efficient update than direct reverse-mode AD. 
+
+5.3 Double Adjoint Method for Bias-Dynamics Training 
+
+The θ-update requires differentiating the NLL through the bias NODE and the induced inertial prein-tegration rollout. Direct reverse-mode AD stores the discretized computation graph, whose memory cost scales as O(JL ), where J denotes the activation memory per rollout step and L is the total num-ber of discretized steps. In contrast, adjoint methods propagate loss sensitivities backward through the latent dynamics and reduce the memory cost to O(L) [18]. In our problem, the continuous NODE integration that generates the bias trajectory is embedded within high-rate inertial preinte-gration. Consequently, direct reverse-mode AD constructs a nested long-horizon computation graph 5involving both the NODE solver trajectory and the IMU propagation rollout. To this end, a double-adjoint method is developed: the outer invariant-error adjoint provides bias-level sensitivities from inertial preintegration, which are incorporated by the inner bias adjoint for NODE training. 
+
+5.3.1 Outer Invariant Error Adjoint for Bias Sensitivity 
+
+The outer adjoint characterizes the sensitivity of the outer loss with respect to the queried IMU bias values. This formulation is natural because, under the group-affine inertial dynamics, the invariant error admits a state-independent linearized propagation. Let b⋆k denote the true IMU bias. Define the bias error ˜bk = bk − b⋆k. Discretizing the invariant-error dynamics in [19] gives 
+
+ξk+1 = Fkξk + Gk(nk − ˜bk), (13) where Fk and Gk are evaluated along the nominal rollout. For clarity, a general loss L is temporarily introduced. Applying the chain rule to (13), starting from λN = ∂L 
+
+> ∂ξ N
+
+, the adjoint method satisfies the backward recursion 
+
+λk = ∂L
+
+∂ξ k
+
++ F ⊤ 
+
+> k
+
+λk+1 , ∂L
+
+∂b k
+
+=
+
+ ∂ξ k+1 
+
+∂b k
+
+⊤
+
+λk+1 = −G⊤ 
+
+> k
+
+λk+1 , k = N − 1, . . . , 1. (14) Thus, the outer adjoint converts loss sensitivity on inertial invariant errors into discrete sensitivities for queried bias values, which serve as inputs to the inner NODE adjoint for computing ∂L/∂θ .
+
+5.3.2 Inner Adjoint Method for Bias NODE Training 
+
+Let bk ≜ b(tk) be the bias queried at the IMU timestamp tk. The sequence {bk}Nk=0 forms an intermediate latent trajectory between the NODE parameter θ and the loss L. The outer invariant error adjoint yields discrete gradients with respect to the queried bias values at the nominal rollout 
+
+gbk = ∂L 
+
+> ∂b k
+
+. These gradients are incorporated through the inner adjoint λb(t) ≜ ∂L 
+
+> ∂b (t)
+
+. The inner adjoint is propagated backward and updated at IMU query times as λb(t− 
+
+> k
+
+) = λb(t+ 
+
+> k
+
+) + gbk. Between query times, it satisfies [20]: 
+
+˙λb(t) = −
+
+ ∂f θ
+
+∂b 
+
+ b(t), U τt , t ⊤
+
+λb(t), t ∈ (tk−1, t k). (15) The gradient with respect to the NODE parameter is then accumulated along the continuous bias dynamics as dL 
+
+> dθ
+
+= R tN
+
+> t0
+
+ ∂f θ
+
+> ∂θ
+
+ b(t), U τt , t ⊤
+
+λb(t) dt. Thus, the inner adjoint converts outer-adjoint bias sensitivities into the NODE parameter gradient, yielding a double-adjoint mechanism for learn-ing IMU bias dynamics. The overall framework is summarized in Fig. 1. 
+
+## 6 Experiments 
+
+This section evaluates the practical effectiveness of the proposed method on public and self-collected datasets. The experiments examine two aspects: raw IMU preintegration after debias-ing and downstream OpenVINS [1] performance. The evaluation metrics are provided by [21], including absolute orientation error (AOE) and absolute position error (APE), defined as AOE = (PNk=1 ∥ log( ˆR⊤ 
+
+> k
+
+Rk)∥2/N )1/2 and APE = ( PNk=1 ∥pk − ˆpk∥2/N )1/2. The baselines include: 1) using raw IMU data; 2) Hierarchical Learning of Continuous Bias Dynamics (HL-CBD) [12]; 3) learned bias prediction for Invariant VIO (LBP-InVIO) [10]. 
+
+6.1 EuRoC Dataset Experiment 
+
+The dataset EuRoC [22] provides 200 Hz IMU data and 200 Hz post-processed ground truth. The training and testing split follows the HL-CBD [12]. MSE initialization is performed for 1500 epochs, followed by 300 NLL epochs with alternating updates of the bias dynamics and covariance parame-ters. This paper adopts a scale parameterization Q(ψ) = diag( σ2
+
+> a
+
+I3, σ 2 
+
+> g
+
+I3) to match the OpenVINS 6Figure 3: (a) Overview of the A QUA LUX dataset. (b) An OpenVINS testing example under inter-mittent visual outages. The lower plot reports the cumulative position RMSE over time, showing that uncompensated IMU propagation accumulates larger errors after each light-off interval. configuration, and the bias random-walk noises in OpenVINS are set to small values. All proposed variants use a window size of 64 ATOs, corresponding to about 3.2 s and 640 IMU propagation steps for VO supervision at 20 Hz, and about 0.32 s for GT at 200 Hz. The results are reported in Table 1. LBP-InVIO learns a direct observation-to-bias mapping for invariant visual-inertial odometry, and is included to evaluate the benefit of dynamics-based bias modeling, with comparison limited to the reported EuRoC results for code unavailability. In the proposed method, ATOs are instantiated by two sources: ground-truth (GT) and stereo visual odom-etry (VO) generated by ORB-SLAM3 [23]. Although VO estimates contain estimation noise and drift, our method outperforms HL-CBD, which is trained with GT supervision. This result suggests that the proposed methods can effectively exploit noisy trajectory observations. As shown in Table 2, under the same GT supervision, an MSE-only variant is trained with the warm-up MSE objective for all 1800 epochs, without switching to the NLL stage. The MSE-to-NLL training reduces the average position error, indicating the benefit of the likelihood-based learning objective. Table 1: EuRoC test-set results for raw integration and OpenVINS. Best and second-best results are marked in bold and underlined, respectively. The supervision source is shown in parentheses.                                                       
+
+> Seq. Raw Integration (AOE ↓(deg) / APE ↓(m)) OpenVINS (AOE ↓(deg) / APE ↓(m)) (GT) HL-CBD [12] (GT) Ours (VO) Ours (GT) HL-CBD [12] (GT) LBP-InVIO [10] (GT) Ours (VO) Ours MH02 (149.960 s) 1.410 /161 .816 1.027 /85.002 1.200 /140 .480 1.010 /0.220 −0.734 /0.083 0.680 /0.079
+> MH04 (98.760 s) 1.677 /92.715 1.371 /100 .679 1.331 /106 .841 0.650 /0.310 −0.433 /0.192 0.799 /0.249
+> V101 (115.450 s) 3.536 /1486 .906 3.177 /1310.107 3.075 /1313 .105 1.440 /0.110 −0.568 /0.044 0.565 /0.043
+> V103 (104.655 s) 5.086 /886 .348 4.855 /881 .565 4.682 /855.191 0.850 /0.120 1.584 /0.140 1.141 /0.111 1.147 /0.111
+> V202 (144.700 s) 5.255 /790 .589 4.948 /779.040 4.894 /804 .737 2.600 /0.160 2.198 /0.125 0.903 /0.048 0.919 /0.050
+> Average 3.393 /683 .675 3.076 /631.279 3.036 /644 .071 1.310 /0.180 −0.756 /0.095 0.822 /0.106
+
+The peak GPU memory comparison between AD and the proposed double-adjoint implementation is shown in Table 2. AD memory increases rapidly with the integration window size, whereas double-adjoint memory is much less sensitive to the window size, enabling training over longer integration horizons. This feature is also practically important for the next real-world underwater robot experiments, where onboard computers are typically resource-constrained. Table 2: Left: OpenVINS ablation. Right: peak GPU memory for different window sizes.                            
+
+> Objective ablation Peak GPU memory ↓
+> Metric (GT) MSE (GT) NLL WAD (MB) Double adjoint (MB) WAD (MB) Double adjoint (MB) AOE ↓(deg) 0.764 0.756 16 525.6 351.3 64 1069.3 279.8
+> APE ↓(m) 0.102 0.095 32 745.5 366.9 128 2067.2 457.0
+
+6.2 Application in Underwater VIO 
+
+AQUA LUX is introduced as a benchmark for evaluating inertial odometry under underwater visual outages, as shown in Figure 6 (a). The controlled light-switching provides repeatable scenarios with 7temporary visual degradation caused by lighting failure, power instability, turbidity, occlusion, or low texture. The dataset contains ten training sequences under reliable visual conditions, and ten test sequences with paired trajectory designs, but includes intermittent light-off intervals. Eight se-quences are used for training and five for testing in our experiment, covering both matched trajectory patterns and unseen trajectories (Test 005, Test 007) for evaluating generalization. The frequency of IMU is 1000 Hz, and the ground truth trajectory is provided by motion capture at 120 Hz. The training-stage VO has average position and rotation RMSEs of 0.043 m and 2.83 deg at 40 Hz. All methods are trained using a rollout window of 64 steps with a batch size of 1000. Table 3: A QUA LUX test-set results for preintegration and OpenVINS.                                                      
+
+> Seq. Light-off ratio (%) Preintegration (Rot. RMSE ↓(deg) / Pos. RMSE ↓(m)) OpenVINS (Rot. RMSE ↓(deg) / Pos. RMSE ↓(m)) Raw (GT) HL-CBD [12] (VO) Ours Raw HL-CBD [12] (VO) Ours Test 001 10 .427 36 .991 /2362 .635 3.275 /187 .850 3.161 /152.040 8.456 /0.854 3.976 /0.145 3.185 /0.149
+> Test 005 10 .295 39 .327 /2715 .495 3.789 /204 .714 2.988 /168.111 4.443 /0.749 5.285 /0.251 5.711 /0.264
+> Test 007 9.276 39 .610 /2788 .245 6.182 /472 .936 6.213 /436.972 10 .635 /7.339 10.000 /0.134 10 .880 /0.180
+> Test 017 8.562 46 .918 /4273 .670 4.849 /499 .592 3.357 /444.660 4.479 /0.177 4.119 /0.126 3.232 /0.106
+> Test 019 10 .366 41 .295 /2952 .144 5.308 /409 .265 4.160 /363.689 18 .408 /0.220 49 .239 /1.238 8.115 /0.158
+> Average 9.785 40 .828 /3018 .438 4.681 /354 .871 3.976 /313.094 9.284 /1.868 14 .524 /0.379 6.224 /0.171
+
+The experimental results are shown in Table 3. Directly integrating the IMU raw measurements performs poorly when visual sensing fails. Although the proposed method uses noisier VO estimates as supervision, it still outperforms the GT-based HL-CBD on average. This is attributed to the longer time horizon covered by each rollout: 64 VO steps span about 1.6 s, while 64 IMU-rate steps span only 0.064 s. Thus, VO supervision exposes the model to longer inertial propagation intervals during training to capture longer-horizon dynamics. We also find that short VO-supervision windows are less effective because the IMU preintegration error can be comparable to the VO error, making the supervisory signal less effective. Moreover, the high-rate IMU in A QUA LUX amplifies drift from inaccurate bias compensation. Through inverse-covariance weighting, the likelihood downweights uncertain long-horizon residuals, preventing them from dominating optimization. 
+
+## 7 Limitations 
+
+Several limitations remain. First, PLATO is trained offline, which avoids additional downstream run-time cost but limits immediate adaptation to platform changes, sensor aging, or environment-specific motion patterns. Visually reliable intervals in new sequences may support fine-tuning, while online adaptation is left for future work. Second, the covariance model uses a compact isotropic parameter-ization compatible with VIO systems such as OpenVINS. With noisy ATOs, the learned covariance should be viewed as an effective likelihood weight rather than a fully calibrated physical sensor covariance. More expressive covariance models may better capture direction-dependent or time-varying uncertainty. Finally, broader evaluations on more datasets, platforms, and environmental conditions are needed to more thoroughly assess generalization. 
+
+## 8 Conclusion 
+
+This paper presented PLATO, a likelihood-based framework for ATO-supervised neural inertial preintegration. PLATO refines the IMU measurement model by jointly learning NODE-based bias dynamics and IMU noise statistics under a unified marginal NLL objective. The framework ex-ploits the sparse information structure of invariant-error preintegration for efficient likelihood eval-uation and gradient computation. For bias-dynamics training, the double-adjoint scheme couples a discrete invariant-error adjoint with a continuous-time bias adjoint, avoiding direct reverse-mode AD through the full nested bias-dynamics and IMU-preintegration rollout. Experiments on EuRoC show improved raw preintegration and downstream OpenVINS performance, with VO-supervised NLL comparable to GT-supervised training despite VO noise and drift. Validation on A QUA LUX 
+
+demonstrates effectiveness for underwater VIO under intermittent visual degradation. Future work will investigate online adaptation and more expressive covariance models. 8References 
+
+[1] P. Geneva, K. Eckenhoff, W. Lee, Y. Yang, and G. Huang. Openvins: A research platform for visual-inertial estimation. In 2020 IEEE International Conference on Robotics and Automation (ICRA) , pages 4666–4672. IEEE, 2020. [2] C. Zheng, W. Xu, Z. Zou, T. Hua, C. Yuan, D. He, B. Zhou, Z. Liu, J. Lin, F. Zhu, Y. Ren, R. Wang, F. Meng, and F. Zhang. Fast-livo2: Fast, direct lidar–inertial–visual odometry. IEEE Transactions on Robotics , 41:326–346, 2025. doi:10.1109/TRO.2024.3502198. [3] R. K. Jayanth, Y. Xu, E. Chatzipantazis, K. Daniilidis, and D. Gehrig. Neural inertial odometry from lie events. arXiv preprint arXiv:2505.09780 , 2025. [4] S. Herath, H. Yan, and Y. Furukawa. Ronin: Robust neural inertial navigation in the wild: Benchmark, evaluations, & new methods. In 2020 IEEE international conference on robotics and automation (ICRA) , pages 3146–3152. IEEE, 2020. [5] W. Liu, D. Caruso, E. Ilg, J. Dong, A. I. Mourikis, K. Daniilidis, V. Kumar, and J. Engel. Tlio: Tight learned inertial odometry. IEEE Robotics and Automation Letters , 5(4):5653–5660, 2020. [6] S. Sun, D. Melamed, and K. Kitani. Idol: Inertial deep orientation-estimation and localization. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 35, pages 6128– 6137, 2021. [7] M. Brossard, S. Bonnabel, and A. Barrau. Denoising imu gyroscopes with deep learning for open-loop attitude estimation. IEEE Robotics and Automation Letters , 5(3):4796–4803, 2020. [8] Y. Qiu, C. Wang, C. Xu, Y. Chen, X. Zhou, Y. Xia, and S. Scherer. Airimu: Learning uncer-tainty propagation for inertial odometry. arXiv preprint arXiv:2310.04874 , 2023. [9] S. Zhou, S. Katragadda, and G. Huang. Learning imu bias with diffusion model. In 2025 IEEE International Conference on Robotics and Automation (ICRA) , pages 2162–2168. IEEE, 2025. [10] A. Altawaitan, J. Stanley, S. Ghosal, T. Duong, and N. Atanasov. Learned imu bias prediction for invariant visual inertial odometry. IEEE Robotics and Automation Letters , 2025. [11] R. Buchanan, V. Agrawal, M. Camurri, F. Dellaert, and M. Fallon. Deep imu bias inference for robust visual-inertial odometry with factor graphs. IEEE Robotics and Automation Letters ,8(1):41–48, 2022. [12] B. Liu, T.-Y. Lin, W. Zhang, and M. Ghaffari. Debiasing 6-dof imu via hierarchical learning of continuous bias dynamics. In Robotics: Science and Systems (RSS) , 2025. [13] J. Sola, J. Deray, and D. Atchuthan. A micro lie theory for state estimation in robotics. arXiv preprint arXiv:1812.01537 , 2018. [14] A. Barrau and S. Bonnabel. The invariant extended kalman filter as a stable observer. IEEE Transactions on Automatic Control , 62(4):1797–1812, 2016. [15] R. Hartley, M. Ghaffari, R. M. Eustice, and J. W. Grizzle. Contact-aided invariant extended kalman filtering for robot state estimation. The International Journal of Robotics Research , 39 (4):402–430, 2020. [16] T. D. Barfoot, C. H. Tong, and S. S¨ arkk¨ a. Batch continuous-time trajectory estimation as exactly sparse gaussian process regression. In Robotics: Science and Systems , volume 10, pages 1–10. Citeseer, 2014. [17] R. Buchanan, M. Camurri, F. Dellaert, and M. Fallon. Learning inertial odometry for dynamic legged robot state estimation. In Conference on robot learning , pages 1575–1584. PMLR, 2022. 9[18] P. Kidger, J. Morrill, J. Foster, and T. Lyons. Neural controlled differential equations for irregular time series. Advances in neural information processing systems , 33:6696–6707, 2020. [19] X. Li, H. Jiang, X. Chen, H. Kong, and J. Wu. Closed-form error propagation on se {n}(3) 
+
+group for invariant ekf with applications to vins. IEEE Robotics and Automation Letters , 7(4): 10705–10712, 2022. [20] R. T. Chen, Y. Rubanova, J. Bettencourt, and D. K. Duvenaud. Neural ordinary differential equations. Advances in neural information processing systems , 31, 2018. [21] M. Grupp. evo: Python package for the evaluation of odometry and slam. https://github. com/MichaelGrupp/evo , 2017. [22] M. Burri, J. Nikolic, P. Gohl, T. Schneider, J. Rehder, S. Omari, M. W. Achtelik, and R. Sieg-wart. The euroc micro aerial vehicle datasets. The International Journal of Robotics Research ,35(10):1157–1163, 2016. [23] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. M. Montiel, and J. D. Tard´ os. Orb-slam3: An accurate open-source library for visual, visual–inertial, and multimap slam. IEEE Transactions on Robotics , 37(6):1874–1890, 2021. doi:10.1109/TRO.2021.3075644. 10 Appendix 
+
+## A Details of the A QUA LUX Dataset 
+
+All training and testing sequences in the A QUA LUX dataset are shown in Figure 4 and 5. 
+
+Figure 4: Training sequences provided in A QUA LUX .
+
+Figure 5: Testing sequences provided in A QUA LUX .The visualization of IMU data norm is shown in Figure 6. 
+
+Figure 6: IMU data visualization. 11 B Sparse Negative Log-Likelihood 
+
+This appendix derives the sparse information-form evaluation of the NLL. The supervised indices are {s1, . . . , s M }. Define ξs ≜ vec( ξs1 , . . . , ξ sM ) with the corresponding sampled time tsi for index si. The goal is to evaluate 
+
+LNLL (Θ) = 12 r⊤S−1r + 12 log det S, S = H ¯P sH⊤ + W , (16) using sparse ¯Λs = ( ¯P s)−1 without forming the dense covariance ¯P s.
+
+Sparse information matrix induced by preintegration. For r ≥ q, define the state-transition matrix between two IMU time indices as Φr←q ≜ Fr−1Fr−2 · · · Fq , Φq←q = I. For two consecu-tive retained states Xsi and Xsi+1 , define Φsi ≜ Φsi+1 ←si and the accumulated process covariance 
+
+Qsi ≜
+
+> si+1 −1
+
+X
+
+> k=si
+
+Φsi+1 ←k+1 GkQ(ψ)G⊤ 
+
+> k
+
+Φ⊤
+
+> si+1 ←k+1
+
+. (17) Let P s 
+
+> 1
+
+≻ 0 be the prior covariance of ξs1 . The nonzero blocks of the block-tridiagonal precision matrix ¯Λs are given by 
+
+¯Λs 
+
+> 11
+
+= ( P s 
+
+> 1
+
+)−1 + (Φ s
+
+> 1
+
+)⊤(Qs
+
+> 1
+
+)−1Φs
+
+> 1
+
+, ¯ΛsM M = ( QsM −1)−1,
+
+¯Λsii = ( Qsi−1)−1 + (Φ si )⊤(Qsi )−1Φsi , i = 2 , . . . , M − 1,
+
+¯Λsi,i +1 = −(Φ si )⊤(Qsi )−1, ¯Λsi+1 ,i = −(Qsi )−1Φsi , i = 1 , . . . , M − 1.
+
+According to Theorem 1 in [16], the inverse covariance of a Markov Gaussian trajectory prior is exactly sparse, and ¯Λs = B−⊤ ΩsB−1, where 
+
+Ωs =
+
+        
+
+> (Ps
+> 1)−10··· 00(Qs
+> 1)−1··· 0
+
+... ... ... ...    
+
+> 00··· (QsM−1)−1
+
+ , B−1 =
+
+            
+
+> I00··· 0
+> −Φs
+> 1I0··· 00−Φs
+> 2I··· 0
+
+... ... ... ... ...     
+
+> 00··· −ΦsM−1I
+
+ .
+
+Accordingly, − log det ¯Λs = log det P s 
+
+> 1
+
++ PM −1 
+
+> i=1
+
+log det Qsi .
+
+Sensitivity with respect to ψ. During the optimization of ψ, the bias-dynamics parameters θ are fixed. Consequently, the nominal states, the residuals, and the linearized propagation matrices Fk
+
+and Gk are fixed. The dependence of LNLL on ψ is therefore only through the IMU noise covari-ance Q(ψ), the induced interval covariances Qsi (ψ), and the corresponding precision blocks in ¯Λs.For each supervisory interval [si, s i+1 ], the interval covariance (17) can be computed by a local covariance recursion 
+
+Σi,k +1 = FkΣi,k F ⊤ 
+
+> k
+
++ GkQ(ψ)G⊤ 
+
+> k
+
+, k = si, . . . , s i+1 −1, (18) where Fk ≜ Φk+1 ←k, Σi,s i = 0 and the recursion gives that Qsi = Σ i,s i+1 . Then differentiating (18) term by term, follows that 
+
+∂Σi,k +1 
+
+∂ψ j
+
+= Fk
+
+∂Σi,k 
+
+∂ψ j
+
+F ⊤ 
+
+> k
+
++ Gk
+
+∂Q (ψ)
+
+∂ψ j
+
+G⊤ 
+
+> k
+
+, k = si, . . . , s i+1 −1, (19) where ∂Σi,s i 
+
+> ∂ψ j
+
+= 0, ∂Q si 
+
+> ∂ψ j
+
+= ∂Σi,s i+1  
+
+> ∂ψ j
+
+.
+
+Noise-free full-state supervision. Let ri ≜ log( Xsi
+
+¯X−1 
+
+> si
+
+) and the corresponding Jacobian is 
+
+Hi = − dexp −1 
+
+> −ri
+
+. For the ground-truth case, W = 0 and the full-state residual Jacobian H =blkdiag( H1, . . . , H M ) is square and locally invertible. Thus S = H ¯P sH⊤. Define ˜r ≜ H−1r,and since (H ¯P sH⊤)−1 = H−⊤ ¯ΛsH−1, log det( H ¯P sH⊤) = − log det ¯Λs + 2 log | det H|,
+
+the NLL becomes 
+
+Lgt NLL (Θ) = 12 ˜r⊤ ¯Λs ˜r − 12 log det ¯Λs + log | det H|.
+
+12 Since ¯Λs is block tridiagonal, 
+
+Lgt NLL (Θ) = 12
+
+> M
+
+X
+
+> i=1
+
+˜r⊤ 
+
+> i
+
+¯Λsii ˜ri + 
+
+> M−1
+
+X
+
+> i=1
+
+˜r⊤ 
+
+> i
+
+¯Λsi,i +1 ˜ri+1 − 12 log det ¯Λs + log | det H|.
+
+Here log | det H| = PMi=1 log | det Hi|. Substituting the factorized determinant above gives the equivalent sum form used in the main text. 
+
+Noisy ATO supervision. For each supervised time tsi , the residual is defined as ri =log( Tsi
+
+¯T −1 
+
+> si
+
+), and the corresponding linearized Jacobian is Hi = − dexp −1 
+
+> −ri
+
+E, with E =  I3 0 00 0 I3
+
+
+
+For noisy pose supervision, W = blkdiag( W1, . . . , W M ) ≻ 0, the sparsity of NLL is well studied in [16]. The Woodbury identity gives 
+
+S−1 = W −1 − W −1H   ¯Λs + H⊤W −1H−1 H⊤W −1.
+
+Define K ≜ ¯Λs + H⊤W −1H, γ ≜ H⊤W −1r, Kz = γ. Then the first term in (16) is 
+
+12 r⊤S−1r = 12 r⊤W −1r − 12 γ⊤z.
+
+The second term in (16) is given by the matrix determinant lemma yields 
+
+12 log det S = 12 log det W + 12 log det K − 12 log det ¯Λs.
+
+As a consequence, 
+
+Lpose NLL (Θ) = 12
+
+> M
+
+X
+
+> i=1
+
+r⊤ 
+
+> i
+
+W −1 
+
+> i
+
+ri − 12 γ⊤z + 12
+
+> M
+
+X
+
+> i=1
+
+log det Wi + 12 log det K − 12 log det ¯Λs.
+
+For the evaluation of z and log det K, since H and W are block diagonal, define the local mea-surement information-weighted residual as 
+
+γi ≜ H⊤ 
+
+> i
+
+W −1 
+
+> i
+
+ri.
+
+The matrix K is block tridiagonal, with blocks 
+
+Kii = ¯Λsii + H⊤ 
+
+> i
+
+W −1 
+
+> i
+
+Hi, Ki,i +1 = ¯Λsi,i +1 , Ki+1 ,i = K⊤
+
+> i,i +1
+
+.
+
+Thus Kz = γ can be solved by sparse block factorization. For the log determinant, use the block LDL recursion D1 = K11 , D i = Kii − Ki,i −1D−1
+
+> i−1
+
+Ki−1,i , i = 2 , . . . , M and hence, log det K =
+
+PMi=1 log det Di. And the fully sparse sum form is as follows 
+
+Lpose NLL (Θ) = 12
+
+> M
+
+X
+
+> i=1
+
+r⊤ 
+
+> i
+
+W −1 
+
+> i
+
+ri − 12
+
+> M
+
+X
+
+> i=1
+
+γ⊤ 
+
+> i
+
+zi + 12
+
+> M
+
+X
+
+> i=1
+
+log det Wi
+
++ 12
+
+> M
+
+X
+
+> i=1
+
+log det Di + 12 log det P s 
+
+> 1
+
++ 12 
+
+> M−1
+
+X
+
+> i=1
+
+log det Qsi .
+
+All terms are obtained from the block residuals ri, the local linearized measurement models 
+
+(Hi, W i), and the preintegration quantities (P s 
+
+> 1
+
+, Φsi , Q si ).
+
+## C Invariant Error Adjoint 
+
+This section validates the outer invariant-error adjoint through numerical simulation. Time-varying biases bat and bgt are generated by trigonometric functions, injected into the IMU measurement model, and used for preintegration-based loss evaluation. The analytical gradient of L with respect to b(t) is compared with finite-difference gradients in Fig. 7. 13 (a) Accelerometer bias (b) Gyroscope bias 
+
+Figure 7: Numerical verification of the invariant-adjoint bias gradients. 14
