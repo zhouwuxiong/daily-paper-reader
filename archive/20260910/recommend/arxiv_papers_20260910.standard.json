@@ -1,0 +1,492 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-09-10T21:07:38.765440+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 10,
+    "quick_skim_target": 11,
+    "quick_selected": 10
+  },
+  "deep_dive": [
+    {
+      "id": "2609.07497v1",
+      "source": "arxiv",
+      "title": "Functional-SLAM: Interaction-Aware Mapping with Online Functional Scene Graphs",
+      "abstract": "Existing SLAM systems lack modeling of the functional relations required for fine-grained robotic interaction. Functional 3D scene graphs can represent relations between objects and interaction elements, but existing methods rely on offline reconstruction, making them inadequate for real-time interaction in real-world exploration. To address this limitation, we propose Functional-SLAM, the first framework that continuously and recursively maintains a functional scene graph as an online SLAM state. The framework combines anchor-keyframe geometry with functional-context constraints for persistent node maintenance, accumulates multi-frame evidence through temporal relations to commit stable functional edges, and supplements visual loop-closure candidates with functional topology in scenes with repetitive appearance or degraded texture. Experiments show that Functional-SLAM efficiently constructs stable functional maps online, substantially improving runtime over offline methods while maintaining highly competitive accuracy. Compared with peer SLAM systems, it further improves pose estimation accuracy through functional-topology-assisted loop closure. The code is publicly available at https://github.com/Hbelief1998/Functional-SLAM-CoRL_2026.",
+      "authors": [
+        "Xinggang Hu",
+        "Chenyangguang Zhang",
+        "Zihan Zhu",
+        "Ruida Zhang",
+        "Xiangkui Zhang",
+        "Xiangyang Ji"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-07T13:46:56+00:00",
+      "link": "https://arxiv.org/pdf/2609.07497v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Online SLAM maintaining functional scene graphs with visual loop closure",
+      "llm_evidence_cn": "在线SLAM维护功能场景图并融合视觉回环",
+      "llm_evidence": "在线SLAM维护功能场景图并融合视觉回环",
+      "canonical_evidence": "在线SLAM维护功能场景图并融合视觉回环",
+      "llm_tldr_en": "Existing SLAM lacks functional relation modeling and relies on offline scene graphs. Functional-SLAM maintains a functional 3D scene graph as an online SLAM state, combining anchor-keyframe geometry, functional-context constraints, temporal evidence and visual loop closure for real-time interaction.",
+      "llm_tldr_cn": "现有SLAM系统缺乏对精细机器人交互所需功能关系的建模，而功能3D场景图多依赖离线重建，难以支撑实时探索。本文提出Functional-SLAM，首个将功能场景图作为在线SLAM状态持续递归维护的框架，结合锚点-关键帧几何与功能上下文约束保持节点，并通过时序关系累积多帧证据以固化稳定的功能边，同时补充视觉回环。该工作使机器人在实时探索中即可获得可用于交互的语义功能地图，推动SLAM从几何建图向交互感知建图拓展。",
+      "llm_tldr": "现有SLAM系统缺乏对精细机器人交互所需功能关系的建模，而功能3D场景图多依赖离线重建，难以支撑实时探索。本文提出Functional-SLAM，首个将功能场景图作为在线SLAM状态持续递归维护的框架，结合锚点-关键帧几何与功能上下文约束保持节点，并通过时序关系累积多帧证据以固化稳定的功能边，同时补充视觉回环。该工作使机器人在实时探索中即可获得可用于交互的语义功能地图，推动SLAM从几何建图向交互感知建图拓展。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.08159v1",
+      "source": "arxiv",
+      "title": "OmniNav: Robust Long-Horizon Target Navigation in Dynamic Environments",
+      "abstract": "Long-horizon target navigation requires a robot to sustain task execution across evolving observations, decisions, and physical interactions. This requires three coupled capabilities: maintaining valid scene memory, revising target beliefs under partial observability, and selecting interaction-feasible navigation endpoints. However, the state underlying each capability is only conditionally valid: scene representations become stale when objects move or disappear, unsuccessful searches alter beliefs over target locations, and geometrically convenient endpoints may still be infeasible for manipulation. To address these challenges, we present OmniNav, which formulates long-horizon navigation as continual inference over a factorized task state posterior coupling scene validity, target belief, and interaction feasibility. For representation, OmniNav incrementally constructs an updatable 3D object scene memory, preventing stale scene evidence from propagating to subsequent decisions. For exploration, it introduces an evidence-aware Bayesian belief-revision mechanism that derives dependency-aware region priors from semantic context, incorporates unsuccessful searches as negative evidence, and updates them for posterior-guided frontier selection. For interaction, OmniNav incorporates manipulation reachability and collision constraints into navigation-endpoint selection and propagates execution feedback through hierarchical closed-loop recovery. Extensive experiments demonstrate that OmniNav achieves the highest success rates among the compared methods on semantic ObjectNav and fine-grained instance navigation benchmarks, remains robust to target relocation, and improves real-world pick-and-place success from 53.3% to 71.7% over an adapted open-loop baseline. The project page of OmniNav is available at https://omni-nav.github.io/.",
+      "authors": [
+        "Yujie Tang",
+        "Meiling Wang",
+        "Jinhao Jiang",
+        "Sibo Zuo",
+        "Yinan Deng",
+        "Xinyu Zhang",
+        "Yufeng Yue"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-08T02:43:48+00:00",
+      "link": "https://arxiv.org/pdf/2609.08159v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Long-horizon target navigation in dynamic environments for robots",
+      "llm_evidence_cn": "面向机器人在动态环境中的长时程目标导航",
+      "llm_evidence": "面向机器人在动态环境中的长时程目标导航",
+      "canonical_evidence": "面向机器人在动态环境中的长时程目标导航",
+      "llm_tldr_en": "Long-horizon target navigation requires robots to sustain execution across evolving observations, decisions and interactions, needing valid scene memory, revised target beliefs and feasible endpoints. OmniNav formulates navigation as continual inference over a factorized task-state posterior for robust dynamic navigation.",
+      "llm_tldr_cn": "长时程目标导航要求机器人跨越不断变化的观测、决策与物理交互持续执行任务，需要维持有效场景记忆、在部分可观测下修正目标信念并选择交互可行的导航终点。本文提出OmniNav，将长时程导航表述为对分解式任务状态后验的持续推断。该方法在动态环境中保持鲁棒的场景记忆与目标信念更新，并选出可操作的导航终点，提升了机器人在动态未知环境中的自主导航能力。",
+      "llm_tldr": "长时程目标导航要求机器人跨越不断变化的观测、决策与物理交互持续执行任务，需要维持有效场景记忆、在部分可观测下修正目标信念并选择交互可行的导航终点。本文提出OmniNav，将长时程导航表述为对分解式任务状态后验的持续推断。该方法在动态环境中保持鲁棒的场景记忆与目标信念更新，并选出可操作的导航终点，提升了机器人在动态未知环境中的自主导航能力。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2609.08511v1",
+      "source": "arxiv",
+      "title": "PGMT: Perceptive General Motion Tracking for Humanoid Robots",
+      "abstract": "Humanoid motion trackers can reproduce diverse whole-body motions, but their performance degrades on complex terrain where terrain-agnostic references become physically infeasible. We present PGMT, a Perceptive General Motion Tracking pipeline for humanoid robots that learns terrain adaptation from independently selected motion references and terrains. PGMT first learns a general tracking and recovery prior, then incorporates terrain perception through motion-conditioned terrain glimpses that selectively encode regions relevant to the current motion. Terrain-aware tracking relaxation allows necessary deviations from the reference while preserving its motion intent. Zero-shot deployment on a Unitree G1 demonstrates robust terrain-adaptive locomotion and whole-body motion execution over real-world terrain with obstacles up to 37 cm high, while supporting teleoperation, dynamic motion tracking, and fall recovery. PGMT extends general humanoid motion tracking beyond flat ground, providing a unified policy for terrain-adaptive locomotion, diverse whole-body behaviors, and teleoperation in complex environments.",
+      "authors": [
+        "Hongyi Li",
+        "Li Peizhuo",
+        "Yucheng Tao",
+        "Ze Wang",
+        "Fangzhou Xu",
+        "Jinyi Chen",
+        "Yanyan Yuan",
+        "Dapeng Jia",
+        "Yongbin Jin",
+        "Mingfeng Fan",
+        "Guillaume Sartoretti",
+        "Hongtao Wang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-08T09:57:32+00:00",
+      "link": "https://arxiv.org/pdf/2609.08511v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Terrain-adaptive whole-body motion tracking for humanoid robots",
+      "llm_evidence_cn": "面向人形机器人的地形自适应全身运动跟踪",
+      "llm_evidence": "面向人形机器人的地形自适应全身运动跟踪",
+      "canonical_evidence": "面向人形机器人的地形自适应全身运动跟踪",
+      "llm_tldr_en": "Humanoid motion trackers degrade on complex terrain where terrain-agnostic references are physically infeasible. PGMT learns a general tracking and recovery prior, adds motion-conditioned terrain glimpses for perception, and allows terrain-aware tracking relaxation, enabling robust terrain-adaptive locomotion on a Unitree G1.",
+      "llm_tldr_cn": "人形运动跟踪器能复现多样全身动作，但在复杂地形上性能下降，因为忽略地形的参考动作在物理上不可行。本文提出PGMT感知式通用运动跟踪流程，先学习通用跟踪与恢复先验，再通过运动条件化的地形感知片段编码相关区域，并允许地形感知的跟踪松弛。在Unitree G1上零样本部署展示了稳健的地形自适应运动与全身控制，提升了人形机器人在复杂环境中的运动能力。",
+      "llm_tldr": "人形运动跟踪器能复现多样全身动作，但在复杂地形上性能下降，因为忽略地形的参考动作在物理上不可行。本文提出PGMT感知式通用运动跟踪流程，先学习通用跟踪与恢复先验，再通过运动条件化的地形感知片段编码相关区域，并允许地形感知的跟踪松弛。在Unitree G1上零样本部署展示了稳健的地形自适应运动与全身控制，提升了人形机器人在复杂环境中的运动能力。",
+      "llm_tags": [
+        "query:rl-motion:composite"
+      ],
+      "matched_query_tag": "query:rl-motion:composite",
+      "matched_query_text": "Papers central to 查找强化学习和运动控制相关的最新论文, especially work that connects or combines: reinforcement learning approaches for physical systems; motion control strategies in robotics; robot control using learning methods; continuous state and action control; recent advances in reinforcement learning for motion control; deep reinforcement learning for robot locomotion.",
+      "matched_requirement_id": "req-composite-rl-motion",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.04602v1",
+      "source": "arxiv",
+      "title": "NavArena: Automated Construction of Goal-Oriented Navigation Benchmarks from 3D Gaussian Splatting Reconstructions",
+      "abstract": "Fixed 3D Gaussian Splatting (3DGS) reconstructions provide realistic novel views but lack the traversability constraints, valid goals, and closed-loop protocols required for navigation evaluation. We introduce NavArena, an automated framework that transforms fixed 3DGS reconstructions into benchmarks for goal-oriented visual navigation. NavArena integrates a frozen 3DGS model for egocentric RGB-D rendering, an occupancy costmap derived from Gaussian density and height statistics for reachability and collision queries, and semantic goal candidates lifted from multi-view open-vocabulary masks. These components support the automatic generation and unified closed-loop evaluation of goal-oriented navigation episodes. Across more than 2{,}000 scenes, NavArena generates 22.2 million expert trajectories. Spatial and semantic evaluations assess the derived navigation representations, while policy rollouts demonstrate the diagnostic value of the unified evaluation protocol. NavArena enables scalable and reproducible navigation evaluation on large-scale 3DGS reconstructions, and all benchmark-generation tools, evaluation protocols, and derived assets will be released publicly.",
+      "authors": [
+        "Junhui Wang",
+        "Wei Yang",
+        "Xinyao Li",
+        "Ningjing Fan",
+        "Yuehao Yin",
+        "Xuecheng Chen",
+        "Chao Gao"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-04T01:02:03+00:00",
+      "link": "https://arxiv.org/pdf/2609.04602v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "automated goal-oriented visual navigation benchmarks from 3DGS reconstructions",
+      "llm_evidence_cn": "基于3DGS重建的自动化目标导向视觉导航基准",
+      "llm_evidence": "基于3DGS重建的自动化目标导向视觉导航基准",
+      "canonical_evidence": "基于3DGS重建的自动化目标导向视觉导航基准",
+      "llm_tldr_en": "NavArena automatically transforms fixed 3D Gaussian Splatting reconstructions into goal-oriented visual navigation benchmarks by combining egocentric RGB-D rendering, occupancy costmaps, and open-vocabulary semantic goals for unified closed-loop evaluation.",
+      "llm_tldr_cn": "针对固定3D高斯溅射重建缺乏可通行性约束、有效目标与闭环协议、难以支撑导航评估的问题，本文提出NavArena框架，将3DGS重建自动转化为目标导向视觉导航基准，集成冻结的3DGS自中心RGB-D渲染、基于高斯密度与高度的占据代价地图以及开放词汇语义目标。该框架支持导航回合的自动生成与统一闭环评测。",
+      "llm_tldr": "针对固定3D高斯溅射重建缺乏可通行性约束、有效目标与闭环协议、难以支撑导航评估的问题，本文提出NavArena框架，将3DGS重建自动转化为目标导向视觉导航基准，集成冻结的3DGS自中心RGB-D渲染、基于高斯密度与高度的占据代价地图以及开放词汇语义目标。该框架支持导航回合的自动生成与统一闭环评测。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.06099v1",
+      "source": "arxiv",
+      "title": "PASTEL: Panoramic Alignment for Monocular 4D Scene Reconstruction",
+      "abstract": "Reconstructing 4D scenes from casually captured monocular video is vital for applications in virtual reality (VR) and embodied AI. Recent advances in 4D reconstruction and novel view synthesis have substantially propelled this capability. However, existing reconstruction methods generally cannot recover regions beyond visible camera limits. Consequently, we introduce a new paradigm that achieves 4D scene synthesis by combining visible-region reconstruction from monocular input with invisible-region generation beyond observable camera boundaries. We present Panoramic Alignment for Strategic Exploitation of Generative Priors (PASTEL). Specifically, PASTEL proposes panoramic scene alignment, a novel representation that reformulates the intractable 3D \"invisible region\" exploration into a tractable 2D directional trajectory planning. This is achieved by reducing the viewpoint planning from 6-DoF search to a 2D directional search with explicit visibility boundaries. By operating within this panoramic space, our method strategically identifies camera trajectories that maximize exploration beyond observable boundaries while minimizing viewpoint deviation. Experimental results show that PASTEL can not only extrapolate plausible scene content beyond the observable boundaries of input monocular videos, but also substantially boost monocular 4D reconstruction performance. PASTEL outperforms the previous state-of-the-art method by 0.9dB in full-image PSNR on the DyCheck IPhone dataset.",
+      "authors": [
+        "Yuankun Yang",
+        "Yi Wei",
+        "Bo Bai",
+        "Wenyang Zhou",
+        "Li Zhang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-05T13:51:48+00:00",
+      "link": "https://arxiv.org/pdf/2609.06099v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Monocular 4D scene reconstruction combining visible reconstruction and invisible generation",
+      "llm_evidence_cn": "结合可见重建与不可见生成的单目四维场景重建",
+      "llm_evidence": "结合可见重建与不可见生成的单目四维场景重建",
+      "canonical_evidence": "结合可见重建与不可见生成的单目四维场景重建",
+      "llm_tldr_en": "Reconstructing 4D scenes from monocular video is vital for VR and embodied AI, but existing methods cannot recover regions beyond camera limits. PASTEL combines visible-region reconstruction with invisible-region generation and introduces panoramic scene alignment to synthesize scenes beyond camera boundaries.",
+      "llm_tldr_cn": "从随手拍摄的单目视频重建四维场景对虚拟现实与具身智能很重要，但现有方法无法恢复可见相机范围之外的区域。本文提出PASTEL新范式，将单目输入的可见区域重建与不可见区域生成相结合，并提出全景场景对齐表示以重构难以处理的不可见区域问题。该工作实现了超越相机边界的四维场景合成，为单目四维重建与新颖视角合成拓展了能力。",
+      "llm_tldr": "从随手拍摄的单目视频重建四维场景对虚拟现实与具身智能很重要，但现有方法无法恢复可见相机范围之外的区域。本文提出PASTEL新范式，将单目输入的可见区域重建与不可见区域生成相结合，并提出全景场景对齐表示以重构难以处理的不可见区域问题。该工作实现了超越相机边界的四维场景合成，为单目四维重建与新颖视角合成拓展了能力。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.06195v1",
+      "source": "arxiv",
+      "title": "EgoNeMo: Transferable Map of Pedestrian Dynamics via Egocentric LiDAR Scan",
+      "abstract": "This paper proposes a transferable Map of Dynamics (MoD) framework that generalizes to unknown environments using only egocentric 3D LiDAR point clouds to overcome the long-standing limitation of traditional MoD methods. While MoDs are essential for encoding human motion characteristics to enable accurate pedestrian trajectory prediction or safe robot navigation, traditional approaches suffer from site-specificity, requiring exhaustive trajectory accumulation at every new location. Extending recent advances in neural implicit modeling, our framework trains a continuous, LiDAR-based MoD estimator across diverse environments. To mitigate the inherent sparsity and temporal bias of real-world trajectory data, we introduce a position-balanced sampling strategy and a multi-task learning architecture that jointly predicts motion distributions and a spatial frequency score map. The latter is further augmented by visibility-aware losses to compensate for incomplete observation data. Comprehensive experiments demonstrate that our method effectively reconstructs underlying motion maps even in unknown locations from a single instantaneous LiDAR scan, despite highly sparse training data. Finally, we show that our improvements enhance the reliability of downstream trajectory prediction.",
+      "authors": [
+        "Azusa Sawada",
+        "Allan Wang",
+        "Hideo Saito",
+        "Aaron Steinfeld"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.RO"
+      ],
+      "published": "2026-09-05T17:35:21+00:00",
+      "link": "https://arxiv.org/pdf/2609.06195v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "transferable pedestrian dynamics map from LiDAR for safe robot navigation",
+      "llm_evidence_cn": "基于激光雷达的可迁移行人动态地图用于机器人安全导航",
+      "llm_evidence": "基于激光雷达的可迁移行人动态地图用于机器人安全导航",
+      "canonical_evidence": "基于激光雷达的可迁移行人动态地图用于机器人安全导航",
+      "llm_tldr_en": "EgoNeMo learns a transferable Map of Dynamics from only egocentric 3D LiDAR point clouds, using neural implicit modeling and position-balanced sampling to generalize pedestrian dynamics to unseen environments for safe robot navigation.",
+      "llm_tldr_cn": "传统行人动态地图依赖在特定地点积累大量轨迹，难以泛化到新环境，限制了行人轨迹预测与机器人导航。本文提出可迁移的动态地图框架EgoNeMo，仅使用自中心3D激光雷达点云，基于神经隐式建模跨环境训练连续动态估计器，并引入位置均衡采样缓解数据稀疏与时间偏置。该框架无需站点专属数据即可泛化到未知环境，为安全机器人导航提供支持。",
+      "llm_tldr": "传统行人动态地图依赖在特定地点积累大量轨迹，难以泛化到新环境，限制了行人轨迹预测与机器人导航。本文提出可迁移的动态地图框架EgoNeMo，仅使用自中心3D激光雷达点云，基于神经隐式建模跨环境训练连续动态估计器，并引入位置均衡采样缓解数据稀疏与时间偏置。该框架无需站点专属数据即可泛化到未知环境，为安全机器人导航提供支持。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.06370v1",
+      "source": "arxiv",
+      "title": "DualPathOcc: Dual-Resolution BEV Encoder for 3D Occupancy Prediction",
+      "abstract": "Predicting 3D occupancy from multi-view images requires preserving geometric detail during 2D-to-3D lifting while reasoning over sparse, volumetric scene representations. We present DualPathOcc, a camera-based framework that combines a Spatial Enhancer for high-resolution feature aggregation before BEV compression, a SENet-augmented dual-path BEV encoder for local-global context modeling, and height-aware weighted cross-entropy for near-ground occupancy. The final model is optimized with occupancy supervision and no explicit depth loss. On single-frame Occ3D-nuScenes, DualPathOcc achieves 37.37 mIoU. We further analyze how surface-centered depth targets interact with volumetric occupancy learning.",
+      "authors": [
+        "Lihao Qiu",
+        "Jian Chen",
+        "Ruihao Wang",
+        "Ramu Gautam",
+        "Mei Yang",
+        "Yingtao Jiang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-06T04:02:36+00:00",
+      "link": "https://arxiv.org/pdf/2609.06370v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Camera-based 3D occupancy prediction for autonomous driving scenes",
+      "llm_evidence_cn": "面向自动驾驶场景的相机三维占据预测",
+      "llm_evidence": "面向自动驾驶场景的相机三维占据预测",
+      "canonical_evidence": "面向自动驾驶场景的相机三维占据预测",
+      "llm_tldr_en": "Predicting 3D occupancy from multi-view images requires preserving geometric detail during 2D-to-3D lifting while reasoning over sparse volumetric scenes. DualPathOcc uses a spatial enhancer, a SENet dual-path BEV encoder and height-aware weighted cross-entropy, reaching 37.37 mIoU on Occ3D-nuScenes.",
+      "llm_tldr_cn": "从多视角图像预测三维占据需要在2D到3D提升中保留几何细节，并对稀疏体素场景进行推理。本文提出DualPathOcc相机框架，包含提升分辨率特征聚合的空间增强器、SENet增强的双路BEV编码器用于局部-全局上下文建模，以及面向近地占据的高度感知加权交叉熵。在Occ3D-nuScenes单帧上取得37.37 mIoU，并分析了表面深度目标与体素占据学习的交互，为自动驾驶三维场景理解提供了有效方案。",
+      "llm_tldr": "从多视角图像预测三维占据需要在2D到3D提升中保留几何细节，并对稀疏体素场景进行推理。本文提出DualPathOcc相机框架，包含提升分辨率特征聚合的空间增强器、SENet增强的双路BEV编码器用于局部-全局上下文建模，以及面向近地占据的高度感知加权交叉熵。在Occ3D-nuScenes单帧上取得37.37 mIoU，并分析了表面深度目标与体素占据学习的交互，为自动驾驶三维场景理解提供了有效方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.08041v1",
+      "source": "arxiv",
+      "title": "MamMA: A Mamba-Based Pedestrian Trajectory Prediction Algorithm Considering Occupancy Map and Pedestrian Awareness States",
+      "abstract": "Many pedestrian trajectory prediction algorithms have been proposed to improve the safety of navigation for mobile robots working in human-robot coexistence environments. Some pedestrian trajectory prediction algorithms extract information about obstacles near pedestrians from top-down view images to improve the accuracy of trajectory prediction. However, mobile robots typically create local occupancy maps using LiDAR, rather than top-down view images. Meanwhile, the vision sensors on board robots provide egocentric view images, which contain fine-grained behavioral information about the pedestrians near the robot. To better use the information collected by LiDAR and on-board vision sensors, we propose MamMA, a Mamba-based pedestrian trajectory prediction algorithm considering occupancy maps and pedestrian awareness states. MamMA divides the occupancy map by patches and extracts obstacle features from each patch to create map features. Pedestrian awareness states are divided and considered, as some studies show that awareness states affect the perception and speed of pedestrians. Furthermore, a Mamba-based model is proposed to predict the future trajectories of pedestrians based on different types of features. Experiments on the STCrowd, SiT, JRDB, ETH, and UCY datasets show that MamMA achieves better average displacement error and final displacement error than the state-of-the-art algorithms.",
+      "authors": [
+        "Juncen Long",
+        "Xiaofeng Jin",
+        "Gianluca Bardaro",
+        "Simone Mentasti",
+        "Matteo Matteucci"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.LG"
+      ],
+      "published": "2026-09-07T22:56:48+00:00",
+      "link": "https://arxiv.org/pdf/2609.08041v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Pedestrian trajectory prediction to improve mobile robot navigation safety",
+      "llm_evidence_cn": "提升移动机器人导航安全的行人轨迹预测",
+      "llm_evidence": "提升移动机器人导航安全的行人轨迹预测",
+      "canonical_evidence": "提升移动机器人导航安全的行人轨迹预测",
+      "llm_tldr_en": "Safe mobile robot navigation in human-robot coexistence needs accurate pedestrian trajectory prediction, but prior methods use top-down images rather than the LiDAR occupancy maps and egocentric vision robots actually have. MamMA fuses occupancy maps and pedestrian awareness states in a Mamba-based predictor.",
+      "llm_tldr_cn": "为提升人机共存环境中移动机器人导航的安全性，已有行人轨迹预测方法多从俯视图图像提取障碍信息，但机器人通常用激光雷达构建局部占据地图，而车载视觉提供的是含细粒度行为的自视角图像。本文提出基于Mamba的MamMA算法，融合占据地图与行人意识状态。该算法更充分地利用激光雷达与车载视觉信息，提升了轨迹预测精度，从而增强移动机器人导航安全性。",
+      "llm_tldr": "为提升人机共存环境中移动机器人导航的安全性，已有行人轨迹预测方法多从俯视图图像提取障碍信息，但机器人通常用激光雷达构建局部占据地图，而车载视觉提供的是含细粒度行为的自视角图像。本文提出基于Mamba的MamMA算法，融合占据地图与行人意识状态。该算法更充分地利用激光雷达与车载视觉信息，提升了轨迹预测精度，从而增强移动机器人导航安全性。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.08711v1",
+      "source": "arxiv",
+      "title": "DCLP++: Learning to Navigate with Footprint Clearance and Relative Motion",
+      "abstract": "We present DCLP++, a local navigation frameworkthat uses footprint clearance as the geometric basis for studying relative motion features in dynamic environments. Each valid LiDAR return is mapped to its shortest Euclidean distance from the filled robot footprint before reciprocal encoding, replacing distance from the sensor with distance to the occupied body. Radial measurementsor simulated planar relative velocities provide short-horizon features without static-dynamic labels in the policy input. A preliminary study uses a rectangular robot with a speed limit of 1 m/s among 20 moving obstacles. On 100 fixed validation tasks, two selected training seeds yield mean success rates of 42% with sensor rangeand 70% with footprint clearance after 200,000 environment steps.Motion variants show mixed additional gains. These results supportthe clearance-based observation in the evaluated setting; reliable motion benefits and transfer across robots require further evaluation.",
+      "authors": [
+        "Shanze Wang",
+        "Wei Zhang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-08T13:09:35+00:00",
+      "link": "https://arxiv.org/pdf/2609.08711v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "local navigation with footprint clearance in dynamic environments",
+      "llm_evidence_cn": "动态环境下基于足印间隙的局部导航",
+      "llm_evidence": "动态环境下基于足印间隙的局部导航",
+      "canonical_evidence": "动态环境下基于足印间隙的局部导航",
+      "llm_tldr_en": "DCLP++ is a local navigation framework that uses footprint clearance, mapping each LiDAR return to its distance from the filled robot footprint, to build short-horizon relative-motion features and improve success in dynamic obstacle scenes.",
+      "llm_tldr_cn": "针对动态环境下局部导航需要不依赖静态-动态标签的短时相对运动特征的问题，本文提出DCLP++框架，以机器人足印间隙为几何基础，将每个有效LiDAR回波映射为到填充足印的最短欧氏距离并做倒数编码，配合径向测量或模拟平面相对速度构成策略输入。在20个移动障碍物的初步实验中，足印间隙使平均成功率由42%提升至70%。",
+      "llm_tldr": "针对动态环境下局部导航需要不依赖静态-动态标签的短时相对运动特征的问题，本文提出DCLP++框架，以机器人足印间隙为几何基础，将每个有效LiDAR回波映射为到填充足印的最短欧氏距离并做倒数编码，配合径向测量或模拟平面相对速度构成策略输入。在20个移动障碍物的初步实验中，足印间隙使平均成功率由42%提升至70%。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.09069v1",
+      "source": "arxiv",
+      "title": "Rethinking Learned Occupancy in Autonomous Active Mapping with Observation-Gated Filtering",
+      "abstract": "Autonomous 3D active mapping requires a space robot to choose where to sense while building the geometry needed for navigation. Learned occupancy completion extends spatial context beyond the current field of view, but one predicted map often serves two planning roles: it scores expected surface gain and constrains collision-free motion. Unsupported occupancy can therefore distort both where the robot looks and where it believes it can travel. We study this coupled interface in a controlled closed-loop benchmark by holding the active-mapping system fixed and varying only its planner-facing occupancy across observation-only, learned, oracle-corrected, and ground-truth conditions. Improving occupancy accuracy does not monotonically improve closed-loop coverage: across 25 starts, planning with ground-truth occupancy reaches 70% of the learned baseline's final coverage 12.7 steps earlier on average, while increasing final coverage by only 0.031. Guided by this diagnosis, we introduce an observation-gated filter that retains completion in insufficiently observed regions and suppresses predictions only after repeated frustum exposure without nearby RGB-D support. The filter improves both targeted failure-prone starts without retraining or ground truth. These results motivate online revision of planner-facing geometry during autonomous intervals between communication windows. The current study assumes benchmark RGB-D observations and sufficiently accurate pose estimates; planetary sensing conditions and accumulated localization drift remain to be evaluated.",
+      "authors": [
+        "Jiahui Zhang",
+        "Bonian Han",
+        "Gongbo Liang",
+        "Yu Zhang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.CV"
+      ],
+      "published": "2026-09-08T17:23:37+00:00",
+      "link": "https://arxiv.org/pdf/2609.09069v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "learned occupancy for autonomous 3D active mapping and navigation",
+      "llm_evidence_cn": "面向自主三维主动建图与导航的学习式占据",
+      "llm_evidence": "面向自主三维主动建图与导航的学习式占据",
+      "canonical_evidence": "面向自主三维主动建图与导航的学习式占据",
+      "llm_tldr_en": "This work studies how planner-facing occupancy affects autonomous 3D active mapping in a controlled closed-loop benchmark, varying only the occupancy across observation-only, learned, oracle-corrected, and ground-truth conditions to reveal coupled planning effects.",
+      "llm_tldr_cn": "针对自主三维主动建图中学习式占据补全的预测地图同时服务于视角选择与避障、未支撑占据可能扭曲规划的问题，本文在受控闭环基准中固定主动建图系统，仅替换面向规划器的占据表示，比较观测、学习、真值校正与真实值四种条件。结果显示提升占据精度并不单调改善规划性能，为占据表示与规划接口的设计提供了分析依据。",
+      "llm_tldr": "针对自主三维主动建图中学习式占据补全的预测地图同时服务于视角选择与避障、未支撑占据可能扭曲规划的问题，本文在受控闭环基准中固定主动建图系统，仅替换面向规划器的占据表示，比较观测、学习、真值校正与真实值四种条件。结果显示提升占据精度并不单调改善规划性能，为占据表示与规划接口的设计提供了分析依据。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.09491v1",
+      "source": "arxiv",
+      "title": "Learning Global Camera Poses from Noisy View-Graphs for Structure from Motion",
+      "abstract": "Camera pose estimation is a key step in 3D reconstruction and view-synthesis pipelines. We present a deep, global Structure-from-Motion framework based on learned view-graph aggregation. Our method employs a permutation-equivariant, edge-conditioned graph neural network that takes noisy pairwise relative poses as input and outputs globally consistent camera extrinsics. The network is trained without ground-truth supervision, relying solely on a relative-pose consistency objective. This is followed by 3D point triangulation and robust bundle adjustment. Our approach is efficient, scalable to more than a thousand images, and robust to graph density. We evaluate our method on MegaDepth, 1DSfM, Strecha, and BlendedMVS. These experiments demonstrate that our method achieves superior rotation and translation accuracy compared to deep track-centric methods while registering more images across many scenes, and competitive results compared to state-of-the-art classical pipelines, while being much faster.",
+      "authors": [
+        "Fadi Khatib",
+        "Meirav Galun",
+        "Ronen Basri"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-08T22:14:03+00:00",
+      "link": "https://arxiv.org/pdf/2609.09491v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Learns globally consistent camera extrinsics from noisy relative poses",
+      "llm_evidence_cn": "从带噪相对位姿学习全局一致的相机外参",
+      "llm_evidence": "从带噪相对位姿学习全局一致的相机外参",
+      "canonical_evidence": "从带噪相对位姿学习全局一致的相机外参",
+      "llm_tldr_en": "A deep global Structure-from-Motion framework uses an edge-conditioned graph neural network to aggregate noisy pairwise relative poses into globally consistent camera extrinsics, then triangulates points with bundle adjustment, scaling to over a thousand images.",
+      "llm_tldr_cn": "针对传统运动恢复结构在噪声相对位姿下难以获得全局一致相机位姿的问题，本文提出一种基于学习的全局SfM框架。方法采用置换等变、边条件图神经网络，将带噪的两两相对位姿聚合为全局一致的相机外参，无需真值监督，仅依赖相对位姿一致性目标，随后进行三维点三角化与鲁棒光束法平差。在MegaDepth、1DSfM、Strecha和BlendedMVS上实验表明，该方法可扩展至上千张图像且对图密度鲁棒，为大规模三维重建提供了高效方案。",
+      "llm_tldr": "针对传统运动恢复结构在噪声相对位姿下难以获得全局一致相机位姿的问题，本文提出一种基于学习的全局SfM框架。方法采用置换等变、边条件图神经网络，将带噪的两两相对位姿聚合为全局一致的相机外参，无需真值监督，仅依赖相对位姿一致性目标，随后进行三维点三角化与鲁棒光束法平差。在MegaDepth、1DSfM、Strecha和BlendedMVS上实验表明，该方法可扩展至上千张图像且对图密度鲁棒，为大规模三维重建提供了高效方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "pose graph optimization methods for global consistency in simultaneous localization and mapping",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.10336v1",
+      "source": "arxiv",
+      "title": "Odometer-Agnostic Drift Correction Using OpenStreetMap Lane Geometry",
+      "abstract": "Despite significant progress in odometry estimation, long-term drift remains a fundamental limitation of incremental pose integration, especially in large-scale or loop-free environments. Existing map-assisted methods can reduce drift, but often depend on dense maps, sensor-specific processing, or complex matching pipelines. We propose a lightweight open-source, odometry-agnostic correction method that aligns short trajectory segments to OpenStreetMap (OSM) lane centerlines. By formulating drift correction as a direct alignment between recent odometry and sparse lane geometry, the method enables efficient online operation without dense priors or expensive preprocessing. Experiments with LiDAR and visual odometry backends demonstrate consistent improvements, with particularly strong gains under severe drift.",
+      "authors": [
+        "Joaquin Caballero",
+        "Emilio Garcia-Fidalgo",
+        "Alberto Ortiz",
+        "Jarno Ralli"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-09T15:33:40+00:00",
+      "link": "https://arxiv.org/pdf/2609.10336v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "drift correction for incremental odometry using map alignment",
+      "llm_evidence_cn": "利用地图对齐校正增量里程计漂移",
+      "llm_evidence": "利用地图对齐校正增量里程计漂移",
+      "canonical_evidence": "利用地图对齐校正增量里程计漂移",
+      "llm_tldr_en": "A lightweight, odometry-agnostic drift correction method aligns short trajectory segments to sparse OpenStreetMap lane centerlines, reducing long-term drift for both LiDAR and visual odometry backends without dense priors or complex matching.",
+      "llm_tldr_cn": "增量位姿积分在大范围或无回环环境中会产生长期漂移，而现有地图辅助方法往往依赖稠密地图、传感器专属处理或复杂匹配流程。本文提出一种轻量、开源且与里程计类型无关的校正方法，将短轨迹段直接与OpenStreetMap车道中心线对齐，从而无需稠密先验即可在线运行。在激光与视觉里程计后端上的实验显示定位精度持续提升，为低成本漂移抑制提供了新途径。",
+      "llm_tldr": "增量位姿积分在大范围或无回环环境中会产生长期漂移，而现有地图辅助方法往往依赖稠密地图、传感器专属处理或复杂匹配流程。本文提出一种轻量、开源且与里程计类型无关的校正方法，将短轨迹段直接与OpenStreetMap车道中心线对齐，从而无需稠密先验即可在线运行。在激光与视觉里程计后端上的实验显示定位精度持续提升，为低成本漂移抑制提供了新途径。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "loop closure detection techniques to correct drift in SLAM systems",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}

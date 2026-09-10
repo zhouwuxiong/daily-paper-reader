@@ -1,0 +1,516 @@
+Title: Odometer-Agnostic Drift Correction Using OpenStreetMap Lane Geometry
+
+URL Source: https://arxiv.org/pdf/2609.10336v1
+
+Published Time: Thu, 10 Sep 2026 01:18:44 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+> IEEE ROBOTICS AND AUTOMATION LETTERS. ACCEPTED AUGUST, 2026 1
+
+# Odometer-Agnostic Drift Correction Using OpenStreetMap Lane Geometry 
+
+Joaquin Caballero 1, Emilio Garcia-Fidalgo 2, Alberto Ortiz 2, Member, IEEE, , and Jarno Ralli 3
+
+> Accepted for publication in IEEE Robotics and Automation Letters (RA-L). © 2026 IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted component of this work in other works. DOI: 10.1109/LRA.2026.11675828
+
+Abstract —Despite significant progress in odometry estimation, long-term drift remains a fundamental limitation of incre-mental pose integration, especially in large-scale or loop-free environments. Existing map-assisted methods can reduce drift, but often depend on dense maps, sensor-specific processing, or complex matching pipelines. We propose a lightweight open-source, odometry-agnostic correction method that aligns short trajectory segments to OpenStreetMap (OSM) lane centerlines. By formulating drift correction as a direct alignment between recent odometry and sparse lane geometry, the method enables efficient online operation without dense priors or expensive preprocessing. Experiments with LiDAR and visual odometry backends demonstrate consistent improvements, with particu-larly strong gains under severe drift. 
+
+Index Terms —Localization, Mapping, Odometry drift correc-tion, OpenStreetMap 
+
+I. I NTRODUCTION 
+
+# ODOMETRY is a fundamental component of mobile robotics and navigation systems. It provides continuous pose estimates from onboard sensors such as LiDARs, cam-eras, and inertial measurement units (IMUs). However, even state-of-the-art LiDAR and Visual Odometry (VO) systems accumulate drift over long trajectories [1]–[5]. This drift becomes particularly problematic in large-scale deployments where loop closures are sparse and global positioning signals may be unreliable. To mitigate drift, map-assisted localization techniques incor-porate prior map information as global geometric references. In particular, High-Definition (HD) maps have been widely adopted for autonomous-driving localization because they are designed to provide high-precision geometric and semantic information, including lane geometry and 3D environmental structure [6]. Several works demonstrate the effectiveness of HD-map-based localization in improving accuracy and global consistency [6]–[9]. However, HD maps are expensive to ac-quire, difficult to maintain at large scale, and typically require extensive preprocessing pipelines and dedicated infrastructure. In contrast, OpenStreetMap (OSM) provides a freely avail-able and globally scalable mapping resource [10]. Although 
+
+Manuscript received: April 13, 2026; Revised: July 14, 2026; Accepted: Au-gust 11, 2026. This paper was recommended for publication by Editor Javier Civera upon evaluation of the Associate Editor and Reviewers comments. 
+
+> 1
+
+J. Caballero is with Distance Technologies Oy, Helsinki, Finland (joaquinecc@gmail.com ). 
+
+> 2
+
+E. Garcia-Fidalgo and A. Ortiz are with the Department of Mathematics and Computer Science, Institute of Artificial Intelligence, University of the Balearic Islands, 07122 Palma, Spain ( emilio.garcia@uib.es ,
+
+alberto.ortiz@uib.es ). 
+
+> 3
+
+J. Ralli was with Distance Technologies Oy, Helsinki, Finland (jarno@ralli.fi ). Digital Object Identifier (DOI): see top of this page. 
+
+less precise than HD maps, OSM still captures meaningful geometric structure, including road topology and lane-level information. This naturally leads to the question of whether lightweight, open-source lane geometry provides sufficient constraints to mitigate odometry drift without the complexity and cost of HD map infrastructures. Motivated by these limitations, we propose a lightweight, odometry-agnostic drift correction framework that relies solely on sparse lane centerlines from OpenStreetMap (OSM). In-stead of dense maps or global graph matching, we formulate drift correction as a direct alignment between short trajectory segments and lane geometry. This enables efficient real-time operation with minimal preprocessing while remaining robust under substantial accumulated drift. Unlike approaches that require dense priors such as 3D point clouds or building meshes [11], [12], or methods that rely on complex road graph construction and large-scale probabilistic matching [13], our approach demonstrates that simple geometric constraints derived from lane centerlines are sufficient to significantly reduce drift in large-scale scenarios. The framework avoids brute-force map matching, full 3D reg-istration, and large-scale graph optimization, while preserving accurate trajectories over long routes. The main contribution of this paper is a lightweight, open-source map-based drift correction pipeline 1 that leverages freely available OSM lane data, eliminating the need for costly HD maps.The method is odometer-agnostic and can refine trajectories from any pose estimation source (LiDAR, visual odometry, wheel-IMU, etc.). It scales to large geographic areas through a compact representation based on lane centerline points and requires minimal preprocessing, relying solely on raw lane data without road graph construction or dense map generation. Despite its simplicity, the approach remains robust under substantial accumulated drift in large-scale environ-ments. To demonstrate generality, we evaluate the proposed cor-rection on multiple odometry backends with different sensing modalities and drift characteristics, including LiDAR and visual odometry. Apart from evaluating our method on KITTI Odometry and KITTI-360, we compare against recent OSM-assisted odometry drift-correction methods that use KISS-ICP as their baseline, as well as against TOM-Odometry, which is the closest road-geometry-based approach reporting ORB-SLAM3 results. This allows us to evaluate not only whether the proposed method improves different odometry sources, but also whether a lightweight lane-centerline alignment strategy 
+
+> 1
+
+The source code and implementation are publicly available at: https://github.com/Joaquinecc/icp trajectory alignment osm arXiv:2609.10336v1 [cs.RO] 9 Sep 2026 2 IEEE ROBOTICS AND AUTOMATION LETTERS. ACCEPTED AUGUST, 2026 
+
+can remain competitive with more specialized OSM-based localization and drift-correction pipelines. II. R ELATED WORK 
+
+Map-assisted odometry and localization methods differ mainly in the type of prior map information they use to constrain drift and improve global consistency. Existing ap-proaches can be broadly grouped into two categories: shape or descriptor matching-based and lane or road-geometry matching-based . Shape-based methods align sensor observa-tions with map structures such as buildings, boundaries, or se-mantic descriptors, and are commonly associated with LiDAR-based localization. Lane-based methods instead constrain the estimated trajectory using road or lane geometry extracted from maps such as OpenStreetMap (OSM), which is the category most closely related to our work. 
+
+A. Shape and Descriptor Matching Approaches 
+
+Several works exploit OSM building footprints or road/building structures as global references for LiDAR local-ization. Yan et al. [14] propose a global localization method that converts OSM road and building information into compact 4-bit semantic descriptors encoding road intersections and building gaps, which are then matched with descriptors ex-tracted from 3D LiDAR scans within a Monte Carlo Localiza-tion (MCL) framework. Ballardini et al. [11] use stereo images and a convolutional network to obtain building-segmented point clouds, which are matched against 3D building models generated by extruding OSM footprints. Similarly, Cho et al. [15] precompute descriptors from OSM building geometry at road-center locations and match them against descriptors ex-tracted from semantically segmented LiDAR building points, enabling global localization without a prior LiDAR map or base odometry. Other methods formulate the problem as LiDAR-to-OSM alignment. OSM-SLAM [16] extends ART-SLAM [17] by building a 2D representation of buildings from LiDAR scans and aligning it with OSM building outlines using iterative closest point (ICP), providing global constraints for pose graph optimization. Kurda et al. [18] reduce LiDAR odometry drift by projecting point clouds onto the XY -plane, extracting building-related structures, and aligning the local map with OSM building data. Li et al. [19] perform LiDAR–OSM global initialization by generating virtual 2D LiDAR-like descriptors from OSM building boundaries at candidate road nodes and matching them to building features extracted from the current LiDAR scan. More recently, Li et al. [20] extend this idea with odometry assistance: OSM-based building-boundary descriptors are matched to LiDAR descriptors to obtain candidate global positions, which are then associated over time with the local odometry trajectory to estimate an SE(2) alignment. OpenLiDARMap [12] further integrates OSM building footprints and surface models into a pose-graph framework, combining scan-to-map and scan-to-scan constraints to generate globally consistent point-cloud maps. Lee and Ryu [21] demonstrate high-accuracy localization from public 2-D maps through a multi-stage pipeline combining LiDAR–IMU mapping, Siamese/NetVLAD place recognition, particle filtering, template matching, and voxelized GICP. This additional complexity comes at a significant computational cost, with their implementation operating at about 7 Hz, below the 10 Hz LiDAR rates. Although these methods can provide accurate global align-ment and substantial drift reduction, they are often dependent on the presence and quality of buildings or other urban structures. Consequently, their applicability may be reduced in rural, suburban, or open environments with limited fac ¸ades. In addition, many of them require LiDAR sensing, semantic segmentation, descriptor generation, simulated scans, or dense point-cloud registration, which increases preprocessing and computational complexity. In contrast, our method does not rely on building geometry, dense priors, or LiDAR-specific processing, and instead uses only lightweight lane centerlines extracted from OSM. 
+
+B. Lane and Road-Geometry Matching Approaches 
+
+Lane and road-network matching methods are more closely related to our approach because they use the road layout itself as a geometric prior. Early works focused on align-ing visual odometry or proprioceptive trajectories with OSM road maps [22]–[24]. OpenStreetSLAM [22] uses an MCL framework with Chamfer distance to compare VO trajectory segments against OSM road geometry and select the best alignment hypothesis. Brubaker et al. [23] constrain VO-based vehicle poses to an OSM road graph, reducing drift by enforcing consistency with the road network. O-SNAP [24] divides an odometry trajectory into straight segments and snaps them onto a 2D road map through an optimization-based route-identification process. While effective, these methods often require global or brute-force matching over candidate road paths, which can become expensive as the map size increases. Other approaches combine road geometry with additional sensing or graph-based inference. Ruchti et al. [25] classify 3D LiDAR observations into road and non-road regions and probabilistically align the resulting classification grid with OSM road geometry using a dedicated sensor model within MCL. Suger and Burgard [26] use OSM road and trail geometry as navigation waypoints and correct their local placement by scoring candidate poses against a LiDAR-based semantic road grid using Markov Chain Monte Carlo (MCMC). Cheng et al. [13] convert OSM-derived road maps into a Heading-Length Graph, probabilistically match heading-length sequences extracted from the vehicle trajectory for global localization, and use the resulting alignment to bound odometric drift. Xu et al. [27] introduce point-line constraints from road-network maps into a pose-graph formulation to suppress VO drift, but they assume that the estimated trajectory remains close to the correct road segment and cannot recover globally from large errors. TOM-Odometry [28] is closely related to our work, using OSM road geometry to reduce odometry drift. It initializes the vehicle pose through road-shape matching and applies online corrections using closest-point and B-spline-based associations CABALLERO CABALLERO et al. : ODOMETER-AGNOSTIC DRIFT CORRECTION USING OPENSTREETMAP LANE GEOMETRY 3
+
+fused with odometry via a Kalman filter. However, it requires sufficiently low initial drift, and its local nearest-neighbor-style road associations may become unreliable in dense networks or when large drift brings the trajectory closer to an incorrect road segment. More recent map-based localization methods also exploit road constraints probabilistically. Przewodowski et al. [29] use OSM driveable road areas and elevation offsets to weight particles in an MCL framework, indirectly reducing drift by penalizing poses outside valid road regions. However, this does not directly align the trajectory to lane geometry and can remain ambiguous on wide or parallel roads, in regions with incomplete OSM data, or under large accumulated drift. In contrast to these methods, our approach performs con-tinuous online correction by directly aligning recent odometry segments to OSM-derived lane centerlines. It does not require dense LiDAR maps, building models, semantic segmenta-tion, simulated sensor scans, global road-graph search, or a dedicated initialization stage. Instead, it uses a compact KD-tree representation of lane centerline points, direction-aware correspondence filtering, and trimmed SE(2) alignment in a sliding window. This makes the method lightweight, odometry-agnostic, and applicable to both LiDAR and visual odometry backends while remaining scalable to large map regions. III. M ETHOD 
+
+Our approach can be understood as a continuous 2D align-ment procedure that corrects odometry drift by registering variable-length segments of the estimated trajectory to lane-level map points extracted from OSM. Specifically, we use lane centerlines as lightweight geometric landmarks and solve for an incremental rigid transform in SE (2) that refines the odometry output over time. While conceptually simple, this process is challenging in practice due to several real-world issues: (i) lane maps may contain inaccuracies or missing parts, as shown in Fig. 1; (ii) roads often contain multiple parallel lanes and intersections that introduce ambiguous matches; (iii) odometry drift can become large, making data association difficult; and (iv) the map region can be very large, requiring efficient nearest-neighbor queries and filtering for real-time operation. For these reasons, the main technical components of our method specifically address efficient map representation, robust lane correspondence selection, and drift correction through en-hanced ICP on a sliding window. These issues are addressed in the next sections. 
+
+A. Map Data Extraction and Representation 
+
+We leverage OSM, an open-source geographic database containing road-level information on a global scale [10]. Although OSM data may be noisier than proprietary HD maps, it provides wide coverage and is sufficient to reduce long-term drift by acting as a global geometric prior. Raw OSM data contain many objects unrelated to driv-ing lanes. Therefore, we extract lane-level data through a lightweight preprocessing pipeline. First, road-related ele-ments are queried and filtered using tools such as Over-pass [30]. The resulting OSM road geometry is then converted into the Lanelet2 [31] representation using CommonRoad [32] tools. Lanelet2 is a structured lane-level map format that represents roads as collections of points in a local Universal Transverse Mercator (UTM) coordinate frame, defined with respect to a chosen origin, allowing direct metric computa-tions. It also provides derived centerlines from lane boundaries and encodes lane direction information. After conversion, we project the map into a local UTM coordinate system and precompute lane centerlines, which better approximate typical vehicle trajectories than lane boundaries. To control map resolution and runtime, we apply a minimum point-spacing filter of 3 m along each centerline, discarding consecutive points below this threshold. This removes redundant points in dense regions, such as curves, and reduces the number of KD-tree candidates used during matching. This spacing controls the trade-off between geometric resolution and com-putational cost: denser sampling can better preserve curved road geometry but increases the number of map points and nearest-neighbor queries, while overly sparse sampling may reduce runtime at the cost of less accurate lane matching. To support efficient matching at runtime, we represent the lane map as a set of centerline segments S = {(aj , bj )}
+
+and build a 2D KD-tree K over their sampled centerline points for fast nearest-neighbor retrieval. Each segment is associated with a normalized direction vector, which is used to reject candidates that are inconsistent with the vehicle motion direction. 
+
+B. Lane Correspondence Matching 
+
+The correction pipeline requires associating trajectory poses with corresponding lane locations. However, lane centerlines are typically sparsely sampled, and intersections or local map inaccuracies may introduce outliers. Therefore, a naive nearest-neighbor strategy based solely on the closest point is not sufficiently robust. Consequently, for each pose in the tra-jectory segment, we query the KD-tree to obtain the N nearest candidate lane segments. The nearest-neighbor candidates are evaluated in increasing distance order, and the first candidate satisfying both constraints below is selected. This avoids an additional projected-distance search while preserving a simple and efficient association rule. 
+
+(1) Normal projection constraint . We project the trajectory point onto the local lane segment using normal shooting .  
+
+> Fig. 1. Comparison between KITTI ground truth (blue) and OSM-derived lane centerlines (gray) for sequence 00, illustrating a visible misalignment between the two input sources. 4IEEE ROBOTICS AND AUTOMATION LETTERS. ACCEPTED AUGUST, 2026
+
+More precisely, we compute the intersection between the normal line passing through the trajectory point and the lane segment defined by two consecutive lane points; this provides a geometric constraint. Given a trajectory point xi, its unit tangent dtraj , and a candidate lane segment (aj , bj ) ∈ S , we define the trajectory normal as 
+
+ni = −dtraj ,y dtraj ,x 
+
+⊤ .
+
+The intersection with the candidate lane segment is computed as 
+
+t = (xi − aj ) × ni
+
+(bj − aj ) × ni
+
+, q = aj + t(bj − aj ), (1) where × denotes the two-dimensional cross product. The intersection is valid only if the denominator is nonzero and 
+
+0 ≤ t ≤ 1.If the projection lies within the lane segment bounds, it is considered a valid candidate correspondence. Fig. 2 illustrates the process: the evaluated pose (yellow) is projected along its normal direction onto nearby lane segments, producing multiple valid intersection candidates (light-blue), from which the geometrically consistent match is selected. 
+
+(2) Directional Consistency Constraint . We compute the trajectory tangent direction from consecutive poses and the lane direction from the candidate lane segment, as defined in (2). As illustrated in Fig. 2, after applying the normal projection constraint (1), multiple valid candidates (A, B, C, D) may remain. To disambiguate them, we compare the trajectory direction with the direction of each lane segment: 
+
+dtraj = xi+1 − xi
+
+∥xi+1 − xi∥ , dlane = bj − aj
+
+∥bj − aj ∥ (2) 
+
+s = d⊤
+
+> traj
+
+dlane , (3) where a correspondence is accepted only if s ≥ τ ; in all experiments, τ = 0 .95 . This ensures that matches are selected on lane segments aligned with the vehicle’s direction of travel. Since the candidate segments are evaluated in increasing  
+
+> Fig. 2. Illustration of lane–pose matching. The red curve represents the trajectory, the yellow point is the pose under evaluation, the blue segment represents the normal projection direction, and light-blue points correspond to valid candidate correspondences obtained from the intersection between the projection and neighboring lane segments. Finally, point C is selected as the correct matching point.
+
+nearest-neighbor distance, the first candidate satisfying both the projection and direction constraints is selected as the match. Following the example of Fig. 2, the final candidate would be lane point C. If no candidate satisfies both con-straints, no correspondence is added for that pose. Algorithm 1 summarizes the approach. 
+
+C. Sliding-Window Trajectory Correction with Trimmed ICP 
+
+This stage constitutes the core of the proposed online cor-rection pipeline, as summarized in Algorithm 2. The method processes odometer pose estimates sequentially and incremen-tally refines them using lane-based alignment within a sliding window framework. For each incoming pose pi, the current accumulated cor-rection transform ∆Tacc ∈ SE (2) is first applied to obtain a corrected pose pcorr  
+
+> i
+
+. This pose is appended to the sliding window W. The window stores the most recent corrected poses and is used to estimate local geometric alignment. Alignment is triggered only when the window contains at least Mmin poses and spans a trajectory length of at least Lmin . If the window grows beyond the maximum size 
+
+Mmax , the oldest pose is removed. This mechanism prevents overly long segments, which may introduce accumulated noise and degrade alignment quality, while maintaining bounded computational cost. Lane correspondences are computed using the LANE -MATCH routine, which associates poses in W with nearby lane segments using the projection and directional constraints 
+
+Algorithm 1 Lane Point Matching via Normal Projection and Direction Filtering 
+
+Require: Trajectory poses P = {pi}Mi=1 , lane segments S =
+
+{(aj , b j )}, KD-tree K over lane segment points, number of neighbors N , direction threshold τ
+
+Ensure: Valid pose–lane correspondences C 
+
+> 1:
+
+C ← [ ]  
+
+> 2:
+
+for i = 1 to M do  
+
+> 3:
+
+p ← pi 
+
+> 4:
+
+dtraj ← COMPUTE DIRECTION (pi, p i+1 ) {eq. (2), Back-ward difference for i = M } 
+
+> 5:
+
+I ← K .KNN (p, N ) {N candidate lane segments from 
+
+S closest to p, sorted by distance } 
+
+> 6:
+
+for each j ∈ I do  
+
+> 7:
+
+(aj , b j ) ← S [j] 
+
+> 8:
+
+dlane ← COMPUTE DIRECTION (aj , b j ) 
+
+> 9:
+
+s ← d⊤
+
+> traj
+
+dlane {eq. (2) and (3) } 
+
+> 10:
+
+if s ≥ τ then  
+
+> 11:
+
+q ← PROJECT NORMAL (p, dtraj , a j , b j ) {eq. (1) } 
+
+> 12:
+
+if q is valid then  
+
+> 13:
+
+Append (p, q ) to C 
+
+> 14:
+
+break  
+
+> 15:
+
+end if  
+
+> 16:
+
+end if  
+
+> 17:
+
+end for  
+
+> 18:
+
+end for  
+
+> 19:
+
+return CCABALLERO CABALLERO et al. : ODOMETER-AGNOSTIC DRIFT CORRECTION USING OPENSTREETMAP LANE GEOMETRY 5
+
+described in Algorithm 1. The resulting set C contains valid pose–lane pairs. If |C| /|W| ≥ η, trimmed ICP estimates the 2D rigid transform ∆T after discarding a fraction ρ of the largest residuals and returns the mean Euclidean correspondence error 
+
+e over the retained matches; otherwise, the alignment is rejected. If the alignment error satisfies e < ϵ , the correction is accepted. The accumulated global transform is updated as 
+
+∆Tacc ← ∆T · ∆Tacc ,
+
+and the sliding window poses are updated accordingly. The consecutive failure counter E is reset to zero. If the alignment error is greater than or equal to the threshold, the correction is rejected. In this case, the oldest pose is removed from the sliding window and the consecutive failure counter E is incremented. This shortens the window and discards potentially unreliable early associations, allowing the next alignment attempt to focus on more recent motion. When the number of consecutive failures exceeds Emax , a restart mechanism is triggered. The window is reduced to the most recent (Mmin − 1) poses and the failure counter is reset. This enables recovery from persistent mismatches, temporary map inconsistencies, or severe drift. Overall, this sliding-window strategy allows for continuous correction while focusing on local motion consistency, main-taining robustness to noise, and ensuring bounded computa-tional complexity. IV. E XPERIMENTAL SETUP 
+
+This section describes the experimental protocol used to evaluate the proposed OSM lane-based odometry correction method. We evaluate the method in two complementary ways. First, we apply it to multiple baseline odometry backends to demonstrate that the correction is independent of the under-lying odometry source. Second, we compare against recent OSM-assisted drift-correction methods on KITTI Odometry, where published results are available for common baselines. 
+
+A. Baseline Odometry Estimation 
+
+We evaluate the proposed correction on four odometry back-ends covering both LiDAR and visual odometry. KISS-ICP [5] and ORB-SLAM3 [3] are considered, respectively, state-of-the-art LiDAR and visual odometry/simultaneous localization and mapping (SLAM) baselines. They are included in the com-parison because recent OSM-assisted LiDAR drift-correction methods [18], [20] report results using KISS-ICP, while TOM-Odometry [28] reports results using ORB-SLAM3. We run all odometry backends on all evaluated datasets using their publicly available implementations and vanilla/default configurations, following the authors’ instructions whenever possible. Therefore, results may differ from values reported in the original papers due to differences in evaluation protocol, metric definition, software version, sensor data preprocessing, and initialization. We also evaluate Basalt [4] as an additional state-of-the-art visual odometry backend, and LiODOM [2] as an additional LiDAR odometry backend with more pro-nounced drift, providing a useful stress case for evaluating the robustness of the proposed correction. 
+
+B. Datasets 
+
+We evaluate on two widely used autonomous driving bench-marks: 
+
+a) KITTI Odometry: The KITTI Odometry [33] dataset provides synchronized stereo images, LiDAR point clouds, IMU data, and accurate ground-truth poses for multiple driving sequences. It includes suburban roads, highways, and urban 
+
+Algorithm 2 Online OSM Lane-Based Drift Correction with Sliding Window and Trimmed ICP 
+
+Require: Trajectory pose estimates P = {pi}Mi=1 
+
+Require: Lane segments S, KD-tree K
+
+Require: Minimum segment size Mmin , maximum segment size Mmax , trimming ratio ρ, ICP error threshold ϵ,maximum consecutive failures Emax , minimum corre-spondence ratio η, minimum trajectory length Lmin 
+
+Ensure: Corrected output poses Pcorr  
+
+> 1:
+
+∆Tacc ← I {Accumulated correction in SE(2) } 
+
+> 2:
+
+W ← [ ] {Sliding window of corrected poses } 
+
+> 3:
+
+Pcorr ← [ ] {Corrected output trajectory } 
+
+> 4:
+
+E ← 0 {Consecutive failure counter } 
+
+> 5:
+
+for each pose pi in P do  
+
+> 6:
+
+pcorr  
+
+> i
+
+← ∆Tacc · pi 
+
+> 7:
+
+Append pcorr  
+
+> i
+
+to W 
+
+> 8:
+
+if |W| > M max then  
+
+> 9:
+
+Remove oldest pose from W 
+
+> 10:
+
+end if  
+
+> 11:
+
+if |W| < M min or TRAJ LENGTH (W) < L min then  
+
+> 12:
+
+Append pcorr  
+
+> i
+
+to Pcorr  
+
+> 13:
+
+continue  
+
+> 14:
+
+end if  
+
+> 15:
+
+C ← LANE MATCH (W, S, K) 
+
+> 16:
+
+if |C| /|W| < η then  
+
+> 17:
+
+(∆ T, e ) ← (I, ∞) {Insufficient valid correspon-dences } 
+
+> 18:
+
+else  
+
+> 19:
+
+(∆ T, e ) ← TRIMMED ICP (C, ρ ) 
+
+> 20:
+
+end if  
+
+> 21:
+
+if e < ϵ then  
+
+> 22:
+
+∆Tacc ← ∆T · ∆Tacc  
+
+> 23:
+
+W ← ∆T · W  
+
+> 24:
+
+pcorr  
+
+> i
+
+← ∆T · pcorr  
+
+> i
+> 25:
+
+E ← 0 
+
+> 26:
+
+else  
+
+> 27:
+
+Remove oldest pose from W { Discard potentially unreliable window start } 
+
+> 28:
+
+E ← E + 1  
+
+> 29:
+
+if E > E max then  
+
+> 30:
+
+W ← keep last (Mmin − 1) poses {Restart match-ing from a shorter recent window } 
+
+> 31:
+
+E ← 0 
+
+> 32:
+
+end if  
+
+> 33:
+
+end if  
+
+> 34:
+
+Append pcorr  
+
+> i
+
+to Pcorr  
+
+> 35:
+
+end for  
+
+> 36:
+
+return Pcorr 6 IEEE ROBOTICS AND AUTOMATION LETTERS. ACCEPTED AUGUST, 2026 
+
+scenarios, making it suitable for evaluating long-term drift accumulation. We exclude sequence 3 from evaluation due to missing Global Positioning System (GPS) data required to initialize and align the OSM map. 
+
+b) KITTI-360: KITTI-360 [34] extends KITTI to longer trajectories and larger-scale urban environments, including challenging loop-free segments with pronounced drift. This dataset is especially relevant for evaluating map-assisted odometry correction. We exclude sequence 8, as it does not provide valid GPS data required to initialize and align the OSM map. 
+
+C. Comparison Methodology 
+
+We compare against three OSM-assisted odometry cor-rection/localization methods. The two most recent LiDAR– OSM methods [18], [20] are compared using KISS-ICP [5] as the common baseline. We also compare with TOM-Odometry [28], since it is the closest prior work to ours in spirit: it uses OSM-derived road topology to correct odometry drift. Following the baseline reported by that work, TOM-Odometry is compared using ORB-SLAM3 [3]. Since prior methods report results only for selected KITTI sequences, we evaluate on the sequences common to all methods and report both per-sequence two-dimensional absolute pose error (APE-2D) and the mean across them. 
+
+D. Evaluation Metric 
+
+We evaluate trajectory accuracy using evo-style no-alignment absolute errors [35], since the goal of the proposed method is to reduce global drift directly in the map/ground-truth frame. Our primary metric is the mean absolute pose error in the horizontal plane, denoted APE-2D, because the correction operates in SE(2) and only refines xy motion: 
+
+APE -2D = 1
+
+K
+
+> K
+
+X
+
+> i=1
+
+txy i − (txy i )gt 
+
+> 2
+
+, (4) where K is the number of evaluated poses. Following the evo evaluation convention, we additionally report translational root mean square error (RMSE), lateral RMSE, and heading error under the same no-alignment setting. We do not use Relative Pose Error as the main metric because the sliding-window correction applies discrete rigid updates that may introduce local discontinuities, even when global trajectory consistency is improved. 
+
+E. Parameters and Implementation Details 
+
+The correction algorithm is kept unchanged for all odom-etry backends. However, since each backend has different drift characteristics, we select its hyperparameters through a bounded parameter sweep. The swept parameters include the minimum and maximum sliding-window sizes, number of nearest-neighbor lane candidates, ICP acceptance threshold, and reset threshold. The minimum and maximum sliding-window sizes, Mmin 
+
+and Mmax , control when correction starts and how many recent poses are used for alignment. The number of nearest-neighbor lane candidates N controls the size of the KD-tree search during correspondence matching. The ICP error thresh-old ϵ determines whether a computed correction is accepted or rejected, while Emax controls the number of consecutive failed alignments allowed before resetting the window. The trimming ratio is fixed at ρ = 0 .1. The correspondence ratio threshold is fixed at η = 0 .5, requiring at least 50% of the poses to have a valid lane correspondence, and the minimum trajectory-length threshold is fixed at Lmin = 10 m .For LiODOM, we use Mmin = 50 , N = 100 , Emax = 50 ,
+
+ϵ = 2 .0 m and Mmax = 3000 ; for Basalt, we use Mmin = 150 ,
+
+N = 10 , Emax = 10 , ϵ = 1 .0 m and Mmax = 3000 ; for KISS-ICP, we use Mmin = 150 , Mmax = 1000 , N = 100 , Emax =1000 , and ϵ = 1 .5 m; for ORB-SLAM3, we use Mmin = 150 ,
+
+Mmax = 1000 , N = 50 , Emax = 100 , and ϵ = 1 .5 m; for all backends, the directional consistency threshold is set to 
+
+τ = 0 .95 .
+
+F. Implementation 
+
+The correction module is implemented in Python. Lane geometry is indexed with a KD-tree, and trimmed ICP [36] uses standard NumPy/SciPy linear algebra routines; no GPU acceleration is employed. All experiments were run on a desktop machine equipped with an Intel Core i7-14650HX processor and 32 GB of RAM, running Linux. V. R ESULTS 
+
+In this section, we evaluate the proposed correction ap-proach in three stages. First, we compare against prior OSM-assisted odometry-correction methods on the KITTI sequences commonly reported in the literature. Second, we evaluate the same correction framework across multiple odometry back-ends and datasets to show that the method is independent of the underlying odometry source. Finally, we report the computational cost of the correction module. 
+
+A. Comparison with OSM-Assisted Odometry Correctors 
+
+Table I compares our correction with the LiDAR–OSM drift-correction methods of Li et al. [20] and Kurda et al. [18], using KISS-ICP as the common odometry input. Although no method dominates every sequence, the proposed method achieves the best mean over the full set of evaluated sequences and the lowest mean APE-2D on the subset where Li et al. report results. A sequence-dependent limitation is visible on KITTI se-quence 01. Although the proposed method slightly improves KISS-ICP from 2.97 m to 2.81 m APE-2D, it does not outper-form Kurda et al. [18] on this sequence. This is mainly due to the highway-like structure of the sequence, with long nearly straight segments and frequent lane changes. In such cases, lane-centerline matching provides weak geometric constraints, and parallel lanes or small OSM/georeferencing offsets can make the closest-lane association ambiguous. Table II compares against TOM-Odometry [28], the closest road-geometry-based method reporting ORB-SLAM3 results. CABALLERO CABALLERO et al. : ODOMETER-AGNOSTIC DRIFT CORRECTION USING OPENSTREETMAP LANE GEOMETRY 7
+
+TABLE I APE-2D COMPARISON AGAINST KISS-ICP-BASED OSM CORRECTION METHODS FOR KITTI SEQUENCES . L OWER IS BETTER .                                                     
+
+> Seq. KISS-ICP [5] Kurda et al. [18] Li et al. [20] Ours 00 3.54 1.46 2.97 1.31
+> 01 2.97 1.57 –2.81 02 12.95 8.05 –2.23
+> 04 0.47 0.43 –0.37
+> 05 1.45 1.06 1.21 0.89
+> 06 1.57 0.76 1.20 1.20 07 0.38 0.62 0.84 1.10 08 10.51 4.88 1.80 2.10 09 1.79 2.31 0.96 1.04 10 1.79 0.68 –0.85 Mean 3.74 2.18 –1.39
+> Mean †––1.50 1.27
+> †Mean over the common sequences reported by Li et al.
+
+TABLE II APE-2D COMPARISON WITH TOM-O DOMETRY USING ORB-SLAM3 ON SELECTED KITTI SEQUENCES . L OWER IS BETTER .Seq. ORB-SLAM3 [3] TOM-Odometry [28] Ours 00 5.28 1.30 1.29 
+
+02 5.97 1.70 1.70 
+
+05 1.40 2.30 1.23 
+
+08 7.79 2.30 2.29 
+
+09 3.14 3.10 2.42 
+
+Mean 4.72 2.14 1.79 
+
+The comparison is restricted to the five KITTI sequences reported by TOM-Odometry. Our method improves ORB-SLAM3 on all five sequences and achieves a lower mean APE-2D than TOM-Odometry, while avoiding road-graph initialization, topological matching, and Kalman filter-based map fusion. 
+
+B. Results Across Odometry Backends 
+
+Table III summarizes the correction performance across KITTI and KITTI-360. The proposed method reduces the mean APE-2D for all evaluated odometry backends on both datasets, showing that the correction is not tied to a specific odometry source. The largest gains occur on KITTI-360, where longer trajectories produce stronger accumulated drift. For example, LiODOM decreases from 334 .33 m to 19 .24 m, while KISS-ICP decreases from 82 .73 m to 12 .17 m. The same trend is also observed for visual odometry, with Basalt and ORB-SLAM3 both improving on KITTI and KITTI-360. Figure 3 further illustrates these backend corrections on challenging KITTI-360 sequences. In the LiODOM case, the raw trajectory accumulates severe drift, but the corrected trajectory is repeatedly pulled back toward the road layout. In the Basalt case, the odometry remains locally smooth but becomes globally displaced, and the proposed correction uses lane geometry as a lightweight global reference to recover consistency. These examples show that, even when odome-try drifts globally, the local trajectory shape often preserves enough road-geometry information for alignment with OSM lane centerlines. 
+
+TABLE III BACKEND SUMMARY . M EAN , RMSE, AND LATERAL ERRORS ARE REPORTED IN METERS , WHILE HEADING ERRORS ARE REPORTED IN DEGREES . L OWER IS BETTER .                                                                                
+
+> Data Backend Method Mean RMSE Lat. Head. KITTI LiODOM Raw 104.61 121.25 99.64 6.9
+> Ours 59.84 68.06 54.94 7.2 Basalt Raw 19.46 23.64 12.49 4.7
+> Ours 16.38 20.33 9.67 5.6 KISS-ICP Raw 3.74 9.40 6.06 2.1 Ours 1.39 1.99 1.51 2.0
+> ORB-SLAM3 Raw 5.34 8.39 5.34 1.8
+> Ours 3.32 5.77 3.12 2.4 KITTI-360 LiODOM Raw 334.33 432.45 327.42 45.9 Ours 19.24 29.66 20.91 8.8
+> Basalt Raw 30.87 41.57 28.25 5.7
+> Ours 17.60 25.76 16.01 6.5 KISS-ICP Raw 82.73 164.95 111.77 14.4 Ours 12.17 14.41 11.06 4.3
+> ORB-SLAM3 Raw 22.90 36.89 29.16 8.9 Ours 12.21 25.15 23.99 8.8
+
+Fig. 3. Representative KITTI-360 corrections using OSM lane centerlines. Left: LiODOM seq. 07. Right: Basalt seq. 02. 
+
+C. Computational Cost 
+
+Across all dataset–backend configurations, the correction requires 19 .5 ms per pose on average ( 51 Hz), with 19 .1 ms for lane matching and 0.33 ms for trimmed ICP; total runtime ranges from 14 .2–27 .7 ms ( 36 –70 Hz). The KD-tree is built once per dataset ( 39 ms for KITTI and 30 ms for KITTI-360), making the method compatible with typical 10 Hz LiDAR and 
+
+10 –30 Hz camera odometry. VI. C ONCLUSIONS 
+
+We presented an OSM lane-centerline correction method for reducing odometry drift without dense maps or odometer-specific assumptions. Experiments on KITTI and KITTI-360 show consistent improvements across LiDAR and visual odometry backends, including LiODOM, Basalt, KISS-ICP, and ORB-SLAM3. The method also remains competitive with recent OSM-assisted correctors while using a simpler and more general alignment strategy. The main limitations arise when lane association becomes ambiguous. Frequent lane changes or aggressive driving can reduce matching accuracy, even though the error counter and window reset mechanism help reject inconsistent corrections. Similarly, overlapping road structures such as bridges or tunnels are challenging when different road levels have similar 2D geometry and direction, since the current method does 8 IEEE ROBOTICS AND AUTOMATION LETTERS. ACCEPTED AUGUST, 2026 
+
+not explicitly model elevation or road-layer constraints. Future work will consider lane-change detection and vertical-level constraints to improve robustness in these cases. In addition, as discussed in Sec. III-A, OSM is not an HD map; missing lane counts, inaccurate lane widths, or shifted geometry can directly affect correspondence quality. Higher-fidelity lane maps or complementary perception cues, such as camera-based lane detection, could further reduce sensitivity to these map errors. Finally, because corrections are applied as discrete SE(2) up-dates, the resulting trajectory may contain local discontinuities; applications that require smooth motion, such as control or local planning, may therefore need an additional filtering or smoothing stage. ACKNOWLEDGMENTS 
+
+This work has been partially supported by grant PID2022-139248NB-I00 (funded by MI-CIU/AEI/10.13039/501100011033 and by ERDF/EU). The work has been partially supported by the funding of the EMJMD master’s program in Engineering of Data-Intensive Intelligent Software Systems (EDISS), issued by the European Union’s Education, Audiovisual and Culture Executive Agency (grant number 619819). The authors acknowledge the support of Distance Technologies Oy. REFERENCES [1] J. Zhang and S. Singh, “LOAM: Lidar odometry and mapping in real-time,” in Robotics: Science and Systems Conference (RSS) , July 2014. [2] E. Garcia-Fidalgo, J. P. Company-Corcoles, F. Bonnin-Pascual, and A. Ortiz, “LiODOM: Adaptive local mapping for robust lidar-only odometry,” Robotics and Autonomous Systems , vol. 156, p. 104226, 2022. [3] C. Campos, R. Elvira, J. J. G´ omez Rodr´ ıguez, J. M. M. Montiel, and J. D. Tard´ os, “ORB-SLAM3: An accurate open-source library for visual, visual–inertial, and multimap slam,” IEEE Transactions on Robotics ,vol. 37, no. 6, pp. 1874–1890, 2021. [4] V. Usenko, N. Demmel, D. Schubert, J. Stueckler, and D. Cremers, “Visual-inertial mapping with non-linear factor recovery,” IEEE Robotics and Automation Letters (RA-L) , vol. 5, no. 2, pp. 422–429, 2020. [5] I. Vizzo, T. Guadagnino, B. Mersch, L. Wiesmann, J. Behley, and C. Stachniss, “KISS-ICP: In defense of point-to-point icp – simple, accurate, and robust registration if done the right way,” IEEE Robotics and Automation Letters , vol. 8, no. 2, pp. 1029–1036, 2023. [6] Z. Bao, S. Hossain, H. Lang, and X. Lin, “A review of high-definition map creation methods for autonomous driving,” Engineering Applica-tions of Artificial Intelligence , vol. 122, p. 106125, 2023. [7] B. Ebrahimi Soorchaei, M. Razzaghpour, R. Valiente, A. Raftari, and Y. P. Fallah, “High-definition map representation techniques for auto-mated vehicles,” Electronics , vol. 11, no. 20, p. 3374, 2022. [8] D. Gotlib, G. Gartner, and K. Miksa, “HD maps for autonomous vehicles: Implications for cartographic theory and practice,” ISPRS International Journal of Geo-Information , vol. 15, no. 2, p. 68, 2026. [9] C. Guo, M. Lin, H. Guo, P. Liang, and E. Cheng, “Coarse-to-fine semantic localization with HD map for autonomous driving in structural scenes,” in 2021 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2021, pp. 1146–1153. [10] OpenStreetMap contributors, “Planet dump retrieved from https://planet.osm.org ,” https://www.openstreetmap.org, 2017. [11] A. L. Ballardini, S. Fontana, D. Cattaneo, M. Matteucci, and D. G. Sorrenti, “Vehicle localization using 3D building models and point cloud matching,” Sensors , vol. 21, no. 16, p. 5356, 2021. [12] D. Kulmer, M. Leitenstern, M. Weinmann, and M. Lienkamp, “Open-lidarmap: Zero-drift point cloud mapping using map priors,” in Inter-national Conference on Vehicle Technology and Intelligent Transport Systems , 2025, pp. 178–188. [13] H.-M. Cheng and D. Song, “Graph-based proprioceptive localization using a discrete heading-length feature sequence matching approach,” 
+
+IEEE Transactions on Robotics , vol. 37, no. 4, pp. 1268–1281, 2021. [14] F. Yan, O. Vysotska, and C. Stachniss, “Global localization on open-streetmap using 4-bit semantic descriptors,” in 2019 European Confer-ence on Mobile Robots (ECMR) , 2019, pp. 1–7. [15] Y. Cho, G. Kim, S. Lee, and J.-H. Ryu, “Openstreetmap-based LiDAR global localization in urban environment without a prior LiDAR map,” 
+
+IEEE Robotics and Automation Letters , vol. 7, no. 2, pp. 4999–5006, 2022. [16] M. Frosi, V. Gobbi, and M. Matteucci, “OSM-SLAM: Aiding slam with OpenStreetMaps priors,” Frontiers in Robotics and AI , vol. 10, p. 1064934, 2023. [17] M. Frosi and M. Matteucci, “ART-SLAM: Accurate real-time 6DoF LiDAR SLAM,” IEEE Robotics and Automation Letters , vol. 7, no. 2, pp. 2692–2699, 2022. [18] A. Kurda, S. Steuernagel, L. Jung, and M. Baum, “Reducing drift of lidar odometry by incorporating OpenStreetMap building data,” in 2025 European Conference on Mobile Robots (ECMR) , 2025, pp. 1–8. [19] Z. Li, Y. Wang, R. Zhang, F. Ding, C. Wei, and J.-G. Lu, “A LiDAR-openstreetmap matching method for vehicle global position initialization based on boundary directional feature extraction,” IEEE Transactions on Intelligent Vehicles , vol. 9, no. 11, pp. 7485–7497, 2024. [20] Z. Li, R. Zuo, Y. Wang, F. Ding, C. Wei, and M. Wu, “Odometry-assisted LiDAR-openstreetmap matching method for vehicle global positioning,” 
+
+IEEE Internet of Things Journal , vol. 13, no. 8, pp. 16 303–16 317, 2026. [21] S. Lee and J.-H. Ryu, “Autonomous vehicle localization without prior high-definition map,” IEEE Transactions on Robotics , vol. 40, pp. 2888– 2906, 2024. [22] G. Floros, B. Van Der Zander, and B. Leibe, “OpenStreetSLAM: Global vehicle localization using OpenStreetMaps,” in IEEE International Con-ference On Robotics And Automation (ICRA) , 2013, pp. 1054–1059. [23] M. A. Brubaker, A. Geiger, and R. Urtasun, “Map-based probabilistic visual self-localization,” IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 38, no. 4, pp. 652–665, 2016. [24] R. Wang, M. Veloso, and S. Seshan, “O-Snap: Optimal snapping of odometry trajectories for route identification,” in IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2014, pp. 5824–5829. [25] P. Ruchti, B. Steder, M. Ruhnke, and W. Burgard, “Localization on OpenStreetMap data using a 3D laser scanner,” in IEEE International Conference On Robotics And Automation (ICRA) , 2015, pp. 5260–5265. [26] B. Suger and W. Burgard, “Global outer-urban navigation with open-streetmap,” in 2017 IEEE International Conference on Robotics and Automation (ICRA) , 2017, pp. 1417–1422. [27] S. Xu, Y. Sun, K. Zhao, X. Fu, and S. Wang, “Road-network-map-assisted vehicle positioning based on pose graph optimization,” Sensors ,vol. 23, no. 17, p. 7581, 2023. [28] S. Si, Y. Huang, Y. Nie, L. Xiao, D. Zhao, B. Dai, and Y. Zhang, “TOM-Odometry: A generalized localization framework based on topological map and odometry,” IEEE Transactions on Aerospace and Electronic Systems , vol. 59, no. 3, pp. 2713–2732, 2023. [29] A. Przewodowski, F. Santos Os´ orio, and V. Grassi Junior, “Global localization using OpenStreetMap and elevation offsets,” Journal of the Brazilian Computer Society , vol. 30, no. 1, pp. 264–273, 2024. [30] M. Raifer, “Overpass Turbo,” https://overpass-turbo.eu, accessed: 2025-07-30. [31] F. Poggenhans, J.-H. Pauls, J. Janosovits, S. Orf, M. Naumann, F. Kuhnt, and M. Mayr, “Lanelet2: A high-definition map framework for the future of automated driving,” in Proceedings of the IEEE Intelligent Transportation Systems Conference (ITSC) , 2018. [32] S. Maierhofer, Y. Ballnath, and M. Althoff, “Map verification and repairing using formalized map specifications,” in IEEE International Conference on Intelligent Transportation Systems (ITSC) , 2023. [33] A. Geiger, P. Lenz, and R. Urtasun, “Are we ready for autonomous driving? the KITTI vision benchmark suite,” in IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2012. [34] Y. Liao, J. Xie, and A. Geiger, “KITTI-360: A novel dataset and benchmarks for urban scene understanding in 2D and 3D,” Pattern Analysis and Machine Intelligence (PAMI) , 2022. [35] M. Grupp, “evo: Python package for the evaluation of odometry and slam.” https://github.com/MichaelGrupp/evo, 2017. [36] D. Chetverikov, D. Svirko, D. Stepanov, and P. Krsek, “The trimmed iterative closest point algorithm,” in 2002 International Conference on Pattern Recognition , vol. 3, 2002, pp. 545–548 vol.3.
