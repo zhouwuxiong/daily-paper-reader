@@ -1,0 +1,683 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-09-15T22:18:23.746206+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 9,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 19,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2609.12221v1",
+      "source": "arxiv",
+      "title": "Chain-SLAM: Globally Consistent Backend for Multi-Session LiDAR SLAM via Chained Loop Closure",
+      "abstract": "Maintaining consistency over long spatial and temporal horizons remains a fundamental challenge in large-scale LiDAR SLAM, particularly when integrating maps collected across multiple sessions. We present Chain-SLAM, a LiDAR SLAM backend enabling online multi-session map alignment and reuse with global consistency at large scale. We implement a chained loop closure mechanism that efficiently propagates geometric constraints across inter-session keyframes through an adjacency graph, enabling robust long-horizon consistency triggered by reliable short-horizon loop closures. The system initializes inter-session alignment with GNSS-proximity place recognition, then performs on-the-fly loop closure detections and joint optimization of loaded maps and newly acquired trajectories within a unified factor graph, maintaining both inter- and intra-session geometric consistency without dynamic object removal, and cross-platform robustness with minimal hyperparameter tuning. Experimental results show improved trajectory accuracy and robust multi-session integration on large-scale datasets. We release our source code to support reproducible research in large-scale multi-session LiDAR SLAM. Project site: https://ai4ce.github.io/Chain-SLAM/",
+      "authors": [
+        "Zhiheng Li",
+        "Xinhao Liu",
+        "Juexiao Zhang",
+        "Yongqing Liang",
+        "Chen Feng"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-10T21:29:27+00:00",
+      "link": "https://arxiv.org/pdf/2609.12221v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "chained loop closure for globally consistent multi-session LiDAR SLAM",
+      "llm_evidence_cn": "面向全局一致多会话LiDAR SLAM的链式回环检测",
+      "llm_evidence": "面向全局一致多会话LiDAR SLAM的链式回环检测",
+      "canonical_evidence": "面向全局一致多会话LiDAR SLAM的链式回环检测",
+      "llm_tldr_en": "Chain-SLAM is a LiDAR SLAM backend that achieves online multi-session map alignment via a chained loop closure mechanism propagating geometric constraints across inter-session keyframes, initialized by GNSS-proximity place recognition and joint optimization.",
+      "llm_tldr_cn": "大规模LiDAR SLAM在多会话地图融合时难以在长时空跨度上保持一致。本文提出Chain-SLAM后端，通过链式回环机制在会话间关键帧邻接图上传播几何约束，由可靠的短程回环触发长程一致性，并用GNSS邻近场景识别初始化会话对齐。系统实现在线多会话地图对齐、回环检测与联合优化，验证了大规模下的全局一致性。该工作为多会话大尺度建图提供了鲁棒且可复用的后端方案。",
+      "llm_tldr": "大规模LiDAR SLAM在多会话地图融合时难以在长时空跨度上保持一致。本文提出Chain-SLAM后端，通过链式回环机制在会话间关键帧邻接图上传播几何约束，由可靠的短程回环触发长程一致性，并用GNSS邻近场景识别初始化会话对齐。系统实现在线多会话地图对齐、回环检测与联合优化，验证了大规模下的全局一致性。该工作为多会话大尺度建图提供了鲁棒且可复用的后端方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "loop closure detection techniques to correct drift in SLAM systems",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.13733v1",
+      "source": "arxiv",
+      "title": "FFVO: A Feedforward Pose Decoder for Long-Horizon Visual Odometry",
+      "abstract": "Stable and reliable 4D spatial understanding is fundamental for autonomous driving systems. While feedforward reconstruction networks can estimate camera motion and 3D structure in one pass, pose estimation over long videos remains challenged by computational cost, long-context ambiguity, and temporal instability. To address these challenges, we propose Feedforward Visual Odometry (FFVO), a pose-specialized adaptation of joint reconstruction architectures for efficient and temporally stable camera-pose estimation. FFVO uses (i) a compact camera-token representation for computationally efficient temporal aggregation, (ii) a hierarchical local-to-global temporal decoder that mitigates geometric ambiguity by separating short-range motion aggregation from sequence-level integration, and (iii) intermediate trajectory supervision that promotes temporal stability. Extensive evaluation on the Waymo Open Dataset (WOD), KITTI, and a large-scale proprietary benchmark demonstrates that our method performs favorably against existing feedforward approaches, and greatly reduces jitter and drift. These results support FFVO as an effective feedforward camera-pose decoder in long-horizon visual odometry settings.",
+      "authors": [
+        "Meng-Li Shih",
+        "Shih-Yang Su",
+        "Yuliang Zou",
+        "Hao Xiang",
+        "Haidong Zhu",
+        "Vincent Casser",
+        "Brian Curless",
+        "Dmitry Kalenichenko",
+        "Mingxing Tan",
+        "Dragomir Anguelov"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-12T05:56:52+00:00",
+      "link": "https://arxiv.org/pdf/2609.13733v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "feedforward pose decoder for long-horizon visual odometry",
+      "llm_evidence_cn": "面向长时序视觉里程计的前馈位姿解码器",
+      "llm_evidence": "面向长时序视觉里程计的前馈位姿解码器",
+      "canonical_evidence": "面向长时序视觉里程计的前馈位姿解码器",
+      "llm_tldr_en": "Tackles long-horizon camera pose estimation limited by computational cost, long-context ambiguity and temporal instability, proposing FFVO with compact camera-token representation and a hierarchical local-to-global temporal decoder for efficient, stable visual odometry.",
+      "llm_tldr_cn": "长视频中的相机位姿估计受计算成本、长上下文歧义与时间不稳定的困扰，难以满足自动驾驶稳定的4D空间理解需求。本文提出前馈视觉里程计FFVO，采用紧凑相机令牌表示与分层局部到全局时序解码器，将短程运动聚合与序列推理分离以缓解几何歧义。该方法实现了高效且时序稳定的相机位姿估计，为长时序视觉里程计提供新思路。",
+      "llm_tldr": "长视频中的相机位姿估计受计算成本、长上下文歧义与时间不稳定的困扰，难以满足自动驾驶稳定的4D空间理解需求。本文提出前馈视觉里程计FFVO，采用紧凑相机令牌表示与分层局部到全局时序解码器，将短程运动聚合与序列推理分离以缓解几何歧义。该方法实现了高效且时序稳定的相机位姿估计，为长时序视觉里程计提供新思路。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual odometry algorithms for incremental camera pose estimation",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.14634v1",
+      "source": "arxiv",
+      "title": "SCOUT-SLAM: Structurally-Coupled Dual Uncertainty-Aware 3DGS SLAM in the Wild",
+      "abstract": "Recently, 3D Gaussian Splatting SLAM (3DGS-SLAM) has gained significant momentum in simultaneous localization and 3DGS scene reconstruction. In real-world scenarios with rapid camera motion and cluttered dynamic environments, existing methods rely on the stability of the underlying scene reconstruction to model uncertainty. This leads to a circular dependency between camera tracking accuracy and reconstruction quality: reconstruction instabilities degrade uncertainty modeling, which affects accurate camera tracking and static scene reconstruction. To address this, the paper proposes SCOUT-SLAM, a structurally-coupled dual-uncertainty framework in which both uncertainties are estimated from a shared base network. A low-rank adaptation of this network, trained on multi-view feature consistency, estimates a tracking uncertainty that does not depend solely on the reconstruction quality. A spatially-adaptive prior modulates the network's training objective so that reconstruction instability does not inflate uncertainty on static regions, keeping the shared representation intact for both branches. Evaluations on dynamic benchmarks (TUM RGB-D, Bonn Dynamic, Wild-SLAM MoCap) demonstrate that SCOUT-SLAM achieves state-of-the-art camera tracking accuracy and artifact-free static scene reconstruction.",
+      "authors": [
+        "Kumaran Karthik",
+        "Pramat Shastri Jois",
+        "Suresh Sundaram"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-13T16:08:18+00:00",
+      "link": "https://arxiv.org/pdf/2609.14634v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "3DGS SLAM for localization and scene reconstruction",
+      "llm_evidence_cn": "三维高斯泼溅SLAM定位与场景重建",
+      "llm_evidence": "三维高斯泼溅SLAM定位与场景重建",
+      "canonical_evidence": "三维高斯泼溅SLAM定位与场景重建",
+      "llm_tldr_en": "Targets the circular dependency between camera tracking and reconstruction in 3D Gaussian Splatting SLAM, proposing SCOUT-SLAM, a structurally-coupled dual-uncertainty framework estimated from a shared base network for robust tracking and static scene reconstruction.",
+      "llm_tldr_cn": "三维高斯泼溅SLAM在快速相机运动与动态杂乱环境中，重建稳定性与相机跟踪精度相互依赖，形成不确定性建模的循环依赖。本文提出SCOUT-SLAM结构耦合的双不确定性框架，由共享基础网络同时估计两类不确定性，缓解重建不稳定对跟踪的负面影响。该设计提升了复杂真实场景下的定位精度与静态场景重建质量。",
+      "llm_tldr": "三维高斯泼溅SLAM在快速相机运动与动态杂乱环境中，重建稳定性与相机跟踪精度相互依赖，形成不确定性建模的循环依赖。本文提出SCOUT-SLAM结构耦合的双不确定性框架，由共享基础网络同时估计两类不确定性，缓解重建不稳定对跟踪的负面影响。该设计提升了复杂真实场景下的定位精度与静态场景重建质量。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "recent progress in simultaneous localization and mapping with 3D scene reconstruction",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.11766v2",
+      "source": "arxiv",
+      "title": "Visual-SLAM for the detection of hidden tomatoes in greenhouses by Hierarchical Localization and GLOMAP for robotized harvesting",
+      "abstract": "Advanced crop monitoring inside greenhouses is becoming one of the primary objectives of research centers. High-performance sensors, such as LiDAR or stereo cameras, have traditionally been employed for this purpose, though these often have a high cost. This work proposes a Visual-SLAM system using a monocular camera, which is significantly more cost-effective and specifically tailored for agricultural applications, such as mapping tomato crops in a greenhouse. Tests were carried out on a real tomato bunch, located in the Agroconnect experimental greenhouse. A ROS 2 Humble node was developed to run on the robot in order to capture images of these crops, which were then stored for offline processing. To generate a 3D mapped model for the crop in the greenhouse, the GLOMAP mapper, based on Structure-From-Motion, was integrated with the Hierarchical Localization toolbox. This initial mapping is a foundation for future, more advanced algorithms to analyze growth patterns, and optimize agricultural management. The system leverages a hierarchical localization paradigm based on a coarse-to-fine strategy: it first performs global retrieval to generate location hypotheses, then combines local features within the identified candidate regions. The results show a correct identification of the tomato cluster, correctly characterising the tomato that is occluded and inaccessible by classical vision technologies. The reconstructed 3D model was further validated against manual ground-truth measurements of fruit size, centroid position, and orientation, confirming the geometric accuracy of the proposed low-cost monocular pipeline.",
+      "authors": [
+        "Fernando Cañadas-Aránega",
+        "José C. Moreno",
+        "José L. Blanco-Claraco",
+        "Francisco Rodríguez"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-10T16:19:36+00:00",
+      "link": "https://arxiv.org/pdf/2609.11766v2",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "monocular Visual-SLAM system for greenhouse crop mapping",
+      "llm_evidence_cn": "用于温室作物建图的单目视觉SLAM系统",
+      "llm_evidence": "用于温室作物建图的单目视觉SLAM系统",
+      "canonical_evidence": "用于温室作物建图的单目视觉SLAM系统",
+      "llm_tldr_en": "Proposes a cost-effective monocular Visual-SLAM system with hierarchical localization and GLOMAP for mapping tomato crops in greenhouses, deployed via a ROS 2 node and tested on real tomato plants.",
+      "llm_tldr_cn": "针对温室作物监测中LiDAR与立体相机成本高昂的问题，本文提出一种基于单目相机的Visual-SLAM系统，结合层级定位与GLOMAP进行建图，并开发ROS 2 Humble节点在机器人上采集图像用于离线处理。系统在Agroconnect实验温室的真实番茄串上开展测试，用于检测被遮挡的番茄。结果表明低成本单目视觉方案能够完成农业场景的作物建图，为机器人化采收提供了经济可行的感知基础。",
+      "llm_tldr": "针对温室作物监测中LiDAR与立体相机成本高昂的问题，本文提出一种基于单目相机的Visual-SLAM系统，结合层级定位与GLOMAP进行建图，并开发ROS 2 Humble节点在机器人上采集图像用于离线处理。系统在Agroconnect实验温室的真实番茄串上开展测试，用于检测被遮挡的番茄。结果表明低成本单目视觉方案能够完成农业场景的作物建图，为机器人化采收提供了经济可行的感知基础。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual simultaneous localization and mapping",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.15770v1",
+      "source": "arxiv",
+      "title": "JEPLO: Joint-Embedding Predictive Learning for LiDAR-Based Legged Locomotion",
+      "abstract": "Light detection and ranging (LiDAR) remains less explored than RGB-D sensing for perceptive legged locomotion, and existing LiDAR-based approaches often rely on explicit mapping. We present JEPLO (Joint-Embedding Predictive learning for legged LOcomotion), a single-stage learning framework for mapping-free, LiDAR-based perceptive locomotion for legged robots. We introduce a proprio-exteroceptive JEPA (PE-JEPA) world model to learn predictive egocentric terrain representations from onboard observations, including raw LiDAR scans. A concurrent JEPA-teacher-student (CJTS) pipeline is further proposed to train a locomotion policy informed by JEPA latent representations in simulation using deep reinforcement learning with a simple reward formulation. The framework achieves successful sim-to-real transfer, enabling omnidirectional traversal of diverse terrains, including long staircases and high boxes, with lightweight onboard computation. Evaluations demonstrate greater robustness than existing perceptive locomotion frameworks, particularly under degraded perception caused by occlusion, sparsity and noise. Further analysis validates JEPLO's ability to retain task-relevant information under these challenging conditions. We open-source our implementation, experimental datasets, and hardware setup designs https://github.com/ASIG-X/JEPLO.",
+      "authors": [
+        "Qihao Yuan",
+        "Yixuan Qiu",
+        "Ziyu Cao",
+        "Ming Cao",
+        "Kailai Li"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-14T15:54:26+00:00",
+      "link": "https://arxiv.org/pdf/2609.15770v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "deep reinforcement learning for LiDAR-based legged locomotion control",
+      "llm_evidence_cn": "面向激光雷达足式运动的深度强化学习控制",
+      "llm_evidence": "面向激光雷达足式运动的深度强化学习控制",
+      "canonical_evidence": "面向激光雷达足式运动的深度强化学习控制",
+      "llm_tldr_en": "JEPLO is a mapping-free, single-stage framework that learns predictive egocentric terrain representations from raw LiDAR via a JEPA world model and trains legged locomotion policies with deep RL.",
+      "llm_tldr_cn": "激光雷达在感知型足式运动中应用较少，且现有方法常依赖显式建图，增加了计算与部署负担。本文提出JEPLO，一种单阶段无建图学习框架，通过本体-外感JEPA世界模型从机载原始激光雷达等观测中学习预测性的自我中心地形表示，并用并行的教师-学生流水线结合深度强化学习训练运动策略。仿真实验以简单奖励形式获得可行策略。该工作展示了联合嵌入预测学习在无建图激光雷达运动控制中的潜力。",
+      "llm_tldr": "激光雷达在感知型足式运动中应用较少，且现有方法常依赖显式建图，增加了计算与部署负担。本文提出JEPLO，一种单阶段无建图学习框架，通过本体-外感JEPA世界模型从机载原始激光雷达等观测中学习预测性的自我中心地形表示，并用并行的教师-学生流水线结合深度强化学习训练运动策略。仿真实验以简单奖励形式获得可行策略。该工作展示了联合嵌入预测学习在无建图激光雷达运动控制中的潜力。",
+      "llm_tags": [
+        "query:rl-motion:composite"
+      ],
+      "matched_query_tag": "query:rl-motion:composite",
+      "matched_query_text": "Papers central to 查找强化学习和运动控制相关的最新论文, especially work that connects or combines: reinforcement learning approaches for physical systems; motion control strategies in robotics; robot control using learning methods; continuous state and action control; recent advances in reinforcement learning for motion control; deep reinforcement learning for robot locomotion.",
+      "matched_requirement_id": "req-composite-rl-motion",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.13691v1",
+      "source": "arxiv",
+      "title": "MomentBA: Second-order Spatial Moments for Anisotropic Correspondence Uncertainty in Differentiable Bundle Adjustment",
+      "abstract": "Most existing visual odometry (VO) systems treat feature correspondences as deterministic measurements or assign uniform uncertainty, ignoring the inherent localization ambiguity of different observations. However, correspondence uncertainty is often anisotropic due to image structures such as edges, repetitive patterns, and motion blur, which can significantly affect geometric optimization. In this work, we propose MomentBA, a geometry-aware bundle adjustment framework that derives anisotropic correspondence uncertainty from second-order spatial moments of local similarity responses. Instead of introducing additional covariance prediction networks, the proposed method directly converts matching response distributions into interpretable covariance estimates and incorporates them into bundle adjustment as correspondence-specific information matrices for uncertainty-aware residual weighting. Furthermore, the proposed formulation is integrated into a differentiable optimization framework, establishing a direct connection between correspondence uncertainty and geometric estimation. Experiments on the EuRoC MAV and TartanAir v1 Hard datasets demonstrate that MomentBA improves monocular visual odometry accuracy compared with existing feature-based and learning-based approaches. The proposed anisotropic covariance model achieves lower rotational errors and more robust trajectory estimation than fixed and isotropic uncertainty models, validating the effectiveness of geometry-induced uncertainty modeling for challenging visual environments.",
+      "authors": [
+        "Yuqing Wang",
+        "Xiaoji Niu",
+        "Yan Wang",
+        "Hailiang Tang",
+        "Jian Kuang",
+        "Tisheng Zhang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-12T03:58:09+00:00",
+      "link": "https://arxiv.org/pdf/2609.13691v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "anisotropic correspondence uncertainty in visual odometry bundle adjustment",
+      "llm_evidence_cn": "视觉里程计中基于二阶矩的各向异性对应不确定性光束法平差",
+      "llm_evidence": "视觉里程计中基于二阶矩的各向异性对应不确定性光束法平差",
+      "canonical_evidence": "视觉里程计中基于二阶矩的各向异性对应不确定性光束法平差",
+      "llm_tldr_en": "Visual odometry treats feature correspondences as deterministic or uniformly uncertain, ignoring anisotropic ambiguity. MomentBA derives anisotropic uncertainty from second-order spatial moments of local similarity responses and embeds it in differentiable bundle adjustment, improving geometric optimization without extra covariance networks.",
+      "llm_tldr_cn": "现有视觉里程计通常把特征对应视为确定性测量或赋予统一不确定性，忽略了边缘、重复纹理与运动模糊造成的各向异性定位歧义，从而影响几何优化精度。本文提出MomentBA，从局部相似度响应的二阶空间矩直接推导各向异性对应不确定性，无需额外协方差预测网络，并将其嵌入可微光束法平差框架。实验表明该几何感知的不确定性建模能更准确地刻画匹配质量并改善优化结果。该工作为视觉里程计与SLAM提供了可复用且轻量的不确定性建模思路，有助于提升位姿估计的鲁棒性。",
+      "llm_tldr": "现有视觉里程计通常把特征对应视为确定性测量或赋予统一不确定性，忽略了边缘、重复纹理与运动模糊造成的各向异性定位歧义，从而影响几何优化精度。本文提出MomentBA，从局部相似度响应的二阶空间矩直接推导各向异性对应不确定性，无需额外协方差预测网络，并将其嵌入可微光束法平差框架。实验表明该几何感知的不确定性建模能更准确地刻画匹配质量并改善优化结果。该工作为视觉里程计与SLAM提供了可复用且轻量的不确定性建模思路，有助于提升位姿估计的鲁棒性。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "visual odometry algorithms for incremental camera pose estimation",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2609.08711v1",
+      "source": "arxiv",
+      "title": "DCLP++: Learning to Navigate with Footprint Clearance and Relative Motion",
+      "abstract": "We present DCLP++, a local navigation frameworkthat uses footprint clearance as the geometric basis for studying relative motion features in dynamic environments. Each valid LiDAR return is mapped to its shortest Euclidean distance from the filled robot footprint before reciprocal encoding, replacing distance from the sensor with distance to the occupied body. Radial measurementsor simulated planar relative velocities provide short-horizon features without static-dynamic labels in the policy input. A preliminary study uses a rectangular robot with a speed limit of 1 m/s among 20 moving obstacles. On 100 fixed validation tasks, two selected training seeds yield mean success rates of 42% with sensor rangeand 70% with footprint clearance after 200,000 environment steps.Motion variants show mixed additional gains. These results supportthe clearance-based observation in the evaluated setting; reliable motion benefits and transfer across robots require further evaluation.",
+      "authors": [
+        "Shanze Wang",
+        "Wei Zhang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-08T13:09:35+00:00",
+      "link": "https://arxiv.org/pdf/2609.08711v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "local navigation with footprint clearance among moving obstacles",
+      "llm_evidence_cn": "基于足迹间隙的移动障碍物局部导航",
+      "llm_evidence": "基于足迹间隙的移动障碍物局部导航",
+      "canonical_evidence": "基于足迹间隙的移动障碍物局部导航",
+      "llm_tldr_en": "DCLP++ uses footprint clearance, mapping each LiDAR return to its shortest distance from the robot footprint, and relative motion features to improve local navigation among moving obstacles.",
+      "llm_tldr_cn": "动态环境下的局部导航需要机器人对移动障碍物做出快速反应，传统基于传感器距离的特征难以体现机器人自身几何。本文提出DCLP++，以足迹间隙为几何基础，把每个激光雷达回波映射为到填充后机器人足迹的最短欧氏距离并做倒数编码，同时引入相对运动特征。在含20个移动障碍物的仿真中，足迹间隙表示将平均成功率由42%提升到70%。该结果说明以本体为中心的间隙特征能有效改善动态环境导航。",
+      "llm_tldr": "动态环境下的局部导航需要机器人对移动障碍物做出快速反应，传统基于传感器距离的特征难以体现机器人自身几何。本文提出DCLP++，以足迹间隙为几何基础，把每个激光雷达回波映射为到填充后机器人足迹的最短欧氏距离并做倒数编码，同时引入相对运动特征。在含20个移动障碍物的仿真中，足迹间隙表示将平均成功率由42%提升到70%。该结果说明以本体为中心的间隙特征能有效改善动态环境导航。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.12837v1",
+      "source": "arxiv",
+      "title": "Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries in low-altitude flights",
+      "abstract": "LiDAR-based SLAM (Simultaneous Localization and Mapping) and LIO (LiDAR-inertial odometry) algorithms are often used for precise navigation of unmanned aerial vehicles, especially during interactions with the aerial robot's environment. However, the performance of these algorithms is greatly dependent on the scenario, LiDAR, and robot motion characteristics, often requiring an intensive tuning process to achieve the desired performance. To aid these tuning efforts, this paper analyzes the influence on performance of the parameters of an EKF-based LIO algorithm (FAST-LIO2) and the LIO module of a graph-based SLAM algorithm (Cartographer) on aerial LiDAR SLAM datasets recorded using different LiDARs in low-to-moderate-altitude flights in diverse environments. The analysis is conducted on the absolute trajectory error (ATE) resulting from processing the datasets with the LIO algorithms configured with each combination of parameters obtained in an exhaustive grid search. The relationship between individual parameters and the ATE results is assessed using Pearson's correlation, while the influence of each parameter is assessed using random forest permutation importance analyses with random forest models trained to predict the resulting ATE values based on the choice of parameters. The performed analysis obtains for Cartographer and FAST-LIO2: i) the identification of parameters with stronger influence in performance, ii) a simplified tuning procedure, and iii) tuning recommendations. Using the proposed tuning recommendations, both algorithms obtain on the analyzed datasets ATE values within 5 cm to the optimal performance found in the grid search procedure in 94% of the analyzed cases.",
+      "authors": [
+        "Robert Milijas",
+        "Jose Ramiro Martinez-de Dios",
+        "Stjepan Bogdan"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-11T13:31:48+00:00",
+      "link": "https://arxiv.org/pdf/2609.12837v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "LiDAR-inertial SLAM and odometry for aerial navigation",
+      "llm_evidence_cn": "面向空中导航的激光惯性SLAM与里程计",
+      "llm_evidence": "面向空中导航的激光惯性SLAM与里程计",
+      "canonical_evidence": "面向空中导航的激光惯性SLAM与里程计",
+      "llm_tldr_en": "Analyzes how parameters of an EKF-based LiDAR-inertial odometry (FAST-LIO2) and the LIO module of graph-based SLAM (Cartographer) affect performance on aerial datasets, providing guidance for tuning LiDAR SLAM in UAV navigation.",
+      "llm_tldr_cn": "LiDAR惯性里程计与SLAM常用于无人机精确导航，但其性能高度依赖场景、雷达与运动特性，需要大量调参。本文分析EKF式LIO（FAST-LIO2）与图优化SLAM（Cartographer）LIO模块的参数对性能的影响，并在不同雷达、低中空飞行数据集上实验。结果揭示了关键参数的敏感性规律，为空中LiDAR SLAM的调参提供实用指导。",
+      "llm_tldr": "LiDAR惯性里程计与SLAM常用于无人机精确导航，但其性能高度依赖场景、雷达与运动特性，需要大量调参。本文分析EKF式LIO（FAST-LIO2）与图优化SLAM（Cartographer）LIO模块的参数对性能的影响，并在不同雷达、低中空飞行数据集上实验。结果揭示了关键参数的敏感性规律，为空中LiDAR SLAM的调参提供实用指导。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.07091v1",
+      "source": "arxiv",
+      "title": "Human-Aware Target Tracking and Navigation: Fusing Kinematic State Estimation with Structural Map Constraints",
+      "abstract": "Autonomous mobile robots performing person-following tasks often suffer from temporary occlusions and sensor track loss in dynamic environments. This research presents an end-to-end autonomous navigation stack that addresses target occlusion through map-informed spatial reasoning. The proposed system features a multi-modal perception pipeline, fusing deep learning-based visual tracking with 2-dimensional LiDAR point clustering to maintain high-fidelity tracking of a tagged person. A continuous state estimator integrates this perception data with wheel odometry and IMU sensors for stable localization. When the active track is lost due to occlusion, the system activates a map-based recovery framework. Leveraging a predefined topological map, the system executes a graph-based search to propagate the target's last known trajectory along structurally defined walking lanes, adhering to left-hand regional conventions. By generating a discrete set of feasible future trajectories, the robot reasons about potential structural trajectory changes, such as continuing a heading or turning at an intersection. This map-informed prediction is fed directly to the local obstacle avoidance planner, enabling the robot to continue following its target safely and predictably until the person is visually reacquired. Real-world evaluations in dense multi-person environments demonstrate the system's robustness, achieving a 71.4\\% target reacquisition success rate during major occlusion events lasting up to 7 seconds.",
+      "authors": [
+        "Sagar Gupta",
+        "Don Gideon",
+        "Seng W. Loke",
+        "Kevin Lee",
+        "Bijo Sebastian"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-07T06:31:17+00:00",
+      "link": "https://arxiv.org/pdf/2609.07091v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "autonomous navigation stack with map-informed localization and person tracking",
+      "llm_evidence_cn": "基于地图约束的自主导航与人员跟踪定位",
+      "llm_evidence": "基于地图约束的自主导航与人员跟踪定位",
+      "canonical_evidence": "基于地图约束的自主导航与人员跟踪定位",
+      "llm_tldr_en": "Presents an end-to-end navigation stack for person-following robots that fuses deep visual tracking, 2D LiDAR clustering, odometry and IMU, and activates map-based recovery when the track is lost.",
+      "llm_tldr_cn": "针对动态环境中人员跟随机器人易受遮挡和跟踪丢失的问题，本文提出端到端自主导航栈，融合深度学习视觉跟踪与二维LiDAR点聚类，并结合轮式里程计与IMU进行连续状态估计。当目标跟踪丢失时，系统利用地图信息启动基于空间推理的恢复框架。实验表明该方法能在遮挡条件下维持对标记人员的高保真跟踪与稳定定位，提升了动态环境下机器人跟随导航的鲁棒性。",
+      "llm_tldr": "针对动态环境中人员跟随机器人易受遮挡和跟踪丢失的问题，本文提出端到端自主导航栈，融合深度学习视觉跟踪与二维LiDAR点聚类，并结合轮式里程计与IMU进行连续状态估计。当目标跟踪丢失时，系统利用地图信息启动基于空间推理的恢复框架。实验表明该方法能在遮挡条件下维持对标记人员的高保真跟踪与稳定定位，提升了动态环境下机器人跟随导航的鲁棒性。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.14297v1",
+      "source": "arxiv",
+      "title": "Multi-Task Visual Perception Network with LLM Conditioning for Autonomous Navigation",
+      "abstract": "Long-term navigation for service robots faces crit- ical challenges like the accumulation of odometry drift and sensor error, which progressively degrade 2D maps and renders traditional path planning algorithms (e.g., A*, RRT*, DiPPer, ViT-A*) ineffective over time. To address this, we propose a user-friendly, interactive framework that eliminates the reliance on globally consistent maps. Our approach integrates visual perception with Large Language Models (LLM) to interpret user commands via text or voice. Instead of relying on a drift- prone global map, the system generates a sequential action plan based on local visual cues and egocentric geometric instructions. These action plans are executed sequentially, allowing the robot to navigate known and unknown environments safely. By reset- ting localization relative to immediate targets, our framework effectively works with a minimum accumulation drift strategy, ensuring accurate, efficient, and collision-free navigation without the maintenance overhead of traditional mapping. Experiments on real-world and simulated data have shown significant improve- ments over other methods. Our source code is publicly accessible at https://github.com/PraveenSingh24/VL-Navigation.",
+      "authors": [
+        "Praveen Kumar",
+        "K. R. Guruprasad",
+        "Tushar Sandhan"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-13T05:38:52+00:00",
+      "link": "https://arxiv.org/pdf/2609.14297v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "visual perception and LLM-conditioned navigation without global maps",
+      "llm_evidence_cn": "不依赖全局地图的视觉感知与LLM条件化导航",
+      "llm_evidence": "不依赖全局地图的视觉感知与LLM条件化导航",
+      "canonical_evidence": "不依赖全局地图的视觉感知与LLM条件化导航",
+      "llm_tldr_en": "This work presents a multi-task visual perception network with LLM conditioning for long-term autonomous navigation, avoiding drift-prone global maps by generating sequential action plans from local visual cues and egocentric geometric instructions.",
+      "llm_tldr_cn": "服务机器人长期导航面临里程计漂移与传感器误差累积，导致2D地图退化、传统路径规划失效。本文提出交互式框架，将视觉感知与大语言模型结合以理解文本或语音指令，摒弃对全局一致地图的依赖，转而基于局部视觉线索与自中心几何指令生成序列化动作计划并逐步执行。系统使机器人能在漂移环境下持续导航。该工作为无需全局地图的视觉导航提供了新范式。",
+      "llm_tldr": "服务机器人长期导航面临里程计漂移与传感器误差累积，导致2D地图退化、传统路径规划失效。本文提出交互式框架，将视觉感知与大语言模型结合以理解文本或语音指令，摒弃对全局一致地图的依赖，转而基于局部视觉线索与自中心几何指令生成序列化动作计划并逐步执行。系统使机器人能在漂移环境下持续导航。该工作为无需全局地图的视觉导航提供了新范式。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.13504v1",
+      "source": "arxiv",
+      "title": "RIGOR: Rig-Informed Geometry for Omnidirectional Reconstruction",
+      "abstract": "Recent developments in feed-forward 3D reconstruction resulted in models which can recover dense scene representations and camera motion solely from an image stream. However, such predictions are prone to becoming inconsistent over long trajectories, specifically in demanding environments with repetitive structures, weak textures and dynamic objects or people. One way to mitigate those challenges is to use an omnidirectional camera, which provides wide spatial coverage and captures richer visual information. Yet, the majority of models do not offer support for 360-degree imagery or require additional fine-tuning. To bridge these two aspects, we present RIGOR: a large-scale reconstruction pipeline for gravity-aligned omnidirectional videos that retains a frozen feed-forward perspective backbone and exploits each panorama as a four-view virtual rig. The rig structure is used to detect and repair locally inconsistent predictions, to retrieve loop closures through cyclic four-view consensus, and to geometrically verify candidate revisits before global optimization. Verified constraints drive a Sim(3) pose graph that corrects accumulated rotation, translation, and scale drift along the sequence. We demonstrate that the proposed consistency mechanisms improve both trajectory accuracy and reconstructed geometry over a feed-forward baseline on challenging construction-site sequences. The code is made available under this link: https://github.com/TangentH/RIGOR.",
+      "authors": [
+        "Tingjun Huang",
+        "Dmitry Rudshin",
+        "Mathieu Meyer",
+        "Pietro Bonazzi",
+        "Marc Pollefeys",
+        "Emilia Szymańska"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-11T20:11:43+00:00",
+      "link": "https://arxiv.org/pdf/2609.13504v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "large-scale omnidirectional reconstruction recovering camera motion from image stream",
+      "llm_evidence_cn": "从图像流恢复相机运动的大规模全向重建",
+      "llm_evidence": "从图像流恢复相机运动的大规模全向重建",
+      "canonical_evidence": "从图像流恢复相机运动的大规模全向重建",
+      "llm_tldr_en": "Feed-forward 3D reconstruction drifts over long trajectories in repetitive or dynamic scenes; RIGOR builds a large-scale pipeline for gravity-aligned omnidirectional video, improving consistency and coverage with 360-degree imagery.",
+      "llm_tldr_cn": "针对前馈三维重建模型虽能从图像流恢复稠密场景与相机运动、却在长轨迹及重复结构、弱纹理、动态物体环境下易不一致的问题，本文提出RIGOR，面向重力对齐的全向视频构建大规模重建流程，利用360度相机的广覆盖视觉信息并保留冻结的预训练模型。实验表明其提升了长轨迹重建的一致性与覆盖范围，拓展了前馈重建对全向影像的支持。",
+      "llm_tldr": "针对前馈三维重建模型虽能从图像流恢复稠密场景与相机运动、却在长轨迹及重复结构、弱纹理、动态物体环境下易不一致的问题，本文提出RIGOR，面向重力对齐的全向视频构建大规模重建流程，利用360度相机的广覆盖视觉信息并保留冻结的预训练模型。实验表明其提升了长轨迹重建的一致性与覆盖范围，拓展了前馈重建对全向影像的支持。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.08511v1",
+      "source": "arxiv",
+      "title": "PGMT: Perceptive General Motion Tracking for Humanoid Robots",
+      "abstract": "Humanoid motion trackers can reproduce diverse whole-body motions, but their performance degrades on complex terrain where terrain-agnostic references become physically infeasible. We present PGMT, a Perceptive General Motion Tracking pipeline for humanoid robots that learns terrain adaptation from independently selected motion references and terrains. PGMT first learns a general tracking and recovery prior, then incorporates terrain perception through motion-conditioned terrain glimpses that selectively encode regions relevant to the current motion. Terrain-aware tracking relaxation allows necessary deviations from the reference while preserving its motion intent. Zero-shot deployment on a Unitree G1 demonstrates robust terrain-adaptive locomotion and whole-body motion execution over real-world terrain with obstacles up to 37 cm high, while supporting teleoperation, dynamic motion tracking, and fall recovery. PGMT extends general humanoid motion tracking beyond flat ground, providing a unified policy for terrain-adaptive locomotion, diverse whole-body behaviors, and teleoperation in complex environments.",
+      "authors": [
+        "Hongyi Li",
+        "Li Peizhuo",
+        "Yucheng Tao",
+        "Ze Wang",
+        "Fangzhou Xu",
+        "Jinyi Chen",
+        "Yanyan Yuan",
+        "Dapeng Jia",
+        "Yongbin Jin",
+        "Mingfeng Fan",
+        "Guillaume Sartoretti",
+        "Hongtao Wang"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-08T09:57:32+00:00",
+      "link": "https://arxiv.org/pdf/2609.08511v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "humanoid motion tracking and terrain-adaptive locomotion control",
+      "llm_evidence_cn": "人形机器人运动跟踪与地形自适应运动控制",
+      "llm_evidence": "人形机器人运动跟踪与地形自适应运动控制",
+      "canonical_evidence": "人形机器人运动跟踪与地形自适应运动控制",
+      "llm_tldr_en": "PGMT is a perceptive motion tracking pipeline for humanoid robots that learns terrain adaptation by combining motion-conditioned terrain glimpses with a general tracking-recovery prior. It achieves robust zero-shot terrain-adaptive whole-body locomotion on a Unitree G1.",
+      "llm_tldr_cn": "人形运动跟踪器在复杂地形上因参考动作物理不可行而性能下降。本文提出PGMT流水线，先学习通用跟踪与恢复先验，再通过动作条件化的地形感知片段引入地形信息，并用地形感知松弛在保持动作意图的同时允许必要偏差。在Unitree G1上实现零样本部署，展现出稳健的地形自适应全身运动控制能力。该工作推进了学习式机器人运动控制与地形自适应移动。",
+      "llm_tldr": "人形运动跟踪器在复杂地形上因参考动作物理不可行而性能下降。本文提出PGMT流水线，先学习通用跟踪与恢复先验，再通过动作条件化的地形感知片段引入地形信息，并用地形感知松弛在保持动作意图的同时允许必要偏差。在Unitree G1上实现零样本部署，展现出稳健的地形自适应全身运动控制能力。该工作推进了学习式机器人运动控制与地形自适应移动。",
+      "llm_tags": [
+        "query:rl-motion:composite"
+      ],
+      "matched_query_tag": "query:rl-motion:composite",
+      "matched_query_text": "Papers central to 查找强化学习和运动控制相关的最新论文, especially work that connects or combines: reinforcement learning approaches for physical systems; motion control strategies in robotics; robot control using learning methods; continuous state and action control; recent advances in reinforcement learning for motion control; deep reinforcement learning for robot locomotion.",
+      "matched_requirement_id": "req-composite-rl-motion",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.15795v1",
+      "source": "arxiv",
+      "title": "SURE-Map: Self-Correcting Streaming Geometric Foundation Model",
+      "abstract": "Streaming geometric foundation models are emerging as a compelling alternative to SLAM systems. Yet this streaming nature introduces a fundamental issue: each prediction is made from limited context, which is vulnerable to dynamic objects and weak textures. Small local errors accumulate into severe geometric distortion and long-horizon scale drift. We argue that reliable streaming reconstruction requires geometric foundation models to be not only predictive, but also self-correcting. We introduce SURE-Map, a self-correcting framework built upon two complementary principles. First, we explicitly model cross-view geometric uncertainty. Unlike conventional depth or point confidence, which primarily reflects the reliability of individual-view prediction, our uncertainty directly measures whether the jointly predicted pose and depth induce geometrically consistent cross-view pixel correspondences. Second, because local correction alone cannot eliminate slowly accumulating scale errors, we introduce multi-timescale self-correction: fast consecutive-frame inference preserves streaming efficiency, while sparse keyframe-window inference provides longer-range geometric evidence to periodically recalibrate the scale of recent trajectories. SURE-Map establishes new state-of-the-art performance for online feed-forward reconstruction across long-horizon benchmarks, reducing ATE-RMSE from 24.00 to 17.24 m on KITTI, 5.11 to 4.74 m on Oxford Spires, and 31.37 to 28.58 m on VBR, with further improvements to 15.17, 4.63, and 22.12 m when incorporating loop-closure refinement. Project page: https://mingkai-liu.github.io/projects/sure-map/.",
+      "authors": [
+        "Mingkai Liu",
+        "Hao Zhao",
+        "Xingxing Zuo"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-09-14T16:10:53+00:00",
+      "link": "https://arxiv.org/pdf/2609.15795v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "self-correcting streaming geometric model as SLAM alternative for drift",
+      "llm_evidence_cn": "作为SLAM替代的自校正流式几何模型抑制漂移",
+      "llm_evidence": "作为SLAM替代的自校正流式几何模型抑制漂移",
+      "canonical_evidence": "作为SLAM替代的自校正流式几何模型抑制漂移",
+      "llm_tldr_en": "Streaming geometric foundation models suffer from error accumulation and scale drift due to limited context; SURE-Map adds cross-view uncertainty modeling and self-correction to keep long-horizon reconstruction consistent.",
+      "llm_tldr_cn": "针对流式几何基础模型因上下文有限而在动态物体与弱纹理下误差累积、出现长期尺度漂移的问题，本文提出SURE-Map自校正框架，显式建模跨视角几何不确定性并据此在线修正预测。实验显示该方法能显著缓解长时序漂移，保持大规模重建的几何一致性，表明可靠的流式重建不仅需要预测能力，更需要自校正机制，为SLAM替代方案提供了新范式。",
+      "llm_tldr": "针对流式几何基础模型因上下文有限而在动态物体与弱纹理下误差累积、出现长期尺度漂移的问题，本文提出SURE-Map自校正框架，显式建模跨视角几何不确定性并据此在线修正预测。实验显示该方法能显著缓解长时序漂移，保持大规模重建的几何一致性，表明可靠的流式重建不仅需要预测能力，更需要自校正机制，为SLAM替代方案提供了新范式。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "recent progress in simultaneous localization and mapping with 3D scene reconstruction",
+      "matched_requirement_id": "req-7",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.13903v1",
+      "source": "arxiv",
+      "title": "SkyAnchor: Updating Metric-scale Aerial 3D Gaussian Scenes from Unposed Ground-View Sequences",
+      "abstract": "We study how to update a pre-built aerial scene with a newly captured, unposed ground-view sequence. The aerial scene already contains a reliable metric Structure-from-Motion (SfM) reconstruction and a pre-trained 3D Gaussian Splatting (3DGS) model, whereas the ground-view sequence is collected later to add street-level appearance but has unknown camera poses and global scale. Registering this sequence to the aerial SfM reconstruction is challenging because single-image cross-view localization is brittle and long trajectories are prone to drift. To address these challenges, we present SkyAnchor, which treats the existing aerial scene as a fixed scaffold for ground-view registration and scene update instead of jointly reconstructing aerial and ground imagery from scratch. It first localizes short groups of consecutive ground frames against geometrically verified aerial support, producing sparse anchor poses. It then recovers the full ground trajectory with anchor-constrained submaps, fixing the front and rear anchor poses during incremental registration and bundle adjustment. Finally, it inserts filtered ground Gaussians while preserving the aerial view, followed by lightweight joint refinement. Experiments on seven real aerial--ground scenes show accurate metric ground trajectories and updated 3D Gaussian scenes with strong aerial- and ground-view rendering quality.",
+      "authors": [
+        "Zhuoxiao Li",
+        "Xinyi Liu",
+        "Taoyu Wu",
+        "Yinrui Ren",
+        "Tongyan Hua",
+        "Ou Jing",
+        "Shuai Zhang",
+        "Dongli Wu",
+        "Rongjun Qin",
+        "Ge Lin Kan",
+        "Wufan Zhao"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.GR"
+      ],
+      "published": "2026-09-12T12:20:25+00:00",
+      "link": "https://arxiv.org/pdf/2609.13903v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "registering unposed ground-view sequences into aerial 3DGS scene with drift handling",
+      "llm_evidence_cn": "将未定位地面视角序列配准到航拍3DGS场景并处理漂移",
+      "llm_evidence": "将未定位地面视角序列配准到航拍3DGS场景并处理漂移",
+      "canonical_evidence": "将未定位地面视角序列配准到航拍3DGS场景并处理漂移",
+      "llm_tldr_en": "SkyAnchor registers a newly captured unposed ground-view sequence into a pre-built metric aerial SfM and 3D Gaussian Splatting scene, treating the aerial reconstruction as a fixed scaffold to add street-level appearance while handling pose and scale drift.",
+      "llm_tldr_cn": "如何用后采集、无位姿的地面视角序列更新已有航拍3D场景是一个难题，因为单图像跨视图定位脆弱且长轨迹易漂移。本文提出SkyAnchor，将已有航拍SfM重建视为固定支架，对地面序列进行配准与场景更新，而非联合重建。方法有效处理了未知相机位姿与全局尺度问题，实现了度量尺度一致的街景外观更新。该工作为跨视图定位与3D高斯场景更新提供了新思路。",
+      "llm_tldr": "如何用后采集、无位姿的地面视角序列更新已有航拍3D场景是一个难题，因为单图像跨视图定位脆弱且长轨迹易漂移。本文提出SkyAnchor，将已有航拍SfM重建视为固定支架，对地面序列进行配准与场景更新，而非联合重建。方法有效处理了未知相机位姿与全局尺度问题，实现了度量尺度一致的街景外观更新。该工作为跨视图定位与3D高斯场景更新提供了新思路。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.11079v1",
+      "source": "arxiv",
+      "title": "RIDE: Relocalization-Informed Depth Estimation with 3D Gaussian Splatting",
+      "abstract": "Render--match--PnP relocalization establishes correspondences between query image pixels and 3D map points for camera pose recovery, but their potential to support dense depth estimation is often overlooked. To exploit this geometric information, we present RIDE, which estimates dense metric depth from a robot's RGB stream. Given a metrically scaled 3D Gaussian Splatting (3DGS) model, RIDE combines sparse metric depth observations derived from PnP-RANSAC inlier correspondences with the geometric prior of a pretrained video-depth model. To handle uneven and intermittent observations, it integrates global and local depth correction with temporal memory, supporting depth estimation through short observation gaps after metric scale initialization. Trained on public RGB-D videos, RIDE is evaluated on robot sequences without fine tuning. Experiments show improved depth accuracy and temporal consistency over scale-only calibration, demonstrating how localization geometry can support both pose recovery and dense robot perception.",
+      "authors": [
+        "Jiarong Lian",
+        "Zhe Xiao",
+        "Zhaoyang Zhang",
+        "Wei Li",
+        "Ruizhi Chen"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-10T04:36:58+00:00",
+      "link": "https://arxiv.org/pdf/2609.11079v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "relocalization-informed dense depth estimation with 3D Gaussian splatting",
+      "llm_evidence_cn": "结合重定位与三维高斯泼溅的稠密深度估计",
+      "llm_evidence": "结合重定位与三维高斯泼溅的稠密深度估计",
+      "canonical_evidence": "结合重定位与三维高斯泼溅的稠密深度估计",
+      "llm_tldr_en": "RIDE exploits render-match-PnP relocalization correspondences, combining sparse metric depth with a video-depth prior and temporal correction to produce dense metric depth from a robot RGB stream even across observation gaps.",
+      "llm_tldr_cn": "针对渲染-匹配-PnP重定位虽能恢复相机位姿、却未充分利用其对应关系支撑稠密深度估计的问题，本文提出RIDE，将PnP-RANSAC内点得到的稀疏度量深度与预训练视频深度模型的几何先验融合，并通过全局与局部深度校正及时序记忆处理观测不均。度量尺度初始化后，该方法可在短时观测缺失下持续输出稠密度量深度，为机器人RGB流提供可靠深度来源。",
+      "llm_tldr": "针对渲染-匹配-PnP重定位虽能恢复相机位姿、却未充分利用其对应关系支撑稠密深度估计的问题，本文提出RIDE，将PnP-RANSAC内点得到的稀疏度量深度与预训练视频深度模型的几何先验融合，并通过全局与局部深度校正及时序记忆处理观测不均。度量尺度初始化后，该方法可在短时观测缺失下持续输出稠密度量深度，为机器人RGB流提供可靠深度来源。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.14543v1",
+      "source": "arxiv",
+      "title": "NavPatch: Evidence-Guided Object-Level Costmap Correction with Vision-Language Models",
+      "abstract": "Mobile robots typically rely on geometric maps for obstacle avoidance and path planning, but the resulting obstacle representation does not always match how an object should affect navigation. A low lying cable may be missed, a flexible curtain may create spurious blockage, and a traffic cone may require an exclusion region larger than its observed footprint. We present NavPatch, an object level correction layer that assigns ADD, REMOVE, or EXTEND to navigation relevant object categories through periodic scene understanding with a vision-language model. Open vocabulary grounding localizes object instances, and LiDAR and RGB-D observations provide 3D support. Observation quality filtering and cross frame maintenance determine when each correction patch is committed, replaced, or revoked. In 50 real robot trials across five layouts, NavPatch achieves an overall success rate of 86.0%. An ablation study of four configurations with 200 runs in total shows that NavPatch improves the success rate from 70.0% to 86.0% and reduces the false commit rate from 68.4% to 40.7% compared with updates based only on the current observation.",
+      "authors": [
+        "Shiji Sun",
+        "Xingyu Tao",
+        "Hao Wang",
+        "Ling Wang",
+        "Zhengyi Chen"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-13T14:30:55+00:00",
+      "link": "https://arxiv.org/pdf/2609.14543v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "object-level costmap correction for mobile robot navigation and obstacle avoidance",
+      "llm_evidence_cn": "面向移动机器人导航与避障的物体级代价地图校正",
+      "llm_evidence": "面向移动机器人导航与避障的物体级代价地图校正",
+      "canonical_evidence": "面向移动机器人导航与避障的物体级代价地图校正",
+      "llm_tldr_en": "Mobile robots rely on geometric maps that misrepresent how objects affect navigation, missing low cables or creating spurious blockages. NavPatch uses a vision-language model to assign ADD, REMOVE or EXTEND labels to navigation-relevant objects, with LiDAR and RGB-D support, improving costmap correctness for path planning.",
+      "llm_tldr_cn": "移动机器人通常依赖几何地图进行避障与路径规划，但几何障碍表示常与物体应有的导航语义不符，例如低矮线缆被漏检、柔性窗帘形成虚假遮挡。本文提出NavPatch，利用视觉语言模型周期性地理解场景，对导航相关物体类别施加ADD、REMOVE或EXTEND的物体级修正，并结合LiDAR与RGB-D观测提供三维支撑。通过观测质量过滤与跨帧维护决定修正何时生效，实验显示该方法可提升代价地图的准确性与导航安全性。该工作为机器人导航提供语义级地图校正层，弥合了几何地图与导航需求之间的差距。",
+      "llm_tldr": "移动机器人通常依赖几何地图进行避障与路径规划，但几何障碍表示常与物体应有的导航语义不符，例如低矮线缆被漏检、柔性窗帘形成虚假遮挡。本文提出NavPatch，利用视觉语言模型周期性地理解场景，对导航相关物体类别施加ADD、REMOVE或EXTEND的物体级修正，并结合LiDAR与RGB-D观测提供三维支撑。通过观测质量过滤与跨帧维护决定修正何时生效，实验显示该方法可提升代价地图的准确性与导航安全性。该工作为机器人导航提供语义级地图校正层，弥合了几何地图与导航需求之间的差距。",
+      "llm_tags": [
+        "query:robot-nav:composite"
+      ],
+      "matched_query_tag": "query:robot-nav:composite",
+      "matched_query_text": "Papers central to 跟踪机器人导航相关的最新论文, especially work that connects or combines: robot navigation methods and systems; path planning algorithms for mobile robots; obstacle avoidance strategies for autonomous robots; visual navigation using cameras for robots; autonomous navigation of robots in unknown environments; latest research trends in robot navigation; new advances in autonomous robot navigation; recent papers on robot path planning and obstacle avoidance.",
+      "matched_requirement_id": "req-composite-robot-nav",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.14903v1",
+      "source": "arxiv",
+      "title": "HydroMap: Probabilistic Water Surface Elevation Mapping for Semantic Scene Representation in Inland Waterways",
+      "abstract": "Autonomous surface vehicles operating in inland waterways require a persistent representation of both surrounding structures and the water surface. LiDAR-based simultaneous localization and mapping often produces sparse or missing water returns, leaving this operational surface absent from the reconstructed scene. We propose HydroMap, an odometry-decoupled framework that reconstructs water surface elevation from stereo observations and integrates it with the structural map. Per-frame water points form joint cell observations with propagated stereo and pose uncertainty, and successive observations are fused into a persistent probabilistic elevation map. Semantic map conversion then combines the elevation map with structural geometry in a unified 2.5D representation of water, boundaries, structures, and overhead regions. On the Pohang Canal and Leuven Vaart datasets, the elevation RMSE remains below 5 cm relative to LiDAR references expressed in the same map frame. The elevation and semantic maps are published at 2 Hz and 1 Hz, respectively. HydroMap thereby complements LiDAR maps with a persistent representation of the water surface for downstream navigation in inland waterways.",
+      "authors": [
+        "Zhongbi Luo",
+        "Yunjia Wang",
+        "Herman Bruyninckx",
+        "Peter Slaets"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-14T01:46:04+00:00",
+      "link": "https://arxiv.org/pdf/2609.14903v1",
+      "tags": [
+        "keyword:d-slam",
+        "query:d-slam"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "LiDAR-based SLAM mapping of water surface for scene representation",
+      "llm_evidence_cn": "面向场景表示的激光雷达SLAM水面建图",
+      "llm_evidence": "面向场景表示的激光雷达SLAM水面建图",
+      "canonical_evidence": "面向场景表示的激光雷达SLAM水面建图",
+      "llm_tldr_en": "HydroMap is an odometry-decoupled framework that reconstructs water surface elevation from stereo observations and fuses it with the structural map into a persistent probabilistic elevation map for inland waterway SLAM.",
+      "llm_tldr_cn": "内河自主水面航行器需要同时表示周边结构和水面，但基于激光雷达的SLAM往往产生稀疏或缺失的水面回波，使这一可操作表面在重建场景中缺席。本文提出HydroMap，一个里程计解耦框架，从双目观测重建水面高程并与结构地图融合，将每帧水面点与传播的位姿不确定性作为联合单元观测，逐步融合成持久的概率高程图，再转换为语义地图。实验表明该方法能补全缺失的水面表示。该工作为内河航道语义建图提供了新方案。",
+      "llm_tldr": "内河自主水面航行器需要同时表示周边结构和水面，但基于激光雷达的SLAM往往产生稀疏或缺失的水面回波，使这一可操作表面在重建场景中缺席。本文提出HydroMap，一个里程计解耦框架，从双目观测重建水面高程并与结构地图融合，将每帧水面点与传播的位姿不确定性作为联合单元观测，逐步融合成持久的概率高程图，再转换为语义地图。实验表明该方法能补全缺失的水面表示。该工作为内河航道语义建图提供了新方案。",
+      "llm_tags": [
+        "query:d-slam"
+      ],
+      "matched_query_tag": "query:d-slam",
+      "matched_query_text": "3D mapping and dense reconstruction for robotics and autonomous driving",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

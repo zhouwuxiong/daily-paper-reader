@@ -1,0 +1,639 @@
+Title: HydroMap: Probabilistic Water Surface Elevation Mapping for Semantic Scene Representation in Inland Waterways
+
+URL Source: https://arxiv.org/pdf/2609.14903v1
+
+Published Time: Tue, 15 Sep 2026 01:46:55 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# HydroMap: Probabilistic Water Surface Elevation Mapping for Semantic Scene Representation in Inland Waterways 
+
+Zhongbi Luo 1, Yunjia Wang 2,3, Herman Bruyninckx 1,3,4, and Peter Slaets 1
+
+Abstract — Autonomous surface vehicles operating in inland waterways require a persistent representation of both surround-ing structures and the water surface. LiDAR-based simultane-ous localization and mapping often produces sparse or missing water returns, leaving this operational surface absent from the reconstructed scene. We propose HydroMap, an odometry-decoupled framework that reconstructs water surface elevation from stereo observations and integrates it with the structural map. Per-frame water points form joint cell observations with propagated stereo and pose uncertainty, and successive observations are fused into a persistent probabilistic elevation map. Semantic map conversion then combines the elevation map with structural geometry in a unified 2.5D representation of water, boundaries, structures, and overhead regions. On the Pohang Canal and Leuven Vaart datasets, the elevation RMSE remains below 5 cm relative to LiDAR references expressed in the same map frame. The elevation and semantic maps are published at 2 Hz and 1 Hz, respectively. HydroMap thereby complements LiDAR maps with a persistent representation of the water surface for downstream navigation in inland waterways. 
+
+I. INTRODUCTION Autonomous surface vehicles (ASVs) are increasingly deployed in inland waterways, where the navigable space is constrained by surrounding structures [1]. Typical opera-tional scenarios include passing beneath bridges with limited vertical clearance, transiting locks with varying water levels, navigating narrow channels bounded by quay walls and vegetation, and berthing alongside fixed structures [2], [3]. Safe operation in all of them depends not only on perceiving the surrounding structures, but also on knowing where the water surface lies . The water surface determines the clear-ance beneath overhead obstacles and establishes the spatial reference between the vessel and the built environment. This requires a three-dimensional map that captures both the surrounding infrastructure and the water surface itself. Simultaneous localization and mapping (SLAM) has made significant progress toward this goal, and recent LiDAR-based systems such as FAST-LIO2 [6] achieve centimeter-level accuracy in structured environments. The number of 
+
+Corresponding author: Zhongbi Luo (e-mail: zhongbi.luo@kuleuven.be). 
+
+> 1
+
+Zhongbi Luo, Herman Bruyninckx, and Peter Slaets are with the Division of Robotics, Automation and Mechatronics, Department of Mechanical Engineering, KU Leuven, 3001 Leuven, Belgium (e-mail: zhongbi.luo@kuleuven.be; herman.bruyninckx@kuleuven.be; pe-ter.slaets@kuleuven.be). 
+
+> 2
+
+Yunjia Wang is with the Division of Declarative Languages and Artificial Intelligence (DTAI), Department of Computer Science, KU Leuven, 8200 Bruges, Belgium (e-mail: yunjia.wang@kuleuven.be). 
+
+> 3
+
+Yunjia Wang and Herman Bruyninckx are also with Flanders Make@KU Leuven, 3001 Leuven, Belgium. 
+
+> 4
+
+Herman Bruyninckx is also with the Department of Mechanical Engi-neering, TU Eindhoven, 5612 AZ Eindhoven, The Netherlands. w/ HydroMap Raw Image Raw Image w/o HydroMap 
+
+> Clearance: 2.7m Map Visualization Semantic 2.5D Map Overhead Clearance
+
+Fig. 1: Qualitative comparison on the Pohang Canal dataset [4]. The top panel shows representative images from the left camera and the map reconstructed by FAST-LIVO2 [5] without HydroMap. The bottom panel shows the map reconstructed with HydroMap, together with a 3D map visualization with labeled overhead structures and the corresponding semantic 2.5D map after map conversion. valid LiDAR returns from water, however, depends on the incidence angle, the sensor-to-surface distance, and the water turbidity [7], [8]; under typical inland conditions most pulses are absorbed and few or no returns are produced. LiDAR point clouds from [4], [9] also reveal mirror reflections near the water-structure boundary, which place symmetric copies of nearby structures below the water plane. The vessel’s operational surface therefore appears as a void in the reconstructed map—the ASV can neither delineate the water surface boundary, nor assess whether sufficient clearance exists beneath overhead obstacles such as bridges. To address this gap, prior work has explored water surface perception through different sensing modalities. Semantic segmentation of images has been used to detect the nav-igable area [10], while stereo vision has been employed to reconstruct the 3D water surface from individual frames [11]. Since visual water perception is affected by low texture, reflections, and sun glint, the former provides 2D navigable boundaries without surface elevation, and the latter produces only local per-frame estimates that may contain holes or erro-neous matches. Neither constructs a persistent, georeferenced water surface map. In this paper, we present HydroMap , as shown in Fig. 1. HydroMap is a mapping framework designed to fill the water surface void left by LiDAR-based SLAM systems in inland waterways. The key idea is to reconstruct the water surface as a probabilistic elevation map from stereo vision and integrate it with the existing non-water point cloud map to form a more complete 3D scene representation, from arXiv:2609.14903v1 [cs.RO] 14 Sep 2026 1. Sensor Inputs  
+
+> LiDAR
+> IMU
+> Stereo Cameras 2. Odometry Provider State Estimation Framework 3. Water-Surface Perception
+> Stereo Cameras Left Camera LiDAR IMU
+> Water Segmentation GPU-Accelerated Stereo Matching Cascaded Filtering 4. Probabilistic Elevation Mapping
+> Local Water Point Cloud
+> Transformation & Propagation & Validation
+> 6-DoF Pose and Covariance Gravity
+> HydroMap Probabilistic Fusion & Elevation Map 5. Application Map Integration & Conversion
+> Global Water Map 6-DoF Pose Dense Structure Cloud
+> Water Boundary Extraction Overhead Clearance Estimation
+
+Fig. 2: Overview of the proposed HydroMap system. which water surface boundaries and overhead clearance can be directly derived. Notably, the framework is odometry-decoupled : it requires only poses and associated covariances from an external odometry source. The main contributions of this work are summarized as follows:  
+
+> •
+
+An odometry-decoupled mapping system that integrates stereo water surface perception, persistent probabilistic elevation mapping, and semantic integration with the structural LiDAR map.  
+
+> •
+
+A probabilistic elevation mapping method that forms joint cell observations, propagates stereo and pose uncertainty, and uses Split Covariance Intersection (SCI) [12], [13] to fuse successive observations with-out assuming independent pose-induced errors across frames.  
+
+> •
+
+A semantic scene representation that combines the water surface with surrounding structures in a semantic OctoMap [14] and a 2.5D grid, with field validation on Leuven Vaart and the public Pohang Canal dataset [4]. II. RELATED WORK 
+
+A. Visual Water Surface Perception for ASV Navigation 
+
+With the severe degradation of LiDAR on water sur-face [15], [16], vision-based methods have emerged as an important approach to water surface perception on ASVs. Semantic segmentation has been widely adopted to detect navigable water regions in camera images [10], [17]. Kim et al. [2] projected the segmented region onto an ASV-fixed water plane and extracted boundaries for local planning. This 2D representation does not provide the vertical geometry required for overhead clearance estimation. Stereo vision provides metric depth and has been applied to water surface reconstruction [11], [18]. Griesser et al. [19] restricted SGM [20] to water pixels, reconstructed a water point cloud, and fitted a plane to estimate vessel attitude. These results establish that stereo can recover water ge-ometry, but per-frame estimates remain local and may be discontinuous under textureless or reflective conditions. A natural approach to mitigate these impacts is to accumulate repeated observations over time. As the ASV moves, the same water region is observed multiple times from slightly different viewpoints. Consequently, observation gaps present in a single frame can be effectively filled with valid mea-surements from subsequent frames. 
+
+B. Probabilistic Elevation Mapping and Semantic Scene Representation 
+
+Representing terrain with quantified uncertainty has been well studied in ground robotics [21], [22]. Fankhauser et al. [22] proposed a probabilistic elevation mapping frame-work in which per-cell height estimates are updated with a Kalman filter, and robot pose uncertainty is propagated to obtain terrain estimates with associated confidence bounds. GPU implementations [23] further demonstrate real-time probabilistic elevation mapping. Conventional Covariance Intersection (CI) provides a consistent fusion rule when cross-correlation is unknown [24]. In HydroMap, stereo measurement uncertainty is propagated for each observation, while uncertainty from the shared odometry pose is handled separately because pose errors may be correlated across successive frames. SCI preserves this separation and enables temporal fusion without requiring the unavailable cross-covariance between successive pose errors [12], [13]. Dense 3D maps are also projected into per-cell height and slope representations for efficient navigation queries [25]. Related projections have been used in inland waterways for shoreline and bridge detection [3]. These approaches, however, require the traversable surface to be sufficiently observed by range sensors, a condition rarely met in inland waterways. This motivates modeling the water surface as an uncertain elevation map inferred from stereo observations and integrating it with the structural geometry in a persistent semantic scene representation. III. SYSTEM OVERVIEW 
+
+A. Notation and Coordinate Frames 
+
+In this work, we define four coordinate frames: the global frame G, the IMU/body frame I, the left camera frame C,and the LiDAR frame L. The global frame G is initialized at the first body frame. For instance, the extrinsic transforma-tion from the camera frame to the body frame is denoted by I TC ∈ SE (3) . All sensors are rigidly attached with known extrinsics obtained via offline calibration and time synchronization. At timestamp tk, the odometry state is represented by the pose of the body in the global frame GTIk = [ GRIk |
+
+> G
+
+pIk ], where GRIk ∈ SO (3) is the rotation and GpIk ∈ R3
+
+is the position. The state also includes the estimated gravity vector Ggk ∈ R3 and the pose covariance Σk.
+
+B. System Pipeline 
+
+Fig. 2 illustrates the HydroMap pipeline. At each stereo timestamp tk, HydroMap takes synchronized stereo images together with the externally provided GTIk , Ggk, and Σk.The water surface perception module (Sec. IV-B) recon-structs a local water point cloud C Pℓk ; the elevation mapping module (Sec. IV-C) transforms it into the global frame, validates it against Ggk, and fuses it into the persistent probabilistic water surface elevation map GMh; and the application stage (Sec. IV-D) integrates GMh with the struc-tural map GMs to extract the water boundary and estimate the overhead clearance. IV. METHODOLOGY 
+
+A. Odometry Provider 
+
+HydroMap uses the output of an external odometry system. The probabilistic elevation mapping module requires gravity, pose and covariance at each tk. This module is not used to update the odometry state. In this work, these quantities are provided by FAST-LIVO2 [5], which performs tightly coupled LiDAR-inertial-visual state estimation and reports a state covariance matrix together with the pose. It makes ef-fective use of the sensing modalities already available on the platform, and its visual constraints complement LiDAR and IMU measurements in challenging inland environments. The structural map maintained by FAST-LIVO2 is further used as Ms in the downstream application stage. The provider and HydroMap run as separate processes that exchange only timestamped messages, so the mapping workload stays outside the state estimation loop. 
+
+B. Water Surface Perception 
+
+This module extracts a local water surface point cloud  
+
+> C
+
+Pℓk from a calibrated stereo pair at each timestamp tk.The pipeline consists of three stages: water segmentation, GPU-accelerated stereo matching, and cascaded geometric filtering. The result of each stage is shown in Fig. 3. 
+
+1) Water Segmentation: The optically complex and low-textured appearance of the water surface makes it easily confused with sky reflections, shore vegetation, and structural boundaries. To isolate water from these distractors, the left rectified image ILk at timestamp tk is processed by aDeepLabV3+ [26] network with a ResNet-50 backbone [27], producing a binary water mask Wk, where Wk(u, v ) = 1 
+
+indicates water and Wk(u, v ) = 0 otherwise. The mask Water segmentation Disparity map Point cloud 
+
+Fig. 3: Overview of the water surface perception pipeline. From left to right: raw image overlaid with the water segmentation mask, the disparity map in water regions, and the local water point cloud visualized from a bird’s-eye view. restricts the subsequent stereo matching to pixels classified as water, suppressing false matches that may arise in non-water regions. 
+
+2) GPU-Accelerated Stereo Matching: The rectified stereo pair is processed with the eight-path GPU implemen-tation of SGM [20] in libSGM [28]. The estimated disparity 
+
+dk is masked by Wk:
+
+dwk (u, v ) = 
+
+(
+
+dk(u, v ) dk(u, v ) > d min , Wk(u, v ) = 1 ,
+
+invalid otherwise, (1) where dmin = 0 is the minimum valid disparity. Morpholog-ical filtering closes small gaps in dwk .
+
+3) Cascaded Geometric Filtering: The cleaned disparity is reprojected into a depth map Zk in the left camera frame 
+
+C. A cascaded filter keeps depths from 0 to 50 m, removes gradients above the 98 th percentile [11], and selects the three largest 4-connected components. RANSAC plane fitting [29] then selects points within 0.1 m of the dominant surface. The resulting local cloud C Pℓk = {C p(n) 
+
+> k
+
+}Nk 
+
+> n=1
+
+is passed to probabilistic elevation mapping. 
+
+C. Probabilistic Elevation Mapping 
+
+The probabilistic elevation mapping module fuses succes-sive, local water surface observations into a persistent global map GMh. Because the water surface perception and odom-etry modules run asynchronously, HydroMap synchronizes them by maintaining a first-in-first-out buffer of incoming water surface point clouds and a history of odometry states. For a given observation at tk, the corresponding pose GTIk
+
+and its covariance Σk are obtained by interpolating the odometry states, applying SLERP [30] to the orientation and linear interpolation to the position and covariance. To incrementally fuse these multi-frame observations, the map GMh is structured as a hash-indexed 2D grid with a resolution of ∆g = 0 .3 m. Each cell i maintains an elevation estimate and a split variance with an independent component 
+
+pu,i and a potentially correlated component pc,i :
+
+hi ∼ N (ˆhi, p u,i + pc,i ). (2) The fusion process consists of three main steps: per-point global transformation and uncertainty propagation, per-frame validation, and joint per-cell fusion. 1) Per-Point Global Transformation and Uncertainty Propagation: The local point cloud C Pℓk is transformed into the body (IMU) frame I to align with the external odometry state. For a point C p(n) 
+
+> k
+
+, its coordinate in the body frame is obtained via the sensor extrinsics: I p(n) 
+
+> k
+
+= I RC C p(n) 
+
+> k
+
++ 
+
+> I
+
+pC . Its global coordinate is subsequently computed via the estimated body pose: Gp(n) 
+
+> k
+
+= GRIk 
+
+> I
+
+p(n) 
+
+> k
+
++ GpIk .
+
+The primary source of stereo reconstruction error lies along the depth axis, which scales severely with distance. For a rectified stereo pair with focal length fx and baseline 
+
+B, the depth satisfies Z = fxB/d . A first-order propagation of the disparity noise with standard deviation σd (in pixels) yields a depth variance that grows with the fourth power of range: 
+
+σ2 
+
+> Z,n
+
+=
+
+ ∂Z ∂d 
+
+2
+
+σ2 
+
+> d
+
+= σ2
+
+> d
+
+f 2 
+
+> x
+
+B2 Z4
+
+> n
+
+, (3) where Zn = C p(n) 
+
+> k,z
+
+is the depth of the point from the camera. We construct the simplified sensor covariance in the camera frame using a diagonal form:  
+
+> C
+
+Σ(n) 
+
+> ℓ
+
+≈ diag  σ2 
+
+> xy
+
+, σ 2 
+
+> xy
+
+, σ 2
+
+> Z,n
+
+ , (4) where σ2 
+
+> xy
+
+is a small constant lateral variance that accounts for residual calibration effects and lateral pixel uncertainty. This covariance is then rotated into the body frame using:  
+
+> I
+
+Σ(n) 
+
+> ℓ
+
+= I RC C Σ(n) 
+
+> ℓI
+
+R⊤ 
+
+> C
+
+. (5) The elevation error is separated into the stereo uncertainty associated with each point and the pose uncertainty shared by all points observed at tk. The stereo term is the vertical component of the rotated covariance, 
+
+σ2 
+
+> z,n
+
+= e⊤ 
+
+> zG
+
+RIk 
+
+> I
+
+Σ(n)
+
+> ℓG
+
+R⊤ 
+
+> Ik
+
+ez , ez = [0 , 0, 1] ⊤. (6) The pose term is obtained from the sensitivity of the elevation to δk = [ δp⊤, δ θ⊤]⊤, with covariance Σk. The position error is expressed in the global frame and the rotation error as a small angle perturbation in the body tangent space. The pose error shifts the elevation of point 
+
+n by J(n)⊤ 
+
+> k
+
+δk, with 
+
+J(n) 
+
+> k
+
+=  e⊤ 
+
+> z
+
+, −e⊤ 
+
+> zG
+
+RIk ⌊I p(n) 
+
+> k
+
+⌋∧
+
+⊤ ∈ R6, (7) where ⌊·⌋ ∧ denotes the skew symmetric matrix associated with the cross product, and I p(n) 
+
+> k
+
+is the lever arm from the body origin to the point. The full 6 × 6 marginal pose covariance Σk, including the cross-covariance between translation and rotation, is available at each timestamp. 
+
+2) Per-Frame Validation: Before fusion, each frame un-dergoes three validation checks operating on the water sur-face point cloud {Gp(n) 
+
+> k
+
+}Nk
+
+> n=1
+
+. Support gating rejects frames with fewer than Nmin = 300 points, which carry too little evidence for the aggregation described below. Area gating 
+
+rejects frames whose horizontal bounding-box area is smaller than Amin (set to 20 m 2 in our implementation), a condition that typically indicates a partial segmentation failure, such as detecting only a thin sliver of water along a reflective hull or shoreline. Tilt gating rejects frames whose reconstructed surface normal is inconsistent with the gravity vector. Let ˆnk
+
+be the dominant normal estimated via Principal Component Analysis (PCA) on the global water surface point cloud. A frame is accepted only if 
+
+αk = arccos  |ˆnk · ˆeg,k | < α max , ˆeg,k =
+
+> G
+
+gk
+
+∥Ggk∥ , (8) with αmax set to 15 ° and Ggk the gravity vector provided by the odometry state. A frame that fails any gate is dropped entirely. 
+
+3) Joint Per-Cell Fusion: Each validated point 
+
+(Gp(n) 
+
+> k
+
+, σ 2
+
+> z,n
+
+, J(n) 
+
+> k
+
+) is assigned to a grid cell according to its horizontal coordinates. Its elevation measurement is 
+
+z(n) 
+
+> k
+
+= e⊤
+
+> z G
+
+p(n) 
+
+> k
+
+. (9) Because all points observed at tk share the pose error δk,the Nik points assigned to cell i form one joint observation. Their elevations, stacked into zik ∈ RNik , follow 
+
+zik = 1hi + Jik δk + 1(mu,ik + mc,ik ) + εik ,mu,ik ∼ N (0 , σ 2
+
+> m,u
+
+), mc,ik ∼ N (0 , σ 2
+
+> m,c
+
+),
+
+εik ∼ N (0, Dik ).
+
+(10) Here, 1 is the all-ones vector, Jik ∈ RNik ×6 stacks J(n)⊤ 
+
+> k
+
+as rows, and Dik = diag( σ2
+
+> z,n
+
+) contains the propagated stereo variances. The residual mu,ik represents variations that are assumed independent between observations, including small surface fluctuations and random reconstruction errors. The residual mc,ik represents effects that may persist, such as camera model and calibration errors. Within the current ob-servation, δk, mu,ik , mc,ik , and εik are modeled as mutually independent. Marginalizing these terms with δk ∼ N (0, Σk)
+
+gives 
+
+Rik = Dik + Jik ΣkJ⊤ 
+
+> ik
+
++ ( σ2 
+
+> m,u
+
++ σ2
+
+> m,c
+
+)11 ⊤. (11) Generalized least squares reduces the joint observation to a scalar elevation and separates its variance into independent and potentially correlated components: 
+
+aik = R−1 
+
+> ik
+
+11⊤R−1 
+
+> ik
+
+1 , ¯zik = a⊤
+
+> ik
+
+zik ,ru,ik = a⊤
+
+> ik
+
+Dik aik + σ2
+
+> m,u
+
+,rc,ik = a⊤
+
+> ik
+
+Jik ΣkJ⊤
+
+> ik
+
+aik + σ2
+
+> m,c
+
+.
+
+(12) The scalar observation ¯zik has split variance rik = ru,ik +
+
+rc,ik . The independent component ru,ik contains the pro-jected stereo variance and σ2
+
+> m,u
+
+. The potentially correlated component rc,ik contains the propagated pose variance and 
+
+σ2
+
+> m,c
+
+. Since a⊤
+
+> ik
+
+1 = 1 , each residual variance enters the scalar observation once rather than decreasing with the number of points. For a newly observed cell, the estimate is initialized as 
+
+ˆhi = ¯ zik and pc,i = rc,ik , while the total variance satisfies 
+
+pu,i + pc,i = max( rik , σ 20 ). Here, σ20 sets the minimum initialization variance. Each subsequent observation passes the consistency gate if 
+
+(¯ zik − ˆh− 
+
+> i
+
+)2
+
+p− 
+
+> u,i
+
++ p− 
+
+> c,i
+
++ rik 
+
+< γ 2, (13) where γ = 3 .Although Σk contains the complete marginal pose covari-ance at tk, the external odometry interface does not provide cross-covariances between the pose error at tk and errors at earlier timestamps. Temporal correlations between mc,ik 
+
+terms are likewise unknown. Accepted observations are therefore fused using the scalar Split Covariance Intersection (SCI) update [12], [13]: 
+
+˜pi(ω) = p− 
+
+> u,i
+
++ p−
+
+> c,i
+
+ω , ˜rik (ω) = ru,ik + rc,ik 
+
+1 − ω ,
+
+(14) 
+
+p+ 
+
+> i
+
+(ω) =  ˜p−1 
+
+> i
+
++ ˜ r−1
+
+> ik
+
+−1 , ω∗ = arg min 
+
+> 0<ω< 1
+
+p+ 
+
+> i
+
+(ω),
+
+(15) 
+
+ˆh+ 
+
+> i
+
+= p+
+
+> i
+
+ˆh−
+
+> i
+
+˜pi
+
++ ¯zik 
+
+˜rik 
+
+!
+
+. (16) All terms in the posterior mean are evaluated at ω∗, and the superscripts − and + denote prior and posterior estimates. With λi = p+ 
+
+> i
+
+/˜pi and μi = p+ 
+
+> i
+
+/˜rik , the split is propagated as p+ 
+
+> u,i
+
+= λ2 
+
+> i
+
+p− 
+
+> u,i
+
++ μ2 
+
+> i
+
+ru,ik and p+ 
+
+> c,i
+
+= max( p+ 
+
+> i
+
+− p+
+
+> u,i
+
+, 0) .Rejected observations leave the cell unchanged. No process variance or observation aging is applied during the mapping interval. 
+
+D. Semantic Map Conversion and Application 
+
+This module integrates the probabilistic elevation map 
+
+> G
+
+Mh with the structural map GMs for boundary and clearance estimation. Because the inputs are asynchronous, changed regions are converted periodically at 1 Hz. 
+
+1) Semantic OctoMap Integration: A colorized OctoMap 
+
+> G
+
+Mo is formed by inserting GMs as structure voxels and accepted cells from GMh as water . Because LiDAR may occasionally capture weak and sparse returns from wave-induced ripples, GMh is used to classify the water surface during fusion. A structural point within δws = 0.1 mof a valid water elevation is classified as a water return and excluded from the structure class. Water cells with uncertainty below σw, max are inserted, and previous water voxels are cleared at each update to preserve a 2.5D surface. 
+
+2) 2.5D Semantic Projection: The semantic OctoMap is projected onto a 2.5D grid GGℓ with resolution ∆c = 0 .4 m. Each vertical column provides water elevation zw(i), local structural slope si from a least-squares plane fit [25], and the lowest structural voxel zs, min (i) above water. Their vertical gap is gi = zs, min (i) − zw(i).
+
+3) Boundary Extraction and Clearance Estimation: Each cell is labeled as water , structure , boundary , or overhead .Structural cells adjacent to water with si > τ∂ = 0.1
+
+define steep navigable boundaries. Cells with gi > 1.5 mare grouped into connected overhead regions Or [3]; their clearance ¯Cr is the mean valid gap within each region. The labels and regional clearances are exported as semantic layers for downstream navigation. TABLE I: Evaluation sequences.                         
+
+> Seq. Dataset and scene Dist. [m] Water ref. Clearance
+> L-1 Leuven Vaart, vegetated bank 285.8 Yes –L-2 Leuven Vaart, bank with bridge 122.8 Yes Measured P-1 Pohang Canal, port area with bridges 233.5 Partial Estimated P-2 Pohang Canal, canal with bridges 530.5 No Estimated P-3 Pohang Canal, canal with bridges 388.3 No Estimated
+> Note: Water ref. indicates the availability of LiDAR water surface returns used for quantitative evaluation. A dash indicates that the sequence contains no overhead structure requiring clearance evaluation. Measured indicates evaluation against an independent clearance measurement, whereas Estimated indicates that only the HydroMap estimate is reported.
+
+V. EXPERIMENTS 
+
+A. Experimental Setup and Datasets 
+
+We evaluate HydroMap using selected sequences from the public Pohang Canal dataset [4] and field experiments conducted on the Leuven Vaart. The Pohang dataset was collected in narrow waterways in Pohang, South Korea, and contains synchronized stereo images, LiDAR point clouds, Global Navigation Satellite Systems (GNSS) measurements, and Inertial Measurement Unit (IMU) data from narrow canal, port, and near-coastal scenes. The Leuven field data were collected along the Leuven-Dijle Canal in Belgium using an instrumented catamaran equipped with a calibrated stereo camera pair, LiDAR, and GNSS/INS [31]. During the Leuven experiments, the measured water turbidity near the acquisition site was 45– 56 NTU. This turbidity level exceeds the threshold required for reliable LiDAR water surface detection [8]. Under these turbid conditions, visible LiDAR returns from the water surface were captured and used as reference observations for quantitative evaluation. The selected sequences from both data sources are sum-marized in Table I. All experiments were processed on a laptop equipped with an Intel Core Ultra 9 275HX CPU, an NVIDIA GeForce RTX 5090 Laptop GPU, and 64 GB of RAM, running Ubuntu 22.04 via Windows Subsystem for Linux (WSL) and ROS2. Testing on these diverse datasets demonstrates the applicability of our framework to varying vessel and sensor setups. 
+
+B. Water Segmentation Performance 
+
+To adapt the DeepLabV3+ network described in Sec. IV-B to inland water imagery, we fine-tuned the pretrained network using the Pohang and Leuven training images together. SAM 2 [32] provided initial water masks, which were manually corrected at water boundaries, reflections, vegetation, and structures to obtain water and background labels. The Pohang set contains 1698 annotated images, divided into non-overlapping subsets of 697 training, 174 validation, and 827 test images. The Leuven set contains 252 annotated images, of which 96 images from separate recording seg-ments were reserved for testing, and the remaining 156 were used for training and validation. All test images were ex-cluded from network optimization and checkpoint selection. Fig. 4: Water surface elevation results for L-1 and L-2 on Leuven Vaart and the local P-1 reference region on the Pohang Canal dataset. The top row combines representative images and registered 3D maps. Blue points denote the separated water surface, the remaining points are colored by vertical height, and the magenta surface denotes HydroMap. The middle row compares the longitudinal profiles with the estimated confidence bounds and reference bounds. The bottom row shows the spatial distribution of the elevation residuals. TABLE II: Binary water segmentation results of the model trained on the datasets.                      
+
+> Test set mIoU [%] IoU w[%] Pw[%] Rw[%] F1 w[%]
+> Pohang 98.49 97.83 98.68 99.13 98.90 Leuven 98.48 98.41 99.02 99.38 99.20
+
+The jointly trained model selected on the combined valida-tion data was used for all subsequent mapping experiments. Table II shows water class IoUs of 97 .83% on Pohang and 
+
+98 .41% on Leuven, with F1 scores of 98 .90% and 99 .20% .Precision and recall exceed 98 .6% on both test sets. The joint model therefore provides sufficiently accurate masks to restrict stereo reconstruction to water regions in the evaluated environments. 
+
+C. Water Surface Elevation Accuracy 
+
+The water surface elevation was evaluated in verified regions containing LiDAR water returns. The returns were projected onto the HydroMap grid; the per-frame cell median and then the temporal median over at least five observations defined href  
+
+> i
+
+. For ei = ˆhi − href  
+
+> i
+
+, we report bias, MAE, RMSE, P95 absolute error, and the empirical coverage C95 
+
+of ˆhi ± 1.96 σh,i . The estimated confidence bounds in Fig. 4 visualize this uncertainty. The reference bounds span the 5th to 95th percentiles of the LiDAR elevations within each profile bin and do not enter the coverage calculation. Table III shows centimeter-level differences from the Li-DAR references in all three regions. The RMSE remains below 5 cm and P95 does not exceed 9.2 cm. In Fig. 4, the TABLE III: Water surface elevation accuracy.                          
+
+> Seq. Cells Bias [cm] MAE [cm] RMSE [cm] P95 [cm] C95 [%]
+> L-1 16337 3.75 3.97 4.85 9.20 95.9 L-2 5071 1.88 2.94 3.95 8.10 98.1 P-1 327 0.53 2.04 2.57 5.25 92.7
+
+profiles follow the LiDAR references and the residual maps are dominated by magnitudes below 0.10 m. The estimated confidence bounds provide coverage close to the nominal level on L-1 and P-1 and slightly conservative coverage on L-2. The local P-1 reference was observed mainly during reverse motion, when the vessel wake visibly roughened and aerated the water. The roughened surface presents a wider range of local incidence angles, which can increase the occurrence of specular LiDAR returns. Wake-generated bubbles increase optical backscatter, while surface foam further enhances reflectance [33]. By contrast, persistent Leuven returns are consistent with near-surface scattering by suspended particles under the measured high turbidity [34]. 
+
+D. Fusion Comparison 
+
+SCI, the Kalman filter (KF), and covariance intersection (CI) receive the same joint cell observation from Eqs. (11) and (12). KF assumes temporal independence and applies the conventional scalar Kalman update. For this comparison, CI [24] applies covariance intersection to the complete variance using the same symmetric weighting. The No fusion variant uses only the latest accepted cell observation. All other inputs and parameters are unchanged. TABLE IV: Fusion comparison. Values are ordered as L-1/L-2/P-1.                   
+
+> Method RMSE [cm] C95 [%] Med. σh[cm]
+> SCI 4.85/3.95/2.57 95.9/98.1/92.7 4.04/4.19/2.16 KF 4.84/3.92/2.53 79.0/92.9/70.8 2.75/3.05/1.24 CI 3.28/3.40/3.95 100/100/100 8.12/8.22/9.05 No fusion 3.39/4.08/5.70 99.9/99.8/100 8.09/8.10/9.06 (a) P-1: Pohang Canal (b) P-2: Pohang Canal (c) P-3: Pohang Canal
+
+Fig. 5: Semantic 2.5D maps and overhead clearance esti-mates for P-1, P-2, and P-3. The close RMSE values show that the fusion rule mainly changes the estimated uncertainty rather than the mean elevation. Under the temporal independence assumption, KF reduces the median σh to 1.24 –3.05 cm, but its C95 falls to 70 .8–92 .9% . This undercoverage indicates overly narrow confidence intervals, particularly on P-1. SCI maintains sep-arate variance terms for components assumed independent across observations and for those with unavailable temporal cross-covariance. It gives a median σh of 2.16 –4.19 cm and coverage of 92 .7–98 .1% , closer to the nominal 95% level. CI applies covariance intersection to the complete variance, whereas No fusion does not combine repeated observations. Both consequently produce wider intervals near 8–9 cm and almost 100% coverage. SCI therefore preserves comparable elevation accuracy while avoiding the undercoverage of KF and the wider confidence intervals of CI and No fusion. 
+
+E. Semantic Mapping and Runtime 
+
+In Fig. 5, the semantic maps combine navigable water, boundaries, and overhead regions in a unified 2.5D repre-sentation. The regional clearance estimates in Pohang range from 2.77 to 5.95 m. The L-2 bridge provides a single independent field check: HydroMap estimates 6.90 m at the measured region, compared with the manual measurement of 
+
+6.85 m. FAST-LIVO2 provides external odometry and is timed separately. HydroMap contains the remaining three modules, 
+
+Fig. 6: Runtime distributions of the four system modules across the evaluation sequences. The dashed line indicates the 1 s semantic conversion period. which are scheduled independently. Water Surface Percep-tion runs in a separate process and uses the most recent stereo pair. Probabilistic Elevation Mapping fuses every accepted water observation and publishes the elevation map at 2 Hz, while Semantic Map Conversion updates the semantic map at 1 Hz. Figure 6 therefore reports the computation time of one execution for each module. In Fig. 6, the median Probabilistic Elevation Mapping time remains below 1.6 ms. The external Odometry Provider and Water Surface Perception require 45 –135 ms and 106 –205 ms per execution, respectively. Semantic Map Conversion takes 
+
+44 –56 ms in Pohang and 190 –280 ms in Leuven. All se-quences use the same OctoMap resolution. The Leuven ex-periments focus on water surface validation and use complete LiDAR structural clouds, whereas Pohang evaluates semantic navigable area mapping using points within the camera field of view. This broader input explains the longer Leuven conversion time. All measured executions finish within the 
+
+1 s semantic map update period. VI. CONCLUSIONS, LIMITATIONS AND FUTURE WORK HydroMap reconstructs the water surface omitted by con-ventional LiDAR maps and integrates it with surrounding structures in a persistent semantic scene representation. Across three LiDAR reference regions, elevation RMSE remains below 5 cm and P95 does not exceed 9.2 cm. The se-mantic maps recover water boundaries and overhead regions, while the elevation and semantic layers are updated at 2 Hz and 1 Hz. Together, these layers provide geometric inputs for navigable area delineation, overhead clearance assessment, and downstream planning. Several limitations remain. Stereo matching can degrade under low texture, glare, mirror reflections, and low illumina-tion, leaving gaps in the water layer or placing reflected struc-ture points in free space. Temporal or multiview completion and reflection rejection could improve the spatial coverage and consistency of the semantic map. The uncertainty model preserves covariance shared within each joint observation, but does not represent dependence between neighboring cells or temporal pose cross-covariances from the external odometry. It also assumes a locally stationary water surface. Future work will account for temporal variations caused by waves, vessel wakes, and changing water levels. Finally, HydroMap and the LiDAR reference share the FAST-LIVO2 trajectory. The reported differences therefore quantify consistency in the shared map frame rather than absolute georeferenced accuracy. Clearance validation is also limited to one manual measurement at L-2. Future work will use independent surveyed references and repeated clearance measurements, integrate the semantic representation with planning and control, and use the persistent water surface to constrain vessel attitude and vertical drift. REFERENCES [1] W. Wang, D. Fern´ andez-Guti´ errez, R. Doornbusch, J. Jordan, T. Shan, P. Leoni, N. Hagemann, J. K. Schiphorst, F. Duarte, C. Ratti, et al. ,“Roboat iii: An autonomous surface vessel for urban transportation,” 
+
+Journal of Field Robotics , vol. 40, no. 8, pp. 1996–2009, 2023. [2] J. Kim, C. Lee, D. Chung, and J. Kim, “Navigable area detection and perception-guided model predictive control for autonomous navigation in narrow waterways,” IEEE Robotics and Automation Letters , vol. 8, no. 9, pp. 5456–5463, 2023. [3] Z. Luo, Y. Wang, J. Swevers, P. Slaets, and H. Bruyninckx, “Inland-loam: Voxel-based structural semantic lidar odometry and mapping for inland waterway navigation,” arXiv preprint arXiv:2508.03672 , 2025. [4] D. Chung, J. Kim, C. Lee, and J. Kim, “Pohang canal dataset: A multimodal maritime dataset for autonomous navigation in restricted waters,” The International Journal of Robotics Research , vol. 42, no. 12, pp. 1104–1114, 2023. [5] C. Zheng, W. Xu, Z. Zou, T. Hua, C. Yuan, D. He, B. Zhou, Z. Liu, J. Lin, F. Zhu, et al. , “Fast-livo2: Fast, direct lidar–inertial–visual odometry,” IEEE Transactions on Robotics , vol. 41, pp. 326–346, 2024. [6] W. Xu, Y. Cai, D. He, J. Lin, and F. Zhang, “Fast-lio2: Fast direct lidar-inertial odometry,” IEEE Transactions on Robotics , vol. 38, no. 4, pp. 2053–2073, 2022. [7] C. M. Ranieri, A. V. Foletto, R. D. Garcia, S. N. Matos, M. M. Medina, L. S. Marcolino, and J. Ueyama, “Water level identification with laser sensors, inertial units, and machine learning,” Engineering Applications of Artificial Intelligence , vol. 127, p. 107235, 2024. [8] M. J. Allis, W. L. Peirson, and M. L. Banner, “Application of lidar as a measurement tool for waves,” in ISOPE International Ocean and Polar Engineering Conference . ISOPE, 2011, pp. ISOPE–I. [9] Z. Luo, Y.-Y. Zhang, J. Billet, S. Van Baelen, J. Swevers, H. Bruyninckx, and P. Slaets, “Leuven Vaart Dataset: A Multimodal Sensor Dataset for Autonomous Navigation in Inland Waterways,” 2026, [Data set]. [Online]. Available: https://doi.org/10.5281/zenodo .18829645 [10] W. Hammedi, S.-M. Senouci, M. Ramirez-Martinez, and P. Brunet, “On reliable awareness system for autonomous river vessels,” IEEE Transactions on Intelligent Transportation Systems , vol. 23, no. 10, pp. 17 097–17 106, 2022. [11] F. Bergamasco, A. Torsello, M. Sclavo, F. Barbariol, and A. Benetazzo, “Wass: An open-source pipeline for 3d stereo reconstruction of ocean waves,” Computers & Geosciences , vol. 107, pp. 28–36, 2017. [12] S. J. Julier and J. K. Uhlmann, “Simultaneous localisation and map building using split covariance intersection,” in Proceedings 2001 IEEE/RSJ International Conference on Intelligent Robots and Systems. Expanding the Societal Role of Robotics in the the Next Millennium (Cat. No. 01CH37180) , vol. 3. IEEE, 2001, pp. 1257–1262. [13] H. Li, F. Nashashibi, and M. Yang, “Split covariance intersection filter: Theory and its application to vehicle localization,” IEEE Transactions on Intelligent Transportation Systems , vol. 14, no. 4, pp. 1860–1871, 2013. [14] A. Hornung, K. M. Wurm, M. Bennewitz, C. Stachniss, and W. Burgard, “OctoMap: An efficient probabilistic 3D mapping framework based on octrees,” Autonomous Robots , 2013, software available at http://octomap.github.com. [Online]. Available: http: //octomap.github.com [15] Z. Chen, Y. Qi, D. Feng, X. Zhuang, H. Chen, X. Hu, J. Wu, K. Peng, and P. Lu, “Heterogeneous lidar dataset for benchmarking robust localization in diverse degenerate scenarios,” The International Journal of Robotics Research , vol. 45, no. 1, pp. 6–22, 2026. [16] I. Filip, C. Lass, and D. Medina, “Performance evaluation of visual and lidar slam for inland waterways,” in 2024 24th International Conference on Control, Automation and Systems (ICCAS) . IEEE, 2024, pp. 562–567. [17] L. Yao, D. Kanoulas, Z. Ji, and Y. Liu, “Shorelinenet: An efficient deep learning approach for shoreline semantic segmentation for unmanned surface vehicles,” in 2021 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2021, pp. 5403–5409. [18] A. Benetazzo, F. Barbariol, F. Bergamasco, A. Torsello, S. Carniel, and M. Sclavo, “Stereo wave imaging from moving vessels: Practical use and applications,” Coastal Engineering , vol. 109, pp. 114–127, 2016. [19] D. Griesser, G. Umlauf, and M. O. Franz, “Visual pitch and roll estimation for inland water vessels,” in 2023 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2023, pp. 1961–1967. [20] H. Hirschmuller, “Stereo processing by semiglobal matching and mutual information,” IEEE Transactions on pattern analysis and machine intelligence , vol. 30, no. 2, pp. 328–341, 2008. [21] D. Belter, P. Łabcki, and P. Skrzypczy´ nski, “Estimating terrain eleva-tion maps from sparse and uncertain multi-sensor data,” in 2012 IEEE International Conference on Robotics and Biomimetics (ROBIO) .IEEE, 2012, pp. 715–722. [22] P. Fankhauser, M. Bloesch, and M. Hutter, “Probabilistic terrain mapping for mobile robots with uncertain localization,” IEEE Robotics and Automation Letters , vol. 3, no. 4, pp. 3019–3026, 2018. [23] T. Miki, L. Wellhausen, R. Grandia, F. Jenelten, T. Homberger, and M. Hutter, “Elevation mapping for locomotion and navigation using gpu,” in 2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2022, pp. 2273–2280. [24] S. J. Julier and J. K. Uhlmann, “A non-divergent estimation algorithm in the presence of unknown correlations,” in Proceedings of the 1997 American Control Conference (Cat. No. 97CH36041) , vol. 4. IEEE, 1997, pp. 2369–2373. [25] S. Fredriksson, A. Saradagi, and G. Nikolakopoulos, “Voxel map to occupancy map conversion using free space projection for efficient map representation for aerial and ground robots,” IEEE Robotics and Automation Letters , vol. 9, no. 12, pp. 11 625–11 632, 2024. [26] L.-C. Chen, Y. Zhu, G. Papandreou, F. Schroff, and H. Adam, “Encoder-decoder with atrous separable convolution for semantic image segmentation,” in Proceedings of the European conference on computer vision (ECCV) , 2018, pp. 801–818. [27] K. He, X. Zhang, S. Ren, and J. Sun, “Deep residual learning for image recognition,” in Proceedings of the IEEE conference on computer vision and pattern recognition , 2016, pp. 770–778. [28] The adaskit Team, “libsgm: A cuda implementation performing semi-global matching,” https://github.com/fixstars/libSGM, 2024, gitHub repository. [29] M. A. Fischler and R. C. Bolles, “Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography,” Communications of the ACM , vol. 24, no. 6, pp. 381–395, 1981. [30] K. Shoemake, “Animating rotation with quaternion curves,” in Pro-ceedings of the 12th annual conference on Computer graphics and interactive techniques , 1985, pp. 245–254. [31] Y.-Y. Zhang, Z. Luo, J. Billet, S. Van Baelen, J. Swevers, H. Bruyn-inckx, and P. Slaets, “A vessel-agnostic networked sensor suite for autonomy on inland waterways,” Available at SSRN 6372458 , 2026. [32] N. Ravi, V. Gabeur, Y.-T. Hu, R. Hu, C. Ryali, T. Ma, H. Khedr, R. R¨ adle, C. Rolland, L. Gustafson, et al. , “Sam 2: Segment anything in images and videos,” in International Conference on Learning Representations , vol. 2025, 2025, pp. 28 085–28 128. [33] X. Zhang, M. Lewis, W. P. Bissett, B. Johnson, and D. Kohler, “Optical influence of ship wakes,” Applied optics , vol. 43, no. 15, pp. 3122– 3132, 2004. [34] S. Tamari, V. Guerrero-Meza, Y. Rifad, L. Bravo-Incl´ an, and J. J. S´ anchez-Ch´ avez, “Stage monitoring in turbid reservoirs with an in-clined terrestrial near-infrared lidar,” Remote Sensing , vol. 8, no. 12, p. 999, 2016.

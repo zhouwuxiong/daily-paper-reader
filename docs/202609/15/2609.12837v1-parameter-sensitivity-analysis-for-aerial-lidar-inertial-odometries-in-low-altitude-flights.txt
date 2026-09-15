@@ -1,0 +1,674 @@
+Title: Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries in low-altitude flights
+
+URL Source: https://arxiv.org/pdf/2609.12837v1
+
+Published Time: Mon, 14 Sep 2026 01:04:02 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+# Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries in low-altitude flights 
+
+## Robert Milijas a,∗,1 , Jose Ramiro Martinez-de Dios b,2 and Stjepan Bogdan a,c ,3 
+
+> a
+
+CoE MARBLE - Centre of Excellence in Maritime Robotics and Technologies for Sustainable Blue Economy, Unska 3, Zagreb, 10000, , Croatia 
+
+> b
+
+GRVC Robotics Laboratory, Universidad de Sevilla, Camino de los Descubrimientos, Sevilla, 41092, , Spain 
+
+> c
+
+University of Zagreb Faculty of Electrical Engineering and Computing, Laboratory for Robotics and Intelligent Control Systems (LARICS), Unska 3, Zagreb, 10000, , Croatia 
+
+A R T I C L E I N F O 
+
+Keywords :Unmanned Aerial Vehicle Sensitivity analysis LiDAR-Inertial Odometry SLAM Navigation Random forests 
+
+A B S T R A C T 
+
+LiDAR-based SLAM (Simultaneous Localization and Mapping) and LIO (LiDAR-inertial odometry) algorithms are often used for precise navigation of unmanned aerial vehicles, especially during interactions with the aerial robot’s environment. However, the performance of these algorithms is greatly dependent on the scenario, LiDAR, and robot motion characteristics, often requiring an intensive tuning process to achieve the desired performance. To aid these tuning efforts, this paper analyzes the influence on performance of the parameters of an EKF-based LIO algorithm (FAST-LIO2) and the LIO module of a graph-based SLAM algorithm (Cartographer) on aerial LiDAR SLAM datasets recorded using different LiDARs in low-to-moderate-altitude flights in diverse environments. The analysis is conducted on the absolute trajectory error (ATE) resulting from processing the datasets with the LIO algorithms configured with each combination of parameters obtained in an exhaustive grid search. The relationship between individual parameters and the ATE results is assessed using Pearson’s correlation, while the influence of each parameter is assessed using random forest permutation importance analyses with random forest models trained to predict the resulting ATE values based on the choice of parameters. The performed analysis obtains for Cartographer and FAST-LIO2: i) the identification of parameters with stronger influence in performance, ii) a simplified tuning procedure, and iii) tuning recommendations. Using the proposed tuning recommendations, both algorithms obtain on the analyzed datasets ATE values within 5 cm to the optimal performance found in the grid search procedure in 94% of the analyzed cases. 
+
+## 1. Introduction 
+
+The use of autonomous Unmanned Aerial Vehicles (UAVs) in an increasingly broader range of applications has generated strong interest in LiDAR-based Simultaneous Localization and Mapping (SLAM) and LiDAR-inertial odometry (LIO) algorithms. A wide variety of schemes have been developed making use of different representations, types of scan matching, robot motion estimation approaches, or ways of integrating IMU measurements, among many others [1, 2]. Many existing methods have demonstrated excellent results in geometrically rich scenarios. However,  
+
+> ⋆
+
+The work presented in this paper was funded by the European Union under the MARBLE project (GA No: 101136349) and through the National Recovery and Resiliance Plan under the grant NPOO.C3.2.R3-I1.01.0274 (project OTIP - Point cloud for industrial plant digitalization) and by MICIU/AEI/10.13039/501100011033 and ERDF, EU, through the Project "RAISE: Robots Aéreos Inteligentes en Cooperación Estrecha con Sistemas IoT para la Inspección Avanzada de Viaductos", under Grant PID2023-149683OB-I00. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Research Executive Agency. Neither the European Union nor the granting authority can be held responsible for them.  
+
+> ⋆⋆
+
+The authors have no conflicts of interest to disclose. 
+
+> ∗
+
+Corresponding author  
+
+> robert.milijas at marble.eu
+
+(R. Milijas); jdedios at us.es (J.R. Martinez-de Dios); stjepan.bogdan at fer.unizg.hr (S. Bogdan)  
+
+> https://www.marble.eu
+
+(R. Milijas); https://www.us.es (J.R. Martinez-de Dios); https://www.fer.unizg.hr (S. Bogdan) 
+
+> ORCID
+
+(s): 0000-0002-8796-312X (R. Milijas); 0000-0001-9431-7831 
+
+(J.R. Martinez-de Dios); 0000-0003-2636-3216 (S. Bogdan) 
+
+> 1
+
+LiDAR-based SLAM and LIO algorithms are known to be sensitive to the setting of the environment [3, 4]. Character-istics such as the environment size, the distance between the LiDAR and the objects in the environment, the number and density of geometrical features, or the type of robot motion and velocity have strong impact on the performance of these algorithms. LiDAR-based odometry and SLAM methods are known to demand extensive parameter tuning to adapt to the particu-larities of the environment [5, 6]. The tuning of parameters of these algorithms has become a critical step when deploying autonomous UAVs in a given scenario, often remaining prone to instability when deployed in diverse environments or when changing the sensory payload [2, 6]. In fact, in many cases parameters tuned for some environments fail in other types of environment, requiring retuning [3, 4]. Environments with strong symmetries or lack of geometrical information also pose well-known difficulties [7, 8, 9]. Tun-ing LiDAR-based odometry and SLAM algorithms is also known to be a very time-consuming process. This is high-lighted in a recent survey paper by the teams participating in the 2021 DARPA SubT challenge [10] where most of the teams report allocating a vast amount of human and com-putational resources to tuning their SLAM or LIO solutions. For example, the top performing team CERBERUS states that their SLAM solution " requires a careful finetuning of all available parameters. For example, the degeneracy detection relies on a hand-tuned set of parameters and is robot-dependent ". 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 1 of 19 arXiv:2609.12837v1 [cs.RO] 11 Sep 2026 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+Several approaches for reducing the tuning effort have been reported. Some authors employ auto-tuning and hy-perparameter optimization techniques to configure the algo-rithms [4, 11]. Other approaches rely on real-time adaptive changes to algorithmic parameters, such as [3], or simplify-ing the algorithm to reduce the number of parameters or to try and remove the need for tuning altogether [12]. In this work we aim to decrease the tuning effort by increasing the understanding of the LIO algorithm param-eters, narrowing the parameter search space, and facilitating the tuning process. The tuning effort will be decreased in two ways. First, by identifying parameters of high and low influence on performance, allowing the users to focus their efforts on parameters of high influence (i.e. reducing the number of dimensions of the parameter search space), and secondly, by identifying overarching trends in parameter influence based on the LiDAR characteristics, environment, flight characteristics, among others. The analysis is applied to two widely-used LiDAR-based LIO algorithms: Cartog-rapher [13] and FAST-LIO2 [14]. The methodology adopted is based on analyzing the effects of the algorithms’ param-eters on the quality of the estimated trajectories in UAV flight datasets in different types of scenarios and different LiDARs. To achieve this goal, we gather a large amount of LIO performance data resulting from executing Cartog-rapher and FAST-LIO2 with different parameter choices, in diverse environments, with different LiDAR sensors and flight characteristics. The resulting data is then processed using Pearson’s correlation and random forests to determine the parameters that have a strong influence on the LIO per-formance and their effects. The paper also provides tuning recommendations for Cartographer and FAST-LIO2 and a simplified tuning procedure consisting in manually tuning the two most influential parameters of each algorithm and leaving the others on the proposed recommended values. On the analyzed datasets, the proposed tuning procedure ob-tained a performance that is comparable to the performance of optimal parameter combinations found using exhaustive grid search. To support the obtained results and contribute to deeper understanding of LIO tuning, all the processed data will be made publicly available as supplementary material upon paper acceptance. The main contributions of this paper are: • parameter sensitivity analysis for Cartographer and FAST-LIO2 on public datasets using Pearson’s cor-relation and random forest permutation importance analysis, • identification of parameters strongly influential in the performance for Cartographer and FAST-LIO2 algo-rithms, • derivation of simplified parameter tuning recommen-dations and procedures for Cartographer and FAST-LIO2, and validation of such procedures and recom-mendations, • over 68 GB / 6,900 hours of LIO estimated trajectory data and 140,000 LIO performance data are provided to contribute to deeper understanding of LIO tuning. The rest of the paper is organized as follows. Section 2 presents previous work on SLAM and LIO parameter exploration. Section 3 presents the adopted methodology in-cluding the theoretical background and processing pipeline, and the choice of analyzed parameters for both LIO al-gorithms. Section 4 summarizes the results and findings obtained for each LIO algorithm including the identification of the parameters with the strongest influence, the tuning rec-ommendations, and a simplified tuning procedure. Section 5 concludes the paper and lays out guidelines for future work. 
+
+## 2. Related work 
+
+Most previous work on SLAM and LIO parameter ex-ploration was conducted as part of a wider design space exploration consisting of parameters of the algorithms, of the hardware parameters, and of the compiler. Depending on the specific use case, the optimization criteria typically con-sidered metrics of robot pose accuracy, algorithm runtime, and power consumption. For example, work [15] explored the hardware parameters and algorithmic parameters for two visual SLAM methods. The hardware parameters consisted of choosing between a desktop computer and an ARM-based ODROID, and the number and type of CPU cores used, among others. Algorithmic parameters were explored using SLAM quality metric based on the absolute trajectory error (ATE), and the runtime and power consumption. Work [16] applies Shapley values from game theory to measure the impact of algorithmic and platform-specific parameters on accuracy and power consumption on resource-constrained devices. A design exploration framework is introduced by Bodin [17] to optimize the computational cost of the KinectFusion 3D scene understanding [18] algorithm such it can run in real-time in low-power system on a chip (SoC) hardware. The work explores the influence of hardware, compiler, and algorithmic parameters on 3D reconstruction accuracy, runtime, and power consumption. The analysis was done only on one data sequence from the ICL-NUIM RGB-D Visual Odometry, 3D reconstruction and SLAM dataset [19]. The work is expanded in [20] to cover more diverse hardware architectures (such as desktop computers) and an additional visual SLAM algorithm, ElasticFusion [21]. As the parameter space in [17] and [20] spans millions of com-binations, the parameter space was randomly sampled for combinations which were tested for evaluation. The obtained performance data was used to train random forest regressors [22] for each metric. These estimators were used to predict the performance over the entire parameter space (beyond the already sampled combinations) with additional parameter sets being sampled near the determined Pareto front. In addition to random forests, the authors explored a number of other base predictive models, including artificial neural networks, support vector machines, and nearest neighbors,   
+
+> R. Milijas et al.: Preprint submitted to Elsevier Page 2 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries
+
+but confirmed that random forests outperformed the other methods. However, no data is presented on the performance of these models or on the performance of the random forests used in the works. In Saeedi [23] the parameter space is expanded with motion structure parameters and used it to apply movement constraints to a robotic arm and guide active visual SLAM. Unlike the works [17], [20], and [23], which used space exploration to find Pareto optimal combinations for RGB-D SLAM, our work finds general trends in LiDAR-based algo-rithm performance in order to reduce the tuning effort and provide parameter tuning recommendations. We use the ran-dom forest permutation-based feature importance method to analyze the magnitude of the parameters’ influence on the performance metric. By this we expand the scope of the analysis to allow: i) the identification of highly influential parameters uncorrelated to the performance metric (which require manual tuning), ii) differentiation between high and low influence parameters, and iii) the proposal of a recom-mended tuning order. Random forest feature importances have long been used for exploratory data analysis and vari-able selection in other fields [24, 25, 26]. To the best of our knowledge, this is the first time in which random forest permutation-based feature importance analyses have been applied to SLAM and LIO parameter analysis. Our work provides parameter tuning recommendations for LiDAR-based LIO and SLAM algorithms for aerial robot autonomous navigation operations. To cope with the strong influence of the environment, LiDAR sensor, and flight conditions, our work analyzes parameter choice considering datasets with 60 different combinations of LiDAR, types of environment, and flights speed. In addition, our analysis is performed adopting exhaustive parameter search instead of sampling the parameter space, which increases the accuracy of the correlation analysis as it is conducted on real data instead of modeled data. This approach allows us to validate the random forest results by splitting the data into training and testing datasets. Unlike previous works which focus on low-power hardware platforms, we are interested in the accu-racy of LIO algorithms on medium-large uncrewed quadro-tors with sufficient onboard computational capacity where the computer architecture, compilers, runtime, and power consumption are of lower importance, focusing specifically on accuracy. Our parameter analysis is applied to two widely-used algorithms which fall into different families of LiDAR-based SLAM and LIO based on their pose estimation method and map representation: Cartographer [13] and FAST-LIO2 [14]. Cartographer is a graph-based SLAM with a bi-resolutional 3D grid map representation. It is one of the most widely-used LiDAR-based SLAM methods [27, 28, 29], and is widely used by the authors of this manuscript [30, 31, 32, 33]. FAST-LIO2 [14] is an IKF-based (Iterated Kalman Filter) LIO algorithm with an ikd -tree-based (incremental k-dimensional tree) map representation. FAST-LIO2 is well-known for its accuracy and has been quickly adopted by the community in many problems [34, 35, 36, 37]. While Cartographer includes loop closure mechanisms, for com-parison, these mechanisms were disabled in this work to only consider its graph-based LIO module. 
+
+## 3. Methodology 
+
+The goal of this work is to analyze the effects of dif-ferent algorithmic parameters on the estimated trajectory quality with different LiDARs in different types of scenarios and flights, and to distill tuning recommendations for two widely-used LIO algorithms: Cartographer and FAST-LIO2. To achieve this goal, we gather and analyze a large amount of LIO performance data resulting from executing Cartog-rapher and FAST-LIO2 with different parameter choices, in diverse environments, with different LiDAR sensors and flight characteristics. The gathered data is then analyzed to determine the parameters that have a strong influence on the LIO performance and their effects, as well as the overarching trends to aid parameter tuning. Figure 1 shows the methodology adopted in the presented analysis, which can be broken down into two major parts: i) LIO evaluation ,which chooses and evaluates the different LIO parameter combinations on different data sequences, and ii) Parameter analysis , which performs the analysis of the influence of the values of algorithms’ parameters on the accuracy per-formance metric. Data sequence, LiDAR LIO parameters LIO evaluation ATE calculation LIO algorithm Correlation analysis Train-test split Train random forests Permutation importance Parameter analysis Testing data Random forest validation Choice of aerial LiDAR datasets Choice of LIO parameters Training data    
+
+> Figure 1: Summary of adopted methodology and the imple-mented processing pipeline. The final steps of the pipeline which were used for distilling tuning recommendations are highlighted with yellow color. R. Milijas et al.: Preprint submitted to Elsevier Page 3 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries
+
+The analysis is conducted on high-quality data recorded from multirotor UAVs performing different types of flights at low-to-moderate altitudes and with close-to-moderate dis-tances from obstacles in different environments (the condi-tions in which SLAM and LIO methods are widely used in many autonomous UAV navigation missions). We choose two datasets (NTU VIRAL dataset [38] and PASTEL dataset [39]). In particular, PASTEL sequences were recorded in 16 flights in different environments with 3 onboard LiDAR sen-sors, enabling also to analyze the influence of the parameters with different LiDAR sensors. The analysis was conducted on every combination of data sequence and LiDAR available in these datasets (60 in total) to explore the influence of LiDAR model and flight’s and environment’s characteristics on LIO tuning. The choice of datasets is discussed in Section 3.1. To obtain the LIO performance data required for the analysis, a grid search of the algorithms’ parameter space was conducted. As the parameter spaces of the analyzed al-gorithms are very large (several tens of thousands of parame-ters combinations for Cartographer and for FAST-LIO2), to reduce the search space, some parameters of interest were chosen based on the theoretical knowledge of their effect in the algorithms and single parameter tests, see Sections 3.2 and 3.3. In LIO evaluation , shown at the top of Figure 1, for each of the chosen parameters, values corresponding to low, medium, and high settings were chosen to form the parameter grid search. The chosen parameter values and the LIO evaluation pipeline are laid out in Section 3.4. The absolute trajectory error (ATE), which is widely used to evaluate LIO accuracy, was calculated for each combination of parameters. The obtained data, called LIO performance data , is the starting point of the parameter analysis. 
+
+Parameter analysis , shown at the bottom of Figure 1, performs the analysis of the LIO performance data to extract the effects of the algorithms’ parameters on performance. We use Pearson’s correlation to determine the relationships between the algorithms’ parameters and the algorithms’ ac-curacy (ATE), see Section 3.5. A strong positive correlation indicates that an increase in the parameter value leads to an increase in the ATE, making smaller values favorable. Likewise, strong negative correlations indicate better perfor-mance with large values of the parameter. However, weak correlations indicate that the algorithm is either insensitive to the parameter or that the relationship between the param-eter and the ATE metric is ambiguous. Additionally, the magnitude of a parameter’s influence on the ATE allows differentiating between ambiguous cases which require manual tuning, and cases of weak parameter influence. Those cases are distinguished by analyzing the relative importance of parameters. To analyze the magnitude of a parameter’s influence we employ random forest regres-sors trained to predict the ATE metric based on the choice of LIO parameters. While random forests have been used to model the influence of parameters on SLAM performance, in our work we expand on this by utilizing permutation-based feature importance analysis to quantify the magnitude of the parameters’ influence on the random forest models’ predictions and to analyze the parameters’ relative impor-tance, see Section 3.6. To ensure that the data obtained from the random forest models is applicable to the analyzed LIO algorithms, the models were tested on unseen data. This was achieved by splitting the obtained LIO performance data 
+
+between training (80%) and testing (20%) data. The widely-used Python library Scikit-learn [40] was used to implement the random forests and to calculate the permutation-based feature importances. Finally, the analyses are distilled into tuning recommen-dations, which specify the order in tuning, recommended pa-rameter values, and policies. These tuning recommendations are validated on both algorithms obtaining on the analyzed datasets ATE values within 5 cm to the optimal performance found in the grid search procedure in 94% of the analyzed cases. 
+
+3.1. Overview of used aerial SLAM datasets 
+
+The LIO and SLAM community has long relied on high-quality public datasets which facilitate testing in diverse scenarios, ensuring repeatability and transparency. In our research we are not interested in aerial LiDAR datasets captured at high altitudes, as the distances to the obstacles have low variability along the flight, and in general don’t reproduce the conditions of LiDAR-based SLAM and LIO operation in typical autonomous UAV navigation missions. Instead, we choose datasets recorded from multirotor UAVs performing different types of flights at low-to-moderate al-titudes and with close-to-moderate distances from obstacles in different environments. Datasets with these characteristics provide rich and diverse tuning scenarios for LIO algorithms to ensure that we excite as much parameter dynamics as possible. We apply our research to the combination of PASTEL [39] and NTU VIRAL [38] datasets, which together provide high diversity in the main factors affecting LIO tuning: LiDAR characteristics, environment types (confined spaces, open spaces of different sizes, and transitions between them), LiDAR point distributions, flight velocities, and flight al-titudes, among others. Table 1 shows the most relevant characteristics of the sequences used in this research. The table links the original file names of the datasets with the IDs assigned to them for our research, and lists the environ-ment names taken from the both publications. The distance traversed by the UAV and area covered by the trajectory for each sequence was calculated from the provided ground truth. The NTU VIRAL dataset was recorded on higher av-erage altitudes and with larger distances from obstacles than PASTEL, which makes them complementary. The table also shows the percentage of LiDAR points with a range lower than 5 m, 10 m, and 20 m for each sequence, evidencing a wide variety of LiDAR point range distributions. In addition, PASTEL provides scans from three different LiDAR models mounted horizontally and recorded in paral-lel: Velodyne VLP16, Ouster OS1-16, and Ouster OS0-128,   
+
+> R. Milijas et al.: Preprint submitted to Elsevier Page 4 of 19
+
+Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+Table 1 
+
+Data sequences used in this research with characteristics and statistics relevant for LIO performance: environment, average robot velocity, traversed distance, covered area, time, average and maximum altitude, and percentage of LiDAR points with range lower than 5, 10, and 20 m. The table also links the original sequence names with the IDs assigned in this research. 
+
+PASTEL [39] sequences used as input data Sequence file name ID Environment Average velocity Traversed distance Covered area Time Max. altitude LiDAR points with range < 5m < 10 m < 20 m 
+
+1.bag 1 EMPTY PLAZA 0.91 m/s 61 m 130 m 2 87 s 2.75 m 12.2% 33.7% 63.8% 2.bag 2 EMPTY PLAZA 0.43 m/s 31 m 78 m 2 97 s 2.14 m 30.5% 61.5% 79.3% 3.bag 3 SMALL CORRAL 0.72 m/s 41 m 16 m 2 97 s 1.10 m 69.2% 95.9% 97.9% 4.bag 4 SMALL CORRAL 0.56 m/s 43 m 17 m 2 104 s 1.44 m 73.5% 98.2% 99.1% 5.bag 5 LARGE CORRAL 0.69 m/s 26 m 15 m 2 71 s 1.19 m 64.2% 91.7% 96.4% 6.bag 6 LARGE CORRAL 0.53 m/s 23 m 20 m 2 63 s 0.5 m 67.5% 93.7% 97.6% 7.bag 7 UNDERPASS 0.98 m/s 57 m 119 m 2 79 s 1.25 m 24.9% 62.5% 95.1% 8.bag 8 UNDERPASS 0.72 m/s 52 m 103 m 2 91 s 1.18 m 24.5% 65.8% 95.0% 9.bag 9 PLAZA & CORRAL 0.71 m/s 37 m 99 m 2 71 s 4.84 m 29.9% 51.1% 68.2% 10.bag 10 PLAZA & CORRAL 0.63 m/s 46 m 70 m 2 88 s 3.46 m 26.0% 47.7% 72.3% 11.bag 11 PLAZA & CORRAL 1.07 m/s 155 m 639 m 2 128 s 1.46 m 21.1% 50.2% 72.8% 12.bag 12 PLAZA & CORRAL 0.95 m/s 201 m 1305 m 2 220 s 1.51 m 22.1% 56.3% 78.2% 13.bag 13 PLAZA & UNDERPASS 1.31 m/s 108 m 421 m 2 81 s 1.31 m 26.1% 49.3% 75.6% 14.bag 14 PLAZA & UNDERPASS 0.85 m/s 182 m 1365 m 2 261 s 1.78 m 20.9% 52.1% 77.5% 15.bag 15 ALL 1.35 m/s 253 m 1819 m 2 186 s 1.43 m 22.8% 57.2% 78.5% 16.bag 16 ALL 0.93 m/s 138 m 626 m 2 159 s 5.54 m 19.7% 40.6% 69.9% 
+
+NTU VIRAL dataset [38] 
+
+Eee_01.bag 1 Parking 0.74 m/s 237 m 334 m 2 398 s 9.97 m 12.31% 20.0% 39.1% Eee_02.bag 2 Parking 0.68 m/s 171 m 284 m 2 321 s 7.48 m 13.50% 21.1% 49.4% Eee_03.bag 3 Parking 0.89 m/s 128 m 290 m 2 181 s 4.75 m 14.85% 24.6% 52.3% Nya_01.bag 4 Large hall 0.52 m/s 160 m 185 m 2 394 s 6.91 m 12.34% 28.6% 74.6% Nya_02.bag 5 Large hall 0.71 m/s 249 m 109 m 2 428 s 5.39 m 12.10% 25.9% 73.6% Nya_03.bag 6 Large hall 0.88 m/s 315 m 95 m 2 409 s 6.72 m 9.38% 24.4% 73.9% Sbu_01.bag 7 Small square 0.72 m/s 202 m 291 m 2 354 s 4.76 m 14.33% 21.0% 59.5% Sbu_02.bag 8 Small square 0.60 m/s 183 m 253 m 2 373 s 6.07 m 12.02% 19.6% 62.8% Sbu_03.bag 9 Small square 0.63 m/s 198 m 362 m 2 389 s 6.33 m 11.04% 20.4% 59.5% Tnp_01.bag 10 Inside res. tech. plaza 0.54 m/s 252 m 226 m 2 579 s 9.16 m 9.10% 27.6% 86.1% Tnp_02.bag 11 Inside res. tech. plaza 0.39 m/s 140 m 242 m 2 457 s 10.99 m 11.48% 33.5% 85.3% Tnp_03.bag 12 Inside res. tech. plaza 0.47 m/s 124 m 224 m 2 407 s 9.82 m 21.07% 34.8% 87.8% 
+
+allowing us to test the influence of different LiDARs on pa-rameter tuning. The NTU VIRAL dataset uses two LiDARs, one mounted horizontally, and one mounted vertically to scan the floor. To keep the dataset performance comparable, only the horizontal LiDAR from NTU VIRAL was used. The model and revision of the NTU VIRAL LiDAR is identical to the Ouster OS1-16 LiDAR used in PASTEL. The detailed characteristics of the sensors, flights, environments of these sequences are available in [39] and [38]. 
+
+3.2. Cartographer parameters chosen for tuning 
+
+Being a graph-based SLAM with a bi-resolutional 3D grid representation, Cartographer is a complex system with many modules and tunable parameters. Since this work focuses on LIO algorithms, the analysis is constrained to the parameters of the Cartographer LIO subsystem (called local SLAM in the original paper [13]), while the loop closing subsystem (called global SLAM) is disabled. Information on all the Cartographer subsystems and descriptions of param-eters can be found online 1.
+
+> 1https://google-cartographer-ros.readthedocs.io , accessed on Jan 9th 2026
+
+The Cartographer LIO subsystem contains several sub-modules with +30 tunable parameters. We narrow the search space to exclude parameters which either depend heavily on the used hardware (e.g. number of LiDAR data packets per full sweep, minimum LiDAR range, and number of CPU cores allocated to the solver), or perform additional internal data filtering beyond the selected parameters (e.g. minimal motion requirement to keep a LiDAR scan). The selected parameters and their main effects are listed in Table 2. The non-considered parameters were left in their default values. We evaluated each data sequence and LiDAR combination with these default values and ensured that they do not cause coarse performance degradations, such as sparse or empty submaps, and that the LiDAR minimum range parameter crops only the UAV frame from the sweeps without cropping parts of the obstacles. These tests also confirmed that these default values are adequate for Cartographer to run faster than real time for all considered data sequences and sensors. 
+
+3.3. FAST-LIO2 parameters chosen for tuning 
+
+Analogously, the parameters that depend heavily on the used hardware such as the number of CPU cores used, and LiDAR minimum range were excluded from the analysis and 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 5 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries  
+
+> Table 2
+> Summary of the Cartographer parameters selected for analysis.
+> Selected Cartographer parameters and main influences Rotation_weight Weight of IMU preintegration when determining the pose estimate. Higher value causes smoother orientation and translation estimates.
+> Translation_weight Low_resolution
+> Grid resolutions for the bi-resolutional submaps. Coarser maps increase computation speed and reduce memory requirements but reduce level of captured detail and vice-versa.
+> High_resolution Submap_size
+> Number of LiDAR scans per submap. Larger submaps hold more information for scan matching but also accumulate more drift.
+> Voxel_filter_size
+> Reduces input LiDAR scan density. Denser scans hold more detail but require more processing power.
+> LiDAR_max_range
+> Long range LiDAR data can be noisy, sparse and contaminated with LiDAR beam reflections.
+
+left on their default values. We evaluated each data sequence and LiDAR combination with these default parameters to en-sure that no coarse performance degradations occur, and that the algorithm can run faster than real time. This narrowed the parameter space to ten parameters. To further narrow the choice of parameters a coarse sensitivity test was per-formed on PASTEL sequences. One by one, the parameters were changed from their default values by multiplying the default by 10 and by 0.1. The algorithm performance was evaluated on the estimated trajectory and mapping result. All parameters which did not produce a strong change in SLAM performance were discarded from the analysis. In addition, although parameter LiDAR_max_range is not originally contained in FAST-LIO2, a simple prefiltering step was added into the pipeline. Filtering LiDAR points by a range cutoff is a common preprocessing step in many LIO algorithms and strongly influences performance in many methods including Cartographer. In fact, as shown in Section 4, this parameter showed to have the strongest influence in Cartographer. For homogenization, we decided to add this preprocessing step to investigate whether it has an influence on FAST-LIO2 as well. The prefilter was implemented in C++ as a ROS node which changes coordinates for points which exceed the range threshold to (0 , 0, 0) . This is a stan-dard procedure which many LiDAR drivers, such as Ouster ROS drivers, use to handle points with no returns, as keeping all the points preserves the organized point cloud structure. The parameters chosen for FAST-LIO2 are shown in Table 3.                             
+
+> Table 3
+> Summary of FAST-LIO2 parameters selected for analysis.
+> Selected FAST-LIO2 parameters and main influence Acceleration_covariance Kalman filter covariances for IMU accelerations and angular velocities.
+> Gyroscope_covariance Point_filter_number LiDAR points prefiltering. Keeps every 𝑁 𝑡ℎ point.
+> Filte_size_surfaces
+> Additional LiDAR prefilter. The points in each voxel are replaced by their centroid.
+> Filter_size_map
+> Voxel-based map downsampling. Analogous to filter size surfaces.
+> LiDAR_max_range
+> Range-based LiDAR prefilter added in this work for comparison with Cartographer.
+> Table 4
+> Parameter values used in the grid search. The LARICS param-eters for Cartographer and default parameters for FAST-LIO2 are marked in bold.
+> Choice of Cartographer parameter values Rotation_weight 5, 10, 100
+> Translation_weight 5, 10
+> High_resolution 5 cm, 10 cm, 20 cm Low_resolution 30 cm, 40 cm , 50 cm
+> Submap_size (number of scans) 150, 500 , 1000
+> Voxel_ filter_size 5 cm, 10 cm , 15 cm
+> LiDAR_Max_range 20 m, 35 m, 50 m Choice of FAST-LIO2 parameter values Acceleration_covariance 0.05, 0.1 , 0.2
+> Gyroscope_covariance 0.05, 0.1 , 0.2
+> Point_filter_number 1, 2, 4, 8
+> Filter_size_surfaces 25 cm, 50 cm , 99 cm
+> Filter_size_map 25 cm, 50 cm , 99 cm
+> LiDAR_max_range
+> (added as prefilter) 20 m, 35 m, 50 m
+
+3.4. LIO evaluation pipeline 
+
+To research the influence of the chosen parameters on LIO performance, an automated framework for evaluating the algorithms for a given data sequence, LiDAR sensor, and parameter set was developed. The parameter values for Cartographer and FAST-LIO2 chosen to form the parameter grid searches are reported in Table 4. The Cartographer parameter values were chosen from our long experience in using Cartographer in a broad variety of scenarios and Li-DARs (we call them LARICS parameters), while the FAST-LIO2 parameters were obtained by doubling and halving the default values provided by FAST-LIO2 authors in [14]. The evaluation pipeline is shown in Figure 1. The LIO algorithms were executed for each combination of data   
+
+> R. Milijas et al.: Preprint submitted to Elsevier Page 6 of 19
+
+Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+sequence, LiDAR, and LIO parameter choice from the grid search. Each resulting robot trajectory estimate was recorded as it would be fed into a UAV control system. This evaluation resulted in over 140,000 estimated trajectories. They were computed using two identical ASUS NUC 13 computers, one per each LIO algorithm, running Ubuntu 20.04 and ROS Noetic. The estimated robot trajectories are extracted into .csv files compatible with the NTU VIRAL open-source MATLAB-based SLAM evaluation framework [38], which was used to compute the ATE metric (1) for each estimated trajectory. ATE =
+
+√√√√ 1
+
+𝑁 
+
+> 𝑁 −1
+
+∑
+
+> 𝑖 =0
+
+|| Δ𝐩 𝑖 || 2 (1) To validate that the chosen parameter space contains parameters with good LIO performance, Table 5 shows the best ATE metrics found by the grid search for each algorithm, data sequence, and LiDAR combination. It can be noticed that the ATE values obtained for PASTEL sequences are lower than those obtained by Cartographer and by FAST-LIO2 using their default values, which can be found in [39]. On average, the decrease in ATE is 14 cm (54%), evidencing the importance of correctly choosing the parameter values and the strong improvement they can cause. The results obtained for NTU VIRAL sequences cannot be compared, as they were validated with LIO-SAM [41] and MLOAM (multi-lidar LOAM), but not with Cartographer or FAST-LIO2, see [38]. As shown, the ATE values obtained for all sequences are very low, and validate the selection of the values used in the grid search. 
+
+3.5. Correlation analysis 
+
+Pearson’s correlation (2) measures the strength of a linear relationship between two variables. It is often used for analyzing the effect of an input variable on a response variable. The correlation 𝑟 between an input 𝑥 and a response 
+
+𝑦 is calculated as follows: 
+
+𝑟 =
+
+∑𝑛 𝑖 =1 (𝑥 𝑖 −̄𝑥 )( 𝑦 𝑖 −̄𝑦 )
+
+√∑𝑛 𝑖 =1 (𝑥 𝑖 −̄𝑥 ) 2
+
+√∑𝑛 𝑖 =1 (𝑦 𝑖 −̄𝑦 ) 2
+
+, (2) where ̄ 𝑥 and ̄ 𝑦 indicate the sample means of the input and response variables, respectively. We use the Pearson’s correlation coefficient to determine the relationships between the chosen parameter and the re-sulting ATE. A positive correlation indicates that choosing a higher value of a parameter is expected to lead to an increase of the ATE value, while negative correlations indicate lower ATE for larger values of the parameter. However, correlation values alone are insufficient for distilling tuning recommen-dations because weak correlations (values close to zero) can indicate that the parameter has a weak or ambiguous influence on ATE. Figure 2 illustrates these effects on LIO performance data for Cartographer parameter LiDAR_max_range on 
+
+Table 5 
+
+Best ATE metrics found by the grid search for each algorithm, data sequence, and LiDAR combination. The ATE values obtained for all sequences are very low and validate the selection of the values used in the grid search.                                                                                                                            
+
+> Best ATE values [m] obtained in grid search
+> Cartographer FAST-LIO2 Data VLP16 OS1-16 OS0-128 VLP16 OS1-16 OS0-128 sequence PASTEL 1 0.100 0.138 0.090 0.064 0.014 0.063 PASTEL 2 0.036 0.056 0.053 0.075 0.103 0.069 PASTEL 3 0.045 0.077 0.057 0.056 0.079 0.061 PASTEL 4 0.024 0.071 0.063 0.071 0.094 0.074 PASTEL 5 0.049 0.025 0.065 0.048 0.072 0.063 PASTEL 6 0.044 0.099 0.077 0.046 0.069 0.042 PASTEL 7 0.066 0.128 0.118 0.055 0.098 0.077 PASTEL 8 0.057 0.100 0.080 0.053 0.080 0.037 PASTEL 9 0.050 0.088 0.056 0.061 0.081 0.054 PASTEL 10 0.057 0.101 0.095 0.061 0.081 0.055 PASTEL 11 0.008 0.162 0.028 0.082 0.163 0.140 PASTEL 12 0.087 0.165 0.131 0.104 0.183 0.128 PASTEL 13 0.105 0.125 0.184 0.079 0.165 0.150 PASTEL 14 0.080 0.135 0.118 0.099 0.166 0.134 PASTEL 15 0.118 0.240 0.187 0.095 0.185 0.136 PASTEL 16 0.082 0.155 0.170 0.064 0.130 0.073 NTU VIRAL 1 0.211 0.203 NTU VIRAL 2 0.221 0.187 NTU VIRAL 3 0.177 0.207 NTU VIRAL 4 0.214 0.205 NTU VIRAL 5 0.186 0.204 NTU VIRAL 6 0.220 0.195 NTU VIRAL 7 0.215 0.226 NTU VIRAL 8 0.220 0.223 NTU VIRAL 9 0.203 0.215 NTU VIRAL 10 0.219 0.190 NTU VIRAL 11 0.365 0.075 NTU VIRAL 12 0.234 0.196
+
+all of the 16 sequences in PASTEL dataset and with the 3 LiDAR sensors considered in PASTEL: Velodyne VLP16 (top), Ouster OS1-16 (center), and Ouster OS0-128 (bot-tom). The bar chart for each sequence and LiDAR displays the result of three analyses in different colors: i) correlation of LiDAR_max_range with ATE (blue color), ii) probabil-ity of improving the ATE by more than 1 cm when increas-ing LiDAR_max_range (red color); and iii) probability of degrading the ATE by more than 1 cm when increasing 
+
+LiDAR_max_range (yellow color). The probabilities were calculated based on the LIO performance data . In some cases there is a strong positive correlation, indicating a high probability of LIO performance degradation when increas-ing LiDAR_max_range (e.g. for Velodyne VLP16 on se-quences 3-6, which correspond to confined spaces as shown in Table 1). Analogously, a strong negative correlation in-dicates a high probability of performance improvement (e.g. for Velodyne VLP16 on sequences 13-15). Weak correlation values can indicate ambiguous effects on LIO performance, (e.g. with Ouster OS1-16 and Velodyne VLP16 on sequence 16), or indifference to the parameter (e.g. all LiDARs in sequence 8). Similar effects were observed for all parameters 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 7 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries PASTEL Ouster OS0-128, Cartographer LiDAR_max_range                                                
+
+> 12345678910 11 12 13 14 15 16 PASTEL sequence -1 01Correlation P (improvement) P (degradation)
+> PASTEL Ouster OS1-16, Cartographer LiDAR_max_range
+> 12345678910 11 12 13 14 15 16 PASTEL sequence -1 -0.5 00.5 1
+> PASTEL Velodyne VLP16, Cartographer LiDAR_max_range
+> 12345678910 11 12 13 14 15 16 PASTEL sequence -1 -0.5 00.5 1
+
+ATE correlations and parameter influence on performance 
+
+Figure 2: Comparison of the correlation between ATE and LiDAR_max_range of Cartographer performance on the sequences of PASTEL dataset. The bars indicate: i) correlation of LiDAR_max_range with ATE (blue color), ii) probability of improving the ATE by more than 1 cm when increasing LiDAR_max_range (red); and iii) probability of degrading the ATE by more than 1 cm when increasing LiDAR_max_range (yellow). 
+
+in both algorithms on both datasets, which can be verified in the provided supplementary data. Also, it must be noticed that the correlation coefficient holds no information about the magnitude of a parameter’s influence on the ATE value: for a strongly correlated param-eter, the ATE values may change in the order of centimeters or meters. Hence, correlations alone are not enough to de-termine which parameters to tune and in what order, since the information about the parameter relative importance and magnitude of influence on ATE are missing. To analyze the magnitude of a parameter’s influence, random forest regres-sors were trained to predict ATE values based on the choice of LIO parameters for a given data sequence and LiDAR. These trained models were used to extract information about the LIO parameters’ influence using random forest feature importance methods. 
+
+3.6. Random forest regressors and feature importance 
+
+Random forest regressors are machine learning ensem-ble models that are built from many individual decision trees which are trained on various random sub-samples of the input data to prevent overfitting and ensure randomness. The predictions of the individual decision trees are averaged to form the forest’s final prediction [22]. The underlying decision tree regressor uses the input features to split the approximated function’s domain into sub-spaces of constant value. Each node in the tree represents an if-else decision based on the input feature which reduces the error criteria the most, while leaf nodes carry a predicted function value for their feature sub-space. We leveraged random forest re-gressors to model the influence of parameters on SLAM per-formance. The input features are the LIO parameter choices and the predicted function is the ATE metric. Figure 3 shows the first three levels of a decision tree trained on the LIO performance data for Cartographer on PASTEL sequence 16 with the Velodyne VLP16 LiDAR. Conversely to existing methods, we expand the use of random forest regressors by making use of the permutation-based feature importance method to quantify the strength of the random forest input features’ influence on the trained models’ predictions. This enables quantifying the input fea-tures’ relative importance and hence, the relevance of the input features used in the models. Permutation-based feature importance is calculated by permuting one of the features in the input data and validating the model on the permuted data. Since the model was trained on the non-permuted data, the permutation of a feature will decrease the model performance, breaking the link between that feature and the 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 8 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries LiDAR_max_range ATE = 0.17 LiDAR_max_range ATE = 0.15 True Low_resolution ATE = 0.2 False Low_resolution ATE = 0.17 Low_resolution ATE = 0.13 Rotation_weight ATE = 0.27 Rotation_weight ATE = 0.17 True True False False                        
+
+> ≤45.0 ≤35.0 ≤55.0 ≤55.0
+> ≤35.0 ≤27.5
+> ≤42.5 (...) (...) (...) (...) (...) (...) (...) (...) True True True True False False False False
+
+Figure 3: Scheme with the first three levels of a decision tree trained for estimating Cartographer performance on PASTEL sequence 16 with Velodyne VLP16 LiDAR. Each decision splits the parameter space using one of the parameters to form an if-else decision. 
+
+predicted value. The larger the drop in performance, the more sensitive the model is to that particular feature. We refer the reader to [25] for a theoretical background and discussion on permutation-based feature importance. To ensure that the conclusions drawn from the mod-els and analyses apply to the studied LIO algorithms, the trained random forest models were tested on unseen data points. This was achieved by training the random forests on 80% of the input data ( LIO performance data ) and using the remaining 20% for testing. The models were tested by calculating the RMSE of the model predictions on the testing data. For example, the resulting values for random forests modeling Cartographer performance for each data sequence and LiDAR in the PASTEL and NTU VIRAL datasets are shown in Table 6. The table compares the model RMSE values obtained on the testing data with the ATE standard deviations in the testing data for each data sequence-LiDAR combination processed by Cartographer. The table shows that all predictors obtained satisfactory results with their test RMSEs being on average 58% lower than the standard devi-ation of the testing ATE values, demonstrating that random forests can be used to predict SLAM ATE values well. The low test RMSE values obtained for PASTEL sequences 7 and 8 are consistent with the low ATE standard deviations for these sequences. We used the random forest regressors and permutation-based feature importance method from the widely-used Python library Scikit-learn [40]. The models were analyzed for overfitting by increasing the minimum number of leaf data points and by varying the number of trees in the random forests. We observed no significant difference with the results in Table 6, which discards overfitting, ensuring the results correctness. 
+
+Table 6 
+
+Testing of trained random forest models for Cartographer. The RMSE scores obtained on the unseen testing data is compared with the standard deviations of ATEs in the testing data for each data sequence and LiDAR. The results are satisfactory with the predictors, obtaining a test RMSE which is on average 58% lower than the standard deviation of the ATE testing data.                                                                                                                                                                               
+
+> PASTEL, Velodyne VLP16 PASTEL, Ouster OS1-16
+> Sequence ATE Test Sequence ATE Test std dev RMSE std dev RMSE 113.3 cm 3.5 cm 111.8 cm 2.5 cm 24.4 cm 2.1 cm 23.5 cm 1.3 cm 34.1 cm 1.3 cm 32.8 cm 1.5 cm 48.3 cm 3.5 cm 47.4 cm 3.6 cm 54.4 cm 1.3 cm 51.2 cm 0.8 cm 63.1 cm 1.1 cm 60.9 cm 0.3 cm 72.8 cm 0.9 cm 71.3 cm 1.0 cm 80.9 cm 0.3 cm 81.0 cm 0.5 cm 911.2 cm 4.7 cm 98.0 cm 6.0 cm 10 5.7 cm 1.9 cm 10 9.3 cm 2.8 cm 11 5.0 cm 2.0 cm 11 1.3 cm 0.5 cm 12 2.4 cm 1.0 cm 12 2.8 cm 0.8 cm 13 4.5 cm 1.5 cm 13 2.5 cm 1.7 cm 14 4.1 cm 1.2 cm 14 4.7 cm 1.2 cm 15 9.4 cm 4.3 cm 15 6.6 cm 4.0 cm 16 6.1 cm 2.9 cm 16 5.4 cm 2.4 cm
+> PASTEL, Ouster OS0-128 NTU VIRAL, Ouster OS1-16
+> Sequence ATE Test Sequence ATE Test std dev RMSE std dev RMSE 13.0 cm 1.7 cm 119.8 cm 4.5 cm 20.9 cm 0.4 cm 228.7 cm 13.0 cm 31.5 cm 1.0 cm 316.1 cm 2.1 cm 41.4 cm 0.5 cm 49.8 cm 2.4 cm 50.7 cm 0.6 cm 519.1 cm 4.5 cm 61.1 cm 0.3 cm 622.0 cm 6.9 cm 71.6 cm 0.8 cm 75.4 cm 1.1 cm 81.1 cm 0.7 cm 810.9 cm 3.0 cm 91.4 cm 1.3 cm 925.0 cm 6.4 cm 10 0.5 cm 0.2 cm 10 34.6 cm 12.3 cm 11 1.3 cm 1.0 cm 11 70.7 cm 17.8 cm 12 2.5 cm 0.9 cm 12 53.8 cm 14.2 cm 13 1.7 cm 1.3 cm //14 4.5 cm 1.2 cm //15 2.4 cm 1.4 cm //16 3.9 cm 0.8 cm //
+
+## 4. Results 
+
+This section presents and interprets the results obtained in the aforementioned analyses separately for each LIO algorithm. The analyses results are interpreted in three steps. We start with the random forest feature importances to determine the parameters with high and low influence on the algorithm’s performance for each data sequence and LiDAR combination in the datasets. The second step in-terprets the correlation analysis data to determine which of the influential parameters require manual tuning. The third step determines overarching trends of these influential parameters. The interpretation of the results concludes with parameter tuning recommendations for each LIO algorithm, which are finally validated. 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 9 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+Table 7 
+
+Random forest feature permutations analysis for Cartographer parameters for each data sequence and LiDAR in the considered datasets. Each group starts with the random forest prediction error (RMSE) obtained without permutation, while the rest are the RMSE values resulting when permuting each specific Cartographer parameter. The higher the increase in RMSE caused by permutation of feature values, the higher the influence of the parameter. Cases which increase the RMSE by less than 50% of the RMSE without permutation or by less than 2cm are marked in gray. All values are reported in centimeters. 
+
+Cartographer random forest ATE prediction RMSEs without and with feature permutation (all values in centimeters) 
+
+Dataset Parameter Data sequences 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 PASTEL Velo-dyne VLP16 LiDAR RMSE w/o permutation 3.5 2.1 1.3 3.5 1.3 1.1 0.9 0.3 4.7 1.9 2.0 1.0 1.5 1.2 4.3 2.9 
+
+Rotation_weight 4.9 3.7 1.9 7.3 2.6 1.7 1.2 0.4 9.3 3.7 2.8 1.2 2.0 1.3 4.9 5.0 
+
+Translation_weight 4.5 2.9 3.0 4.1 2.0 1.6 2.4 0.8 10.5 3.3 4.2 1.4 2.2 1.4 6.9 4.1 
+
+High_resolution 4.7 3.6 2.1 4.1 2.2 2.1 1.4 0.8 8.4 3.3 3.0 1.4 1.9 1.6 4.6 3.4 
+
+Low_resolution 11.3 5.4 3.6 5.4 2.5 1.9 3.1 1.0 15.3 5.7 6.5 2.3 4.0 3.5 9.5 7.0 
+
+Submap_size 3.6 2.1 1.3 3.5 1.4 1.2 1.0 0.5 5.6 1.9 2.1 1.8 1.8 2.5 5.4 2.9 
+
+Voxel_filter_size 4.5 3.8 1.5 4.2 2.0 1.5 1.1 0.4 6.2 2.7 2.6 1.3 1.8 1.3 4.5 4.2 
+
+LiDAR_max_range 17.3 4.9 4.2 10.3 5.6 4.1 3.0 0.7 13.3 6.8 5.5 2.7 5.8 5.0 11.2 7.1 PASTEL Ouster OS1-16 LiDAR RMSE w/o permutation 2.5 1.3 1.5 3.6 0.8 0.3 1.0 0.5 6.0 2.8 0.5 0.8 1.7 1.2 4.0 2.4 
+
+Rotation_weight 3.8 2.6 2.4 5.3 1.0 0.5 1.0 0.6 8.1 4.4 0.8 0.9 2.0 1.4 4.5 4.8 
+
+Translation_weight 4.1 2.5 2.3 4.3 0.8 0.6 1.4 0.9 10.4 3.8 0.8 0.9 2.0 1.3 6.2 4.7 
+
+High_resolution 3.6 2.8 2.3 4.6 1.1 1.0 1.1 0.8 8.1 4.4 0.8 1.0 1.9 1.3 4.9 4.0 
+
+Low_resolution 10.3 3.8 2.5 6.6 1.2 0.8 1.5 1.1 11.9 9.0 1.1 1.6 2.5 3.7 7.6 6.7 
+
+Submap_size 3.1 2.0 1.5 3.8 0.8 0.4 1.1 0.7 7.1 3.3 0.7 3.3 2.0 3.5 5.5 2.5 
+
+Voxel_filter_size 3.5 2.1 2.0 4.4 0.9 0.5 1.0 0.6 9.5 4.2 0.8 0.8 1.9 1.3 4.1 4.0 
+
+LiDAR_max_range 15.3 4.0 3.4 9.3 1.5 0.7 1.3 0.8 11.8 10.9 1.6 2.8 2.9 5.6 7.3 6.0 PASTEL Ouster OS0-128 LiDAR RMSE w/o permutation 1.7 0.4 1.0 0.5 0.6 0.3 0.8 0.7 1.3 0.2 1.0 0.9 1.3 1.2 1.4 0.9 
+
+Rotation_weight 1.8 0.4 1.1 0.8 0.8 0.6 0.9 0.8 1.3 0.3 1.3 1.0 1.4 1.4 1.6 1.0 
+
+Translation_weight 1.8 0.5 1.3 1.2 0.7 0.4 1.5 0.9 1.4 0.3 1.5 1.0 1.4 1.3 1.7 1.2 
+
+High_resolution 1.9 0.7 1.4 1.2 0.8 0.9 1.3 1.0 1.4 0.5 1.5 1.0 1.5 1.8 1.6 1.6 
+
+Low_resolution 2.1 0.7 1.6 1.2 0.7 1.3 1.8 1.2 1.5 0.5 1.2 1.3 1.7 2.6 1.8 2.4 
+
+Submap_size 2.2 0.6 1.2 0.8 0.7 0.3 1.0 0.8 1.4 0.2 1.2 2.9 1.5 4.2 2.6 1.2 
+
+Voxel_filter_size 1.9 0.5 1.1 0.6 0.7 0.3 0.9 0.9 1.4 0.2 1.0 0.9 1.5 1.4 1.7 1.1 
+
+LiDAR_max_range 3.7 1.0 1.2 1.2 0.7 0.7 1.5 1.1 1.7 0.3 1.3 2.1 1.9 4.6 2.2 5.1 NTU VIRAL Ouster OS1-16 LiDAR RMSE w/o permutation 4.5 13.0 2.1 2.4 4.5 6.9 1.1 3.0 6.4 12.3 17.9 14.2 /
+
+Rotation_weight 5.6 17.9 3.4 3.7 5.8 9.1 1.9 4.6 7.1 19.0 34.4 19.0 /
+
+Translation_weight 5.3 13.3 6.9 4.4 18.3 11.8 1.3 5.6 7.0 14.4 22.0 15.1 /
+
+High_resolution 5.8 13.1 3.4 4.0 5.2 9.7 1.8 4.7 7.4 16.7 21.4 17.1 /
+
+Low_resolution 10.1 26.7 8.4 7.9 21.4 14.7 2.8 10.5 17.8 35.3 81.0 26.9 /
+
+Submap_size 18.4 31.9 2.6 2.8 5.4 10.2 7.0 5.5 11.3 35.9 56.5 72.3 /
+
+Voxel_filter_size 5.7 13.6 3.6 3.8 5.3 7.3 1.3 3.8 6.6 13.6 19.6 14.3 /
+
+LiDAR_max_range 26.8 33.6 21.3 12.5 21.1 29.9 5.7 13.7 34.7 32.2 36.2 18.9 /
+
+4.1. Cartographer parameter analysis 
+
+The influence of the different parameters in Cartographer is analyzed with the results shown in Table 7 (permutation-based random forest feature importance) and Table 8 (cor-relation analyses). The rows are organized into four groups according to the LiDAR sensor, and each group contains the values obtained by each Cartographer parameter. Addition-ally, in Table 7, each group starts with the random forest prediction error (RMSE) obtained without permutation for the given data sequence and LiDAR while the rest are the RMSE values resulting when permuting each Cartographer parameter. 
+
+4.1.1. Permutation-based feature importance data analysis 
+
+We first differentiate between parameters with high and low influence using the data obtained from the random forest feature importance analysis. To determine whether a parameter’s influence is low for a particular data sequence and LiDAR, we compare the RMSE value when permuting the value of each parameter to the models’ base RMSE without permutation. We consider that a parameter has low influence for a particular data sequence and LiDAR if its permutation increases the model’s base RMSE by less than 50% or by less than 2 cm. The ATE values for low-influence cases have been printed in gray color in Table 7 to help easily differentiate them from high influence cases. This analysis can be used to find the most influential pa-rameters. As shown, LiDAR_max_range has the strongest 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 10 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+overall influence among all the analyzed combinations of sequence and LiDAR. It is influential in 58% (35/60) of cases, and in 26 out of those 35 cases, it is the most influ-ential parameter. The second most influential parameter is 
+
+Low_resolution , which is influential in 50% (30/60) of the cases and the most influential parameter in 8 cases. Most of the other parameters have a lower overall influence, but still have an influence in some cases. Parameter Submap_size is even the most influential in NTU VIRAL sequences 7 and 12, and in PASTEL sequence 12 with Ouster LiDARs. IMU parameters Rotation_weight and Translation_weight are never the most influential parameters, but have a significant influence in 10% (6/60) and 18% (11/60) of the cases, respectively. The parameters with the lowest overall influence are 
+
+Voxel_filter_size and High_resolution . They each have high influence in one case (PASTEL sequence 9 with Ouster OS1-16 and Velodyne VLP16 LiDARs respectively), but not as significant as the other more influential parameters. Hence, we classify them as low-influence parameters and exclude them from further analysis. As setting them to low values may increase processing time and memory expen-diture, we recommend not tuning them and simply setting them to the higher considered values from Table 4. 
+
+4.1.2. Correlation data analysis - need for manual tuning 
+
+The parameters that were not classified as low-influence parameters are further analyzed using correlation. Table 8 shows the correlations between each Cartographer parame-ter and the ATE values in the LIO performance data for each sequence and LiDAR available. Cases where a parameter’s correlation coefficient changes its sign in different sequences indicate that the parameter behaves differently depending on the situation, and that it requires manual tuning. This is the case for LiDAR_max_range and Low_resolution with Li-DARs Ouster OS1-16 and Velodyne VLP16. Manual tuning is also required in cases where the parameter correlations are close to zero, (−0 .2 < 𝑟 < 0.2) , (i.e., ambiguous influence on ATE), but have high influence on the permuta-tion feature analysis. To facilitate the identification of such cases, the correlation values in Table 8 which correspond to low-influence cases identified in Table 7 were printed in gray color, leaving the influential parameters printed in black. As shown in Table 8, this is again the case for Li-DAR_max_range and Low_resolution in many sequences and LiDAR combinations, which further reinforces the need to tune them manually. 
+
+4.1.3. Correlation data analysis - overarching trends 
+
+The other influential parameters ( Rotation_weight , Trans-lation_weight , and Submap_size ) also exhibit cases of weak correlations, but in a limited number of cases. That is the case for Rotation_weight in PASTEL sequence 9 with Velodyne VLP16 ( 𝑟 = −0 .11 ). In other cases in which 
+
+Rotation_weight has a high influence value in Table 8, its correlations are larger and consistently negative (e.g., Velo-dyne VLP16 in PASTEL sequences 4 and 16). This leads us to recommend to set Rotation_weight to a high value, keeping in mind that there are isolated cases where tuning it by hand may be beneficial. The situation is similar for 
+
+Submap_size , whose correlations are consistently negative for all cases in which it has a high influence (see Table 8). The recommendation is to set it to the higher considered value from Table 4. This parameter also has one isolated case where it has a strong influence and its correlation is weak (NTU VIRAL seq. 9). Contrarily, Translation_weight has more cases of sig-nificant influence and weak positive correlations (PASTEL seq. 9 with Velodyne VLP16, seq. 9 and 15 with Ouster OS1-16, and NTU VIRAL seq. 6 and 8). In the other cases where it has significant influence, its correlations are positive, indicating that lower parameter values are preferred. Hence, we recommend setting it to the lowest value from the grid search. Although we recommended the LiDAR_max_range pa-rameter for manual tuning in Section 4.1.2, there are two overarching trends present in the correlation data which can facilitate the manual tuning process. Firstly, when pro-cessing the PASTEL dataset with the Ouster OS0-128 Li-DAR, LiDAR_max_range has negative correlations in all sequences except in sequence 10. Furthermore, everywhere where the parameter’s influence is strong, these correlation values are strong as well (e.g., 𝑟 < −0 .5). This indi-cates that Cartographer benefits from larger values of Li-DAR_max_range when using the Ouster OS0-128 LiDAR, removing the need to manually tune it in this case. Secondly, in PASTEL sequences 3-6, which have very low distances from obstacles (see last three columns of Table 1), the correlations corresponding to LiDAR_max_range are large and positive ( 𝑟 > 0.5) when using the Velodyne VLP16 and Ouster OS1-16 LiDARs. This indicates that Cartographer benefits from reducing LiDAR_max_range in such cases. Per the LiDAR’s technical characteristics (available in [39]), these devices have a low vertical field-of-view ( 30 °), and 16 LiDAR beams, while the Ouster OS0-128 has 128 beams and a large vertical field-of-view ( 90 °). We believe that this difference in LiDAR characteristics causes this difference in performance and recommend reducing LiDAR_max_range 
+
+when flying in confined spaces with 16-beam or low vertical-field-of-view LiDARs. 
+
+4.1.4. Cartographer tuning recommendations 
+
+The above analyses are distilled into the parameter tun-ing recommendations shown in Table 9. These recommen-dations are guidelines for the parameters requiring manual tuning and suggest values for the other parameters in order to achieve good performance in scenarios similar to the PASTEL and NTU VIRAL datasets. The parameters are arranged by the expected need for manual tuning in de-creasing order. LiDAR_max_range and Low_resolution ,which have shown high permutation-based feature impor-tance and need for manual tuning have the higher rank   
+
+> R. Milijas et al.: Preprint submitted to Elsevier Page 11 of 19
+
+Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+Table 8 
+
+Cartographer parameter correlations with ATE. Values corresponding to low sensitivity cases from Table 7 are printed in gray. Cases with strong influence but weak correlations (−0 .2 < 𝑟 < 0.2) indicate ambiguous parameter choices.                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+
+> Cartographer parameter correlations with ATE
+> Dataset Parameter Data sequences 12345678910 11 12 13 14 15 16 PASTEL Velo-dyne VLP16 LiDAR
+> Rotation_weight -0.12 -0.25 -0.17 -0.43 -0.26 -0.11 -0.01 -0.08 -0.11 -0.26 -0.11 -0.06 -0.07 -0.02 -0.04 -0.22
+> Translation_weight 0.07 0.06 0.31 0.09 0.10 0.13 0.29 0.26 0.14 0.04 0.23 0.13 0.12 0.04 0.19 -0.03
+> High_resolution 0.01 0.09 0.21 0.07 0.10 0.22 0.12 0.39 -0.01 -0.01 0.08 0.17 0.03 0.08 0.02 -0.02
+> Low_resolution -0.31 -0.22 0.41 -0.17 -0.05 0.17 0.19 0.39 -0.28 -0.36 -0.38 0.23 0.21 0.17 0.33 -0.31
+> Submap_size 0.01 -0.03 -0.03 -0.07 0.01 -0.06 -0.07 -0.11 0.00 0.05 -0.02 -0.21 -0.04 -0.18 -0.11 -0.01
+> Voxel_filter_size -0.06 -0.09 -0.07 -0.05 -0.04 -0.07 0.01 -0.04 0.03 0.04 0.01 -0.04 -0.03 -0.05 -0.03 0.00
+> LiDAR_max_range 0.73 0.07 0.50 0.63 0.80 0.79 -0.17 -0.04 0.23 0.55 0.03 -0.39 -0.54 -0.47 -0.48 0.19 PASTEL Ouster OS1-16 LiDAR
+> Rotation_weight -0.10 -0.10 -0.24 -0.29 -0.17 0.02 0.09 0.06 -0.06 -0.08 -0.06 -0.03 0.01 -0.05 -0.02 -0.24
+> Translation_weight 0.09 0.14 0.20 0.02 0.08 0.02 0.34 0.25 0.19 0.07 0.04 0.04 0.04 0.03 0.17 -0.18
+> High_resolution -0.03 0.20 0.13 0.00 0.32 0.61 0.16 0.25 -0.09 -0.07 0.05 0.08 0.05 0.02 -0.04 -0.05
+> Low_resolution -0.29 0.00 0.01 -0.32 -0.05 0.23 0.43 0.41 -0.18 -0.49 0.03 0.17 0.25 0.06 0.26 -0.37
+> Submap_size -0.05 -0.10 -0.03 -0.01 -0.04 -0.03 -0.18 -0.16 0.00 0.01 -0.07 -0.46 -0.01 -0.29 -0.12 0.05
+> Voxel_filter_size -0.07 -0.05 -0.11 -0.03 -0.01 -0.18 -0.02 -0.09 -0.01 0.01 0.01 -0.04 -0.08 -0.04 0.00 -0.06
+> LiDAR_max_range 0.72 -0.28 0.50 0.61 0.54 0.36 -0.12 0.00 0.22 0.67 -0.53 -0.24 -0.37 -0.46 -0.27 0.19 PASTEL Ouster OS0-128 LiDAR
+> Rotation_weight -0.05 0.00 0.13 0.21 0.44 0.31 0.06 0.05 -0.03 0.31 0.03 -0.01 -0.10 -0.06 0.01 -0.01
+> Translation_weight -0.05 -0.16 0.18 0.28 -0.02 -0.0 0.30 0.19 -0.13 -0.25 -0.16 -0.04 -0.09 -0.05 -0.06 0.01
+> High_resolution 0.15 0.29 0.35 0.43 0.32 0.42 0.28 0.34 0.01 0.49 -0.10 0.05 0.08 0.08 -0.02 0.14
+> Low_resolution 0.13 0.32 0.34 0.23 0.22 0.65 0.34 0.35 0.17 0.33 0.20 0.13 0.26 0.22 0.16 0.21
+> Submap_size -0.17 -0.19 -0.08 -0.18 0.10 0.05 -0.15 -0.15 -0.01 -0.12 -0.10 -0.58 -0.09 -0.44 -0.47 -0.11
+> Voxel_filter_size -0.06 -0.04 0.00 -0.10 -0.08 -0.04 -0.05 -0.04 -0.03 -0.01 0.02 -0.01 -0.13 -0.02 0.18 -0.05
+> LiDAR_max_range -0.65 -0.56 -0.17 -0.34 -0.14 -0.29 -0.26 -0.24 -0.34 0.03 -0.37 -0.33 -0.37 -0.55 -0.32 -0.75 NTU VIRAL Ouster OS1-16 LiDAR
+> Rotation_weight 0.02 -0.13 -0.03 -0.01 -0.06 -0.05 -0.07 -0.11 -0.03 -0.19 -0.21 -0.11 /
+> Translation_weight 0.01 0.05 0.20 0.18 0.33 0.16 0.07 0.10 0.06 0.07 -0.01 0.01 /
+> High_resolution 0.01 -0.01 -0.01 0.10 0.01 0.01 0.07 -0.02 0.00 -0.04 -0.05 0.02 /
+> Low_resolution -0.16 -0.39 -0.20 -0.38 0.27 -0.16 -0.05 -0.30 -0.24 -0.55 -0.73 -0.18 /
+> Submap_size -0.23 -0.27 0.01 0.02 0.02 0.06 -0.40 -0.08 -0.09 -0.27 -0.36 -0.80 /
+> Voxel_filter_size 0.00 -0.01 0.01 0.00 0.00 -0.01 0.02 -0.02 0.00 0.01 0.01 0.01 /
+> LiDAR_max_range 0.67 0.29 0.84 0.70 -0.18 0.78 -0.14 0.52 0.81 -0.07 0.09 -0.01 /
+
+in the recommendations. They are followed by the rest of the influential parameters ( Translation_weight , Rota-tion_weight , and Submap_size ), whose general trends were examined in Section 4.1.3. These trends are reflected in the recommendations in Table 9. The low-influence parameters 
+
+(High_resolution and Voxel_filter_size ) share the last rank in the recommendations. The table also contains recom-mended starting values for each of the parameters. When deploying Cartographer in scenarios similar to those of the analyzed datasets, we recommend the practi-tioner to first set the recommended values from the table and assess the system performance. If the performance is not satisfactory, the parameters should be fine-tuned as recom-mended in Table 9 starting from the top of the table. We expect that a simplified tuning process focusing only on the two most influential parameters and leaving the others at the starting values will often provide satisfactory results. 
+
+4.1.5. Validation of Cartographer tuning recommendations 
+
+This section validates the proposed parameter tuning rec-ommendations using the LIO performance data . We confirm that using the proposed starting values for the parameters in Table 9 and tuning only the two most influential parame-ters designated for manual tuning ( LiDAR_max_range and 
+
+Low_resolution ), Cartographer obtains outcomes similar to the optimal ATE values found by the grid search (Table 5). It also validates that the tuning order recommended by Table 9 is indeed the order of falling importance for manual tuning. We test both through a validation process, the results of which are depicted in Figure 4. The process consists of applying in 6 steps the parameter recommended starting values shown in Table 9 one by one in reverse order (i.e. with rising importances) and observing the changes of the com-bined ATE distributions for all 60 LiDAR and data sequence combinations from the LIO performance data . Step 0 in the process starts by considering all combinations of parameter values in Table 4 for all the LiDAR-sequence combinations. The resulting ATE distribution is shown in Figure 4-Step 0. At each consecutive step, a parameter (in reverse order to the tuning importance expressed in Table 9) is set to its recommended value, and Figure 4 shows the resulting ATE distribution. For instance, in Step 1 Voxel_filter_size is fixed to 15 cm (recommended value from Table 9), and Figure 4-Step 1 shows the ATE distribution considering the combina-tions of values for all parameters except Voxel_filter_size .It can be seen in Figure 4 that in Step 1 the minimum of 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 12 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+Table 9 
+
+Summary of Cartographer tuning recommendations and rec-ommended starting tuning values. The parameters are arranged by the need for manual tuning in decreasing order. Parameter values such as low or high correspond to values in Table 4.    
+
+> Cartographer tuning recommendations LiDAR_max_range
+> Use lower values (e.g. 20 m) when using low field-of-view LiDARs in confined spaces, and high values (e.g. 50 m) with large field-of-view LiDARS. Manually tune otherwise, starting from medium value (e.g. 35 m).
+> Low_resolution
+> Start from a higher value (e.g. 50 cm) and reduce if necessary. Keep computational constraints in mind when executing on low-resource hardware.
+> Translation_weight Low values (e.g. 5) expected to perform well.
+> Rotation_weight High values (e.g. 100) expected to perform well.
+> Submap_size High values (e.g. 1000) expected to perform well.
+> High_resolution,
+> Parameters have low influence in the data sequences analyzed in this work. Set to higher value (e.g. 20 cm / 15 cm) as they influence processing time and memory consumption.
+> Voxel_filter_size
+
+the resulting ATE distribution moved upwards, without the quartiles or median changing. In Step 2, the next parameter in reverse order in Table 9 ( High_resolution ) is set to its recommended value. The process continues to Step 6, in which Low_resolution and LiDAR_max_range are manu-ally tuned. Analyzing the resulting ATE distributions in Fig-ure 4, it can be observed that the low-influence parameters 
+
+–Voxel_filter_size (Step 1) and High_resolution (Step 2)– have a weak influence on Cartographer performance, as their selection did not significantly alter the ATE distributions. The changes in the ATE distribution became stronger when the validation procedure reaches parameter Submap_size 
+
+(Step 3). In Step 6 the two most influential parameters ( LiDAR_ max_range and Low_resolution ) are manually tuned. In a scenario where ground truth infrastructure is unavailable, a human operator would perform manual tuning through visual inspection of the SLAM process and by analyzing the resulting map. In this work, since ground truth is available, manual tuning was performed by selecting the combination of values from Table 4 for both parameters that obtained the lowest ATE for each data sequence and LiDAR. The resulting ATE distribution after manual tuning is shown in Figure 4-Step 6. For comparison, Figure 4-OGS (marked in green) shows the ATE distribution resulting from the optimal tuning of parameters performed using grid search, which ATE values for each data sequence and LiDAR are shown in Table 5. As shown, the ATE distribution after following the proposed recommendations (Step 6) is very Cartographer recommendations validation Step 0 Step 1 Step 2 Step 3 Step 4 Step 5 OGS 00.5 11.5 22.5 33.5 4ATE [m] 00.1 0.2 0.3 0.4 0.5 0.6 
+
+> Voxel  fi lter size High resolution Submap size Translation weight Rotation weight Low resolution, LiDAR max range Best ATE values (Table V)
+> Step 6 Step 0 Step 1 Step 2 Step 3 Step 4 Step 5 OGS Step 6
+
+Figure 4: Cartographer ATE distributions considering all sequence-LiDAR combinations in LIO performance data along different validation steps. Step 0 considers all combinations of parameter values in Table 4. From Step 1 to Step 5, a parameter (in reverse order to the tuning importance expressed in Table 9) is set to its recommended value. Steps 1 and 2, which reflect the influence of Voxel_filter_size 
+
+and High_resolution , have minimal influence on the ATE distributions, while the changes in the ATE distributions increase in Steps 3-5, hence validating the ordering of the parameters in the tuning recommendations. Step 6 manually tunes LiDAR_max_range and Low_resolution for each of the LiDAR and data sequence combinations. For comparison, the ATE distribution from the optimal grid search (OGS) tuning (shown in Table 4) is depicted in green. The ATE distribution resulting of the proposed tuning recommendations (Step 6) is similar (the quartiles have within 5 cm of difference) to the ATE distribution resulting from the optimal grid search, validating that satisfactory performance can be achieved following the proposed recommendations and manually tuning solely two parameters: LiDAR_max_range and Low_resolution .
+
+close to the ATE distribution of the optimal tuning found through grid search. The minimum, median and the quartiles of the ATE distribution with optimal tuning are less than 5 cm lower than with the proposed tuning recommendations, while the maxima of the distributions show a difference of approximately 12 cm. To allow a deeper comparison, the resulting ATE values for each sequence and LiDAR obtained with the proposed tuning recommendations (after Step 6) are shown in Table 10 and compared to the ATE values obtained from grid search optimal tuning that were shown in Table 5 (repeated in Table 10 for clarity). Notably, the proposed very simple tuning procedure obtains results within 5 cm from the grid-search-optimal values in 55/60 cases. All data sequence and LiDAR combinations obtain ATE values lower than 26 cm except 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 13 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+NTU VIRAL sequence 11 which stands out with 48 cm. That same sequence also has the largest minimum ATE in the Cartographer grid search (36.5 cm in Table 5) indicating that it poses a particularly challenging scenario for Cartographer. Based on the presented results, we conclude that the Cartographer tuning recommendations given in Table 9 are valid for the considered scenarios. 
+
+Table 10 
+
+Cartographer ATE values for each sequence and LiDAR ob-tained using: i) the parameters resulting from the proposed tuning recommendations (after Step 6), and ii) the grid search optimal parameters (OGS) shown in Table 5 but repeated here for ease of comparison. All values are expressed in centimeters.                                                                                                                                                          
+
+> Individual ATE values from Cartographer validation Step 6 compared to optimal ATE values (OGS) from Table 5. All values in centimeters. Data sequence Velodyne Ouster Ouster VLP16 OS1-16 OS0-128 Step 6 OGS Step 6 OGS Step 6 OGS
+> PASTEL 1 12.6 10.0 17.9 13.8 11.5 9.0 PASTEL 2 4.8 3.6 6.8 5.6 6.8 5.3 PASTEL 3 4.9 4.5 9.2 7.7 7.4 5.7 PASTEL 4 4.7 2.4 7.8 7.1 8.3 6.3 PASTEL 5 5.4 4.9 10.2 2.5 9.9 6.5 PASTEL 6 5.1 4.4 11.5 9.9 10.9 7.7 PASTEL 7 7.2 6.6 13.5 12.8 13.7 11.8 PASTEL 8 6.7 5.7 11.3 10.0 9.5 8.0 PASTEL 9 6.0 5.0 9.7 8.8 8.5 5.6 PASTEL 10 6.2 5.7 11.3 10.1 10.6 9.5 PASTEL 11 9.4 0.8 17.9 16.2 18.3 2.8 PASTEL 12 10.6 8.7 16.8 16.5 15.4 13.1 PASTEL 13 13.7 10.5 22.8 12.5 22.9 18.4 PASTEL 14 8.9 8.0 14.0 13.5 13.2 11.8 PASTEL 15 12.4 11.8 24.7 24.0 23.6 18.7 PASTEL 16 9.8 8.2 18.2 15.5 18.0 17.0 NTU VIRAL 1 /22.9 21.1 /NTU VIRAL 2 /23.9 22.1 /NTU VIRAL 3 /18.1 17.7 /NTU VIRAL 4 /23.6 21.4 /NTU VIRAL 5 /20.1 18.6 /NTU VIRAL 6 /24.3 22.0 /NTU VIRAL 7 /23.3 21.5 /NTU VIRAL 8 /23.4 22.0 /NTU VIRAL 9 /21.6 20.3 /NTU VIRAL 10 /25.2 21.9 /NTU VIRAL 11 /48.1 36.5 /NTU VIRAL 12 /25.1 23.4 /
+
+4.2. FAST-LIO2 parameter analysis 
+
+Analogously to Cartographer, the influence of different FAST-LIO2 parameters is analyzed through the permutation-based random forest feature importances from Table 11 and correlation data from Table 12. First, we identify low-influence parameters using the permutation-based feature importance analysis, and then identify the need for manual tuning and find overarching trends using the correlation data. 
+
+4.2.1. Permutation-based feature importance data analysis 
+
+Observing Table 11, it can be noticed that all param-eters except Gyroscope_covariance have a significant in-fluence in more than half of the analyzed cases. Gyro-scope_covariance had a negligible influence in all the used dataset-LiDAR combinations. In a majority of the cases the permutation of the parameter increased the random forest RMSEs in the order of millimeters, and the correlation coefficients were close to 0.0 on both datasets. We can conclude that this is a low-influence parameter and that it can be left on its default value in scenarios with characteristics similar to those in the NTU VIRAL and PASTEL datasets. 
+
+4.2.2. Correlation data analysis - need for manual tuning 
+
+The FAST-LIO2 correlation data (Table 12) is used to identify parameters with high need for manual tun-ing. LiDAR_max_range , Point_filter_number , and Fil-ter_size_surfaces each have correlations close to zero in 19/60 influential cases, having the highest need for manual tuning. The other parameters ( Acceleration_covariance 
+
+and Filter_size_map ) have a small number of cases with weak correlations (5 each), which indicates a low need for manual tuning. 
+
+4.2.3. Correlation data analysis - overarching trends 
+
+LiDAR_max_range has negative correlations in 36 out of 38 influential cases in Table 12, meaning that setting a low value usually increases ATE, with larger values being preferred. As this prefilter is not included in the original FAST-LIO2 implementation (we added it to compare its effect with the Cartographer LiDAR_max_range filter), we propose to implement it only when satisfactory results are unobtainable by tuning the other parameters. 
+
+Acceleration_covariance has a higher influence on PASTEL sequences (44 cases out of 48) than in NTU VIRAL, where it is influential only on sequence 10. Since the datasets offer the same IMU model (Ouster OS1-16 builtin IMU) we investigated the IMU responses in the two datasets. We found that IMU measurements have less noise in NTU VIRAL than in PASTEL. For instance, on PASTEL sequence 16, the Ouster OS1-16 IMU acceleration has a standard deviation of 1.8 𝑚𝑠 −2 on the 𝑧 axis, compared to 
+
+0.7 𝑚𝑠 −2 on the 𝑧 axis on NTU VIRAL seq. 5. Since the IMU covariance is important for EKF-based LIO processing, this needs to be addressed when tuning LIO algorithms. For the Ouster OS1-16 built-in IMU in PASTEL, larger values of Acceleration_covariance are preferred to cope with the higher standard deviations. 
+
+Filter_size_map is the parameter with the most con-sistent correlations in Table 12. As 47/50 influential cases have positive correlations, lower values are preferred. This is expected because this parameter defines the map down-sampling resolution. We recommend initially keeping the default value (see Table 4) as reducing the parameter may increase the computational burden in large maps. 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 14 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+Table 11 
+
+Random forest feature permutations analysis for FAST-LIO2 parameters for each sequence and LiDAR in the considered datasets. Cases which increase the RMSE by less than 50% of the RMSE without permutation or by less than 2cm are marked in gray. All values are reported in centimeters. 
+
+FAST-LIO2 random forest ATE prediction RMSEs without and with feature permutation. All values in centimeters. 
+
+Dataset Parameter Data sequences 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 PASTEL Velo-dyne VLP16 RMSE w/o permutation 4.1 30.0 22.4 63.9 50.4 16.0 10.1 33.4 8.1 32.8 28.4 36.7 33.2 47.4 37.6 40.9 
+
+Acceleration_covariance 23.6 106.5 76.0 120.8 87.9 67.2 23.6 131.4 37.8 43.3 99.4 101.3 80.7 161.4 134.3 107.7 
+
+Gyroscope_covariance 4.2 30.6 24.4 63.9 53.0 17.6 11.7 34.5 8.1 33.0 30.2 37.0 33.7 48.3 41.9 42.9 
+
+Point_filter_number 17.1 95.4 34.8 96.7 68.6 43.8 20.5 116.3 20.8 34.5 77.8 84.4 62.9 115.2 110.6 97.9 
+
+Filter_size_surfaces 7.8 47.7 64.2 152.6 96.6 70.4 30.9 139.1 27.7 39.4 74.5 74.4 46.5 126.2 100.8 83.9 
+
+Filter_size_map 19.5 98.0 85.0 144.4 90.8 76.6 32.1 209.4 32.1 42.9 110.7 109.0 83.5 156.2 125.7 121.7 
+
+LiDAR_max_range 34.3 171.6 59.1 97.0 74.1 61.0 21.2 75.0 37.7 40.8 99.6 70.5 51.9 111.5 124.1 137.5 PASTEL Ouster OS1-16 LiDAR RMSE w/o permutation 7.0 37.5 58.6 78.3 13.8 24.9 7.6 37.6 11.6 4.1 17.9 29.2 26.0 51.7 18.7 49.5 
+
+Acceleration_covariance 26.5 112.8 94.9 114.4 45.2 77.5 13.3 150.1 19.5 14.7 65.4 111.1 58.4 149.5 131.5 101.7 
+
+Gyroscope_covariance 7.1 39.7 59.6 78.5 14.4 25.6 8.6 41.3 12.3 4.8 18.0 29.6 27.8 53.3 19.7 50.2 
+
+Point_filter_number 21.1 109.8 72.3 85.2 26.9 51.8 8.6 95.1 16.1 11.1 48.5 105.0 35.0 121.9 107.6 88.1 
+
+Filter_size_surfaces 8.1 51.3 89.5 131.3 36.4 57.6 17.6 147.6 13.2 6.5 39.5 52.3 36.0 86.8 68.6 94.8 
+
+Filter_size_map 22.0 115.2 107.2 120.0 50.3 81.7 19.5 170.3 18.8 13.7 70.7 94.0 53.4 162.0 124.5 135.1 
+
+LiDAR_max_range 30.7 173.0 69.1 89.9 29.3 31.0 12.8 45.4 21.8 13.8 73.3 64.1 47.1 98.4 119.8 113.4 PASTEL Ouster OS0-128 LiDAR RMSE w/o permutation 10.1 39.9 27.6 44.9 10.6 6.1 3.3 31.4 22.2 0.3 23.4 18.1 13.4 33.4 42.8 37.0 
+
+Acceleration_covariance 31.5 92.9 65.4 104.3 17.0 20.5 6.8 136.4 22.9 0.8 42.8 61.7 27.8 103.8 126.1 89.5 
+
+Gyroscope_covariance 10.2 40.4 27.9 48.4 10.8 6.4 3.4 33.7 22.2 0.3 23.6 18.4 13.5 33.7 43.0 39.1 
+
+Point_filter_number 23.1 78.3 36.4 48.2 11.2 13.0 4.8 94.0 22.7 0.5 39.3 35.6 19.8 71.9 71.6 58.2 
+
+Filter_size_surfaces 19.9 60.5 48.5 71.6 14.6 14.4 8.0 158.4 22.9 0.9 34.9 46.0 18.2 91.6 89.0 58.1 
+
+Filter_size_map 18.5 57.0 57.4 96.9 13.6 18.0 7.7 148.1 22.2 1.4 42.9 52.2 22.9 133.1 123.7 80.8 
+
+LiDAR_max_range 33.6 68.4 41.1 47.8 12.9 10.2 5.6 35.0 22.6 0.6 41.1 22.9 20.1 54.1 72.4 61.9 NTU VIRAL Ouster OS1-16 LiDAR RMSE w/o permutation 11.6 29.0 0.2 0.1 0.2 0.2 3.2 9.7 17.0 9.8 15.5 9.6 /
+
+Acceleration_covariance 17.9 31.4 0.2 0.3 0.5 0.3 4.0 9.7 24.2 18.0 16.3 13.1 /
+
+Gyroscope_covariance 13.2 34.4 0.2 0.1 0.2 0.2 3.5 9.7 17.1 10.8 18.5 10.2 /
+
+Point_filter_number 38.7 36.4 0.5 0.9 1.2 1.2 7.1 11.4 133.5 23.6 21.9 10.2 /
+
+Filter_size_surfaces 24.8 30.2 0.4 1.1 1.1 0.9 4.7 10.0 28.5 32.3 19.4 13.9 /
+
+Filter_size_map 43.1 37.7 0.5 1.4 1.5 1.1 6.9 10.6 86.2 42.4 32.3 17.1 /
+
+LiDAR_max_range 43.7 38.2 0.9 0.7 1.2 0.8 6.8 10.4 70.9 39.9 26.0 13.3 /
+
+4.2.4. FAST-LIO2 tuning recommendations 
+
+The above analysis is distilled into the tuning recom-mendations shown in Table 13, which are guidelines for manual tuning and suggested values for good performance in scenarios similar to the PASTEL and NTU VIRAL datasets, arranged by decreasing need for manual tuning. We rec-ommend to first set the parameters to the recommended values, and to tune them manually if the performance is not satisfactory, starting from the top of the table. Analogously to Cartographer, we expect that a simplified tuning process focusing only on the two most influential parameters to provide satisfactory results, see Section 4.2.5. 
+
+4.2.5. Validation of FAST-LIO2 tuning recommendations 
+
+Analogously to the Cartographer validation , both the recommended values and tuning order from Table 13 are validated by applying the recommendations in reverse order (i.e. with rising importances) and observing the ATE dis-tributions for all sequence-LiDAR combinations from LIO performance data .The results of the validation process is presented in Figure 5. Figure 5 validates the ordering of the parameters in Table 13, showing that parameter Gyroscope_covariance in Step 1 has a negligible influence on the ATE distributions, with the influence increasing in Steps 2-4. The figure also confirms that applying the proposed simplified tuning pro-cess obtains a similar ATE distribution to the distribution of optimal grid search parameters (OGS in the figure), with the extrema, quartiles and medians of the distribution in Step 5 being within 5 cm of their respective points in the OGS distribution. In addition, Table 14 presents the resulting ATE values from the proposed FAST-LIO2 tuning recommendations (after Step 5) and compares them to the optimal grid search results for FAST-LIO2 from Table 5. Notably, the tuning procedure obtains results within 5 cm from the grid-search optimal values in 58/60 cases, with the worst ATE being 23.5 cm in NTU VIRAL sequence 8. Hence, we conclude that the FAST-LIO2 proposed tuning recommendations are valid for the considered scenarios. 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 15 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+Table 12 
+
+FAST-LIO2 parameter correlations with ATE. Values corresponding to low sensitivity cases from Table 11 are printed in gray. Cases with strong influence but weak correlations (−0 .2 < 𝑟 < 0.2) indicate ambiguous parameter choices. 
+
+FAST-LIO2 parameter correlations with ATE 
+
+Dataset Parameter Data sequences 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 PASTEL Velo-dyne VLP16 LiDAR 
+
+Acceleration_covariance -0.29 -0.28 -0.12 -0.13 -0.24 -0.30 -0.17 -0.19 -0.22 -0.12 -0.32 -0.43 -0.34 -0.31 -0.32 -0.31 
+
+Gyroscope_covariance 0.00 0.01 0.03 -0.01 -0.03 0.00 0.00 0.00 0.01 0.04 -0.01 0.00 -0.01 0.01 0.00 0.00 
+
+Point_filter_number 0.20 0.23 -0.08 -0.07 0.08 0.11 0.15 0.09 0.13 0.04 0.12 0.36 0.27 0.21 0.18 0.29 
+
+Filter_size_surfaces 0.05 0.00 0.20 0.47 0.28 0.35 0.24 0.29 0.17 0.12 0.13 0.21 0.16 0.29 0.16 0.25 
+
+Filter_size_map 0.19 0.25 0.29 0.38 0.20 0.32 0.32 0.57 0.17 0.16 0.34 0.30 0.35 0.41 0.33 0.40 
+
+LiDAR_max_range -0.50 -0.66 -0.13 -0.07 -0.13 -0.19 -0.13 -0.03 -0.24 -0.11 -0.29 -0.22 -0.26 -0.19 -0.29 -0.46 PASTEL Ouster OS1-16 LiDAR 
+
+Acceleration_covariance -0.27 -0.28 -0.22 -0.29 -0.30 -0.35 -0.22 -0.28 -0.25 -0.23 -0.31 -0.53 -0.33 -0.38 -0.36 -0.36 
+
+Gyroscope_covariance -0.01 -0.01 -0.05 -0.01 -0.01 -0.01 0.00 0.01 0.00 0.00 0.02 0.01 0.03 0.00 0.00 0.00 
+
+Point_filter_number 0.25 0.28 -0.04 0.05 0.16 0.19 0.10 0.01 0.17 0.16 0.15 0.48 0.21 0.25 0.26 0.33 
+
+Filter_size_surfaces 0.01 0.00 0.19 0.47 0.23 0.28 0.25 0.31 0.15 0.08 0.07 0.07 0.16 0.15 0.12 0.23 
+
+Filter_size_map 0.21 0.25 0.35 0.27 0.40 0.46 0.39 0.51 0.21 0.20 0.39 0.31 0.29 0.42 0.30 0.51 
+
+LiDAR_max_range -0.42 -0.65 -0.03 -0.03 -0.13 -0.10 -0.14 -0.08 -0.27 -0.23 -0.31 -0.16 -0.27 -0.18 -0.31 -0.40 PASTEL Ouster OS0-128 LiDAR 
+
+Acceleration_covariance -0.29 -0.47 -0.32 -0.37 -0.24 -0.34 -0.20 -0.26 -0.11 -0.33 -0.30 -0.46 -0.35 -0.43 -0.39 -0.45 
+
+Gyroscope_covariance 0.01 -0.01 0.01 0.01 -0.02 -0.02 0.00 0.03 0.03 -0.01 -0.02 0.00 0.00 0.02 -0.02 0.00 
+
+Point_filter_number 0.21 0.40 0.06 -0.01 0.05 0.17 0.10 -0.02 0.10 0.09 0.16 0.24 0.21 0.19 0.15 0.25 
+
+Filter_size_surfaces 0.04 0.00 0.11 0.15 0.14 0.24 0.25 0.51 0.10 0.09 0.16 0.29 0.07 0.30 0.19 0.26 
+
+Filter_size_map 0.07 0.01 0.39 0.48 0.29 0.32 0.32 0.40 0.13 0.65 0.28 0.37 0.29 0.51 0.41 0.40 
+
+LiDAR_max_range -0.42 -0.28 -0.10 -0.01 -0.13 -0.13 -0.14 -0.01 -0.10 -0.19 -0.19 -0.11 -0.22 -0.13 -0.15 -0.23 NTU VIRAL Ouster OS1-16 LiDAR 
+
+Acceleration_covariance 0.01 0.01 0.04 0.04 0.09 0.03 -0.01 0.05 0.00 0.01 0.00 0.01 /
+
+Gyroscope_covariance 0.00 -0.02 0.02 0.00 -0.01 0.00 0.02 0.04 0.00 0.02 0.03 -0.02 /
+
+Point_filter_number 0.21 0.18 -0.18 -0.25 -0.27 -0.33 0.22 0.07 0.56 -0.05 -0.09 -0.07 /
+
+Filter_size_surfaces -0.06 -0.07 0.07 -0.31 -0.35 -0.16 -0.03 -0.08 0.01 -0.19 -0.06 -0.14 /
+
+Filter_size_map -0.07 0.10 0.11 -0.35 -0.01 -0.14 -0.06 0.18 -0.27 0.39 0.30 0.30 /
+
+LiDAR_max_range 0.00 -0.19 0.60 0.26 -0.15 0.16 -0.10 -0.09 0.18 -0.17 -0.24 -0.16 /
+
+Table 13 
+
+Summary of FAST-LIO2 tuning recommendations and recom-mended starting values. The parameters are arranged by the need for manual tuning in decreasing order. 
+
+FAST-LIO2 tuning recommendations Point_filter_number, 
+
+Manually tune starting from default values ( Point_filter_number = 4 and 
+
+Filter_size_surfaces = 0.5 m). Parameters may interact. Lower values may improve performance. Keep comuptational constraints in mind on low-resource hardware. 
+
+Filter_size_surfaces Acceleration_covariance 
+
+Value influenced by IMU properties and mechanical insulation. Use higher value (0.2 m) and consider reducing it if IMU acceleration signal quality is better. 
+
+Filter_size_map 
+
+Default value (0.5 m) expected to perform well. Low values may increase computational burden on large maps. 
+
+LiDAR_max_range 
+
+(added as prefilter) It may be useful to implement if satisfactory results are not obtainable through other parameters. 
+
+Gyroscope_covariance 
+
+It has low influence in current settings and can be left on its default value (0.1 m). 
+
+## 5. Conclusion and future work 
+
+The performance of LiDAR-based LIO and SLAM algo-rithms is strongly dependent on the scenario, robot motion and LiDAR characteristics, often requiring intensive tuning processes. This paper analyzes the influence of Cartographer and FAST-LIO2 parameters on the estimated trajectory ac-curacy in low-to-medium altitude quadrotor flights. We aim to decrease the tuning effort by increasing the understanding of the LIO algorithm parameters, narrowing the parameter search space, and facilitating the tuning process. The analysis starts with identifying parameters of inter-est and defining values for each parameter which can be con-sidered low, medium, and high settings. All parameter com-binations were evaluated on two public datasets which cover three different LiDAR models in diverse environments and with diverse flight characteristics. The parameter influence was analyzed using Pearson’s correlation to determine the relationship between the parameter values and resulting ATE metrics, while the magnitude of parameters’ influence was determined using random forest permutation importances from random forest regressors trained on the obtained LIO algorithm performance data. As a result of these analyses, this paper provides and validates tuning recommendations for the analyzed parame-ters, which provide practitioners with recommended starting tuning values and a proposed tuning order. The paper pro-poses a simplified tuning process focusing on the two most 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 16 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries FAST-LIO2 recommendations validation 00.5 11.5 22.5 33.5 4ATE [m] 00.1 0.2 0.3 0.4 0.5 0.6 Step 0 Step 1 Step 2 Step 3 Step 4 Step 5 OGS Step 0 Step 1 Step 2 Step 3 Step 4 Step 5 OGS 
+
+> Best ATE values (Table V) Gyroscope covariance LiDAR max range Filter size map Acceleration covariance Point  fi lter number, Filter size surfaces
+
+Figure 5: ATE distributions considering all sequence-LiDAR combinations in the LIO performance data along different validation steps for FAST-LIO2. Step 1, which reflects the influence of Gyroscope_covariance , has minimal influence on the ATE distribution, while the changes in the ATE distributions increase in Steps 2-4, validating the ordering of the parameters in the tuning recommendations. Step 5 man-ually tunes Point_filter_number and Filter_size_surfaces 
+
+for each of the LiDAR and data sequence combinations. As shown, the ATE distribution resulting of the proposed tuning recommendations (Step 5) is similar to the ATE distribution resulting from the optimal grid search, validating that satis-factory performance can be achieved following the proposed recommendations and manually tuning solely two parameters. 
+
+influential parameters of each algorithm. Using the proposed tuning recommendations, both LIO algorithms obtain on the analyzed datasets ATE values within 5 cm to the optimal performance found in the grid search procedure in 94% of the analyzed cases. This work opens a wide field for future research. One of them is to expand it by analyzing possibilities of parameter interactions, which were not considered in this work. The extension to analyze SLAM (instead of LIO) parameters is object of current research. This work focused on lower-altitude flights. The extension to high altitude flight sce-narios for applications such as surveillance and mapping is object of current research. Finally, the development of methods to relate the aerial LiDAR data characteristics (e.g., flight altitude, velocity, distances from obstacles) with the choice of algorithmic parameters would enable a system that could recommend parameter sets for a given application just by analyzing the data collected in a test flight. 
+
+## CRediT authorship contribution statement 
+
+Robert Milijas: Conceptualization, Data curation, Method-ology, Validation, Writing - original draft, Writing - review 
+
+Table 14 
+
+FAST-LIO2 ATE values for each sequence-LiDAR combination using: i) the parameters resulting from the proposed tuning recommendations (after Step 5), and ii) the grid search optimal parameters (shown in Table 5, repeated here for ease of comparison). All values are in centimeters.                                                                                                                                                          
+
+> Individual ATE values from FAST-LIO2 validation Step 5 compared to optimal values from Table 5 [cm] Data sequence Velodyne Ouster Ouster VLP16 OS1-16 OS0-128 Step 5 OGS Step 5 OGS Step 5 OGS
+> PASTEL 1 6.5 6.4 10.0 1.4 6.5 6.3 PASTEL 2 7.5 7.5 10.4 10.3 8.8 6.9 PASTEL 3 7.0 5.6 8.4 7.9 6.7 6.1 PASTEL 4 10.9 7.1 14.2 9.4 10.3 7.4 PASTEL 5 6.1 4.8 7.3 7.2 6.4 6.3 PASTEL 6 5.5 4.6 7.3 6.9 4.5 4.2 PASTEL 7 5.9 5.5 10.0 9.8 8.4 7.7 PASTEL 8 5.4 5.3 8.1 8.0 5.1 3.7 PASTEL 9 6.1 6.1 8.2 8.1 6.2 5.4 PASTEL 10 7.0 6.1 8.2 8.1 5.8 5.5 PASTEL 11 8.4 8.2 16.4 16.3 14.2 14.0 PASTEL 12 10.9 10.4 18.9 18.3 14.8 12.8 PASTEL 13 9.2 7.9 16.9 16.5 15.6 15.0 PASTEL 14 10.0 9.9 16.6 16.6 17.6 13.4 PASTEL 15 9.5 9.5 18.5 18.5 15.2 13.6 PASTEL 16 6.4 6.4 13.2 13.0 9.3 7.3 NTU VIRAL 1 /21.2 20.3 /NTU VIRAL 2 /20.4 18.7 /NTU VIRAL 3 /22.7 20.7 /NTU VIRAL 4 /21.7 20.5 /NTU VIRAL 5 /21.6 20.4 /NTU VIRAL 6 /21.7 19.5 /NTU VIRAL 7 /23.2 22.6 /NTU VIRAL 8 /23.5 22.3 /NTU VIRAL 9 /23.1 21.5 /NTU VIRAL 10 /19.5 19.0 /NTU VIRAL 11 /19.1 7.5 /NTU VIRAL 12 /19.9 19.6 /
+
+& editing. Jose Ramiro Martinez-de Dios: Conceptualiza-tion, Writing - original draft, Writing - review & editing, Supervision, Funding acquisition. Stjepan Bogdan: Con-ceptualization, Supervision, Funding acquisition, Writing -review & editing. 
+
+## Acknowledgements 
+
+The work presented in this paper was funded by the European Union under the MARBLE project (GA No: 101136349) and through the National Recovery and Re-siliance Plan under the grant NPOO.C3.2.R3-I1.01.0274 (project OTIP - Point cloud for industrial plant digital-ization) and by MICIU/AEI/10.13039/501100011033 and ERDF, EU, through the Project "RAISE: Robots Aéreos In-teligentes en Cooperación Estrecha con Sistemas IoT para la Inspección Avanzada de Viaductos", under Grant PID2023-149683OB-I00. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Research 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 17 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+Executive Agency. Neither the European Union nor the granting authority can be held responsible for them. 
+
+## References 
+
+[1] D. Lee, M. Jung, W. Yang, A. Kim, LiDAR odometry survey: recent advancements and remaining challenges, Intelligent Service Robotics 17 (2024) 95–118. [2] C. Cadena, L. Carlone, H. Carrillo, Y. Latif, D. Scaramuzza, J. Neira, I. Reid, J. J. Leonard, Past, present, and future of simultaneous localization and mapping: Toward the robust-perception age, IEEE Transactions on Robotics 32 (2016) 1309–1332. [3] K. Koide, M. Yokozuka, S. Oishi, A. Banno, Adaptive Hyperparam-eter Tuning for Black-box LiDAR Odometry, in: IEEE/RSJ Int. Conf. on Intelligent Robots and Systems (IROS), pp. 7708–7714. [4] K. Koide, M. Yokozuka, S. Oishi, A. Banno, Automatic hyper-parameter tuning for black-box lidar odometry, in: IEEE Int. Conf. on Robotics and Automation (ICRA), pp. 5069–5074. [5] Y. Wu, T. Guadagnino, L. Wiesmann, L. Klingbeil, C. Stachniss, H. Kuhlmann, Lio-ekf: High frequency lidar-inertial odometry using extended kalman filters, in: IEEE Int. Conf. on Robotics and Automa-tion (ICRA), pp. 13741–13747. [6] X. Cheng, K. Geng, Z. Liu, T. Ma, Y. Sun, Onion-LO: Why Does LiDAR Odometry Fail Across Different LiDAR Types and Scenarios?, IEEE Robotics and Automation Letters 10 (2025) 10522– 10529. [7] T. Lee, Y. Jang, H. J. Kim, Object-based SLAM utilizing unambigu-ous pose parameters considering general symmetry types, IEEE Int. Conf. on Robotics and Automation (ICRA) 2023-May (2023) 2120– 2126. [8] K. Ebadi, M. Palieri, S. Wood, C. Padgett, A. akbar Agha-mohammadi, DARE-SLAM: Degeneracy-Aware and Resilient Loop Closing in Perceptually-Degraded Environments, Journal of Intel. and Robotic Systems: Theory and Applications 102 (2021) 1–25. [9] J. Paneque, J. Martínez-de Dios, A. Ollero, Multi-Sensor 6-DoF Localization For Aerial Robots In Complex GNSS-Denied Environ-ments, in: IEEE/RSJ Int. Conf. on Intelligent Robots and Systems (IROS), pp. 1978–1984. [10] K. Ebadi, L. Bernreiter, H. Biggie, G. Catt, Y. Chang, A. Chatterjee, C. E. Denniston, S.-P. Deschênes, K. Harlow, S. Khattak, L. Nogueira, M. Palieri, P. Petráček, M. Petrlík, A. Reinke, V. Krátký, S. Zhao, A.-a. Agha-mohammadi, K. Alexis, C. Heckman, K. Khosoussi, N. Kottege, B. Morrell, M. Hutter, F. Pauling, F. Pomerleau, M. Saska, S. Scherer, R. Siegwart, J. L. Williams, L. Carlone, Present and future of slam in extreme environments: The darpa subt challenge, IEEE Transactions on Robotics 40 (2024) 936–959. [11] M. C. Menezes, M. E. S. Muñoz, E. P. Freitas, S. Cheng, T. Walther, A. A. Neto, P. R. A. Ribeiro, A. C. M. Oliveira, Automatic tuning of ratslam’s parameters by irace and iterative closest point, in: IECON 2020 The 46th Annual Conference of the IEEE Industrial Electronics Society, pp. 562–568. [12] I. Vizzo, T. Guadagnino, B. Mersch, L. Wiesmann, J. Behley, C. Stachniss, KISS-ICP: In Defense of Point-to-Point ICP – Simple, Accurate, and Robust Registration If Done the Right Way, IEEE Robotics and Automation Letters 8 (2023) 1029–1036. [13] W. Hess, D. Kohler, H. Rapp, D. Andor, Real-time loop closure in 2d lidar slam, in: IEEE Int. Conf. on Robotics and Automation (ICRA), pp. 1271–1278. [14] W. Xu, Y. Cai, D. He, J. Lin, F. Zhang, FAST-LIO2: Fast Direct LiDAR-Inertial Odometry, IEEE Transactions on Robotics 38 (2022) 2053–2073. [15] M. Z. Zia, L. Nardi, A. Jack, E. Vespa, B. Bodin, P. H. Kelly, A. J. Davison, Comparative design space exploration of dense and semi-dense slam, IEEE Int. Conf. on Robotics and Automation (ICRA) 2016-June (2016) 1292–1299. [16] S. Hernández, J. Araujo, P. Jensfelt, I. Karagiannis, A. Muddukrishna, B. Donyanavard, Cross-layer configuration optimization for local-ization on resource-constrained devices, in: IEEE/RSJ Int. Conf. on Intelligent Robots and Systems (IROS), pp. 2282–2288. [17] B. Bodin, L. Nardi, M. Z. Zia, H. Wagstaff, G. S. Shenoy, M. Emani, J. Mawer, C. Kotselidis, A. Nisbet, M. Lujan, B. Franke, P. H. J. Kelly, M. O’Boyle, Integrating algorithmic parameters into benchmarking and design space exploration in 3d scene understanding, in: Int. Conf. on Parallel Architecture and Compilation Techniques, pp. 57–69. [18] R. A. Newcombe, S. Izadi, O. Hilliges, D. Molyneaux, D. Kim, A. J. Davison, P. Kohi, J. Shotton, S. Hodges, A. Fitzgibbon, Kinectfusion: Real-time dense surface mapping and tracking, in: IEEE Int. Sympo-sium on Mixed and Augmented Reality, pp. 127–136. [19] A. Handa, T. Whelan, J. McDonald, A. Davison, A benchmark for RGB-D visual odometry, 3D reconstruction and SLAM, in: IEEE Int. Conf. on Robotics and Automation (ICRA). [20] L. Nardi, B. Bodin, S. Saeedi, E. Vespa, A. J. Davison, P. H. J. Kelly, Algorithmic Performance-Accuracy Trade-off in 3D Vision Appli-cations Using HyperMapper, in: IEEE Int. Parallel and Distributed Processing Symposium Workshops, pp. 1434–1443. [21] T. Whelan, S. Leutenegger, R. Moreno, B. Glocker, A. Davison, Elasticfusion: Dense slam without a pose graph. [22] L. Breiman, Random forests, Mach. Learn. 45 (2001) 5–32. [23] S. Saeedi, L. Nardi, E. Johns, B. Bodin, P. H. J. Kelly, A. J. Davison, Application-oriented design space exploration for SLAM algorithms, in: IEEE Int. Conf. on Robotics and Automation (ICRA), pp. 5716– 5723. [24] H. Ishwaran, Variable importance in binary regression trees and forests, Electronic Journal of Statistics 1 (2007) 519 – 537. [25] R. Genuer, J.-M. Poggi, C. Tuleau-Malot, Variable selection using random forests, Pattern Recogn. Lett. 31 (2010) 2225–2236. [26] G. Louppe, L. Wehenkel, A. Sutera, P. Geurts, Understanding variable importances in forests of randomized trees, in: Int. Conf. on Neural Information Processing Systems, NIPS’13, Curran Associates Inc., Red Hook, NY, USA, 2013, p. 431–439. [27] M. Petrlík, P. Petráček, V. Krátký, T. Musil, Y. Stasinchuk, M. Vrba, T. Báča, D. Heřt, M. Pecka, T. Svoboda, M. Saska, Uavs beneath the surface: Cooperative autonomy for subterranean search and rescue in darpa subt, IEEE Transactions on Field Robotics 2 (2025) 643–689. [28] J. Pak, H. I. Son, Semantic slam-based autonomous tributary nav-igation system using 3d lidar point cloud for uav, in: Int. Conf. on Control, Automation and Systems (ICCAS), pp. 1380–1382. [29] T. N. Canh, A. Elibol, N. Y. Chong, X. HoangVan, Object-oriented semantic mapping for reliable uavs navigation, in: Int. Conf. on Control, Automation and Information Sciences, pp. 139–144. [30] R. Milijas, L. Markovic, A. Ivanovic, F. Petric, S. Bogdan, A com-parison of lidar-based slam systems for control of unmanned aerial vehicles, in: Int. Conf. on Unmanned Aircraft Systems (ICUAS), pp. 1148–1154. [31] A. Ivanovic, M. Orsag, Parabolic airdrop trajectory planning for multirotor unmanned aerial vehicles, IEEE Access 10 (2022) 36907– 36923. [32] L. Marković, M. Kovač, R. Milijas, M. Car, S. Bogdan, Error state ex-tended kalman filter multi-sensor fusion for unmanned aerial vehicle localization in gps and magnetometer denied indoor environments, in: Int. Conf. on Unmanned Aircraft Systems (ICUAS), pp. 184–190. [33] J. Orsulic, R. Milijas, A. Batinovic, L. Markovic, A. Ivanovic, S. Bog-dan, Flying with cartographer: Adapting the cartographer 3d graph slam stack for uav navigation, in: 2021 Aerial Robotic Systems Physically Interacting with the Environment, pp. 1–7. [34] N. Chen, F. Kong, W. Xu, Y. Cai, H. Li, D. He, Y. Qin, F. Zhang, A self-rotating, single-actuated uav with extended sensor field of view for autonomous navigation, Science Robotics 8 (2023) eade4538. [35] M. Lu, X. Fan, H. Chen, P. Lu, Fapp: Fast and adaptive perception and planning for uavs in dynamic cluttered environments, IEEE Transactions on Robotics 41 (2025) 871–886. [36] Z. Xu, H. Jin, X. Han, H. Shen, K. Shimada, Intent prediction-driven model predictive control for uav planning and navigation in dynamic environments, IEEE Robotics and Automation Letters 10 (2025) 4946–4953. 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 18 of 19 Parameter Sensitivity Analysis for Aerial LiDAR-Inertial Odometries 
+
+[37] B. Tang, Y. Ren, F. Zhu, R. He, S. Liang, F. Kong, F. Zhang, Bubble explorer: Fast uav exploration in large-scale and cluttered 3d-environments using occlusion-free spheres, in: IEEE/RSJ Int. Conf. on Intelligent Robots and Systems (IROS), pp. 1118–1125. [38] T.-M. Nguyen, S. Yuan, M. Cao, Y. Lyu, T. H. Nguyen, L. Xie, Ntu viral: A visual-inertial-ranging-lidar dataset, from an aerial vehicle viewpoint, The Int. Journal of Robotics Research 41 (2022) 270–280. [39] R. Milijas, J. Ramiro Martínez-de Dios, S. Bogdan, PASTEL: An Aerial Multi-LiDAR Dataset for Research in SLAM Tuning and Robustness, IEEE Access 13 (2025) 153010–153023. [40] F. Pedregosa, G. Varoquaux, A. Gramfort, V. Michel, B. Thirion, O. Grisel, M. Blondel, P. Prettenhofer, R. Weiss, V. Dubourg, J. Van-derplas, A. Passos, D. Cournapeau, M. Brucher, M. Perrot, E. Duch-esnay, Scikit-learn: Machine learning in Python, Journal of Machine Learning Research 12 (2011) 2825–2830. [41] T. Shan, B. Englot, D. Meyers, W. Wang, C. Ratti, D. Rus, Lio-sam: Tightly-coupled lidar inertial odometry via smoothing and mapping, in: IEEE/RSJ Int. Conf. on Intelligent Robots and Systems (IROS), pp. 5135–5142. 
+
+Robert Milijas received the B.S. and M.S. degrees in electrical engineering and information technol-ogy from the University of Zagreb, Croatia, in 2017 and 2019. From 2019 until 2025 he was a Research Assistant with the University of Zagreb Faculty of Electrical Engineering and Computing Labora-tory for Robotics and Intelligent Control Systems (LARICS) where he is currently pursuing the PhD degree in electrical engineering. Since 2025 he is a Junior Researcher at the CoE MARBLE - Centre of Excellence in Maritime Robotics and Technologies for Sustainable Blue Economy. He is the author of two journal articles and more than eight conference papers. His research interests include SLAM, un-manned aerial vehicles and LiDAR perception. 
+
+J. Ramiro Martínez-de Dios Full professor in robotics and Director of the Innovation Center for Unmanned Aerial Vehicles and Unmanned Air Mobility of the University of Seville. His research interests include robot perception, multi-robot co-operation, robot localization and mapping, and sensor fusion, where he has authored >170 pub-lications, has coordinated >25 R&D projects and 
+
+>20 technology transfer contracts. He has received 5 international awards, is member of the Editorial Board of >5 journals, Associated Editor of IEEE RA-L, and member of the Board of Directors of euRobotics. 
+
+Stjepan Bogdan is currently a Full Professor with the Laboratory for Robotics and Intelligent Control Systems (LARICS), Faculty of Electrical Engi-neering and Computing, University of Zagreb. He is the coauthor of four books and has published more than 200 conferences and journal articles. He was the Principal Investigator and a Researcher on 30 national and international scientific projects. His research interests include autonomous systems, aerial robotics, multi-agent systems, intelligent control systems, bio-inspired systems, and discrete event systems. He serves as an associate editor for several scientific journals and conferences and was a program and organizing committee member of major control and robotics conferences. 
+
+R. Milijas et al.: Preprint submitted to Elsevier Page 19 of 19

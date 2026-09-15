@@ -1,0 +1,280 @@
+Title: Chain-SLAM: Globally Consistent Backend for Multi-Session LiDAR SLAM via Chained Loop Closure
+
+URL Source: https://arxiv.org/pdf/2609.12221v1
+
+Published Time: Mon, 14 Sep 2026 00:17:02 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Chain-SLAM: Globally Consistent Backend for Multi-Session LiDAR SLAM via Chained Loop Closure 
+
+Zhiheng Li 1, Xinhao Liu 1, Juexiao Zhang 1, Yongqing Liang 1†, Chen Feng 1†
+
+Abstract — Maintaining consistency over long spatial and temporal horizons remains a fundamental challenge in large-scale LiDAR SLAM, particularly when integrating maps col-lected across multiple sessions. We present Chain-SLAM, a LiDAR SLAM backend enabling online multi-session map alignment and reuse with global consistency at large scale. We implement a chained loop closure mechanism that effi-ciently propagates geometric constraints across inter-session keyframes through an adjacency graph, enabling robust long-horizon consistency triggered by reliable short-horizon loop closures. The system initializes inter-session alignment with GNSS-proximity place recognition, then performs on-the-fly loop closure detections and joint optimization of loaded maps and newly acquired trajectories within a unified factor graph, maintaining both inter- and intra-session geometric consistency without dynamic object removal, and cross-platform robustness with minimal hyperparameter tuning. Experimental results show improved trajectory accuracy and robust multi-session integration on large-scale datasets. We release our source code to support reproducible research in large-scale multi-session Li-DAR SLAM. Project site: https://ai4ce.github.io/Chain-SLAM/ 
+
+I. INTRODUCTION Large-scale SLAM is fundamental for robotic systems supporting various applications such as autonomous driving, infrastructure inspection, and field robotics. While recent advances achieve high-fidelity mapping in small environ-ments, robust long-term solutions for large-scale settings remain limited. Large environments are often mapped across multiple sessions, and long spatio-temporal horizons intro-duce significant variations during revisits due to dynamic objects, lighting, or weather changes. A map built in ear-lier sessions can therefore provide valuable priors for new sessions, improving robustness against such environmental changes. However, to the best of our knowledge, no open-source SLAM system currently supports real-time multi-session mapping or on-the-fly reuse of previously built maps. Existing SLAM systems achieve strong local accuracy through tightly coupled LiDAR– or visual–inertial odometry with loop closures and factor graphs for global optimization, but lack support for multi-session deployment or map reuse. Conversely, existing map merging methods treat merging as a post-processing step on individually built maps. As a result, they fail to exploit prior session information during operation and struggle to scale to large scenes with many revisits, where global optimization must simultaneously satisfy a large number of constraints. Furthermore, the performance of existing SLAM and map merging systems varies across 
+
+> 1New York University.
+> †Equal advising.
+
+Fig. 1: Direct and Chained loop closures between current session i, loaded session j and loaded session k. Each successful closure stemming from current session triggers the establishment of multiple chained closures between current and loaded sessions, enhancing multi-session consistency. hardware platforms, often relying on high-fidelity sensors, high-rate measurements, or extensive hyperparameter tuning. These limitations motivate an incremental approach to map merging and global optimization for robust large-scale multi-session SLAM. In particular, a real-time map-reuse backend is needed to manage numerous inter- and intra-session loop closures while balancing global alignment and local odom-etry consistency. Since long spatio-temporal horizons also introduce significant environmental changes that challenge place recognition, robust and efficient long-term correspon-dence discovery is equally critical. Finally, cross-platform robustness is essential to ensure generalization across diverse robotic platforms and deployment conditions. To address these challenges, we present Chain-SLAM ,a scalable real-time multi-session LiDAR–inertial SLAM system that jointly optimizes trajectories across long spatio-temporal horizons. Built on a tightly coupled LiDAR–inertial odometry frontend and a global factor graph backend, the system supports (1) loading existing maps, (2) on-the-fly GNSS-based map merging and alignment, and (3) incre-mental map reuse and global optimization. We further intro-duce chained loop closure (Fig. 1), a simple yet effective approach to (4) enhance long-term inter-session correspon-dence discovery by propagating closure constraints through a connectivity graph (Fig. 2). (5) Cross-platform robustness is achieved with minimal hyperparameter tuning through scan-to-submap registration for loop closing and submap-to-submap registration for map merging. We have released the source code on our project site. We evaluate the system on two large-scale multi-session arXiv:2609.12221v1 [cs.RO] 10 Sep 2026 datasets, MARS [1] and NCLT [2], covering over 20 hours of operations across diverse sensing and motion conditions. Experimental results show improved trajectory accuracy, geometric consistency, and viewpoint alignment over existing methods, with minimal cross-platform hyperparameter tuning and real-time performance. II. RELATED WORKS 
+
+A. Multi-Session SLAM and Map Merging 
+
+Multi-session (or multi-map) SLAM aims to align trajecto-ries collected at different times into a consistent global frame. In LiDAR-based systems, this typically involves inter-session place recognition, geometric registration, and pose graph optimization for global consistency. For example, LT-Mapper detects inter-session correspondences using Scan Context and aligns sessions via ICP and pose graph optimization [3], while LAMM uses global descriptors and geometric registra-tion to merge independently built maps [4]. However, these approaches operate primarily as post-processing on finished individual sessions, limiting immediate reuse of prior maps and making global optimization harder to converge at large scale due to increasing number of inter-session constraints. Related multi-agent SLAM systems maintain multi-map consistency through inter-agent place recognition, relative pose estimation, and joint pose graph optimization, en-abling cross-agent relocalization and map alignment [5], [6]. However, they typically assume limited temporal gaps with minor environmental changes. In long-term multi-session set-tings, appearance variation, structural changes, and dynamic objects degrade place recognition and registration. Some methods mitigate this via dynamic object removal or motion segmentation [7], [8], [9], but these additions increase system complexity and limit real-time performance. In the visual-inertial domain, multi-map representations developed for handling tracking failures offer insights for long-horizon consistency. ORB-ATLAS maintains multiple submaps and merges them upon detecting cross-map corre-spondences, enabling online map reuse and joint optimiza-tion [10]. ORB-SLAM3 extends this framework by creating new submap when tracking is lost and merging it back after relocalization, followed by global optimization over the unified graph [11]. Inspired by these approaches, our system enables online multi-session map integration by treating a loaded prior map as an existing base map and representing the incom-ing session as a new submap. Upon detecting inter-session correspondences, the new session is relocalized and aligned to the base map, after which both maps are merged into a unified pose graph and jointly optimized, achieving globally consistent multi-session SLAM. Our chained loop closure (Sec. III-C) establishes additional inter-session constraints by propagating correspondences through connected keyframes, reducing correspondence search cost and avoiding false negatives from place recognition failures. This mechanism improves robustness to environmental changes while elim-inating the need for explicit dynamic object removal and maintaining real-time performance. 
+
+B. Sequential and Multi-Constraint Data Association 
+
+A second line of work improves robustness through 
+
+sequence-level or multi-constraint association, inspiring our chained loop closure design for enhanced global consistency. In visual place recognition (VPR), sequential methods such as JIST aggregate evidence over time rather than relying on a single query frame, improving robustness to perceptual aliasing and appearance changes [12]. Recent attention-based methods further model spatio-temporal persistence for more discriminative place representations under challenging view-point and environmental changes [13], [14]. Beyond temporal aggregation, panoramic inputs provide richer context by exploiting panoramic structure and self-supervision to refine pseudo-labels and improve viewpoint robustness [15]. In SLAM back-ends, robustness to noisy or incorrect asso-ciations can be improved by enforcing multi-edge geometric consistency rather than trusting individual correspondences. Graph-theoretic and consistency-maximization methods con-struct compatibility graphs and select consistent subsets of loop closures or measurements, using global compatibility to identify inliers and suppress outliers. These approaches leverage dense subgraph selection or maximum clique formu-lations over geometrically invariant measurements to prune inconsistent correspondences and enable robust alignment under extreme outlier rates [16], [17]. While prior consistency-maximization methods focus on rejecting incorrect associations among many candidates, these methods show robustness can also be improved by aggregating temporally or spatially related constraints. In-spired by such perspectives, we expand geometric validation from reliable seed correspondences in SLAM backend: each inter-session loop closure triggers discovery of connected keyframes through a unified adjacency graph, enabling ad-ditional inter-session constraints without exhaustive candi-date search. These constraints provide bidirectional cross-validation between the new session and the loaded map: existing structures stabilize the new session against local es-timation errors, while new observations introduce corrections that reduce drift in the existing map. As a result, chained loop closure improves global consistency and reduces trajectory error with minimal overhead. III. M ETHOD 
+
+A. System Overview 
+
+We develop a LiDAR–inertial SLAM system that supports multi-session and multi-map operation within a unified factor graph framework. This system follows a frontend–backend architecture. The frontend performs tightly coupled LiDAR– inertial odometry using a formulation derived from FAST-LIO2 [18], which estimates motion through direct scan-to-map registration against an incrementally maintained local map by a K-D Tree. The backend extends the Fast LIO SAM [19] framework by incorporating chained loop closure and map merging within a single LIO SAM-style factor graph optimization framework to enable multi-session operation and improve global geometric consistency [20]. In our Fig. 2: Chained loop closure detection via a cross-session adjacency graph. Nodes are keyframes, each row corresponds to 
+
+session 0 , session 1 , and current session . Edges denote loop closures: finalized , traced existing connections , and accepted chained closures . Step 1: A direct inter-session closure is detected. Step 2: BFS retrieves connected keyframes as chained candidates. Step 3: A chained closure between i and j is accepted if scan-to-submap ICP error eij ≤ τ . Temporal adjacency is filtered by regular loop closure criteria (Sec. III-B). Step 4: Accepted closures are updated to the graph. system, previously constructed maps can be loaded and appended to the factor graph, allowing all sessions to be jointly optimized within a unified probabilistic framework. This approach ensures consistent global alignment across sessions and enables scalable long-term mapping. We formulate SLAM as a factor graph defined over N
+
+keyframe poses, X = {x0, x1, . . . , xN }, xi ∈ SE (3) .Our graph contains Unary Prior Factors and Binary Between Factors. Unary Prior factors Ti anchor the starting pose of each trajectory segment: ϕp(xi) = log  T−1 
+
+> i
+
+xi
+
+ 2 
+
+> Σp
+
+.
+
+Binary Between factors Tij encode relative pose constraints between keyframes. These include both odometry factors and loop closure factors, and share the same mathematical form: 
+
+ϕb(xi, xj ) = log  T−1 
+
+> ij
+
+x−1 
+
+> i
+
+xj
+
+ 2
+
+> Σij
+
+.
+
+The Frontend LiDAR–inertial odometry estimates rela-tive motion as odometry factors to connect consecutive keyframes. The loop closure factors connect non-consecutive keyframes using geometric registration. The optimal trajec-tory is obtained by minimizing the objective function: 
+
+X∗ = arg min 
+
+> X
+
+X ϕp + X ϕb. (1) Incremental optimization is performed using iSAM2 [21], which efficiently updates only affected portions of the graph when new factors are added. Pose corrections are propagated throughout the graph, ensuring global geometric consistency. 
+
+B. Loop Closure Detection and Registration 
+
+Loop closure candidates are identified through spatial proximity search within a predefined radius over keyframe positions indexed in a K-D Tree, with the additional con-straint that candidate frames are separated by a minimum temporal interval. Given a candidate keyframe pair (i, j ),geometric registration is performed using Iterative Closest Point (ICP) between the single scan of the current keyframe 
+
+i and the submap of the matched past keyframe j. ICP estimates the rigid transformation Tij by minimizing the mean squared alignment error 
+
+Tij = arg min  
+
+> T
+
+M SE (T), (2) 
+
+M SE (T) = 1
+
+|C I 
+
+> ij
+
+|
+
+X
+
+> (p,q)∈C I
+> ij
+
+∥p − Tq ∥2 , (3) where CI 
+
+> ij
+
+denotes the set of ICP inlier correspondences for the keyframe pair (i, j ) and Pt denotes the set of target points in the submap. Let eij = M SE (Tij ) denote the minimized error. A loop closure is accepted only if ICP converges and 
+
+eij ≤ τ , where τ is a predefined error threshold. Accepted loop closures introduce a factor with covariance derived from the ICP error, Σij = λe ij I6, where λ is a scaling factor. This assigns higher confidence to geometrically consistent alignments. Loop closure factors reduce drift and enforce geometric consistency across revisited regions. 
+
+C. Chained Loop Closure 
+
+While direct loop closures correct drift between individu-ally matched keyframes, they lack explicit global optimiza-tion of the established loops. As a result, residual inconsis-tencies may remain across large-scale multi-session maps. In the case of multi-session deployment, the connectivity structure of previously established loop closures can provide rich information for correspondence identification. To this end, we introduce Chained Loop Closure , a graph-based mechanism that propagates geometric constraints beyond a single direct correspondence to enhance global consistency while maintaining local accuracy. All accepted inter- and intra-session loop closures are maintained in a unified adjacency graph (Fig. 2), where each loop closure introduces an edge between two keyframe nodes. A new session without a loaded map initializes the graph using only its intra-session loop closures. When subsequent sessions are loaded, inter-session loop closures detected through the procedure in Sec. III-B introduce edges between current-session keyframes and loaded-map keyframes, thereby joining previously separate connections into inter-session connected components. As more sessions are introduced, inter-session edges incrementally expand the connected components, forming clusters of geometrically proximate keyframes spanning multiple sessions. This evolving graph structure enables efficient cross-session correspondence retrieval through traversal of con-nected components rather than repeated global place recog-nition or spatial search. At the same time, chained loop closure ensures that each direct inter-session match estab-lishes additional constraints within the corresponding con-nected component, further establishing inter-session edges and strengthening inter-session connectivity. Consequently, each connected component becomes an anchoring unit in the global map, consisting of clusters of intra- and inter-session loop-closed keyframes. Importantly, chained loop closures are applied only between current session and loaded-map keyframes, not within current session. This design enhances inter-session consistency while avoiding redun-dant constraints on locally consistent intra-session odometry, maintaining a balance between global and local optimization. A pseudocode description of the complete chained loop closure process is shown in Algorithm 1. Specifically, when a direct loop closure is established between the current keyframe i and loaded-map keyframe j, we perform abreadth-first search (BFS) on the adjacency graph to iden-tify all loaded keyframes belonging to the same connected component as j, producing the connected set 
+
+N (j) = { k | k is loop-closure connected to j }. (4) After identifying all connected keyframes through graph traversal k ∈ N (j) (4), we perform ICP registration between the current keyframe point cloud scan and the submap of k.If ICP converges and satisfies the error criterion in Sec. III-B, a chained loop closure factor is added between keyframes 
+
+i and k, with covariance derived from the ICP error score. 
+
+D. Map Representation and Multi-Session Integration 
+
+Each map is represented as a set of keyframes identified by persistent indices, where each keyframe stores its raw and optimized pose and associated LiDAR scan. Scene boundaries are represented as keyframe index ranges, while loop closures are recorded as keyframe index pairs associated with a constraint covariance. When a map is saved, keyframe poses, LiDAR scans, loop closure pairs with their covari-ances, and scene index ranges are serialized in this indexed representation. Upon loading, keyframes are restored and appended to the global keyframe container while preserving their indices and session membership. The corresponding prior, odometry, and loop closure factors are reconstructed in the factor graph with their original covariances. This restores the loaded map as a connected component in the graph. New 
+
+Algorithm 1 Chained Loop Closure 
+
+Require: Current keyframe i, matched keyframe j
+
+Require: Adjacency graph G, loaded keyframe count NL 
+
+> 1:
+
+if j ≥ NL then return j is not from loaded map  
+
+> 2:
+
+N (j) ← { j} ▷ Step 1: BFS  
+
+> 3:
+
+for all keyframes k reachable from j in G do  
+
+> 4:
+
+if k < N L then ▷ Add loaded keyframes only  
+
+> 5:
+
+Add k to N (j) 
+
+> 6:
+
+for all k ∈ N (j) do ▷ Step 2: ICP validation  
+
+> 7:
+
+if k = j then  
+
+> 8:
+
+continue ▷ Avoid self-matching frame j 
+
+> 9:
+
+Construct submap of keyframe k 
+
+> 10:
+
+Compute (Tik , f ik ) via ICP  
+
+> 11:
+
+if fik ≤ τ then  
+
+> 12:
+
+Σik ← λf ik I6 ▷ Factor covariance from ICP  
+
+> 13:
+
+Add loop closure factor between i and k
+
+keyframes from the current session are then added incre-mentally with new indices and connected through odometry factors, forming a separate component initially. Inter-session alignment and loop closures subsequently introduce factors that connect these components, enabling unified optimization and consistent multi-session integration. Since GNSS is available in most large-scale datasets, we perform place recognition via GNSS proximity search as a stable approach for establishing inter-session corre-spondence, where keyframe GNSS positions are indexed in a K-D tree for efficient retrieval. For each candidate pair, feature-based registration using Fast Point Feature His-tograms (FPFH) and RANSAC estimates an initial long-horizon transformation TR 
+
+> ij
+
+. The RANSAC fitness score is defined as the ratio of inlier correspondences to the number of target points f R 
+
+> ij
+
+= |C inlier ||P t| , where Cinlier denotes the set of inlier correspondences and Pt denotes the target submap points. Higher fitness indicates better alignment, and the transformation is accepted only if f R 
+
+> ij
+
+≥ τR, where τR is a predefined threshold. As shown in Fig. 3, the first accepted transformation is ap-plied to align current trajectory with loaded map. Following alignment, the factor graph is rebuilt to ensure consistency between the transformed trajectory and optimization frame-work. In particular, the prior factor anchoring the current session is replaced with one consistent with the aligned pose, and the graph is reinitialized using transformed poses and updated constraints. Additional loop closures are then detected along the aligned trajectory using proximity search and ICP registration, following the procedures described in Sections III-B and III-C. These alignment and loop closure factors merge the current session and the loaded map into a unified factor graph, enabling subsequent incremental joint optimization and on-the-fly multi-session map reuse. 
+
+E. Hyperparameter Considerations 
+
+While our system contains several tunable hyperparam-eters, extensive tuning is not required for cross-platform (a) Before map merging, current session initializes trajec-tory at origin of its own coordinate frame, inconsistent with the map frame established by session 0 and session 1 .     
+
+> (b) After map merging, RANSAC-estimated transformation aligns current session trajectory to the loaded map frame, enabling re-detection of loop closures with session 0 and
+> session 1 along the transformed trajectory.
+
+Fig. 3: Multi-session map alignment robustness. Despite the substantial platform differences be-tween the MARS and NCLT datasets (Tab. I), both use identical hyperparameters except for (1) sensor-specific pa-rameters, including LiDAR channel number, IMU noise characteristics, and LiDAR–IMU extrinsics, and (2) loop clo-sure detection frequency and keyframe generation threshold, which are adjusted according to platform speed. The loop closure ICP error threshold τ and the FPFH and RANSAC settings for map merging are identical for both datasets. Registration robustness primarily comes from submap-based alignment. Submaps are constructed by aggregat-ing keyframes within an index radius n around a cen-ter keyframe, resulting in up to 2n + 1 keyframes per submap. When fewer neighboring frames are available, smaller submaps are used and unreliable matches are rejected by the ICP error threshold. Loop closure uses scan-to-submap ICP, aligning the keyframe scan to the submap of a matched historical keyframe (Sec. III-B). For the more noise-sensitive FPFH+RANSAC registration in map merging, we perform submap-to-submap registration: the current submap aggregates up to n+1 keyframes (no future frames available) while the historical submap aggregates up to 2n+1 . All point clouds are voxel-downsampled prior to registration. We used the same n and voxel sizes for both datasets. The loop closure detection frequency is adjusted according to platform speed to maintain spatial separation between loop closure keyframes and prevent excessive growth of connected components in the adjacency graph. Although temporally TABLE I: Dataset statistics and sensor configurations. Five sessions per dataset. Duration is total time across sessions.              
+
+> MARS NCLT Duration 12 h 8 h
+> Area 1500 ×3000 m400 ×800 m
+> LiDAR VLS-128 (10 Hz) HDL-32E (10 Hz)
+> IMU 10 Hz 100 Hz
+> GNSS 10 Hz 1 Hz
+
+adjacent keyframes are already excluded by a time gap requirement within a single session (Sec. III-B), multi-session integration can create indirect connections between consecutive keyframes through chained closures with other sessions, producing locally dense closure constraints that may dominate odometry factors. The root cause of this issue is that to ensure chained can-didate retrieval across arbitrarily large number of sessions, the BFS imposes no explicit depth limit (Eq. 4). As a result, its effective propagation range is only implicitly governed by the loop closure detection radius. If closures are detected too frequently relative to this radius, the spatial coverage of different closures may overlap, merging multiple components in the adjacency graph. In the extreme case, the entire multi-session map can become a single connected component. To avoid this, the loop closure detection frequency flc should be chosen with platform speed v and detection radius rlc such that the robot travels beyond the radius between detections  
+
+> vflc
+
+> r lc . This maintains spatially separated components and keeps the effective BFS search range comparable to the direct closure detection radius. IV. EXPERIMENTS In this section, we evaluate the accuracy, consistency, and efficiency of the proposed system on two large-scale multi-session datasets covering high-speed autonomous driving and moderate-speed outdoor robot scenarios. We compare our method against the baseline Fast-LIO2 [18] and a recent map merging approach, LAMM [4], which also assumes Fast-LIO2 as its SLAM frontend. To isolate the impact of the proposed chained loop closure, we conduct ablation studies by evaluating our system with and without chained loop closure while keeping all other hyperparameters identical. We assess performance from multiple perspectives:  
+
+> •
+
+Trajectory accuracy is evaluated using Absolute Pose Error (APE) over full trajectories.  
+
+> •
+
+Geometric consistency is evaluated via inter-session accumulated point cloud registration.  
+
+> •
+
+Viewpoint alignment is assessed through regional 3D reconstruction quality.  
+
+> •
+
+Computational efficiency is evaluated in terms of runtime and memory usage. All experiments are conducted on the same platform with an Intel i9-12900K CPU and 64 GB DDR5 5600 MHz RAM. 
+
+A. Datasets 
+
+We evaluate the system on two large-scale multi-session LiDAR datasets: MARS [1] and NCLT [2]. Both contain repeated traversals over extended durations, enabling evalu-ation of multi-session alignment and long-horizon geometric Fig. 4: Trajectory results on MARS (top) and NCLT (bottom): Fast-LIO2 , LAMM , Ours Unchained , Ours Chained ,and Ground Truth . Fast-LIO2: no loop closure, misalignments at revisits, especially in large high-speed scenes. LAMM: 
+
+global optimization over many loop closures introduces distortions and misalignments. Ours unchained: generally well aligned, with slight distortion along long roads with limited revisits. Ours chained: best alignment with minimal distortion. TABLE II: Trajectory absolute pose error (APE) evaluations on MARS and NCLT datasets with first and second places.                            
+
+> Dataset Method T RMSE (m) R RMSE (deg)
+> MARS (2D) Fast-LIO2 53.857 3.476 LAMM 23.353 4.177 Ours unchained 4.336 2.186 Ours chained 3.923 2.161
+> MARS (3D) Fast-LIO2 52.616 4.708 LAMM 43.688 10.285 Ours unchained 13.511 3.729 Ours chained 9.640 3.448
+> NCLT (3D) Fast-LIO2 2.279 2.618
+> LAMM 33.547 11.549 Ours unchained 1.473 4.876 Ours chained 1.197 4.647
+
+consistency. Key dataset statistics and sensor configurations are summarized in Table I. MARS consists of urban au-tonomous driving data collected with a high-speed vehicle platform and a dense LiDAR sensor, providing frequent revisits across large spatial extents from varied directions. In contrast, NCLT contains outdoor data collected from a mobile robot platform with sparser LiDAR observations and more agile motion. These differences in sensing density and motion profiles provide complementary environments for evaluating large-scale multi-session SLAM performance. 
+
+B. Trajectory Accuracy: Absolute Pose Error 
+
+We evaluate trajectory accuracy using Absolute Pose Error (APE) in translation and rotation with the evo toolkit [22], reporting RMSE for each. Experiments are conducted on the MARS and NCLT datasets, with trajectory visualizations shown in Fig. 4. For MARS, minor drift is observed in the vertical component of the ground truth pose, while planar components remain consistent. Therefore, both 2D and 3D APE are reported. The 2D evaluation considers planar trans-lation (XY) and yaw, while the 3D evaluation measures full 6-DoF pose error in translation (XYZ) and rotation (roll, pitch, yaw). For NCLT, only 3D APE is reported. Since Fast-LIO2 does not produce a unified coordinate frame across sessions, we evaluate each scene separately and report the average RMSE, while LAMM and our method are evaluated on the combined multi-session trajectory. As shown in Table II, our method significantly outperforms the baselines on MARS, achieving 5–10 × lower translation errors and 1.5–3 × lower rotation errors. On NCLT, it also achieves lower translation RMSE, showing robustness across different sensing densities and motion patterns. Chained loop closure further reduces both translation and rotation RMSE over the ablation across both datasets, demonstrating its effectiveness in improving trajectory alignment and global geometric consistency. Notably, Fast-LIO2 reports the lowest rotation RMSE on NCLT. This is expected because Fast-LIO2 is evaluated per session and averaged, effectively measuring single-session accuracy. As an odometry-only system coupling IMU prop-agation with local scan-to-map matching, but without global optimization or loop closure, it prioritizes local accuracy over global alignment. Consequently, its rotation accuracy benefits from datasets with strong local motion observability. In par-ticular, NCLT provides a high-rate 100 Hz IMU and slower motion, whereas on the faster MARS platform with a 10 Hz IMU, Fast-LIO2 exhibits 1.5× higher rotation error than our method. This indicates that our approach maintains robust performance across platforms with reduced dependence on sensor rate and raw motion measurement fidelity. 
+
+C. Geometric Consistency: Point Cloud Registration 
+
+To evaluate inter-session geometric consistency, we report accumulated point cloud registration RMSE on dense point clouds from the MARS dataset. We focus on four streets with frequent revisits from different directions, with traversal counts shown in Fig. 5. Each street is defined by manually selecting its endpoints in GPS coordinates and fitting a centerline; keyframes are assigned to streets based on their Fig. 5: Streets with extensive revisits in varied directions selected for point cloud registration and 3D reconstruction. 
+
+Fig. 6: Point cloud registration on Street 4 between method output and ground truth . Close overlap indicates strong ge-ometric consistency. Chained loop closure minimally affects local geometry while improving global trajectory accuracy. Euclidean distance to this line. For each method, dense point clouds are constructed by accumulating LiDAR scans of the associated keyframes using estimated poses. These are then registered to reference point clouds generated from ground truth poses (z-aligned). The resulting registration RMSE reflects the inter- and intra-session geometric consistency of the estimated trajectory and reconstructed point cloud. Registration is performed using RANSAC followed by ICP refinement, with identical parameters and fixed random seeds across all methods. We report both RANSAC and ICP-refined RMSE, where lower values indicate better alignment with ground-truth geometry and inter-session consistency. Since Fast-LIO2 lacks a unified coordinate frame across sessions, its results are computed per scene and averaged, reflecting only intra-session consistency. As shown in Ta-ble III, our method achieves lower registration errors than the baselines, reducing RANSAC RMSE by 20% over Fast-LIO2 and 40% over LAMM. The chained variant further obtains the lowest ICP-refined errors on most streets, showing that chained loop closures preserve local geometric consistency (Fig. 6) while improving global alignment (Tab. II). 
+
+D. Viewpoint Alignment: 3D Reconstruction 
+
+To evaluate global geometric consistency, we assess recon-struction quality using test-set PSNR and loss from 3D Gaus-sian Splatting (3DGS) [23] on four streets from the MARS TABLE III: Accumulated Point Cloud Registration RMSE comparison (meters). Values are RANSAC (ICP).                         
+
+> Method Street 1 Street 2 Street 3 Street 4
+> Fast-LIO2 5.108 (2.551) 5.071 (2.425) 4.989 (2.513) 5.028 (2.473) LAMM 6.650 (2.624) 6.652 (2.622) 6.510 (2.634) 6.739 (2.607) Ours Unchained 3.764 (2.306 )4.686 (2.452) 3.701 (2.416) 4.211 (2.272) Ours Chained 4.091 (2.400) 3.860 (2.120 )3.915 ( 2.190 )3.793 (2.059 )
+
+TABLE IV: Average 3DGS test PSNR and Loss comparison.             
+
+> Method PSNR ↑Loss ↓
+> Fast-LIO2 11.184 0.232 LAMM 12.444 0.198 Ours Unchained 13.222 0.178 Ours Chained 13.317 0.174
+
+dataset (Fig. 5). We focus on test-set metrics rather than training PSNR, as misaligned trajectories can still achieve high training PSNR by overfitting individual frames without maintaining consistent viewpoints across neighboring ob-servations. In contrast, accurate pose estimation improves alignment between training and test views, enabling coher-ent reconstruction of unseen regions. Therefore, higher test PSNR and lower loss indicate improved viewpoint alignment and trajectory consistency across repeated traversals. As shown in Table IV, our method consistently achieves the best reconstruction quality among the compared ap-proaches, with the chained variant performing strongest over-all. While LAMM improves alignment over the odometry-only baseline through global optimization, residual incon-sistencies may persist due to local registration errors and trajectory distortion, both of which reduce viewpoint over-lap. In contrast, our approach improves cross-session pose alignment and enforces stronger global consistency, enabling more coherent reconstruction across revisited regions. These results demonstrate that improved trajectory consistency di-rectly translates to better viewpoint alignment and recon-struction quality in large-scale multi-session environments. 
+
+E. Computational Efficiency 
+
+We evaluate computational performance using runtime and peak RAM usage. Runtime is reported as the average processing time per raw LiDAR frame, split into frontend and backend. For LAMM, the frontend time matches Fast-LIO2 since it directly uses Fast-LIO2 outputs. For our method, the frontend includes processing through the EKF update, and the backend includes the remaining per-frame operations. Frames per second (FPS) is computed as 1000 /(tfront +tback ),where times are in milliseconds. Memory is reported as peak RAM over the full run. All values are measured on the final session, where maps from the previous four sessions are loaded and jointly optimized with the current session. As shown in Tab. V, our system keeps frontend processing time comparable to Fast-LIO2, while keyframe management and global optimization run asynchronously in the back-end without affecting odometry propagation. Our memory usage is also slightly lower than LAMM while achieving better alignment. The system runs in real time, reaching approximately 2 Hz on the 12-hour MARS dataset with 128-channel LiDAR and 13 Hz on the 8-hour NCLT dataset TABLE V: Runtime and memory usage comparison.                                      
+
+> Dataset Method Frontend (ms) Backend (ms) FPS (Hz) RAM (MB)
+> MARS Fast-LIO2 22.28 –44.88 1065.56 LAMM 22.28 21.25 22.97 16821.90 Ours unchained 29.88 402.33 2.31 12571.12 Ours chained 29.39 447.02 2.10 13668.46 NCLT Fast-LIO2 7.34 –136.17 928.77 LAMM 7.34 11.31 53.61 5917.86 Ours unchained 7.79 67.50 13.28 5682.82 Ours chained 7.82 70.13 12.83 5816.96
+
+with 32-channel LiDAR. These results show that our method improves global consistency while preserving real-time per-formance in large-scale, long-duration deployments. V. CONCLUSIONS We presented Chain-SLAM , a simple and effective LiDAR–inertial SLAM backend for real-time multi-session integration. Its chained loop closure propagates geometric constraints across connected keyframes, improving global consistency and long-term robustness without explicit dy-namic object removal. Experiments on large-scale driving and mobile robot datasets show improved trajectory accuracy, geometric consistency, and viewpoint alignment over exist-ing methods, with minimal hyperparameter tuning across platforms and real-time performance across extended multi-session deployments. These results demonstrate the effective-ness of the proposed system for robust long-term mapping and localization in large-scale multi-session environments. 
+
+Limitations. While our method achieves state-of-the-art multi-session trajectory accuracy and global consistency, map merging currently relies on GNSS to propose cross-session correspondences. Though GNSS is commonly avail-able in large-scale datasets, this cue could be replaced by LiDAR-based place recognition methods such as Scan Context [24] or STD [25] for GNSS-free merging, improving generalizability and supporting deployment in GNSS-denied environments. ACKNOWLEDGEMENT 
+
+The work was supported in part by NSF Grants 2238968 and 2514030, and in part by NYU IT High Performance Computing resources. The authors would also like to thank the anonymous reviewers for their valuable suggestions. REFERENCES [1] Y. Li, Z. Li, N. Chen, M. Gong, Z. Lyu, Z. Wang, P. Jiang, and C. Feng, “Multiagent multitraversal multimodal self-driving: Open mars dataset,” in Proceedings of the IEEE/CVF Conference on Com-puter Vision and Pattern Recognition , 2024, pp. 22 041–22 051. [2] N. Carlevaris-Bianco, A. K. Ushani, and R. M. Eustice, “University of michigan north campus long-term vision and lidar dataset,” The International Journal of Robotics Research , vol. 35, no. 9, pp. 1023– 1035, 2016. [3] G. Kim and A. Kim, “Lt-mapper: A modular framework for lidar-based lifelong mapping,” in 2022 International Conference on Robotics and Automation (ICRA) . IEEE, 2022, pp. 7995–8002. [4] H. Wei, R. Li, Y. Cai, C. Yuan, Y. Ren, Z. Zou, H. Wu, C. Zheng, S. Zhou, K. Xue, et al. , “Large-scale multi-session point-cloud map merging,” IEEE Robotics and Automation Letters , vol. 10, no. 1, pp. 88–95, 2024. [5] Y. Tian, Y. Chang, F. H. Arias, C. Nieto-Granda, J. P. How, and L. Carlone, “Kimera-multi: Robust, distributed, dense metric-semantic slam for multi-robot systems,” IEEE transactions on robotics , vol. 38, no. 4, 2022. [6] Y. Chang, K. Ebadi, C. E. Denniston, M. F. Ginting, A. Rosinol, A. Reinke, M. Palieri, J. Shi, A. Chatterjee, B. Morrell, et al. , “Lamp 2.0: A robust multi-robot slam system for operation in challenging large-scale underground environments,” IEEE Robotics and Automa-tion Letters , vol. 7, no. 4, pp. 9175–9182, 2022. [7] H. Lim, S. Hwang, and H. Myung, “Erasor: Egocentric ratio of pseudo occupancy-based dynamic object removal for static 3d point cloud map building,” IEEE Robotics and Automation Letters , vol. 6, no. 2, pp. 2272–2279, 2021. [8] G. Kim and A. Kim, “Remove, then revert: Static point cloud map construction using multiresolution range images,” in 2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) .IEEE, 2020, pp. 10 758–10 765. [9] B. Mersch, X. Chen, I. Vizzo, L. Nunes, J. Behley, and C. Stachniss, “Receding moving object segmentation in 3d lidar data using sparse 4d convolutions,” IEEE Robotics and Automation Letters , vol. 7, no. 3, pp. 7503–7510, 2022. [10] R. Elvira, J. D. Tard´ os, and J. M. Montiel, “Orbslam-atlas: a robust and accurate multi-map system,” in 2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) . IEEE, 2019, pp. 6253–6259. [11] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. Montiel, and J. D. Tard´ os, “Orb-slam3: An accurate open-source library for visual, visual–inertial, and multimap slam,” IEEE transactions on robotics ,vol. 37, no. 6, pp. 1874–1890, 2021. [12] G. Berton, G. Trivigno, B. Caputo, and C. Masone, “Jist: Joint image and sequence training for sequential visual place recognition,” IEEE Robotics and Automation Letters , vol. 9, no. 2, pp. 1310–1317, 2023. [13] Y. Kiu, C. Chen, G. Jin, C. Feng, et al. , “Flexible and efficient spatio-temporal transformer for sequential visual place recognition,” arXiv preprint arXiv:2510.04282 , 2025. [14] R. Mereu, G. Trivigno, G. Berton, C. Masone, and B. Caputo, “Learn-ing sequential descriptors for sequence-based visual place recogni-tion,” IEEE Robotics and Automation Letters , vol. 7, no. 4, pp. 10 383– 10 390, 2022. [15] C. Chen, Z. Cheng, X. Liu, Y. Li, L. Ding, R. Wang, and C. Feng, “Self-supervised place recognition by refining temporal and featural pseudo labels from panoramic data,” IEEE Robotics and Automation Letters , vol. 10, no. 1, pp. 248–255, 2024. [16] P. C. Lusk, K. Fathian, and J. P. How, “Clipper: A graph-theoretic framework for robust data association,” in 2021 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2021, pp. 13 828–13 834. [17] H. Yang, J. Shi, and L. Carlone, “Teaser: Fast and certifiable point cloud registration,” IEEE Transactions on Robotics , vol. 37, no. 2, pp. 314–333, 2020. [18] W. Xu, Y. Cai, D. He, J. Lin, and F. Zhang, “Fast-lio2: Fast direct lidar-inertial odometry,” IEEE Transactions on Robotics , vol. 38, no. 4, pp. 2053–2073, 2022. [19] J. Wang, “Fast-lio-sam: Fast-lio with smoothing and mapping.” https: //github.com/kahowang/FAST LIO SAM, 2022. [20] T. Shan, B. Englot, D. Meyers, W. Wang, C. Ratti, and D. Rus, “Lio-sam: Tightly-coupled lidar inertial odometry via smoothing and mapping,” in 2020 IEEE/RSJ international conference on intelligent robots and systems (IROS) . IEEE, 2020, pp. 5135–5142. [21] M. Kaess, H. Johannsson, R. Roberts, V. Ila, J. J. Leonard, and F. Dellaert, “isam2: Incremental smoothing and mapping using the bayes tree,” The International Journal of Robotics Research , vol. 31, no. 2, pp. 216–235, 2012. [22] M. Grupp, “evo: Python package for the evaluation of odometry and slam.” https://github.com/MichaelGrupp/evo, 2017. [23] B. Kerbl, G. Kopanas, T. Leimk¨ uhler, G. Drettakis, et al. , “3d gaussian splatting for real-time radiance field rendering.” ACM Trans. Graph. ,vol. 42, no. 4, pp. 139–1, 2023. [24] G. Kim and A. Kim, “Scan context: Egocentric spatial descriptor for place recognition within 3d point cloud map,” in 2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) .IEEE, 2018, pp. 4802–4809. [25] C. Yuan, J. Lin, Z. Zou, X. Hong, and F. Zhang, “Std: Stable triangle descriptor for 3d place recognition,” in 2023 IEEE international conference on robotics and automation (ICRA) . IEEE, 2023, pp. 1897–1903.

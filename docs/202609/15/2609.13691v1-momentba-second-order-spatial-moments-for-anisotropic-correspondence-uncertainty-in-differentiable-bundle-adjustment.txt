@@ -1,0 +1,546 @@
+Title: MomentBA: Second-order Spatial Moments for Anisotropic Correspondence Uncertainty in Differentiable Bundle Adjustment
+
+URL Source: https://arxiv.org/pdf/2609.13691v1
+
+Published Time: Tue, 15 Sep 2026 00:34:47 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+> JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 1
+
+# MomentBA: Second-order Spatial Moments for Anisotropic Correspondence Uncertainty in Differentiable Bundle Adjustment 
+
+Yuqing Wang ˙ID , Graduate Student Member, IEEE , Xiaoji Niu ˙ID , Member, IEEE , Yan Wang* ˙ID , Hailiang Tang  
+
+> ˙ID
+
+, Jian Kuang ˙ID ,and Tisheng Zhang ˙ID , Member, IEEE 
+
+Abstract —Most existing visual odometry (VO) systems treat feature correspondences as deterministic measurements or assign uniform uncertainty, ignoring the inherent localization ambiguity of different observations. However, correspondence uncertainty is often anisotropic due to image structures such as edges, repetitive patterns, and motion blur, which can significantly affect geometric optimization. In this work, we propose Mo-mentBA, a geometry-aware bundle adjustment framework that derives anisotropic correspondence uncertainty from second-order spatial moments of local similarity responses. Instead of introducing additional covariance prediction networks, the pro-posed method directly converts matching response distributions into interpretable covariance estimates and incorporates them into bundle adjustment as correspondence-specific information matrices for uncertainty-aware residual weighting. Furthermore, the proposed formulation is integrated into a differentiable optimization framework, establishing a direct connection between correspondence uncertainty and geometric estimation. Experi-ments on the EuRoC MAV and TartanAir v1 Hard datasets demonstrate that MomentBA improves monocular visual odome-try accuracy compared with existing feature-based and learning-based approaches. The proposed anisotropic covariance model achieves lower rotational errors and more robust trajectory estimation than fixed and isotropic uncertainty models, validating the effectiveness of geometry-induced uncertainty modeling for challenging visual environments. 
+
+Index Terms —Visual odometry (VO), differentiable bundle adjustment, correspondence uncertainty, anisotropic covariance, second-order spatial moments. 
+
+I. I NTRODUCTION 
+
+# VISUAL odometry (VO), visual–inertial odometry (VIO), and simultaneous localization and mapping (SLAM) estimate camera motion by minimizing geometric residuals over sparse feature correspondences [1]–[4]. Recent advances in learned feature detectors and matchers have significantly 
+
+Yuqing Wang is with the GNSS Research Center, Wuhan University, Wuhan 430079, China, and also with the Electronic Information School, Wuhan University, Wuhan 430079, China (e-mail: m18071357432@163.com). Tisheng Zhang and Xiaoji Niu are with the GNSS Research Center, Wuhan University, Wuhan 430079, China, also with the Electronic Infor-mation School, Wuhan University, Wuhan 430079, China, also with Hubei Technology Innovation Center for Spatiotemporal Information and Positioning Navigation, Wuhan 430079, China, and also with Hubei Luojia Laboratory, Wuhan 430079, China (e-mail: zts@whu.edu.cn; xjniu@whu.edu.cn). Yan Wang, Hailiang Tang, Jian Kuang, are with the GNSS Research Center, Wuhan University, Wuhan 430079, China, also with the Hubei Technology Innovation Center for Spatiotemporal Information and Positioning Navigation (e-mail: wystephen@whu.edu.cn, thl@whu.edu.cn, kuang@whu.edu.cn). 
+
+improved correspondence accuracy and robustness under chal-lenging imaging conditions [5]–[8]. Nevertheless, once fea-ture correspondences are established, most existing VO/VIO systems either treat image observations as deterministic mea-surements or adopt simplified uncertainty models, ignoring the correspondence-specific localization ambiguity. Such an assumption neglects an important characteristic of visual mea-surements: different correspondences inherently exhibit differ-ent uncertainty distributions that directly affect downstream geometric optimization. In real-world scenes, correspondence uncertainty is highly structured and anisotropic. Corner-like features usually pro-vide well-constrained localization, whereas edge structures, repetitive textures, and motion blur often produce ambiguous observations that are accurately localized in one direction but highly uncertain in the orthogonal direction [9], [10]. Such anisotropic uncertainty directly affects nonlinear estimation, since bundle adjustment relies on residual weighting according to measurement reliability. Ignoring directional uncertainty causes unreliable correspondences to contribute excessive con-straints along ambiguous directions, resulting in degraded convergence and reduced localization accuracy. Existing uncertainty-aware visual estimation methods at-tempt to address this problem by introducing probabilistic ob-servation models or learning correspondence uncertainty from data [11], [12]. Although these approaches demonstrate that uncertainty-aware optimization can improve pose estimation, the uncertainty is typically obtained through predefined models or additional prediction mechanisms, making it less directly connected to the intrinsic spatial structure of feature match-ing. In contrast, modern feature matching networks naturally produce dense local similarity responses whose spatial distri-butions encode correspondence ambiguity.Sharp responses in-dicate reliable localization, whereas elongated responses reveal directional uncertainty and multi-modal responses indicate matching ambiguity caused by competing correspondence hy-potheses. However, this rich geometric information is usually discarded after selecting the maximum response as the final correspondence. In this work, we argue that correspondence uncertainty should be regarded as a geometric property of the matching process rather than an external quantity requiring additional prediction. We introduce the concept of Geometry-induced Un-certainty (GIU) , where correspondence covariance is directly arXiv:2609.13691v1 [cs.CV] 12 Sep 2026 JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 2Trajectory under challenging scenes 
+
+> MomentBA Geometry-induced uncertainty +Differentiable bundle adjustment
+> +
+> Implicit optimization
+> camera pose (ground truth)
+> estimated pose (MomentBA) camera center 3D point measured 2D observation reprojection error (inlier) learn to reduce
+> geometry error
+> Images with correspondences uncertainty visualization in image space
+
+Fig. 1: We present MomentBA , a differentiable bundle adjustment framework that models anisotropic correspondence uncertainty from similarity responses via second-order spatial moments. The left shows correspondence images and uncertainty visualization, the middle illustrates geometry-induced uncertainty estimation and its integration into bundle adjustment, and the right demonstrates improved trajectory estimation under challenging scenes. derived from the local matching distribution. Specifically, the similarity response generated by a feature matcher is interpreted as a spatial probability distribution, and its second-order spatial moments provide an analytical characterization of anisotropic localization uncertainty. This formulation es-tablishes a direct connection between image-level matching geometry and probabilistic measurement modeling, while pre-serving physical interpretability without introducing additional covariance estimation networks. Based on this formulation, we propose MomentBA , adifferentiable bundle adjustment framework that incorporates geometry-induced correspondence covariance into nonlinear geometric optimization, as shown in Fig. 1. Each correspon-dence is associated with an individual anisotropic informa-tion matrix, allowing reprojection residuals to be weighted according to both the magnitude and direction of localization uncertainty. Furthermore, the covariance formulation is cou-pled with differentiable bundle adjustment, enabling geometric consistency to provide supervision for the underlying matching representation. In this way, MomentBA establishes a unified framework that connects correspondence formation, uncer-tainty modeling, and geometric optimization, improving the robustness and accuracy of visual odometry under challenging environments. The main contributions of this work are summarized as follows.  
+
+> •
+
+Geometry-induced correspondence uncertainty. We propose a novel uncertainty formulation that analyti-cally derives anisotropic correspondence covariance from second-order spatial moments of local similarity re-sponses, providing an explicit geometric interpretation of localization ambiguity.  
+
+> •
+
+Moment-based anisotropic bundle adjustment. We formulate a geometry-aware bundle adjustment frame-work in which each correspondence is associated with an individual anisotropic information matrix, enabling uncertainty-aware residual weighting during nonlinear optimization.  
+
+> •
+
+Comprehensive experimental validation. Extensive ex-periments validate the effectiveness of the proposed anisotropic uncertainty modeling for robust and accurate visual odometry. The remainder of this paper is organized as follows. Section II reviews related work on uncertainty modeling and geometric optimization for visual odometry and SLAM. Section III introduces the feature extraction and matching representation used in our framework. Section IV presents the proposed geometry-induced anisotropic bundle adjustment framework, including covariance estimation and uncertainty-aware optimization. Section V provides experimental evalua-tions, including comparisons with state-of-the-art methods and comprehensive ablation studies. Finally, Section VI concludes the paper. II. R ELATED WORK 
+
+Reliable correspondence uncertainty is critical for visual odometry (VO), visual–inertial odometry (VIO), and SLAM, since the confidence assigned to feature observations di-rectly affects geometric optimization. Existing studies have investigated uncertainty from different perspectives, including handcrafted measurement models, learned covariance predic-tion, and differentiable geometric optimization. However, most existing methods still do not explicitly derive correspondence uncertainty from the geometry of the matching process itself. Early probabilistic VO methods estimate observation uncer-tainty from image gradients, tracking residuals, or predefined sensor noise models. Ross et al. [9] studied uncertainty estimation for stereo visual odometry and demonstrated the importance of propagating feature-level uncertainty into pose estimation. F¨ orstner and G¨ ulch [11] analyzed feature localiza-tion uncertainty from local image structure, while later works investigated covariance modeling for KLT tracking and local feature matching [13]–[16]. These methods provide explicit uncertainty models, but they usually rely on handcrafted assumptions and cannot fully characterize complex matching ambiguity caused by weak texture, repetitive structures, mo-tion blur, or illumination changes. JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 3
+
+Recent learning-based methods attempt to estimate corre-spondence uncertainty directly from data. Kendall and Gal [17] introduced uncertainty modeling into deep visual prediction, inspiring subsequent uncertainty-aware perception methods. Muhle et al. [18] proposed DNLS, which learns per-feature covariance by differentiating through nonlinear relative pose estimation. Qiu et al. [12] proposed MAC-VO, where metrics-aware covariance is used for both feature selection and residual weighting in stereo VO. These methods demonstrate that uncertainty-aware optimization improves visual localization robustness. Nevertheless, their uncertainty is treated as a latent quantity to be learned or regressed, rather than being directly induced from the spatial structure of the matching distribution. Differentiable geometric optimization further enables visual learning to be supervised by downstream geometric objec-tives. BA-Net [19] embeds differentiable bundle adjustment into depth and motion learning. DeepFactors [20], DROID-SLAM [21], and DPVO [22] further demonstrate that differ-entiable pose estimation and bundle adjustment can improve dense or semi-dense visual odometry. Other optimization lay-ers, such as OptNet [23], Deep Declarative Networks [24], and implicit differentiation frameworks [25], provide general tools for differentiating through optimization problems. However, these methods mainly focus on propagating gradients through solvers, while the observation uncertainty used inside the solver is usually fixed, isotropic, scalar-weighted, or externally predicted. Our work is motivated by a different observation: correspon-dence uncertainty is fundamentally a geometric property of the local matching distribution. Instead of predicting covariance using an auxiliary network or learning it indirectly from pose supervision, MomentBA derives anisotropic correspondence covariance directly from the second-order spatial moments of local similarity responses. The resulting geometry-induced uncertainty is then embedded into an implicitly differentiable bundle adjustment framework, establishing a unified connec-tion between correspondence formation, uncertainty modeling, and geometric optimization. III. FEATURE EXTRACTION AND MATCHING REPRESENTATION This section briefly introduces the sparse feature extraction and matching pipeline adopted in MomentBA. As illustrated in Fig. 2, the front-end consists of a feature detector that identifies reliable sparse keypoints and a feature tracker that establishes inter-frame correspondences. The detector and tracker are adopted as standard front-end components [26] and are not the contribution of this work. Instead, our focus is the dense similarity response produced by the tracker, which serves as the basis for the geometry-induced covariance construction described in Sec.IV. 
+
+A. Sparse Feature Detection 
+
+Given an input image I ∈ RH×W ×3, the feature detector extracts a sparse set of reliable keypoints 
+
+P = {pi}Ni=1 , (1) where each keypoint corresponds to a stable and distinc-tive image location. Standard confidence estimation and non-maximum suppression are employed to remove redundant responses, resulting in a uniformly distributed set of sparse features. These keypoints serve as the reference observations for subsequent inter-frame matching. 
+
+B. Similarity-based Feature Tracking 
+
+For each reference keypoint pi ∈ P in image Ia, the feature tracker searches for its correspondence within a local search region Ωi of the target image Ib.
+
+The reference descriptor is compared with all candidate descriptors inside the search region to construct a dense similarity response map 
+
+Ci ∈ RHs×Ws , (2) where each response value measures the similarity between the reference descriptor and the corresponding candidate location. The correspondence is obtained from the maximum (or sub-pixel refined maximum) of the similarity response. Unlike conventional feature matching methods that only preserve the final correspondence location, MomentBA retains the complete similarity response map throughout the matching process. The spatial distribution of the response naturally characterizes the ambiguity of local correspondence estimation and therefore provides substantially richer geometric informa-tion than a single matching coordinate. Consequently, instead of treating the similarity response merely as an interme-diate quantity for correspondence extraction, the proposed framework directly exploits its spatial statistics to construct anisotropic correspondence covariance, which is subsequently incorporated into geometry-induced bundle adjustment in Sec-tion IV. IV. G EOMETRY -INDUCED ANISOTROPIC BUNDLE 
+
+ADJUSTMENT 
+
+In this section, we present the proposed geometry-induced anisotropic bundle adjustment framework. As shown in Fig 2(b) We first derive an interpretable anisotropic covariance from the spatial statistics of the local similarity response, providing an analytical characterization of correspondence un-certainty without relying on an auxiliary covariance prediction network. The derived covariance is subsequently incorporated into bundle adjustment as a correspondence-specific infor-mation matrix, where geometric optimization further refines the covariance through implicit differentiation. Consequently, as illustrated in Fig2(c), the learned uncertainty is directly coupled with multi-view geometric consistency, enabling end-to-end optimization of the feature representation. 
+
+A. Anisotropic Correspondence Covariance 
+
+The similarity response produced by the tracking network contains richer information than the final correspondence location. Conventional feature matching methods retain only the response maximum as the estimated correspondence while discarding the remaining response distribution. However, the JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 4(a) Sparse Feature Tracking 
+
+> Image a
+
+I
+
+> Image b
+
+I
+
+> Feature Extractor
+> (Detector)
+> Feature Tracker (Matcher) Correspondences 1
+
+{ }a b Ni i ip p =
+
+> (a) Sparse Feature Tracking
+> Image a
+
+I
+
+> Image b
+
+I
+
+> Feature Extractor
+> (Detector)
+> Feature Tracker (Matcher) Correspondences 1
+
+{ }a b Ni i ip p = 
+
+> (b) Anisotropic Correspondence Covariance (c) Geometry-induced Learning of Covariances Similarity Response HWi
+
+C 
+
+  Probablity Distribution Second-order Moments Anisotropic Covariance 
+
+> (Softmax) 2 2
+> i
+> 
+
+   
+
+( ) 
+
+> ,
+> ,;T: camera poses, P: 3D points
+
+min i
+
+
+
+> T P
+> T P
+
+# ( ) 
+
+> **
+
+,= T P 
+
+> Training Objective (Geometric Error)
+> (e.g.,reprojection error)
+> Implicit Differentiation (IFT)
+
+## ( )  
+
+> 122*
+
+.i
+
+> i
+> −
+
+ = −    Σ
+
+Σ  
+
+  
+
+   
+
+> ***
+
+,X = T P    
+
+> Gradient w.r.t. Similarity Response Bundle Adjustment iiiiii
+
+PC P C
+
+  =   
+
+ 
+
+> Update Feature Tracking Network
+
+# ... 
+
+> Covariances
+
+{ }i   
+
+> Anisotropic Covariance Feature Correspondence Camera 3D points Forward Pass (Computation) Observation (Reprojection)
+
+( ) ( )     
+
+> ()
+> ( ) ( )
+> iimiiii
+> PP
+
+== − −
+
+      
+
+> uu
+> μu u
+> Σuuuμ
+
+( ) ( )     
+
+> ()
+> ( ) ( )
+> iimiiii
+> PP
+
+== − −
+
+       
+
+> uu
+> μu u
+> Σuuuμ()base
+
+(Jacobian for projection)    
+
+> miiii
+
+J J =  +  
+
+> i
+
+J 
+
+> ()base
+
+(Jacobian for projection)    
+
+> miiii
+
+J J =  +  
+
+> i
+
+J
+
+> 
+
+xyiP
+
+> Descriptor A
+
+D
+
+> Descriptor B
+
+D
+
+> Bilinear Interpolation
+
+iCi( , )                   
+
+> exp( ( , ) / )( , ) ( , ) ,exp( (,) / )(,)
+> i
+> iiiiim n
+> Cu v G u v P u v Cm n Gm n
+> 
+> 
+> =
+
+
+
+Fig. 2: Overview of MomentBA. Similarity responses from the tracking network are used to derive anisotropic covariances via spatial moments, which are incorporated into bundle adjustment for uncertainty-aware optimization and learning. spatial shape of the similarity response naturally reflects the localization uncertainty of the correspondence. A compact response indicates a well-localized feature with high confi-dence, whereas elongated or flat responses usually arise from repetitive textures, motion blur, or edge structures, implying anisotropic localization ambiguity. Therefore, instead of learn-ing covariance through an additional prediction network, we derive correspondence uncertainty directly from the spatial statistics of the similarity response. Given the similarity response map Ci(u, v ) associated with the i-th correspondence over the local search region Ωi, let 
+
+μi denote the estimated correspondence location. To suppress distant secondary responses that may arise from repetitive structures, we introduce a Gaussian spatial window centered at μi,
+
+Gi(u, v ) = exp 
+
+
+
+− ∥x − μi∥22
+
+2σ2
+
+> w
+
+
+
+, (3) where x = [ u, v ]T and σw controls the spatial extent of the local response. The localized response is then normalized into a discrete probability distribution, 
+
+Pi(u, v ) = exp( Ci(u, v )/τ )Gi(u, v )
+
+P
+
+> (m,n )∈Ωi
+
+exp( Ci(m, n )/τ )Gi(m, n ) , (4) where τ controls the sharpness of the probability distribution and P 
+
+> (u,v )∈Ωi
+
+Pi(u, v ) = 1 .The localization uncertainty is characterized by the second-order spatial moment around the estimated correspondence, 
+
+Σi = X
+
+> (u,v )∈Ωi
+
+Pi(u, v )( x − μi)( x − μi)T . (5) Expanding Eq. (5) gives 
+
+Σi =
+
+ σ2 
+
+> u
+
+σuv 
+
+σuv σ2
+
+> v
+
+
+
+, (6) whose diagonal terms represent the localization variance along the horizontal and vertical directions, while the off-diagonal term describes the correlation between the two axes. Finally, eigenvalue decomposition is applied to the covari-ance matrix, JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 5
+
+Σi = QiΛiQTi , (7) where Λi = diag( λ1, λ 2) contains the principal variances and 
+
+Qi = [ q1, q2] defines the corresponding principal directions. Large eigenvalues indicate high localization uncertainty, while the associated eigenvectors reveal the dominant ambiguity direction. For numerical stability, the eigenvalues are bounded within [λmin , λ max ] before reconstructing the covariance ma-trix. The resulting covariance provides an analytical and inter-pretable characterization of anisotropic correspondence un-certainty and is subsequently incorporated into bundle ad-justment as a correspondence-specific information matrix for anisotropic residual weighting. 
+
+B. Geometry-induced Learning of Covariances 
+
+The covariance derived from the similarity response char-acterizes the local uncertainty of each correspondence from image appearance alone. However, local matching statistics do not explicitly account for multi-view geometric consistency. To further improve the uncertainty estimation, we incorporate the proposed covariance into bundle adjustment and optimize it under geometric supervision. Consequently, the covariance is no longer determined solely by local similarity distributions, but is continuously refined according to the global reprojection objective. Let X = {T, P} denote the optimization variables con-sisting of camera poses T and 3D landmarks P. Given the anisotropic covariance Σi associated with the i-th correspon-dence, its corresponding information matrix is 
+
+Wi = Σ−1 
+
+> i
+
+. (8) The reprojection residual of the i-th observation is defined as 
+
+ri = ui − π(Tc(i), Pj(i)), (9) where π(·) denotes the camera projection model, ui is the observed feature location, while c(i) and j(i) indicate the corresponding camera and landmark indices, respectively. Instead of minimizing the conventional isotropic reprojec-tion error, we formulate the geometry-aware bundle adjustment objective using the Mahalanobis distance, 
+
+E(X , Σ) = X
+
+> i
+
+ρ rTi Wiri
+
+ , (10) where ρ(·) denotes the Huber robust kernel. Compared with isotropic least squares, the proposed objective assigns an individual anisotropic confidence to each correspondence, al-lowing ambiguous observations to contribute less along poorly constrained directions while preserving strong constraints in reliable directions. The optimal geometric state is obtained by solving 
+
+X ∗ = arg min  
+
+> X
+
+E(X , Σ). (11) Since the covariance directly determines the information matrix in Eq. (10), the optimization result is inherently depen-dent on the estimated uncertainty. Consequently, minimizing the geometric objective provides supervision for covariance estimation, enabling correspondence uncertainty to be learned from multi-view geometric consistency rather than solely from local appearance. 
+
+C. Implicit Backpropagation for Covariance Learning 
+
+Since the optimal solution in Eq. (11) is implicitly defined by the covariance-dependent bundle adjustment objective, gradients cannot be obtained by directly back-propagating through the iterative optimization process. Instead, following the implicit function theorem (IFT), we differentiate the first-order optimality condition of the optimization problem to compute the gradient of the converged solution with respect to the correspondence covariance. Let the optimization variables be denoted by 
+
+X = {T, P},
+
+where T and P represent the camera poses and 3D landmarks, respectively. The optimal solution satisfies 
+
+X ∗ = arg min  
+
+> X
+
+E(X , Σ), (12) whose first-order optimality condition is 
+
+∇X E(X ∗, Σ) = 0. (13) Differentiating Eq. (13) with respect to the correspondence covariance yields 
+
+∇2 
+
+> X X
+
+E ∂X ∗
+
+∂Σ + ∇2 
+
+> XΣ
+
+E = 0, (14) where ∇2 
+
+> X X
+
+E denotes the Hessian matrix of the bundle adjustment objective with respect to the optimization variables, and ∇2 
+
+> XΣ
+
+E is the mixed second-order derivative. According to the implicit function theorem, 
+
+∂X ∗
+
+∂Σ = −  ∇2 
+
+> X X
+
+E−1 ∇2 
+
+> XΣ
+
+E. (15) Given the training objective L(X ∗), the gradient with re-spect to the correspondence covariance is obtained by 
+
+∂L
+
+∂Σ = ∂L
+
+∂X ∗
+
+∂X ∗
+
+∂Σ = − ∂L
+
+∂X ∗
+
+ ∇2 
+
+> X X
+
+E−1 ∇2 
+
+> XΣ
+
+E. (16) Since the proposed anisotropic covariance is analytically computed from the similarity response through the second-order spatial moment formulation, the covariance gradient in Eq. (16) is further back-propagated through the chain rule as 
+
+∂L
+
+∂θ = ∂L
+
+∂Σ
+
+∂Σ
+
+∂P ∂P ∂C
+
+∂C
+
+∂θ , (17) where C denotes the similarity response map, P is the corresponding probability distribution obtained by Eq. (4), and 
+
+θ represents the parameters of the feature tracking network. Consequently, the feature tracking network is encouraged to generate similarity responses whose induced anisotropic JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 6Normalized density Normalized density Normalized density 
+
+(1) Anisotropy ratio 
+
+（higher → more elongated ）
+
+(log scale) (2) Covariance magnitude trace( )(pixel 2)
+
+（higher → more uncertainty ）
+
+(log scale) (3) Similarity entropy H(P) (nat) 
+
+（higher → more ambiguous ）
+
+Feature types (condition)  
+
+> Edge (medium ambiguity) N=455624 (40.57%) N=365110 (32.51%) N=302200 (26.91%)
+> Corner (low ambiguity)
+> Plane & Ambiguous (high ambiguity) 12/
+
+ Σ
+
+Isotropic reference ( )1 2/ 1, trace 3.0 
+
+ = = Diagonal reference ( )1 2typical / 2, trace 4.5 
+
+  =
+
+Uniform entropy ( max=ln(N), N:window pixels) Box: 25%-75% (IQR) Whisker: 5%-95% Kernel Density 
+
+> Normalized density Normalized density Normalized density
+
+(1) Anisotropy ratio 
+
+（higher → more elongated ）
+
+(log scale) (2) Covariance magnitude trace( )(pixel 2)
+
+（higher → more uncertainty ）
+
+(log scale) (3) Similarity entropy H(P) (nat) 
+
+（higher → more ambiguous ）
+
+Feature types (condition)  
+
+> Edge (medium ambiguity) N=455624 (40.57%) N=365110 (32.51%) N=302200 (26.91%)
+> Corner (low ambiguity)
+> Plane & Ambiguous (high ambiguity) 12/
+
+ Σ
+
+Isotropic reference ( )1 2/ 1, trace 3.0 
+
+ = = Diagonal reference ( )1 2typical / 2, trace 4.5 
+
+  =
+
+Uniform entropy ( max=ln(N), N:window pixels) Box: 25%-75% (IQR) Whisker: 5%-95% Kernel Density 
+
+Fig. 3: Statistics of MomentBA covariance across feature types. Distributions of anisotropy ratio λ1/λ 2, covariance trace tr( Σ),and similarity entropy H(P ) show increasing geometric ambiguity from corners to edges and repetitive regions. covariance minimizes the global bundle adjustment objective, establishing a direct connection between local matching am-biguity and multi-view geometric consistency. V. EXPERIMENTS 
+
+A. Validation of Geometry-Aware Covariance Estimation 
+
+We first evaluate whether the proposed MomentBA co-variance reflects the intrinsic ambiguity of visual measure-ments. Three representative feature conditions are considered: distinctive corners, edge structures, and repetitive ambiguous regions. For each feature type, we analyze the distributions of anisotropy ratio λ1/λ 2, covariance magnitude tr( Σ), and similarity entropy H(P ). For all experiments, the Gaussian window standard deviation is fixed to σw = 15 pixels. As shown in Fig. 3, MomentBA covariance exhibits clear geometry-dependent characteristics. For corner features, the estimated uncertainty remains compact and nearly isotropic, with an anisotropy ratio close to the isotropic reference (λ1/λ 2 = 1 ) and a small covariance trace (median tr( Σ) = 4.01 ). In contrast, edge features introduce strong directional ambiguity, leading to increased anisotropy (median λ1/λ 2 =3.57 ) and larger uncertainty magnitude (median tr( Σ) =7.07 ). For repetitive structures, the covariance magnitude increases substantially (median tr( Σ) = 16 .56 ), accompanied by higher similarity entropy ( H(P ) = 4 .10 ), indicating severe ambiguity in local correspondence localization. Although the anisotropy is lower than edge features ( λ1/λ 2 = 1 .60 ), the in-Euroc V202 Euroc V202 
+
+Fig. 4: Visualization of the estimated anisotropic correspon-dence covariance on the EuRoC MAV dataset. creased entropy and covariance magnitude correctly represent the lack of confidence caused by repetitive patterns. These results demonstrate that MomentBA covariance is not only adaptive to feature geometry but also consistent with the underlying uncertainty characteristics of visual corre-spondence, providing a more reliable measurement model for subsequent bundle adjustment. JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 7
+
+TABLE I: Relative pose error comparison on EuRoC dataset. trel denotes translational error and rrel denotes rotational error.                                                                                                                                     
+
+> Method MH03 MH05 V102 V103 V202 V203 Avg.
+> trel rrel trel rrel trel rrel trel rrel trel rrel trel rrel trel rrel
+> VO
+> TartanVO 0.0302 0.2791 0.0193 0.0604 0.0251 0.1244 0.0263 0.1552 0.0171 0.1251 0.0303 0.2986 0.0247 0.1738 MAC-VO 0.0023 0.0238 0.0025 0.0216 0.0029 0.0434 0.0032 0.0580 0.0018 0.0406 0.0049 0.1284 0.0029 0.0526
+> Feature
+> ORB 0.0064 0.0200 0.0085 0.0147 0.0067 0.0406 0.0186 0.0481 0.0061 0.0411 0.0123 0.0628 0.0098 0.0379 SuperPoint 0.0053 0.0199 0.0088 0.0147 0.0066 0.0410 0.0081 0.0439 0.0056 0.0325 0.0279 0.0746 0.0104 0.0378 SuperPoint-DAC 0.0057 0.0184 0.0250 0.0161 0.0051 0.0409 0.0072 0.0406 0.0050 0.0325 0.0172 0.0728 0.0109 0.0369 ALIKED 0.0046 0.0200 0.0050 0.0144 0.0080 0.0408 0.0074 0.0439 0.0081 0.0441 0.0320 0.0519 0.0109 0.0359
+> Ours
+> constant 0.0044 0.0207 0.0052 0.0155 0.0068 0.0453 0.0086 0.0472 0.0057 0.0501 0.0108 0.0785 0.0069 0.0429 anisotropic 0.0035 0.0179 0.0022 0.0133 0.0037 0.0361 0.0054 0.0415 0.0029 0.0310 0.0093 0.0501 0.0045 0.0317
+
+TABLE II: Relative pose error comparison on TartanAir v1 Hard dataset. trel denotes translational error and rrel denotes rotational error.                                                                                                                                     
+
+> Method H01 H03 H05 H07 H09 H011 Avg.
+> trel rrel trel rrel trel rrel trel rrel trel rrel trel rrel trel rrel
+> VO
+> TartanVO 0.2918 0.0877 0.3275 0.1391 0.3644 0.1899 0.2605 0.0338 0.6182 0.0731 0.2204 0.0287 0.3471 0.0921 MAC-VO 0.3440 0.1052 0.2507 0.0778 0.1485 0.0352 0.0985 0.0418 0.3848 0.0628 0.1292 0.1414 0.2260 0.0774
+> Feature
+> ORB 0.1163 0.0667 0.2212 0.0241 0.2464 0.0298 0.2613 0.0325 0.3454 0.0416 0.1826 0.0438 0.2289 0.0398 SuperPoint 0.2570 0.0402 0.1950 0.0252 0.2314 0.0312 0.3012 0.0473 0.3238 0.0414 0.1755 0.0513 0.2473 0.0394 SuperPoint-DAC 0.2510 0.0401 0.1947 0.0252 0.2504 0.0315 0.3458 0.0402 0.2671 0.0435 0.1560 0.0503 0.2442 0.0385 ALIKED 0.1655 0.0463 0.2215 0.0286 0.2537 0.0322 0.3081 0.0344 0.4431 0.0385 0.1733 0.0545 0.2609 0.0391
+> Ours
+> constant 0.2504 0.0406 0.2582 0.0378 0.2466 0.0297 0.3227 0.0397 0.3313 0.0424 0.1769 0.0530 0.2643 0.0405 anisotropic 0.1603 0.0396 0.1993 0.0215 0.2084 0.0264 0.1627 0.0237 0.2344 0.0367 0.1286 0.0371 0.1823 0.0308
+
+Tartan v1 Hard 
+
+Fig. 5: Trajectory comparison of different methods on the TartanAir v1 Hard dataset. 
+
+B. Trajectory Evaluation 
+
+We evaluate the proposed monocular VO framework on the EuRoC MAV and TartanAir v1 Hard datasets using the open-source pyslam framework. The original ORB front-end is replaced with different feature representations, while loop closure is disabled. We compare feature-based methods (ORB, SuperPoint, and ALIKED) with learning-based VO approaches (TartanVO and MAC-VO). To further evaluate the effectiveness of uncertainty modeling, we additionally include SuperPoint-DAC, where the existing DAC [27] uncertainty estimation method is applied to SuperPoint correspondences. Relative pose error (RPE), including translational error trel 
+
+and rotational error rrel , is used for evaluation. The results are summarized in Tab. I and Tab. II. On EuRoC, the proposed anisotropic covariance model achieves the best average performance, with trel = 0 .0045 
+
+and rrel = 0 .0317 . Compared with SuperPoint-DAC ( trel =0.0109 , rrel = 0.0369 ), our method reduces both trans-lational and rotational errors, indicating that the proposed geometry-aware uncertainty modeling provides more effective constraints for bundle adjustment. It also reduces the average rotational error by 39.7% compared with MAC-VO ( 0.0526 
+
+rad). On TartanAir v1 Hard, our method achieves average errors of trel = 0 .1823 and rrel = 0 .0308 , outperforming SuperPoint-DAC ( 0.2442 and 0.0385 , respectively) as well as the constant covariance setting ( 0.2643 and 0.0405 ). The co-variance distribution visualization on EuRoC and the trajectory comparison on TartanAir are shown in Fig. 4 and Fig. 5, respectively. These results demonstrate that the proposed anisotropic covariance modeling consistently improves pose estimation and provides more effective uncertainty modeling for bundle adjustment across both real-world and synthetic challenging sequences. 
+
+C. Ablation Study 
+
+To investigate different covariance modeling strategies, we conduct an ablation study with three variants: Constant, JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 8
+
+TABLE III: Performance comparison of different ablation setups on the KITTI Dataset. 
+
+Relative Translation Error ( trel , m/frame) Trajectory K01 K03 K05 K07 K09 constant 0.1089 0.0321 0.1820 0.1252 0.1224 isotropic 0.2499 0.0344 0.1916 0.0779 0.1424 anisotropic 0.0802 0.0290 0.1394 0.0650 0.0996 
+
+Relative Rotation Error ( rrel , ◦/frame) Trajectory K01 K03 K05 K07 K09 constant 0.4068 0.0688 0.0516 0.3037 0.0802 isotropic 0.4297 0.0573 0.0516 0.2464 0.0802 anisotropic 0.3839 0.0384 0.0352 0.1948 0.0433 
+
+Isotropic, and Anisotropic covariance. Tab. II compares the proposed anisotropic covariance with fixed and diagonal co-variance models, while this section further analyzes different uncertainty representations. The Constant variant assigns a fixed one-pixel covariance to all correspondences. The Isotropic variant estimates uncer-tainty magnitude but ignores directional information, whereas the Anisotropic variant models geometry-induced covariance from second-order spatial moments to preserve both uncer-tainty magnitude and directionality. As shown in Tab. III, the Anisotropic covariance achieves the lowest translation and rotation errors across all KITTI trajectories, demonstrating the effectiveness of directional un-certainty modeling. The Isotropic model provides adaptive uncertainty estimation but remains limited without directional information. By incorporating anisotropic uncertainty, the pro-posed covariance model provides more accurate constraints for bundle adjustment and improves trajectory estimation. VI. C ONCLUSION 
+
+In this paper, we present MomentBA, a geometry-aware bundle adjustment framework that models anisotropic cor-respondence uncertainty from second-order spatial moments of local similarity responses. By converting the spatial dis-tribution of matching responses into interpretable covariance estimates, MomentBA enables correspondence-specific un-certainty modeling and uncertainty-aware residual weighting during bundle adjustment. The proposed formulation establishes a direct connection between feature correspondence ambiguity and geometric op-timization without requiring additional covariance prediction networks. Extensive evaluations on the EuRoC MAV and TartanAir v1 Hard datasets demonstrate that incorporating geometry-induced anisotropic uncertainty improves monocu-lar visual odometry accuracy and robustness. The proposed covariance model achieves consistent improvements over fixed and isotropic uncertainty models, validating the effectiveness of directional uncertainty modeling for challenging visual environments. Overall, MomentBA provides a principled framework for integrating correspondence uncertainty into differentiable ge-ometric optimization. Future work will explore extending the proposed uncertainty formulation to large-scale mapping and more complex multi-sensor visual localization systems. REFERENCES [1] Ra´ ul Mur-Artal and Juan D. Tard´ os. Orb-slam2: An open-source slam system for monocular, stereo, and rgb-d cameras. IEEE Transactions on Robotics , 33(5):1255–1262, 2017. [2] Carlos Campos, Richard Elvira, Juan J. G´ omez Rodr´ ıguez, Jos´ e M. M. Montiel, and Juan D. Tard´ os. Orb-slam3: An accurate open-source library for visual, visual–inertial, and multimap slam. IEEE Transactions on Robotics , 37(6):1874–1890, 2021. [3] Tong Qin, Peiliang Li, and Shaojie Shen. Vins-mono: A robust and versatile monocular visual-inertial state estimator. IEEE Transactions on Robotics , 34(4):1004–1020, 2018. [4] Jakob Engel, Vladlen Koltun, and Daniel Cremers. Direct sparse odometry, 2016. [5] Daniel DeTone, Tomasz Malisiewicz, and Andrew Rabinovich. Super-point: Self-supervised interest point detection and description. 2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW) , pages 337–33712, 2017. [6] Jerome Revaud, Philippe Weinzaepfel, C´ esar De Souza, and Martin Humenberger. R2D2: repeatable and reliable detector and descriptor .Curran Associates Inc., Red Hook, NY, USA, 2019. [7] Xiaoming Zhao, Xingming Wu, Weihai Chen, Peter C. Y. Chen, Qing-song Xu, and Zhengguo Li. Aliked: A lighter keypoint and descriptor extraction network via deformable transformation. IEEE Transactions on Instrumentation and Measurement , 72:1–16, 2023. [8] Philipp Lindenberger, Paul-Edouard Sarlin, and Marc Pollefeys. Light-glue: Local feature matching at light speed. In ICCV 2023 , pages 17581– 17592, 2023. [9] Derek Ross, Matteo De Petrillo, Jared Strader, and Jason N. Gross. Uncertainty estimation for stereo visual odometry. In Proceedings of the 34th International Technical Meeting of the Satellite Division of the Institute of Navigation (ION GNSS+ 2021) , pages 3263–3284, St. Louis, Missouri, September 2021. [10] InJun Mun and Sukhan Lee. Uncertainty hypervolume in point feature-based visual odometry. In International Conference on Informatics in Control, Automation and Robotics , 2024. [11] Dominik Muhle, Lukas Koestler, Krishna Murthy Jatavallabhula, and Daniel Cremers. Learning correspondence uncertainty via differentiable nonlinear least squares. In 2023 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pages 13102–13112, 2023. [12] Yuheng Qiu, Yutian Chen, Zihao Zhang, Wenshan Wang, and Sebastian Scherer. Mac-vo: Metrics-aware covariance for learning-based stereo vi-sual odometry mac-vo.github.io. In 2025 IEEE International Conference on Robotics and Automation (ICRA) , pages 3803–3814, 2025. [13] Jianbo Shi and Tomasi. Good features to track. In 1994 Proceedings of IEEE Conference on Computer Vision and Pattern Recognition , pages 593–600, 1994. [14] Bruce D. Lucas and Takeo Kanade. An iterative image registration technique with an application to stereo vision. In International Joint Conference on Artificial Intelligence , 1981. [15] C. Tomasi. Detection and tracking of point features. Technical Report ,91(21):9795–9802, 1991. [16] K. Mikolajczyk and C. Schmid. A performance evaluation of local descriptors. IEEE Transactions on Pattern Analysis and Machine Intelligence , 27(10):1615–1630, 2005. [17] Alex Kendall and Yarin Gal. What uncertainties do we need in bayesian deep learning for computer vision?, 2017. [18] Dominik Muhle, Lukas Koestler, Krishna Murthy Jatavallabhula, and Daniel Cremers. Learning correspondence uncertainty via differentiable nonlinear least squares. In 2023 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pages 13102–13112, 2023. [19] Chengzhou Tang and Ping Tan. Ba-net: Dense bundle adjustment network, 2019. [20] Jan Czarnowski, Tristan Laidlow, Ronald Clark, and Andrew J. Davison. Deepfactors: Real-time probabilistic dense monocular slam. IEEE Robotics and Automation Letters , 5(2):721–728, April 2020. [21] Zachary Teed and Jia Deng. Droid-slam: Deep visual slam for monoc-ular, stereo, and rgb-d cameras, 2022. [22] Zachary Teed, Lahav Lipson, and Jia Deng. Deep patch visual odometry, 2023. JOURNAL OF L ATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2021 9
+
+[23] Brandon Amos and J. Zico Kolter. OptNet: Differentiable optimization as a layer in neural networks. In Doina Precup and Yee Whye Teh, editors, Proceedings of the 34th International Conference on Machine Learning , volume 70 of Proceedings of Machine Learning Research ,pages 136–145. PMLR, 06–11 Aug 2017. [24] Stephen Gould, Richard Hartley, and Dylan Campbell. Deep declar-ative networks. IEEE Transactions on Pattern Analysis and Machine Intelligence , 44(8):3988–4004, 2022. [25] Mathieu Blondel, Quentin Berthet, Marco Cuturi, Roy Frostig, Stephan Hoyer, Felipe Llinares-Lopez, Fabian Pedregosa, and Jean-Philippe Vert. Efficient and modular implicit differentiation. In S. Koyejo, S. Mohamed, A. Agarwal, D. Belgrave, K. Cho, and A. Oh, editors, 
+
+Advances in Neural Information Processing Systems , volume 35, pages 5230–5242. Curran Associates, Inc., 2022. [26] Xiaoji Niu, Yuqing Wang, Yan Wang, Hailiang Tang, and Tisheng Zhang. Viba: Implicit bundle adjustment with geometric and temporal consistency for robust visual matching, 2026. [27] Javier Tirado-Gar´ ın, Frederik Warburg, and Javier Civera. Dac: Detector-agnostic spatial covariances for deep local features. In 2024 Interna-tional Conference on 3D Vision (3DV) , pages 728–738, 2024.
