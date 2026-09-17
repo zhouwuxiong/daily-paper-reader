@@ -1,0 +1,615 @@
+Title: Spectral Consistency-Guided Multiview Point Cloud Registration for Low-Overlap Scenes
+
+URL Source: https://arxiv.org/pdf/2609.12417v1
+
+Published Time: Mon, 14 Sep 2026 00:41:50 GMT
+
+Number of Pages: 18
+
+Markdown Content:
+# SPECTRAL CONSISTENCY -G UIDED MULTIVIEW POINT CLOUD 
+
+# REGISTRATION FOR LOW -O VERLAP SCENES 
+
+A P REPRINT 
+
+Tianyu Li 1,2, Yanghong Lin 2,3, Shudong Zhou 1,2, Kui Yang 1,Jingru Zhang 2,3, Li Fang 2,3, Wei Yao 2,3 *
+
+> 1
+
+School of Resources and Environmental Sciences, Wuhan University, Wuhan, China 
+
+> 2
+
+Spatial Intelligence and Urban Computing, Institute of Urban Environment, Chinese Academy of Sciences, Xiamen, China 
+
+> 3
+
+State Key Lab for Ecological Security of Regions and Cities, Institute of Urban Environment, Chinese Academy of Sciences, Xiamen, China 
+
+# ABSTRACT 
+
+Multiview point cloud registration is particularly challenging in low-overlap scenes, where reliable correspondences are limited and incorrect pairwise transformations can affect global pose estima-tion. In addition, registering all scan pairs is computationally expensive because many pairs provide weak geometric information. To address these problems, we propose GMPCR, a non-learning-based spectral consistency-guided framework for efficient and robust multiview point cloud registration. GMPCR builds a refined second-order compatibility structure from initial correspondences and uses its dominant spectral response to evaluate both correspondence reliability and scan-pair confidence. This allows unreliable correspondences to be filtered and informative scan pairs to be selected be-fore relative transformation estimation, leading to a sparse pose graph and reduced pairwise reg-istration cost. For each retained scan pair, maximal-clique-based hypothesis generation is used to estimate reliable relative transformations. The resulting pose graph is further refined by an adaptive history-aware synchronization scheme, in which the effect of residual history is adjusted according to changes in the global rotation residual. A recovery mechanism also allows down-weighted edges to regain confidence when their global consistency improves. Experiments on 3DMatch, 3DLo-Match, ScanNet, and ETH demonstrate the effectiveness of GMPCR. It achieves registration recalls of 97.2% and 89.6% on 3DMatch and 3DLoMatch, respectively, while maintaining competitive per-formance on ScanNet and ETH. The results show that GMPCR provides a favorable balance among registration accuracy, robustness to low overlap, and computational efficiency. The code is publicly available at https://github.com/swccj/gmpcr .
+
+Keywords Multiview point cloud registration, low-overlap registration, spectral consistency, pose graph, transforma-tion synchronization. 
+
+# 1 Introduction 
+
+Point cloud registration is a fundamental task in 3D computer vision, with broad applications in robotic naviga-tion [1, 2], autonomous driving [3, 4], 3D reconstruction [5, 6], and augmented reality [7]. Given a set of partially overlapping scans, multiview point cloud registration aims to estimate a globally consistent pose for each scan to align all observations within a common coordinate frame. Compared with pairwise registration [8–11], the multiview problem introduces an additional challenge: reliable overlap connections between scans must be identified while their relative transformations are jointly reconciled into a globally consistent configuration. This problem becomes particu-larly challenging under low overlap. Restricted viewpoints, occlusions, and limited sensor coverage may leave only a small common region between two scans, resulting in very few correct correspondences among a large number of am-
+
+> ∗
+
+This work was supported by the Jing-Jin-Ji Regional Integrated Environmental Improvement-National Science and Technology Major Project (2026ZD1214400). Corresponding authors: Li Fang and Wei Yao. E-mail: wyao@iue.ac.cn. arXiv:2609.12417v1 [cs.CV] 11 Sep 2026 Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+biguous or incorrect matches [12–14]. At the same time, the overlap between scans is generally unknown in advance. For N scans, the number of possible scan pairs grows quadratically, although only a small fraction may provide useful geometric constraints. Exhaustively performing full registration on all candidate pairs is therefore computationally inefficient and may introduce unreliable transformations from weakly overlapping or non-overlapping scan pairs into the pose graph [15, 16]. Existing approaches address different aspects of this problem. Robust pairwise registration methods improve trans-formation estimation through learned descriptors [17], geometric compatibility [18], correspondence pruning [19], or consensus-based hypothesis generation [20], while multiview methods improve global consistency through pose graph construction [21], robust synchronization [15], and iterative edge reweighting [22]. However, correspondence reliability, scan-pair selection, and global pose refinement are often handled separately. As a result, computationally expensive relative transformation estimation may be performed before the reliability of a scan pair is established. This issue becomes more serious in low-overlap scenes, where correct correspondences are scarce and only a limited number of reliable scan connections may be available. An effective multiview registration framework should therefore consider reliability at multiple levels. First, infor-mative scan pairs should be identified before expensive relative transformation estimation. Second, correct cor-respondences within each retained pair should be distinguished from outliers using reliable geometric consistency cues. Third, relative transformations that remain inconsistent with the global pose configuration should be gradu-ally down-weighted. Achieving these objectives simultaneously is challenging. Aggressive filtering may discard the limited geometric information available under low overlap, whereas retaining too many scan pairs, correspondences, or transformation hypotheses increases both computational cost and the risk of introducing outliers. In particular, correspondence-level geometric information is typically used only to evaluate matches within individual scan pairs, while pose graph construction relies on separate overlap or connectivity measures to select scan relations. Conse-quently, the geometric structure of the correspondences is not fully used to determine, before relative pose estimation, whether a scan pair should be included in the pose graph. Moreover, residual-based pose graph reweighting must balance rapid adaptation to changes in the global estimates with stable refinement near convergence, especially when reliable edges temporarily exhibit large residuals during the early iterations. To address these challenges, we propose GMPCR, a spectral consistency-guided framework for reliable and efficient multiview point cloud registration. GMPCR first constructs first- and second-order compatibility structures from the initial correspondences of each candidate scan pair. The dominant spectral response of the refined compatibility struc-ture is used not only to evaluate correspondence reliability but also to estimate scan-pair confidence. This allows informative scan pairs to be selected before relative transformation estimation, so that pairwise registration is per-formed only on reliable scan connections. For each retained scan pair, maximal-clique-based hypothesis generation is used to estimate the relative transformation, resulting in a sparse weighted pose graph. Local geometric reliability alone cannot ensure consistency across the entire pose graph. We therefore introduce an adaptive history-aware synchronization strategy that updates edge weights according to the current residuals and the evolution of the global solution. The influence of residual history is reduced when the global rotation residual changes significantly and increased as the optimization becomes stable. In addition, a one-sided recovery mechanism allows previously down-weighted edges to regain confidence when their residuals decrease. In this way, GMPCR connects correspondence-level geometric consistency, scan-pair reliability, and global pose consistency within a unified local-to-global registration framework. The main contributions of this work are summarized as follows: • We introduce a cross-level spectral reliability measure that uses the dominant structure of a refined second-order correspondence compatibility graph for both correspondence filtering and scan-pair confidence estima-tion, linking local geometric consistency to pose graph construction. • We develop a scan-pair selection strategy that exploits correspondence-level spectral consistency to iden-tify informative scan connections before relative transformation estimation, avoiding unnecessary pairwise registration and constructing a sparse yet reliable pose graph for global synchronization. • We develop an adaptive history-aware synchronization scheme that adjusts the influence of residual history according to the evolution of the global rotation residual. A one-sided recovery mechanism further allows previously down-weighted edges to regain confidence when their consistency with the global pose configura-tion improves. Extensive experiments on 3DMatch, 3DLoMatch, ScanNet, and ETH demonstrate that GMPCR achieves a favorable balance between registration accuracy and computational efficiency. 2Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+# 2 Related Work 
+
+2.1 Correspondence-based Multiview Point Cloud Registration 
+
+Correspondence-based methods are widely used for multiview point cloud registration. A typical pipeline first es-tablishes correspondences and estimates pairwise transformations, and then recovers globally consistent scan poses through graph optimization, motion averaging, or transformation synchronization [23, 24]. The explicit geometric relations provided by correspondences and pose graph edges make this framework naturally suited to robust estima-tion and sparse graph construction. Moreover, correspondence-level geometric consistency can be directly evaluated, providing useful information for both pairwise transformation estimation and the subsequent construction of the pose graph. Recent methods improve either pairwise reliability or global pose graph consistency. Learning-based approaches ex-ploit correspondence confidence or pairwise relations to improve registration, while LMVR [25] jointly considers pairwise alignment and multiview refinement. SGHR [15] predicts scan overlap to construct a sparse pose graph and applies history reweighting during synchronization. Bundle-adjustment methods further refine multiple scan poses jointly [26]. More recently, SMVR [22] evaluates scan relationships using algebraic connectivity and spatial com-patibility to select reliable graph connections before transformation estimation. These methods reduce the influence of unreliable pairwise relations and improve global consistency, but their performance still depends strongly on the reliability of the initial scan connections and correspondence sets. However, low-overlap scenes remain challeng-ing because scan-pair reliability must be estimated from correspondence sets containing few inliers and many outliers. Feature similarity alone may provide insufficient geometric cues for distinguishing reliable scan pairs, especially when repetitive structures generate ambiguous matches. Existing spectral methods mainly focus on correspondence pruning or graph analysis separately. In contrast, GMPCR links correspondence filtering, scan-pair selection, and global synchronization within a unified reliability framework. The refined spectral structure of correspondence-level geometric consistency is used to evaluate both correspondence reliability and scan-pair confidence before relative transformation estimation. This enables the same geometric infor-mation to guide correspondence filtering and pose graph construction, while the resulting pairwise transformations are further refined through adaptive history-aware synchronization based on their consistency with the global pose configuration. 
+
+2.2 Correspondence-free Multiview Point Cloud Registration 
+
+Correspondence-free registration avoids explicit point-to-point matching by aligning multiple scans through distribution-level, continuous-function, latent-space, or map-level objectives. Probabilistic methods jointly estimate scan poses and shared mixture models [27–30], while DeepMapping and DeepMapping2 formulate multiview reg-istration as map optimization [31, 32]. RKHS-based methods align continuous geometric or semantic representa-tions [33–35], and other approaches optimize depth-based scene representations [36] or latent features [16]. These formulations reduce the dependence on discrete correspondence construction and provide flexible ways to exploit dense geometric or learned scene representations. More recently, RAP [37] uses flow matching to directly gener-ate jointly registered point clouds and subsequently recover rigid poses, providing an efficient correspondence-free alternative without explicit pairwise pose graph construction. This generative formulation further demonstrates the potential of directly modeling joint multiview alignment instead of decomposing the problem into independent pair-wise registration tasks. Despite their advantages, correspondence-free methods generally rely on global scene or representation-level objec-tives and do not explicitly model scan-pair reliability or correspondence-level geometric information. Their perfor-mance may therefore be affected when global representations are unreliable, initialization errors are large, or only limited overlap is available between scans. Moreover, the absence of explicit pairwise geometric relations makes it less straightforward to identify informative scan connections before global optimization. This makes such methods less suitable for explicit sparse pose graph construction and direct control of pairwise computation. In contrast, our method retains a correspondence-based formulation and exploits spectral geometric consistency to select informative scan pairs before transformation estimation, filter unreliable correspondences, and construct a sparse pose graph for adaptive global synchronization. 3Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+# 3 Method 
+
+3.1 Overview 
+
+Given N point cloud scans P = {Pi}Ni=1 , multiview registration aims to estimate a global rigid transformation 
+
+Ti ∈ SE(3) for each scan, mapping all scans into a common coordinate frame. In practice, unknown scan overlap and highly contaminated initial correspondences make exhaustive pairwise registration computationally expensive and prone to unreliable pose graph edges. The overall pipeline of GMPCR is illustrated in Fig. 1 and consists of two stages. The first stage performs spec-tral consistency-guided pairwise registration . Initial correspondences are established by feature sampling and mutual nearest-neighbor matching. Compatibility analysis is then used to evaluate correspondence reliability and scan-pair confidence, retaining only informative scan pairs. For each selected pair, geometrically consistent maximal cliques generate transformation hypotheses through weighted rigid alignment, and the hypothesis with the largest inlier sup-port is selected. This stage yields a sparse weighted pose graph Gp = ( V, Ep) with estimated relative transformations 
+
+bTij and initial edge weights w(0)  
+
+> ij
+
+.The second stage performs adaptive history-aware pose synchronization . Global poses and edge weights are iteratively refined according to global consistency. Residual history stabilizes the weight updates, while a recovery mechanism allows previously down-weighted edges to regain confidence when their consistency improves. The final refined pose graph is used to recover globally consistent poses { bTi}Ni=1 .
+
+Figure 1: Overview of the proposed GMPCR framework. 
+
+3.2 Spectral Consistency-Guided Pairwise Registration 
+
+The pairwise registration stage constructs a sparse set of reliable relative transformations for subsequent global syn-chronization. Instead of estimating a transformation for every possible scan pair, GMPCR progressively converts feature similarity into correspondence-level geometric consistency and then into pose graph edges. This stage consists of three steps: initial correspondence construction, spectral consistency-guided scan pair selection, and clique-based transformation estimation. 
+
+3.2.1 Initial Correspondence Construction 
+
+For scan Pi, let {(xia, f ia)}Ni 
+
+> a=1
+
+denote its points and associated local descriptors. Directly matching all points in-troduces considerable redundancy and increases the cost of processing all unordered scan pairs. GMPCR therefore performs farthest-point sampling in the feature space and retains Ns representative points. Compared with spatial sampling, feature-space sampling promotes descriptor diversity and reduces the dominance of densely distributed and highly similar descriptors. 4Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+For each scan pair (i, j ), nearest-neighbor searches are conducted between the sampled descriptor sets. A match is retained only when its two descriptors are mutual nearest neighbors. The retained matches are ranked in ascending order of feature distance, and No matches are kept. The resulting initial correspondence set is 
+
+Cij = cij m := ( xim, xjm) No 
+
+> m=1
+
+. (1) Mutual matching suppresses asymmetric and many-to-one assignments, while limiting the number of feature-nearest matches bounds the size of the subsequent compatibility graph. Nevertheless, feature similarity alone is insufficient to guarantee geometric correctness, particularly in repetitive structures and low-overlap regions. We therefore treat Cij 
+
+as a candidate correspondence set whose reliability is subsequently assessed through collective geometric consistency. 
+
+3.2.2 Spectral Consistency-Guided Scan Pair Selection 
+
+For each correspondence set Cij , GMPCR first constructs a first-order compatibility graph (FCG) [18], in which each node represents a correspondence. Given two correspondences cij m and cij n , their rigidity discrepancy is defined as 
+
+δij mn = ∥xim − xin∥2 − ∥ xjm − xjn∥2 . (2) Because a rigid transformation preserves pairwise Euclidean distances, a small δij mn indicates that the two correspon-dences are geometrically compatible. Their preliminary affinity is defined as 
+
+¯aij mn = max 
+
+
+
+0, 1 − (δij mn )2
+
+τ 2
+
+> c
+
+
+
+. (3) The sparsified FCG affinity is 
+
+aij mn =
+
+¯aij mn , m̸ = n
+
+0, otherwise , (4) where τc > 0 controls the geometric tolerance. The corresponding weighted adjacency matrix is 
+
+Aij := [ aij mn ]No 
+
+> m,n =1
+
+(5) This sparsification reduces the influence of weak or noisy geometric relations on the subsequent spectral analysis. Pairwise compatibility alone may still admit accidental agreements, especially in scenes containing repeated structures. Following the second-order spatial compatibility formulation in [13], we construct the second-order compatibility graph (SCG): 
+
+Bij = A2 
+
+> ij
+
+⊙ Aij , (6) where ⊙ denotes the Hadamard product. Its entry 
+
+bij mn := [ Bij ]mn = aij mn NoX
+
+> l=1
+
+aij ml aij ln (7) combines the direct compatibility between cij m and cij n with their shared-neighbor support. A large bij mn therefore indicates strong first- and second-order geometric consistency. Compared with pairwise distance compatibility alone, the second-order structure is more robust to false geometric matches because an incorrect correspondence is less likely to receive consistent support from multiple neighboring correspondences. Building on this structure, GMPCR further exploits its refined spectral information for both correspondence pruning and scan-pair confidence estimation before relative transformation estimation. Let vij ∈ RNo be the unit-norm dominant eigenvector of Bij , with vij,m denoting its m-th entry. The magnitude 
+
+|vij,m | reflects the participation of correspondence cij m in the dominant geometrically coherent structure. As illustrated in Fig. 2(a), ground-truth inliers generally exhibit stronger spectral responses than outliers. GMPCR retains the top rs
+
+fraction of correspondences according to |vij,m |. Let Sij be the retained index set and define 
+
+eCij := {cij m | m ∈ S ij }, fMij := | eCij |. (8) For notational simplicity, the retained correspondences are reindexed from 1 to fMij , while their point coordinates continue to be denoted by (xim, xjm). The FCG is then restricted to the retained indices, after which the SCG and its dominant eigenvector are recomputed: 
+
+eAij = [ Aij ]Sij ,Sij , eBij = eA2 
+
+> ij
+
+⊙ eAij , (9) 5Spectral Consistency-Guided Multiview Registration A P REPRINT GT inliers GT outliers 0.00 0.25 0.50 0.75 1.00         
+
+> Normalized response  |vij , m|
+> AUC = 0.801
+> (a) Correspondence filtering
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Percentile of spectral confidence sij
+> 0.00 0.15 0.30 0.45 0.60
+> Mean GT overlap
+> (b) Scan-pair selection
+> Spectral score sij
+> All-pair mean
+
+Figure 2: Spectral evidence for the two selection stages of GMPCR. (a) Correspondence filtering ranks putative correspondences according to the magnitudes of the dominant-eigenvector components of the compatibility graph. Ground-truth inliers are concentrated near a response of one, whereas outliers are mainly distributed near zero, yielding a mean pairwise AUC of 0.801 over 3DLoMatch scan pairs. (b) Scan pairs are grouped into deciles by spectral confidence and ordered from low to high along the horizontal axis, while the vertical axis reports the mean ground-truth overlap in each decile. The teal curve shows an overall increase in overlap with confidence. The gray dashed line marks the mean overlap over all candidate pairs (approximately 0.10), and the light-cyan band indicates the 95% confidence interval of the scene-averaged overlap across the eight test scenes. The yellow region highlights the highest-confidence decile, whose mean overlap is approximately 0.485, or 4.8× the all-pair mean. where evij ∈ RfMij denotes the unit-norm dominant eigenvector of eBij . This two-pass construction removes weak correspondences before rebuilding the neighborhood structure, providing a refined graph for both scan-pair scoring and transformation estimation. Recomputing the graph ensures that discarded correspondences no longer contribute to common-neighbor support once they are removed from registration. To estimate the reliability of each candidate scan pair, we define a scan-pair confidence directly from the refined cor-respondence compatibility structure. Unlike our previous SMVR framework [22], which evaluates scan relationships using algebraic connectivity and spatial compatibility at the pose graph level, GMPCR computes the dominant spectral response from the refined second-order correspondence graph. In this way, scan-pair confidence is determined directly by the geometric consistency of the underlying correspondences. Moreover, the confidence is evaluated before rel-ative transformation estimation and is used to select the scan pairs for subsequent registration. Specifically, the raw geometric confidence of scan pair (i, j ) is defined by the Rayleigh quotient: 
+
+bsij = ev⊤ 
+
+> ij
+
+eBij evij . (10) The raw confidence scores of all candidate scan pairs are normalized to obtain the final scan-pair confidence: 
+
+sij = bsij 
+
+∥bs∥2
+
+, (11) where bs denotes the vector containing the raw confidence scores of all unordered candidate scan pairs. When ∥bs∥2 = 0 ,all confidence scores are set to zero. Since eBij is a nonnegative matrix, the dominant eigenvector can be selected to be nonnegative according to the Perron– Frobenius theorem, ensuring bsij ≥ 0. Moreover, when the dominant eigenvector is computed exactly, the Rayleigh quotient equals the largest eigenvalue of eBij .The proposed spectral confidence measures the intrinsic geometric coherence of each scan pair. As shown in Fig. 2(b), scan pairs with higher spectral confidence generally exhibit larger ground-truth overlap. Reliable scan pairs usually contain correspondences that form compact and mutually consistent structures within the refined second-order com-patibility graph, producing stronger spectral responses. In contrast, unreliable scan pairs tend to exhibit fragmented compatibility patterns with isolated or weakly supported correspondences, resulting in lower confidence values. There-fore, the proposed confidence captures both direct correspondence compatibility and higher-order consistency encoded by the refined second-order graph, providing a reliable criterion for selecting edges during pose graph construction. 6Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+For scan i, let NK (i) denote the set of its K highest-confidence neighboring scans. The candidate pose graph edge set is formed as the union of the directed top-K neighborhoods: 
+
+Ep = {(i, j ) | i < j, j ∈ N K (i) or i ∈ N K (j)} . (12) This union rule retains an edge if either scan identifies the other as a reliable neighbor, preserving informative connec-tions while maintaining a sparse pose graph. 
+
+3.2.3 Clique-Based Transformation Estimation 
+
+For each retained scan pair (i, j ) ∈ E p, we adopt maximal-clique-based hypothesis generation [20] for pairwise transformation estimation. This stage is performed after spectral scan-pair selection, so relative pose estimation is applied only to the retained scan connections. An unweighted graph is constructed from the refined compatibility structure, and maximal cliques with at least three nodes are enumerated. Each clique defines a geometrically consistent correspondence subset used to generate a transformation hypothesis. Since a compatibility graph may contain many maximal cliques, GMPCR ranks them by their mean internal SCG affinity: 
+
+qij (M) = 1
+
+|M| (|M| − 1) 
+
+X
+
+> m,n ∈M
+> m̸=n
+
+ebij mn . (13) A larger qij (M) indicates stronger geometric consistency within the clique. Only the top Kc cliques are retained, and their collection is denoted by Hij . Using the mean affinity rather than the total affinity reduces the preference for large cliques and allows smaller but highly consistent subsets to remain competitive in low-overlap cases. Each clique M ∈ H ij generates one relative transformation hypothesis. The associated rotation and translation are estimated by 
+
+( bRM 
+
+> ij
+
+, btM 
+
+> ij
+
+) = arg min X
+
+> m∈M
+
+|evij,m | xim − (Rx jm + t) 22 . (14) Each hypothesis is evaluated on the complete filtered correspondence set. Given a candidate transformation T =(R, t), its pair-specific inlier ratio is defined as 
+
+IR ij (T) = 1
+
+fMij 
+
+> fMij
+
+X
+
+> m=1
+
+I  xim − (Rx jm + t) 2 < τ in 
+
+ , (15) where τin is the inlier distance threshold and I(·) denotes the indicator function. The relative transformation bTij with the highest inlier ratio is selected as the final transformation. The initial weight of pose graph edge (i, j ) is defined as 
+
+w(0)  
+
+> ij
+
+= sij IR ij ( bTij ). (16) The inlier ratio measures the support of the selected transformation over the filtered correspondence set. The pairwise registration stage therefore outputs n
+
+( bTij , w (0)  
+
+> ij
+
+)
+
+o
+
+> (i,j )∈E p
+
+, (17) which defines the sparse weighted pose graph used for subsequent global synchronization. 
+
+3.3 Adaptive History-aware Pose Synchronization 
+
+The pairwise registration stage produces a sparse weighted pose graph Gp = ( V, Ep), where each edge (i, j ) ∈Ep contains an estimated relative transformation bTij and an initial weight w(0)  
+
+> ij
+
+. Pose synchronization seeks global transformations that agree with these pairwise measurements. Although spectral correspondence filtering removes many unreliable scan pairs and correspondences, a small number of incorrect transformations may remain in the pose graph. Under low-overlap conditions, some outlier edges can receive relatively large initial weights and bias the synchronized poses. To reduce the influence of unreliable edges, GMPCR introduces an adaptive history-aware iteratively reweighted least squares (IRLS) scheme. The contribution of residual history is adjusted according to the evolution of the global solution, and a recovery mechanism is introduced to restore confidence for edges whose global consistency improves. Each IRLS iteration alternates between pose synchronization and edge-weight updates. The synchronization step estimates the global rotations and translations using the current edge weights, while the reweighting step evaluates the 7Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+consistency of each relative rotation with the current global poses and updates its confidence. Let ℓ ∈ 0, . . . , L − 1
+
+denote the iteration index, where L is the maximum number of IRLS iterations, and let w(ℓ) 
+
+> ij
+
+denote the weight of edge 
+
+(i, j ) at iteration ℓ. The weights are initialized using the pairwise registration confidence w(0)  
+
+> ij
+
+.
+
+3.3.1 Rotation and Translation Synchronization 
+
+Given the current edge weights {w(ℓ) 
+
+> ij
+
+}(i,j )∈E p and relative transformations { bTij }(i,j )∈E p , pose synchronization recov-ers a globally consistent transformation for each scan. Following the standard synchronization procedure adopted in SGHR [15], we first estimate the global rotations and subsequently solve for the global translations under the recovered rotations. At IRLS iteration ℓ, the global rotations are estimated by 
+
+{R(ℓ) 
+
+> i
+
+}Ni=1 = arg min 
+
+> {Ri∈SO(3) }Ni=1
+
+X
+
+> (i,j )∈E p
+
+w(ℓ) 
+
+> ij
+
+bRij − R⊤ 
+
+> i
+
+Rj
+
+> 2F
+
+, (18) where bRij is the rotation component of bTij and ∥ · ∥ F denotes the Frobenius norm. The objective enforces agreement between each measured relative rotation and the relative rotation induced by the global estimates. It is solved by con-structing a weighted connection Laplacian, extracting the eigenvectors associated with its three smallest eigenvalues, and projecting the corresponding 3 × 3 blocks onto SO(3) . Consequently, high-confidence edges contribute more strongly to the synchronized rotations, whereas unreliable edges exert less influence. Once the rotations are determined, the global translations are estimated by 
+
+{t(ℓ) 
+
+> i
+
+}Ni=1 = arg min 
+
+> {ti∈R3}Ni=1
+
+X
+
+> (i,j )∈E p
+
+w(ℓ) 
+
+> ij
+
+R(ℓ) 
+
+> i
+
+btij + ti − tj
+
+> 22
+
+, (19) where btij is the translation component of bTij . This objective follows from bTij ≈ T−1 
+
+> i
+
+Tj and is solved by weighted linear least squares. 
+
+3.3.2 Adaptive History-aware Edge-Weight Update 
+
+Pose synchronization and edge reweighting play complementary roles within IRLS. The synchronization step estimates the global poses under the current edge weights, while the reweighting step evaluates the agreement between each measured relative rotation and the current global configuration. During the early iterations, the global pose estimates may still be inaccurate. As a result, a reliable edge can temporarily produce a large residual, while an unreliable edge may appear consistent with the current solution. Updating edge weights based only on the current residual can therefore lead to incorrect weight changes. To reduce this effect, GMPCR maintains a residual history for each edge and adjusts its influence according to the evolution of the global rotation residual. This provides faster response when the global solution changes and more stable weight updates as the optimization approaches convergence. The normalized rotation residual of edge (i, j ) is 
+
+r(ℓ) 
+
+> ij
+
+= 1
+
+sr
+
+dR
+
+
+
+R(ℓ) 
+
+> ij
+
+, bRij 
+
+
+
+, (20) where dR(·, ·) denotes the angular distance between two rotations and sr > 0 is the residual normalization factor. A small residual indicates agreement between the measured relative rotation and the current global configuration, whereas a large residual suggests that the edge is unreliable or that the current solution remains unstable. The overall rotation error at iteration ℓ is measured by 
+
+R(ℓ) = X
+
+> (i,j )∈E p
+
+w(ℓ)
+
+> ij
+
+
+
+r(ℓ)
+
+> ij
+
+2
+
+. (21) This quantity measures the aggregate weighted discrepancy between the pairwise rotations and the current global solution. Because edges that have already been down-weighted contribute less to the error measure, higher-confidence edges continue to dominate the evaluation of the current optimization state. The relative variation of the overall rotation error is defined as 
+
+∆R(ℓ) = R(ℓ) − R (ℓ−1) 
+
+R(ℓ−1) . (22) 8Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+Compared with the absolute error magnitude, ∆R(ℓ) more directly characterizes the evolution of the synchronization process and is less sensitive to differences in graph size and initial weight scale. A fixed memory coefficient cannot balance rapid adaptation in early iterations and stable refinement near conver-gence. Excessive historical influence may preserve inaccurate early residuals, whereas insufficient smoothing near convergence can make the edge weights overly sensitive to small residual variations. GMPCR therefore maintains an exponentially weighted residual history h(ℓ) 
+
+> ij
+
+with an adaptive memory coefficient λ(ℓ):
+
+h(ℓ) 
+
+> ij
+
+= λ(ℓ)h(ℓ−1)  
+
+> ij
+
++
+
+
+
+1 − λ(ℓ)
+
+r(ℓ) 
+
+> ij
+
+. (23) The adaptive memory coefficient is defined as 
+
+λ(ℓ) = λmin + ( λmax − λmin ) exp 
+
+
+
+−κ∆R(ℓ)
+
+, (24) where 0 ≤ λmin ≤ λmax < 1 define the lower and upper bounds of the memory coefficient and κ > 0 controls its sensitivity to the relative variation of the overall rotation error. When the overall rotation error changes substantially, a large ∆R(ℓ) moves λ(ℓ) toward λmin , increasing the contribution of the current residual and allowing the history to respond rapidly. As the solution stabilizes, λ(ℓ) approaches λmax , providing stronger historical smoothing and reducing small weight variations. However, residual history may respond slowly when a previously down-weighted edge becomes consistent with the evolving global solution. GMPCR introduces a recovery term 
+
+g(ℓ) 
+
+> ij
+
+= max 
+
+
+
+0, r (ℓ−1)  
+
+> ij
+
+− r(ℓ)
+
+> ij
+
+
+
+. (25) The recovery term is positive only when the edge residual decreases, indicating improved consistency with the current global solution. Edges with non-decreasing residuals receive no recovery, while persistent outliers are unlikely to recover substantially because their residual histories remain large. Since the updated weight is capped by the initial pairwise confidence, the recovery mechanism cannot increase an edge weight beyond its initial value. It therefore restores confidence only when supported by improved global consistency. Combining the residual history and recovery term yields the updated edge weight 
+
+w(ℓ+1)  
+
+> ij
+
+= w(0)  
+
+> ij
+
+exp 
+
+
+
+−h(ℓ) 
+
+> ij
+
++ ρg (ℓ)
+
+> ij
+
+
+
+, (26) where ρ ≥ 0 controls the recovery strength. To prevent excessive weight growth, the updated edge weight is capped by its initial confidence. Thus, the recovery mechanism only restores previously reduced confidence without exceeding the initial pairwise estimate. The history term reduces the influence of edges with persistently large residuals, while the recovery term partially counteracts this reduction when an edge exhibits improved global consistency. After the weight update, rotation and translation synchronization are recomputed using w(ℓ+1)  
+
+> ij
+
+. This alternating pro-cess progressively transfers information between local pairwise reliability and global pose graph consistency. After L
+
+IRLS iterations, the synchronized transformations {T(L) 
+
+> i
+
+}Ni=1 are taken as the final global poses. The pairwise and synchronization stages complement each other. Spectral consistency focuses computation on reliable scan connections and geometrically coherent correspondence subsets, whereas adaptive history-aware reweighting further refines the resulting transformations according to global pose graph consistency. Together, they maintain a sparse and informative pose graph and improve registration robustness under low-overlap conditions. 
+
+# 4 Experiments 
+
+4.1 Experimental Setup 4.1.1 Datasets 
+
+We evaluate GMPCR on four widely used datasets covering indoor, low-overlap, large-scale, and outdoor registration scenarios. 3DMatch [38] consists of indoor RGB-D reconstructions. We adopt its standard test split of eight scenes, containing 1,623 scan pairs with overlap ratios above 30% . 3DLoMatch [12] is constructed from the same test scenes but contains 1,781 more challenging scan pairs with overlap ratios between 10% and 30% , providing a focused evaluation of registration robustness under limited overlap. ScanNet [39] contains large-scale indoor reconstructions. Following the common multiview registration protocol, we use 32 test scenes and sample 30 scans from each scene, yielding 960 scans and 13,920 evaluation pairs. ETH [40] comprises four outdoor scenes with 132 scans and 713 official evaluation pairs. Its distinct sensing conditions, scene scales, and geometric structures enable us to assess the generalization capability of GMPCR from indoor to outdoor environments. 9Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+4.1.2 Metrics 
+
+For 3DMatch, 3DLoMatch, and ETH, Registration Recall (RR) is used as the primary metric, defined as the percentage of ground-truth scan pairs whose estimated relative transformations meet the given registration-error threshold. For ScanNet, rotation error (RE) and translation error (TE) are used to measure the difference between the estimated and ground-truth relative transformations. RE measures the angular difference between rotations, while TE measures the Euclidean distance between translation vectors. Threshold-based recall, together with the mean and median errors, is reported. Higher recall and lower errors indicate better registration performance. Table 1: Registration recall on 3DMatch, 3DLoMatch, and ETH.                              
+
+> Registration Recall (%) 3DMatch 3DLoMatch ETH EIGSE3 [41] 40.1 26.5 96.3 L1-IRLS [42] 68.6 49.0 90.2 RotAvg [43] 77.2 60.3 96.6 LITS [44] 80.8 65.2 48.4 HARA [45] 83.8 71.9 96.0 SGHR [15] 96.2 81.6 99.1 SMVR [22] 96.7 83.0 99.6 RAP [37] 85.6 73.0 99.8 GMPCR 97.2 89.6 99.7
+
+4.1.3 Implementation Details 
+
+We compare GMPCR with EIGSE3 [41], L1-IRLS [42], RotAvg [43], LITS [44], HARA [45], LMVR [25], SGHR [15], SMVR [22], and RAP [37]. These methods cover classical and learning-based transformation synchro-nization, sparse pose graph construction, and correspondence-free multiview registration. For a fair comparison among pose graph-based methods, YOHO descriptors [46] are used for GMPCR and all synchronization baselines. Unless otherwise specified, the dataset-dependent parameters follow the order of 3DMatch, 3DLoMatch, Scan-Net, and ETH. We sample Ns = {200 , 240 , 200 , 400 } representative points from each scan and retain No =
+
+{100 , 100 , 100 , 75 } initial correspondences for each scan pair. The spectral retention ratios are set to rs =
+
+{0.50 , 0.65 , 0.50 , 0.25 }, and the neighborhood sizes are set to K = {6, 8, 8, 4}. For each retained scan pair, at most Kc = {10 , 5, 10 , 10 } confidence-ranked maximal cliques are used to generate transformation hypotheses. For adaptive history-aware synchronization, the maximum numbers of IRLS iterations are set to L = {10 , 90 , 80 , 5}. The memory-response parameters are set to κ = {3, 1, 5, 20 }, while the recovery coefficients are ρ = {0.1, 0.1, 0.1, 0.5}.The experiments are conducted on a PC equipped with an Intel Core i5-14600KF CPU, 16GB RAM, and an NVIDIA GeForce RTX 5060Ti GPU. 
+
+4.2 Qualitative and Quantitative Results 
+
+As shown in Table 1, GMPCR achieves registration recalls of 97 .2% and 89 .6% on 3DMatch and 3DLoMatch, outper-forming all competing methods. It exceeds SGHR by 1.0 and 8.0 percentage points, SMVR by 0.5 and 6.6 percentage points, and RAP by 11 .6 and 16 .6 percentage points on 3DMatch and 3DLoMatch, respectively. The advantage is particularly evident on 3DLoMatch, where low overlap leads to sparse reliable correspondences and increased match-ing ambiguity. These results demonstrate that the compatibility graph effectively strengthens geometrically consistent inliers while suppressing isolated or weakly connected outliers, enabling robust global registration under heavily con-taminated correspondences. On ETH, RAP achieves the highest RR of 99 .8% . GMPCR is only 0.1 percentage points below the best result while outperforming SMVR and SGHR by 0.1 and 0.6 percentage points, respectively. Given the substantial differences in scene scale and sensing conditions between ETH and the indoor datasets, the consistently high performance indicates that GMPCR generalizes well across both indoor and outdoor scenarios. On ScanNet (Table 2), SMVR achieves the lowest mean rotation error of 18 .9◦, while GMPCR ranks second with 20 .2◦. GMPCR obtains a mean translation error of 0.46 m, matching SMVR and improving over SGHR at 0.56 m; it also achieves the lowest median translation error of 0.40 m. Compared with SGHR, GMPCR reduces the mean rotation error from 
+
+21 .7◦ to 20 .2◦ and the mean translation error from 0.56 m to 0.46 m. It also substantially outperforms RAP, whose mean rotation and translation errors reach 44 .1◦ and 1.05 m, respectively. These results show that GMPCR achieves competitive rotation accuracy together with strong translation accuracy on ScanNet. 10 Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+Table 2: Rotation and translation error on ScanNet. Rotation error Translation error (m) 
+
+3◦ 5◦ 10 ◦ 30 ◦ 45 ◦ Mean ↓ Med ↓ 0.05 0.10 0.25 0.50 0.75 Mean ↓ Med ↓
+
+EIGSE3 [41] 40.8 46.3 51.9 61.2 65.7 40 .6◦ 37 .1◦ 23.9 38.5 51.0 59.3 66.1 0.88 0.84 L1-IRLS [42] 46.3 54.2 61.6 64.3 66.8 41 .8◦ 34 .0◦ 24.1 38.5 48.3 55.6 60.9 1.05 1.01 RotAvg [43] 50.2 60.1 65.3 66.8 68.8 38 .5◦ 31 .6◦ 31.8 49.0 58.8 63.3 65.6 0.96 0.83 LITS [44] 54.3 69.4 75.6 78.5 80.3 24 .9◦ 19 .9◦ 31.4 54.4 72.3 76.7 79.6 0.65 0.56 HARA [45] 55.7 63.7 69.0 70.8 72.1 34 .7◦ 31 .3◦ 35.2 53.6 65.4 68.6 71.7 0.86 0.71 LMVR [25] 48.3 53.6 58.9 63.2 64.0 48 .1◦ 33 .7◦ 34.5 49.1 58.5 61.6 63.9 0.83 0.55 SGHR [15] 59.1 73.1 80.8 82.5 83.0 21 .7◦ 19 .0◦ 39.9 64.1 76.7 79.0 81.9 0.56 0.49 SMVR [22] 58.0 71.4 80.0 86.0 86.5 18 .9◦ 17 .6◦ 39.0 61.7 76.6 81.5 84.8 0.46 0.44 RAP [37] 33.1 41.0 49.5 60.1 64.4 44 .1◦ 28 .0◦ 20.9 33.2 46.8 56.1 62.0 1.05 0.85 GMPCR 54.8 70.9 83.4 86.3 86.6 20 .2◦ 19 .2◦ 35.4 59.7 79.4 82.8 84.4 0.46 0.40 
+
+Fig. 3 compares the end-to-end global registration results of SGHR, SMVR, and GMPCR on three representative 3DMatch scenes. All methods recover coherent structures in the Kitchen scene. Their differences become more visible in Home-MD and Studyroom, which contain repetitive geometry and more complex spatial layouts. In these challeng-ing scenes, SGHR and SMVR exhibit local boundary duplication and scan displacement, whereas GMPCR generally produces more consistent walls and room structures with less visible drift. These results qualitatively demonstrate the robustness of GMPCR against unreliable pairwise transformations in complex multiview registration scenarios. 
+
+Ground Truth SGHR SMVR GMPCR Kitchen Home-MD Studyroom 
+
+Figure 3: Qualitative comparison of global registration on 3DMatch. The leftmost column shows the ground truth, while the remaining columns show the results of SGHR, SMVR, and GMPCR. Overall, GMPCR achieves the best performance on 3DMatch and 3DLoMatch while remaining competitive on ETH and ScanNet. Its clear advantage on 3DLoMatch demonstrates the effectiveness of geometric consistency under low-overlap conditions. Combined with spectral correspondence filtering and adaptive synchronization, GMPCR provides 11 Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+a favorable balance among registration accuracy, low-overlap robustness, and consistent performance across different datasets and scene types. 
+
+4.3 Ablation Study 
+
+Table 3: Ablation study on 3DMatch and 3DLoMatch. All results are registration recall (%). 
+
+Configuration Pair selection Spectral filtering Memory coefficient Recovery 3DMatch ↑ 3DLoMatch ↑
+
+Baseline – – – – 91.6 82.5 + Pair Selection ✓ – – – 96.0 88.7 + Spectral Filtering ✓ ✓ – – 96.4 89.0 + Memory Coefficient ✓ ✓ ✓ – 97.0 89.5 + Recovery Term (Full) ✓ ✓ ✓ ✓ 97.2 89.6 10 20 30 40 50 All 
+
+> Number of views
+> 50 60 70 80 90 100
+> Registration recall (%)
+> 3DMatch
+> SGHR SMVR RAP GMPCR
+
+(a) 10 20 30 40 50 All  
+
+> Number of views
+> 50 60 70 80 90 100
+> Registration recall (%)
+> 3DLoMatch
+> SGHR SMVR RAP GMPCR
+
+(b) 
+
+Figure 4: Registration recall under increasing numbers of jointly registered views on 3DMatch and 3DLoMatch. Table 4: Registration recall (%) under increasing numbers of views on 3DMatch and 3DLoMatch. 
+
+Dataset Method 10 20 30 40 50 All 3DMatch SGHR [15] 77.4 92.1 92.4 94.4 95.3 95.3 SMVR [22] 84.9 89.1 90.6 84.8 92.3 95.8 RAP [37] 74.5 83.8 86.7 88.3 84.0 87.7 
+
+GMPCR 84.0 94.4 95.4 96.0 97.0 96.9 
+
+3DLoMatch SGHR [15] 62.6 72.3 80.4 81.2 82.2 83.3 SMVR [22] 60.2 72.7 75.8 72.4 79.7 80.1 RAP [37] 56.1 68.5 77.1 79.7 75.4 78.4 
+
+GMPCR 74.0 80.6 87.4 90.4 92.5 93.4 
+
+We conduct an ablation study on 3DMatch and 3DLoMatch to evaluate the contribution of each GMPCR component. Starting from the baseline, we progressively introduce pair selection, spectral filtering, adaptive memory, and recovery while keeping other settings fixed. Without pair selection, all valid scan pairs are retained; without spectral filtering, all initial correspondences are used. Disabling adaptive memory replaces the convergence-dependent update with an SGHR-style history accumulation, while disabling recovery prevents down-weighted edges from regaining confidence. Thus, the baseline uses all scan pairs and correspondences, SGHR-style history update, and no recovery. As shown in Table 3, the baseline achieves registration recalls of 91.6% and 82.5% on 3DMatch and 3DLoMatch. Pair selection increases them to 96.0% and 88.7%, giving the largest gains of 4.4 and 6.2 percentage points and demon-strating the importance of reliable pose graph construction. Spectral filtering further improves the recalls to 96.4% and 89.0% by removing inconsistent correspondences. Adaptive memory raises them to 97.0% and 89.5%, indicat-ing that convergence-aware history weighting benefits global synchronization. Finally, recovery yields 97.2% and 89.6%, providing additional refinement by restoring reliable edges when their global consistency improves. Overall, all components contribute to performance, with pair selection providing the dominant improvement and the full model achieving the best results on both datasets. 12 Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+4.4 Robustness under increasing Numbers of Views 
+
+We further evaluate the robustness of different methods under varying numbers of jointly registered views. Following RAP [37], we select six test scenes shared by 3DMatch and 3DLoMatch, each containing more than 50 views. For each selected scene, subsets with 10, 20, 30, 40, 50, and all available views are constructed by randomly sampling different numbers of views. Reducing the number of available views decreases the number of potential geometric connections and lowers the effective overlap among selected scans, making global registration more challenging. This experiment evaluates whether different methods can maintain reliable registration performance under sparse-view conditions and with increasing numbers of jointly registered views. As shown in Table 4 and Fig. 4, GMPCR achieves the highest registration recall for all tested settings on 3DLoMatch and for 20 views and above on 3DMatch. On 3DMatch, GMPCR improves from 84.0% with 10 views to 97.0% with 50 views and maintains 96.9% when all views are used. The advantage of GMPCR is more evident on 3DLo-Match, where increasing the number of views enlarges the registration problem and introduces more candidate scan relationships, including potentially unreliable low-overlap connections, while also providing richer geometric context. GMPCR achieves registration recalls of 74.0%, 80.6%, 87.4%, 90.4%, 92.5%, and 93.4% with increasing numbers of views, remaining consistently higher than all competing methods. With all available views, GMPCR improves over SGHR, SMVR, and RAP by 10.1, 13.3, and 15.0 percentage points, respectively. These results indicate that GMPCR can effectively handle larger multiview registration problems while maintaining stable registration performance. This stable improvement with increasing numbers of views is attributable to the reliable scan-pair selection and adaptive global synchronization, which allow the constructed pose graph to exploit additional geometric information while reducing the influence of unreliable connections. Overall, GMPCR demonstrates robust multiview registration perfor-mance under both standard and low-overlap conditions. Table 5: Scan-pair retrieval quality for pose graph construction at K ∈ { 4, 8, 12 }.                                                                                           
+
+> Dataset KMethod R@ K(%) ↑Regret ↓
+> 3DLoMatch 4SGHR [15] 60.3 0.0866 4SMVR [22] 63.2 0.0820 4GMPCR 73.2 0.0380
+> 8SGHR [15] 61.5 0.0749 8SMVR [22] 62.5 0.0699 8GMPCR 74.5 0.0322
+> 12 SGHR [15] 60.6 0.0617 12 SMVR [22] 62.9 0.0552 12 GMPCR 72.7 0.0287
+> ScanNet 4SGHR [15] 71.0 0.0664 4SMVR [22] 74.8 0.0485 4GMPCR 78.0 0.0311
+> 8SGHR [15] 69.1 0.0694 8SMVR [22] 73.8 0.0498 8GMPCR 77.7 0.0354
+> 12 SGHR [15] 70.1 0.0576 12 SMVR [22] 73.1 0.0461 12 GMPCR 76.7 0.0338
+> ETH 4SGHR [15] 77.3 0.0235 4SMVR [22] 85.7 0.0133 4GMPCR 86.4 0.0076
+> 8SGHR [15] 63.3 0.0276 8SMVR [22] 70.1 0.0209 8GMPCR 79.0 0.0088
+> 12 SGHR [15] 63.2 0.0247 12 SMVR [22] 67.5 0.0188 12 GMPCR 77.9 0.0096
+
+13 Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+4.5 Pose Graph Construction Quality 
+
+We further evaluate the quality of the pose graphs constructed by different methods. A reliable pose graph should pre-serve scan pairs with high geometric overlap while avoiding unnecessary connections with weak constraints. There-fore, we compare the scan-pair rankings produced by GMPCR, SGHR, and SMVR using the ground-truth (GT) overlap between scans. Specifically, for each scan, the top-K neighbors ranked by a method are compared with the GT top-K
+
+neighbors that have the highest overlap ratios. We measure the ranking quality using Recall@K (R@K) and Regret. R@K is defined as the ratio of correctly retrieved high-overlap neighbors among the selected top-K neighbors, where a higher value indicates that more informative scan connections are preserved. Regret measures the decrease in mean GT overlap relative to the GT top-K neighbors, where a lower value indicates that the constructed pose graph is closer to the ideal graph. As shown in Table 5, GMPCR consistently achieves the best scan-pair retrieval performance across all datasets and different values of K. On 3DLoMatch, GMPCR obtains R@K values of 73.2%, 74.5%, and 72.7% for K = 4 , 8,and 12 , respectively, outperforming SGHR and SMVR by clear margins. Meanwhile, the corresponding Regret values are reduced to 0.0380, 0.0322, and 0.0287, indicating that GMPCR selects scan pairs closer to the highest-overlap neighbors. The improvements are particularly notable on 3DLoMatch, where low overlap makes reliable scan-pair selection more challenging. Similar trends are observed on ScanNet and ETH. On ScanNet, GMPCR achieves the highest R@K values of 78.0%, 77.7%, and 76.7% under the three tested settings, together with the lowest Regret values. On ETH, GMPCR also consistently ranks the most informative scan connections, achieving R@K values of 86.4%, 79.0%, and 77.9% for K = 4 , 8, and 12 , respectively. These results show that the spectral consistency-based selection strategy can effectively identify reliable scan pairs across different scene types. Overall, the pose graph construction results demonstrate that GMPCR produces more accurate scan-pair rankings than existing sparse pose graph methods. By preserving informative geometric connections and reducing unreliable edges, GMPCR constructs a compact and reliable pose graph that provides stronger constraints for subsequent global pose synchronization. 
+
+4.6 Pose Graph Connectivity Analysis 
+
+We further analyze how the neighborhood size K affects the connectivity of the constructed pose graph. For each scan, the top-K scan pairs ranked by confidence are retained as neighbor candidates, and an undirected edge is added if either scan selects the other. We report the number of fully connected scenes (Conn.), the maximum number of connected components ( Cmax ), the minimum largest-connected-component ratio ( LCC min ), the minimum reference-node reachability ratio ( Rmin ), and the mean number of retained edges ( ¯M ). These metrics jointly measure whether the selected scan pairs provide sufficient graph connectivity for subsequent pose synchronization. Table 6: Connectivity of pose graphs constructed by GMPCR under different Top-K settings. Conn. is the number of connected scenes (out of eight), Cmax is the maximum component count, LCC min and Rmin are the minimum LCC and reachability ratios (%), and ¯M is the mean edge count.                                                                                                                
+
+> 3DMatch 3DLoMatch
+> KConn. Cmax LCC min Rmin ¯MConn. Cmax LCC min Rmin ¯M
+> 10/819 8.83.339.0 0/818 8.33.339.0 23/8542 .142 .173.4 1/8542 .16.772.0 36/8357 .957 .9106.9 5/8345 .945 .9105.1 46/8357 .957 .9139.5 6/8276 .376 .3138.2 58/81100 .0100 .0173.0 7/8276 .376 .3171.6 68/81100 .0100 .0206.2 7/8276 .376 .3203.8 78/81100 .0100 .0237.6 7/8276 .376 .3236.4 88/81100 .0100 .0271.6 8/81100 .0100 .0270.1 98/81100 .0100 .0304.6 8/81100 .0100 .0303.6 10 8/81100 .0100 .0337.2 8/81100 .0100 .0335.8
+
+As shown in Table 6 and Fig. 5, pose graph connectivity improves steadily as K increases. On 3DMatch, no scene is fully connected at K = 1 , whereas six of eight scenes become connected at K = 3 . Full connectivity is achieved at 
+
+K = 5 , where both LCC min and Rmin reach 100%, with an average of 173.0 edges. In contrast, 3DLoMatch requires a larger neighborhood because of its lower overlap. Seven scenes are connected for K = 5 –7, and full connectivity is reached at K = 8 , with LCC min = Rmin = 100% and 270.1 edges on average. These results also reveal a clear trade-off between connectivity and sparsity. Increasing K improves connectivity but continuously increases the number of retained edges. Once full connectivity is reached, further increasing K provides no connectivity benefit while making 14 Spectral Consistency-Guided Multiview Registration A P REPRINT 1 2 3 4 5 6 7 8 9 10                                   
+
+> Top-K
+> 020 40 60 80 100
+> Connected scenes (%)
+> (a) Connected scenes on 3DMatch. 12345678910
+> Top-K
+> 020 40 60 80 100
+> Connected scenes (%) (b) Connected scenes on 3DLoMatch. 12345678910
+> Top-K
+> 020 40 60 80 100
+> Worst-scene LCC (%) (c) Worst-scene LCC on 3DMatch. 12345678910
+> Top-K
+> 020 40 60 80 100
+> Worst-scene LCC (%) (d) Worst-scene LCC on 3DLoMatch.
+
+Figure 5: Connectivity of pose graphs constructed by GMPCR as a function of K on 3DMatch and 3DLoMatch. Panels (a) and (b) show the percentage of fully connected scenes, while panels (c) and (d) report the LCC ratio of the worst scene. 
+
+the graph denser. For example, increasing K from 5 to 10 on 3DMatch raises the mean edge count from 173.0 to 337.2 without changing connectivity. Overall, confidence-based top-K selection can construct sparse yet globally connected pose graphs, although lower-overlap scenes require more neighboring connections. 
+
+4.7 Time Efficiency Analysis 
+
+Table 7 reports the average runtime per scene on the eight 3DMatch test scenes. For SGHR, SMVR, and GMPCR, the runtime is divided into the main module and transformation synchronization. The main module includes graph construction and pairwise relative pose estimation, while the transformation synchronization time measures the cost of global pose optimization. As shown in Table 7, GMPCR achieves the lowest runtime among the pose graph-based methods, requiring only 23.7s per scene. It reduces the total runtime by 15.7s and 19.6s compared with SGHR and SMVR, corresponding to speedups of 1.66 × and 1.83 ×, respectively. The efficiency improvement is obtained from both stages of the pipeline. Specifically, GMPCR reduces the main-module runtime to 23.3s, which is 37.2% and 38.8% lower than SGHR and SMVR, respectively. Meanwhile, its transformation synchronization requires only 0.4s, achieving reductions of 82.6% and 92.3% compared with SGHR and SMVR. RAP achieves a lower total runtime of 10.4s, mainly benefiting from its feed-forward inference pipeline after training. In contrast, GMPCR performs scan-pair selection and global alignment Table 7: Average runtime for registering one 3DMatch scene. 
+
+Method Main module (s) Trans. Sync. (s) Total (s) SGHR [15] 37.1 2.3 39.4 SMVR [22] 38.1 5.2 43.3 RAP [37] – – 10.4 GMPCR 23.3 0.4 23.7 
+
+using geometric consistency without requiring training. These two methods therefore follow different computational paradigms. Nevertheless, GMPCR achieves substantially lower runtime than existing pose graph-based methods while maintaining strong registration performance across different datasets and overlap conditions. The results demonstrate that GMPCR effectively reduces the computational cost of pose graph-based multiview registration, particularly in graph construction and transformation synchronization. 
+
+# 5 Conclusion 
+
+This paper presented GMPCR, a spectral consistency-guided framework for robust and efficient multiview point cloud registration in low-overlap scenes. GMPCR exploits a refined second-order compatibility structure to jointly evalu-ate correspondence reliability and scan-pair confidence, enabling informative scan pairs to be selected before relative transformation estimation and producing a sparse pose graph. For the retained pairs, clique-based hypothesis gener-ation estimates reliable relative transformations. The pose graph is then refined by adaptive history-aware synchro-nization, which adjusts residual-history contributions according to global rotation consistency and allows previously down-weighted edges to recover when their consistency improves. GMPCR therefore integrates correspondence-level, scan-pair-level, and global pose consistency within a unified local-to-global framework. Experiments on 3DMatch, 3DLoMatch, ScanNet, and ETH demonstrate its effectiveness. GMPCR achieves registra-tion recalls of 97.2% and 89.6% on 3DMatch and 3DLoMatch, respectively, while remaining competitive on ScanNet 15 Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+and ETH. Scan-pair retrieval and runtime analyses further confirm that GMPCR identifies informative connections more accurately and operates more efficiently than existing sparse pose graph methods. Future work will focus on reducing candidate-pair evaluation costs and improving robustness in extremely sparse or weakly connected pose graphs. 
+
+# References 
+
+[1] Yanyi Li, Akram Akbar, Chun Liu, Yunze Wu, Honghao Wang, Jing Guo, and Zhijian Guo. Mapping capability-centric agentic simulations for SLAMs on quadruped robots. Nature Sensors , 1:366–377, 2026. [2] Difeng Hu and Vincent JL Gan. Semantic navigation for automated robotic inspection and indoor environment quality monitoring. Automation in Construction , 170:105949, 2025. [3] Wei Ye, Qiming Xia, Hai Wu, Zhen Dong, Ruofei Zhong, Cheng Wang, and Chenglu Wen. Fade3d: fast and deployable 3d object detection for autonomous driving. IEEE Transactions on Intelligent Transportation Systems ,26(9):12934–12946, 2025. [4] Cong Zhao, Delong Ding, Cailin Lei, Shiyu Wang, Yuxiong Ji, and Yuchuan Du. Safety field-based vehicle-infrastructure cooperative perception for autonomous driving using 3d point clouds. IEEE Transactions on Intel-ligent Transportation Systems , 26(4):4676–4691, 2025. [5] Mostafa Mahmoud, Yaxin Li, Mahmoud Adham, Ahmed Mansour, and Wu Chen. Indoor 3d point cloud recon-struction for scan-to-bim automation. Automation in Construction , 184:106853, 2026. [6] Li Fang, Tianyu Li, Yanghong Lin, Shudong Zhou, and Wei Yao. A coupled optical–radiometric modeling approach to removing reflection noise in tls data of urban areas. ISPRS Journal of Photogrammetry and Remote Sensing , 220:217–231, 2025. [7] Jette J Peek, Xucong Zhang, Klaus Hildebrandt, Samuel Alexander Max, Amir H Sadeghi, AJJC Bogers, and EAF Mahtab. A novel 3d image registration technique for augmented reality vision in minimally invasive thoracoscopic pulmonary segmentectomy. International journal of computer assisted radiology and surgery ,20(4):787–795, 2025. [8] Yu-Xin Zhang, Jie Gui, Baosheng Yu, Xiaofeng Cong, Xin Gong, Wenbing Tao, and Dacheng Tao. Deep learning-based point cloud registration: A comprehensive survey and taxonomy. International Journal of Com-puter Vision , 134(4):168, 2026. [9] Rong Huang, Yusheng Xu, Wei Yao, Ludwig Hoegner, and Uwe Stilla. Robust global registration of point clouds by closed-form solution in the frequency domain. ISPRS Journal of Photogrammetry and Remote Sensing ,171:310–329, 2021. [10] Yusheng Xu, Richard Boerner, Wei Yao, Ludwig Hoegner, and Uwe Stilla. Pairwise coarse registration of point clouds in urban scenes using voxel-based 4-planes congruent sets. ISPRS journal of photogrammetry and remote sensing , 151:106–123, 2019. [11] Przemyslaw Polewski and Wei Yao. Scale invariant line-based co-registration of multimodal aerial data using l1 minimization of spatial and angular deviations. ISPRS Journal of Photogrammetry and Remote Sensing ,152:79–93, 2019. [12] Shengyu Huang, Zan Gojcic, Mikhail Usvyatsov, Andreas Wieser, and Konrad Schindler. PREDATOR: Regis-tration of 3d point clouds with low overlap. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 4267–4276, 2021. [13] Zhi Chen, Kun Sun, Fan Yang, and Wenbing Tao. SC2-PCR: A second order spatial compatibility for efficient and robust point cloud registration. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 13221–13231, 2022. [14] Rong Huang, Wei Yao, Yusheng Xu, Zhen Ye, and Uwe Stilla. Pairwise point cloud registration using graph matching and rotation-invariant features. IEEE Geoscience and Remote Sensing Letters , 19:1–5, 2021. [15] Haiping Wang, Yuan Liu, Zhen Dong, Yulan Guo, Yu-Shen Liu, Wenping Wang, and Bisheng Yang. Robust multiview point cloud registration with reliable pose graph initialization and history reweighting. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 9506–9515, 2023. [16] Luc Vedrenne, Sylvain Faisan, and Denis Fortun. Multiview point cloud registration via optimization in an autoencoder latent space. IEEE Transactions on Image Processing , 34:3475–3488, 2025. [17] Christopher Choy, Jaesik Park, and Vladlen Koltun. Fully convolutional geometric features. In ICCV , 2019. 16 Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+[18] M. Leordeanu and M. Hebert. A spectral technique for correspondence problems using pairwise constraints. In 
+
+Tenth IEEE International Conference on Computer Vision (ICCV’05) Volume 1 , volume 2, pages 1482–1489 Vol. 2, 2005. [19] Xuyang Bai, Zixin Luo, Lei Zhou, Hongkai Chen, Lei Li, Zeyu Hu, Hongbo Fu, and Chiew-Lan Tai. Pointdsc: Robust point cloud registration using deep spatial consistency. In 2021 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pages 15854–15864. IEEE, 2021. [20] Xiyu Zhang, Jiaqi Yang, Shikun Zhang, and Yanning Zhang. 3d registration with maximal cliques. In Proceed-ings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 17745–17754, 2023. [21] Jiawen Zhao, Qing Zhu, Yaonan Wang, Weixing Peng, Hui Zhang, and Jianxu Mao. Registration of multiview point clouds with unknown overlap. IEEE Transactions on Multimedia , 27:804–819, 2023. [22] Li Fang, Tianyu Li, Shudong Zhou, and Yanghong Lin. Robust multiview point cloud registration using algebraic connectivity and spatial compatibility. IEEE Transactions on Geoscience and Remote Sensing , 63:1–14, 2025. [23] Andrea Torsello, Emanuele Rodola, and Andrea Albarelli. Multiview registration via graph diffusion of dual quaternions. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition , pages 2441– 2448, 2011. [24] Pascal Willy Theiler, Jan Dirk Wegner, and Konrad Schindler. Globally consistent registration of terrestrial laser scans via graph optimization. ISPRS Journal of Photogrammetry and Remote Sensing , 109:126–138, 2015. [25] Zan Gojcic, Caifa Zhou, Jan Dirk Wegner, Leonidas J. Guibas, and Tolga Birdal. Learning multiview 3d point cloud registration. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition ,pages 1759–1769, 2020. [26] Huaiyang Huang, Yuxiang Sun, Jin Wu, Jianhao Jiao, Xiangcheng Hu, Linwei Zheng, Lujia Wang, and Ming Liu. On bundle adjustment for multiview point cloud registration. IEEE Robotics and Automation Letters ,6(4):8269–8276, 2021. [27] Georgios D. Evangelidis, Dionyssos Kounades-Bastian, Radu Horaud, and Emmanouil Z. Psarakis. A generative model for the joint registration of multiple point sets. In European Conference on Computer Vision , pages 109–122, 2014. [28] Georgios D. Evangelidis and Radu Horaud. Joint alignment of multiple point sets with batch and incremental expectation-maximization. IEEE Transactions on Pattern Analysis and Machine Intelligence , 40(6):1397–1410, 2018. [29] Jin Zhang, Mingyang Zhao, Xin Jiang, and Dong-Ming Yan. Robust multi-view registration of point sets with laplacian mixture model. In Asian Conference on Pattern Recognition , pages 547–561, 2021. [30] Yihan Pan, Jianjun Yi, Zhiyong Dai, Yibin Zhao, and Liansheng Wang. EJRGF: Efficient joint registration of multiple point clouds using fast gaussian filter. IEEE Robotics and Automation Letters , 10(11):11212–11219, 2025. [31] Li Ding and Chen Feng. DeepMapping: Unsupervised map estimation from multiple point clouds. In Proceed-ings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 8650–8659, 2019. [32] Chao Chen, Xinhao Liu, Yiming Li, Li Ding, and Chen Feng. DeepMapping2: Self-supervised large-scale LiDAR map optimization. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recog-nition , pages 9306–9316, 2023. [33] William Clark, Maani Ghaffari, and Anthony Bloch. Nonparametric continuous sensor registration. Journal of Machine Learning Research , 22(271):1–50, 2021. [34] Ray Zhang, Tzu-Yuan Lin, Chien Erh Lin, Steven A. Parkison, William Clark, Jessy W. Grizzle, Ryan M. Eustice, and Maani Ghaffari. A new framework for registration of semantic point clouds from stereo and RGB-D cameras. In IEEE International Conference on Robotics and Automation , pages 12214–12221, 2021. [35] Ray Zhang, Jingwei Song, Xiang Gao, Junzhe Wu, Tianyi Liu, Jinyuan Zhang, Ryan M. Eustice, and Maani Ghaffari. RKHS-BA: A robust correspondence-free multi-view bundle adjustment framework for semantic point clouds. IEEE Transactions on Pattern Analysis and Machine Intelligence , 47(12):10882–10899, 2025. [36] Yiran Zhou, Yingyu Wang, Shoudong Huang, and Liang Zhao. Correspondence-free multiview point cloud registration via depth-guided joint optimisation. In IEEE/RSJ International Conference on Intelligent Robots and Systems , pages 7154–7161, 2025. [37] Yue Pan, Tao Sun, Liyuan Zhu, Lucas Nunes, Iro Armeni, Jens Behley, and Cyrill Stachniss. Register any point: Scaling 3D point cloud registration by flow matching. In European Conference on Computer Vision (ECCV) ,2026. 17 Spectral Consistency-Guided Multiview Registration A P REPRINT 
+
+[38] Andy Zeng, Shuran Song, Matthias Niessner, Matthew Fisher, Jianxiong Xiao, and Thomas Funkhouser. 3DMatch: Learning local geometric descriptors from RGB-D reconstructions. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition , pages 1802–1811, 2017. [39] Angela Dai, Angel X. Chang, Manolis Savva, Maciej Halber, Thomas Funkhouser, and Matthias Nießner. Scan-Net: Richly-annotated 3d reconstructions of indoor scenes. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition , pages 5828–5839, 2017. [40] François Pomerleau, Ming Liu, Francis Colas, and Roland Siegwart. Challenging data sets for point cloud registration algorithms. The International Journal of Robotics Research , 31(14):1705–1711, 2012. [41] Federica Arrigoni, Beatrice Rossi, and Andrea Fusiello. Spectral synchronization of multiple views in SE (3) .
+
+SIAM Journal on Imaging Sciences , 9(4):1963–1990, 2016. [42] Avishek Chatterjee and Venu Madhav Govindu. Efficient and robust large-scale rotation averaging. In Proceed-ings of the IEEE International Conference on Computer Vision , pages 521–528, 2013. [43] Avishek Chatterjee and Venu Madhav Govindu. Robust relative rotation averaging. IEEE Transactions on Pattern Analysis and Machine Intelligence , 40(4):958–972, 2018. [44] Xiangru Huang, Zhenxiao Liang, Xiaowei Zhou, Yao Xie, Leonidas J. Guibas, and Qixing Huang. Learning transformation synchronization. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 8082–8091, 2019. [45] Seong Hun Lee and Javier Civera. HARA: A hierarchical approach for robust rotation averaging. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 15777–15786, 2022. [46] Haiping Wang, Yuan Liu, Zhen Dong, and Wenping Wang. You only hypothesize once: Point cloud registration with rotation-equivariant descriptors. In Proceedings of the 30th ACM International Conference on Multimedia ,pages 1630–1641, 2022. 18

@@ -1,0 +1,457 @@
+Title: HuMemSLAM: Efficient Human-Inspired Semantic Place Recognition for Robust Visual SLAM
+
+URL Source: https://arxiv.org/pdf/2609.17168v1
+
+Published Time: Wed, 16 Sep 2026 01:15:55 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# HuMemSLAM: Efficient Human-Inspired Semantic Place Recognition for Robust Visual SLAM 
+
+Mayowa Adebambo, Sebastian Donnelly, Armand Amaritei, Andrew Bradley, Alexander Rast 
+
+Abstract — Autonomous systems require reliable place recog-nition for efficient and effective simultaneous localisation and mapping (SLAM). Traditional geometric visual SLAM approaches rely on low-level features and geometric consistency, but remain vulnerable to perceptual aliasing, where different places appear similar, and perceptual variation, where the same place appears different. Although semantic SLAM and modern learned visual place recognition (VPR) methods improve robustness under challenging perceptual conditions, real-time deployment requires both high retrieval accuracy and low latency. Inspired by human memory and perception, we propose HuMem-VPR, which exploits the bidirectional relationship between bottom-up perceptual evidence and top-down contextual reasoning to achieve high-level place understanding. We further introduce HuMemSLAM, the integration of HuMem-VPR with ORB-SLAM3. HuMem-VPR achieved the highest aggregate retrieval accuracy on the real-image benchmark, competitive accuracy on the CARLA benchmark, and approximately two to three times lower latency than the evaluated state-of-the-art VPR methods. Across the evaluated dataset families and online experiments, HuMemSLAM substantially improved integrated Recall @1 over ORB-SLAM3’s native retrieval while reducing the proposals submitted to its geometric backend. 
+
+I. I NTRODUCTION 
+
+Simultaneous Localisation and Mapping (SLAM) estimates an autonomous agent’s pose while constructing or maintaining a representation of its surroundings. Place recognition, deter-mining whether the current location was previously visited, supports loop closure, relocalisation, drift correction, and map fusion [2]. As these operations occur online, place recognition must be both accurate and sufficiently fast for real-time deployment. Geometric visual SLAM typically relies on low-level appearance and geometric consistency. ORB-SLAM, for example, uses ORB features and a Bag-of-Words (BoW) representation for retrieval before geometric verification [2], [3]. This creates two long-term challenges: perceptual aliasing, where distinct but repetitive locations appear similar, and perceptual variation, where illumination, season, weather, blur, or viewpoint makes the same place appear different. Severe change can degrade image texture and local correspondences, weakening both retrieval and geometric matching [4], [5]. Learned visual place recognition (VPR) and semantic SLAM improve robustness through higher-level represen-tations that can remain discriminative when low-level appear-
+
+School of Engineering, Computing & Mathematics, Oxford Brookes University, Oxford, UK. Autonomous Driving and Intelligent Transport Group, Oxford Brookes University, Oxford, UK. This work utilised the experimental vehicle developed through the GREEN-LOG project (Horizon Europe Grant Agreement No. 101069892) [1]. 
+
+ance changes [6]–[9]. Yet online localisation requires not only accuracy and robustness to perceptual variation and aliasing, but also sufficiently low latency [10]. In autonomous driving, perception and localisation must satisfy tight timing con-straints to support safe operation, particularly at high speeds [11]. Although recent VPR work addresses computational efficiency [12], latency remains an important deployment consideration. This motivates our central question: can human-inspired structured high-level semantic reasoning provide accurate and robust place hypotheses while preserving the low latency required by online visual SLAM? HIGH-LEVEL PLACE UNDERSTANDING 
+
+> Scene / Place Hypothesis Bottom-up perceptual evidence Top-down contextual reasoning
+> Scene Context Text / Signs Objects Corners / Edges Visual Input Contextual Memory Spatial Layout Text Matching Re-ranking / Filtering Candidate Places
+
+Fig. 1. Conceptual motivation for HuMemSLAM: bottom-up perceptual evidence and top-down contextual reasoning for high-level place understand-ing. 
+
+Research in human visual cognition suggests that recog-nition combines bottom-up evidence with top-down context [13], [14], as illustrated in Fig. 1. We therefore propose HuMemSLAM, a human-inspired semantic place-recognition framework integrated with geometric visual SLAM. HuMem-VPR denotes its standalone semantic retrieval subsystem; 
+
+HuMemSLAM denotes HuMem-VPR integrated with ORB-SLAM3. HuMem-VPR ranks historical keyframes using high-level semantics, while ORB-SLAM3 verifies the resulting hypotheses and performs relocalisation, loop correction, or map fusion. The main contributions of this work are: 1) HuMem-VPR, a human-inspired place recognition algorithm that corroborates holistic hypotheses of the scene representation with object-spatial and object-grounded text information. 2) HuMemSLAM, the integration of HuMem-VPR with ORB-SLAM3 as a semantic retrieval layer over its existing map. arXiv:2609.17168v1 [cs.RO] 15 Sep 2026 II. R ELATED WORK 
+
+A. Visual Place Recognition under Perceptual Change 
+
+Visual place recognition (VPR) identifies previously ob-served locations despite viewpoint, illumination, weather, and seasonal change. Such variation and aliasing between visually similar but distinct places remain central challenges for long-term localisation [4], [5]. Modern VPR has increasingly shifted from handcrafted features and visual vocabularies towards learned global representations. NetVLAD established end-to-end learned descriptor ag-gregation for large-scale place recognition [15]. EigenPlaces trains viewpoint-robust descriptors [6], while AnyLoc uses self-supervised foundation-model representations for cross-domain generalisation without VPR-specific retraining [7]. SALAD combines DINOv2 features with optimal-transport aggregation [8]; MegaLoc targets transfer across VPR, lo-calisation, and landmark retrieval [9]. These approaches demonstrate the strength of learned global representations, but also illustrate that contemporary VPR systems occupy different trade-offs between retrieval accuracy, generalisation, robustness, and computational cost. SVS-VPR uses aggregated semantic classes for coarse filtering, followed by learned local correspondences con-strained by semantics and spatial consistency [16]. TextPlace uses recognised text and its spatio-temporal relationships as distinctive landmarks [17]. HuMem-VPR instead begins with a holistic scene representation and corroborates it through object-instance, spatial-layout, and object-grounded textual reasoning. 
+
+B. Place Recognition within Visual SLAM 
+
+Within visual SLAM, retrieved places become hypotheses for geometric verification, loop closure, relocalisation, and map fusion. Classical systems use efficient BoW retrieval: DBoW2 combines binary visual words with geometric veri-fication [3]; iBoW-LCD learns its vocabulary incrementally [18]; and RTAB-Map couples appearance-based loop closure with memory management [10]. ORB-SLAM3 uses retrieved keyframes for relocalisation, loop closure, and map merging while retaining geometric consistency checks [2]. SLGD-Loop adds global semantic similarity and salient local features in a coarse-to-fine detector for long-term appearance change [19]. These systems distin-guish plausible retrieval from a valid geometric constraint; embedded VPR should therefore be assessed by both retrieval accuracy and the hypotheses passed to verification. HuMem-VPR ranks historical ORB-SLAM3 keyframes, while the geometric backend establishes physical consistency and applies SLAM updates. We consequently evaluate it both standalone and through its effect on the downstream geometric pipeline. 
+
+C. Biologically and Cognitively Inspired Place Recognition 
+
+Biological navigation has motivated alternative localisa-tion representations. RatSLAM combines self-motion and landmarks through a continuous-attractor model of rodent hippocampal navigation [20]. Multi-scale extensions use par-allel maps [21] or adaptive scale selection with coarse-to-fine recognition [22]. LPMP instead combines learned landmark identities (“what”) with spatial arrangement (“where”) [23]. HuMemSLAM draws from visual cognition rather than reproducing a neural circuit. Global scene structure can rapidly convey scene gist [13], while visual-recognition models emphasise interaction between perceptual evidence and top-down contextual predictions [14]. HuMemSLAM establishes a global scene hypothesis, then adds object-spatial and grounded-text evidence. Unlike spatial-cell models, this semantic representation is a retrieval layer over the ORB-SLAM3 map; geometry remains the final authority. III. H UMEM SLAM F RAMEWORK 
+
+A. System Overview 
+
+HuMemSLAM integrates the standalone HuMem-VPR semantic retrieval subsystem with ORB-SLAM3 [2]. HuMem-VPR indexes ORB-SLAM3 keyframes for retrieval under appearance change, while the backend retains pose estimation and geometric verification. For query keyframe Qt, the semantic memory and bounded similarity are 
+
+Dt−1 = {K1, . . . , K t−1}, Λ( Qt, K i) ∈ [0 , 1] . (1) To avoid trivial temporal neighbours, the eligible set is Ct =
+
+{Ki ∈ D t−1 : |ft − fi| ≥ 100 }, where f denotes the source-frame identifier. Candidates are ordered by 
+
+πt = argsort ↓ 
+
+> Ki∈C t
+
+Λ( Qt, K i). (2) HuMem-VPR proposes where the camera may have been; ORB-SLAM3 tests geometric consistency and may trigger relocalisation, loop closure, map fusion, or pose correction (Fig. 2).     
+
+> Sensor(s) Input ORB-SLAM3 Front End Keyframes / Atlas Geometric Verification Keyframe Selection SCAL OSRL OGTL Contextual Memory Tri-Layer Semantic Fusion
+> Relocalisation Loop Closure Map Fusion
+
+Base ORB-SLAM3 Layer HuMem-VPR Layer  
+
+> Fig. 2. HuMemSLAM architecture. HuMem-VPR sequentially applies scene-context, object-spatial, and object-grounded text reasoning; ORB-SLAM3 retains geometric verification and map updates.
+
+B. Semantic Keyframe Representation 
+
+Each semantic keyframe is represented as 
+
+Ki = ( i, f i, t i, m i, Ti, S i, Oi) , (3) where i is the ORB-SLAM3 keyframe identifier, fi is the source-frame identifier, ti is the timestamp, mi is the Atlas map identifier, Ti ∈ SE (3) is the estimated camera pose, 
+
+Si is the scene-context representation, and Oi is the set of detected stable objects. Each object record stores its semantic class, detector confidence, spatial attributes, and associated textual observations. 
+
+C. Scene Context Attention Layer (SCAL) 
+
+The Scene Context Attention Layer (SCAL) provides the initial global place hypothesis. For an image Ii, a 512-dimensional EigenPlaces descriptor [6] ei ∈ R512 is extracted. Its normalisation and non-negative cosine similarity are 
+
+ˆei = ei
+
+∥ei∥2
+
+, se(Q, C ) = clip(ˆ e⊤
+
+> Q
+
+ˆeC , 0, 1) . (4) Places365 scene labels provide contextual modulation [24]. Let Ccat (Q, C ) ∈ [0 , 1] denote the compatibility between the scene categories of the query and candidate. With λc = 0 .10 ,the modulated similarity is 
+
+˜se(Q, C ) = se(Q, C ) 1 + λcCcat (Q, C )1 + λc
+
+. (5) Short-term context combines the current and up to two pre-ceding observations using α = (0 .5, 0.3, 0.2) . The resulting score is 
+
+Ss(Q, C ) = 
+
+> k−1
+
+X
+
+> j=0
+
+αj ˜se (Qt−j , C i−j ) , X
+
+> j
+
+αj = 1 , (6) where k ≤ 3 depends on the available temporal history. SCAL passes only its top K = 25 candidates to object and textual comparison. 
+
+D. Object-Spatial Reasoning Layer (OSRL) 
+
+The Object-Spatial Reasoning Layer (OSRL) evaluates whether candidate objects have spatial arrangements consis-tent with the query. A YOLOv26 segmentation model [25] supplies the semantic class, confidence, and image region for each detected object; HuMem-VPR derives the normalised centroid and area used for spatial reasoning from these regions. The YOLOv26 model is fine-tuned on the Mapillary Vistas dataset [26] and classes are restricted to predefined static environmental structures, including buildings, fences, street lights and billboards. For a query object q and candidate object c, let (x, y )
+
+denote the normalised object centroid and let a denote its normalised image area. Their squared spatial-layout distance is 
+
+d2
+
+> m
+
+(q, c ) = ( xq − xc)2 + ( yq − yc)2 + λa(aq − ac)2. (7) With λa = 1 , a Gaussian spatial kernel, same-class gate, and detector confidences pq , p c define the pairwise score 
+
+G(q, c ) = exp 
+
+
+
+− d2
+
+> m
+
+(q, c )2σ2
+
+> m
+
+
+
+, σm = 0 .25 , (8) 
+
+δc(q, c ) = 1[cq = cc], (9) 
+
+Mo(q, c ) = δc(q, c )√pq pc G(q, c ). (10) For each semantic class r, HuMem-VPR constructs a pairwise similarity matrix and solves a maximum-weight one-to-one bipartite assignment using the Hungarian algorithm: 
+
+A⋆r = arg max 
+
+> Ar
+
+X
+
+> (u,v )∈A r
+
+M (r) 
+
+> uv
+
+. (11) The final object-spatial similarity is query-normalised: 
+
+So(Q, C ) = 
+
+X
+
+> r
+
+ωr
+
+X
+
+> (u,v )∈A ⋆r
+
+M (r)
+
+> uv
+
+X
+
+> q∈O Q
+
+ωcq
+
+, (12) where ωr denotes the configured importance of semantic class r. The query-dependent denominator penalises missing candidate evidence and sparse, easily matched objects. 
+
+E. Object-Grounded Textual Landmark Layer (OGTL) 
+
+The Object-Grounded Textual Landmark Layer (OGTL) treats text as a place-specific landmark only when it is grounded in a compatible semantic object. PP-OCRv5 Mobile [27] performs text detection and English text recognition within the detected object regions, and each resulting textual observation is stored in the corresponding object record. OCR observations are compared only when their supporting objects share the same semantic class and have sufficient spatial compatibility: 
+
+ΓT (q, c ) = 1[cq = cc] 1[G(q, c ) ≥ τg ], τg = 0 .6. (13) For strings a, b , HuMem-VPR takes the strongest of normalised Levenshtein, token Jaccard, and compact substring similarities: 
+
+L(a, b ) = 1 − Dlev (a, b )max( |a|, |b|, 1) , (14) 
+
+J(a, b ) = | tok( a) ∩ tok( b)|| tok( a) ∪ tok( b)| , (15) 
+
+Sstr (a, b ) = max {L(a, b ), J (a, b ), C (a, b )}, (16) 
+
+MT (u, v ) = Sstr (u, v )pupv . (17) HuMem-VPR additionally assigns each textual observation a distinctiveness weight DT (u) ∈ [0 , 1] , giving greater importance to longer, uncommon, and digit-bearing strings while reducing the influence of generic words. For a text-bearing query object q and candidate object c,the object-grounded text score is 
+
+ST (q, c ) = 
+
+X
+
+> u∈T q
+
+DT (u) max 
+
+> v∈T c
+
+MT (u, v )
+
+X
+
+> u∈T q
+
+DT (u) . (18) The keyframe-level textual similarity St is modulated by 
+
+Et = pDQDC , where DQ, D C are the mean textual distinc-tiveness of the query and candidate. Distinctive landmarks therefore contribute more strongly than weak or generic OCR observations. F. Tri-Layer Callosal Semantic Fusion 
+
+The scene, object-spatial, and textual signals are combined using a scene-primary semantic fusion strategy. Scene recog-nition provides the initial place hypothesis, while object and textual information act as bounded corroborating evidence. Object and textual support are first combined using go =0.15 and gt = 0 .25 :
+
+B(Q, C ) = clip ( goSo + gtEtSt, 0, 1) . (19) The final raw HuMem-VPR similarity is 
+
+Λraw (Q, C ) = Ss + (1 − Ss)B(Q, C ), (20) Equation (20) gives the fusion an intuitive interpretation: semantic object and textual evidence reduce the remaining uncertainty in the scene-level hypothesis. 
+
+G. Candidate Selection and Geometric Verification 
+
+Historical candidates are ranked using the fused HuMem-VPR similarity and are submitted for geometric verification when 
+
+Λraw (Q, C ) > τ s, τs = 0 .70 . (21) Up to five ranked semantic candidates are returned to ORB-SLAM3. During normal tracking, semantic retrieval is performed periodically, while retrieval is activated immedi-ately when ORB-SLAM3 enters the RECENTLY LOST or 
+
+LOST states. HuMem-VPR returns its semantic hypothesis to ORB-SLAM3, which then performs local-feature correspon-dence and robust geometric verification before accepting a relocalisation, loop closure, map fusion, or pose correction. 
+
+H. Low-Latency Computational Design 
+
+For N global descriptors of dimension d, the initial SCAL retrieval has complexity O(N d ), while subsequent object-spatial and textual reasoning is restricted to the top K = 25 
+
+candidates. Likewise, the Hungarian assignment, with worst-case complexity O(n3 
+
+> r
+
+) for a semantic class containing nr
+
+objects, is applied only to small same-class object sets rather than the full semantic memory. Neural inference is accelerated using TensorRT to reduce the runtime cost of the learned perception components. HuMem-VPR further operates asynchronously with respect to ORB-SLAM3 tracking and processes selected keyframes rather than every incoming frame. A bounded processing queue replaces stale pending work with the newest query when full, prioritising current localisation information and preventing semantic processing from blocking the tracking thread. IV. E XPERIMENTAL SETUP 
+
+ORB-SLAM3’s asynchronous modules can vary across runs because of thread scheduling, resource contention, and CPU/GPU timing. We therefore repeat every offline full SLAM and VPR comparison involving ORB-SLAM3 ten times and report arithmetic means; tracking failures and incomplete trajectories are reported separately. 
+
+A. Datasets and Perceptual Conditions 
+
+Table I summarises the datasets and evaluated conditions. The three dataset families provide complementary percep-tual challenges as shown in Fig. 3. KITTI evaluates controlled image degradation on real driving imagery: sequence 06 corrupts the return traversal, whereas sequences 00 and 05 perturb only ground-truth-identified revisit regions. A condi-tion denoted Bℓ/Dd applies a line-motion kernel of length ℓ
+
+pixels followed by exposure reduction retaining (100 − d)% 
+
+of linear-light intensity. CARLA compares repeated traversals of the same route under controlled simulated weather and illumination changes. 4Seasons evaluates naturally occurring seasonal appearance variation and perceptual aliasing in structurally repetitive environments.   
+
+> TABLE I DATASETS AND PERCEPTUAL CONDITIONS USED IN THE EVALUATION .Dataset / route Main challenge Evaluated conditions
+> KITTI 00/05/06
+> [28] Controlled blur and illumina-tion/exposure degradation on real stereo road imagery with ground-truth poses Seq. 06: Clean, B15, D50, B15/D50, B15/D80, B35/D80, B35/D90; Seq. 00/05: Clean, B15/D80
+> CARLA
+> Town10HD Opt [29] Controlled weather and illumination change over repeated traversals Clear Noon (reference), Deep Night, Dense Fog Overcast, Extreme Rain + Fog, Extreme Sunset Glare
+> 4Seasons
+> Business Campus [30] Natural seasonal appearance variation Fall, Winter
+> 4Seasons
+> Multi-level Garage Perceptual aliasing across structurally similar locations and floors Dec., Feb., May traversals
+
+B. Query, Database and Comparison Protocol 
+
+The fixed VPR benchmark uses deterministic manifests shared by HuMem-VPR, native ORB-SLAM3 ORB/DBoW2, SALAD, and MegaLoc. A database frame c is a valid historical match for query q if: 
+
+q − c ≥ 100 , ∥tq − tc∥2 ≤ 5 m ,
+
+∆R(q, c ) ≤ 30 ◦. (22) where ∆R is the geodesic orientation difference computed from rotation matrices for KITTI/CARLA and unit quater-nions for 4Seasons. Only queries having at least one valid database match are eligible; at most 100 eligible queries are selected deterministically at approximately uniform index intervals. At query time, every method is restricted to database frames satisfying the 100-frame exclusion. 
+
+C. HuMem-VPR Ablation Configurations 
+
+End-to-end layer ablations use four implemented con-figurations: SCAL, SCAL+OSRL, SCAL+OGTL, and Full (SCAL+OSRL+OGTL). In SCAL+OGTL, object similarity is disabled; however, YOLO remains active solely to provide object regions for OCR. Fig. 3. Evaluation datasets and perceptual conditions. 
+
+D. VPR Metrics and Latency Evaluation 
+
+Let rq be the rank of the first valid historical match for query q, or infinity if none is returned. For N eligible queries, 
+
+Recall @ K = 1
+
+N
+
+X
+
+> q
+
+I[rq ≤ K],
+
+MRR = 1
+
+N
+
+X
+
+> q
+
+1
+
+rq
+
+.
+
+(23) where 1/∞ = 0 . We report Recall @1, Recall @5, and MRR. Latency uses 30 deterministically spaced queries (or all if fewer), ten neural-model warm-ups, and synchronised CUDA timing; image decoding and database construction are excluded. HuMem-VPR timing spans scene description, segmentation, OCR, semantic fusion, database comparison, and top-five ranking. ORB BoW spans grayscale conversion, native ORB extraction, vocabulary transformation, DBoW2 comparison, and ranking. Official PyTorch SALAD and MegaLoc implementations [8], [9] include preprocessing, inference, normalisation, cosine search, and ranking. We report mean, median, and 95th-percentile latency. 
+
+E. Integrated SLAM Evaluation 
+
+At SLAM level, proposals use the same 5 m, 30 ◦, and 100-frame match rule for the offline runs; online matches must be within 5 m and at least 30 seconds older than the query. Recall @1, Recall @5, and MRR include logged queries with a qualifying historical keyframe. Geometry attempts, accepted seeds, loop corrections, and latencies are reported independently. A relocalisation episode starts in 
+
+RECENTLY LOST or LOST ; recovery is a return to OK .For 4Seasons garage runs, cross-floor aliasing requires at most 5 m horizontal separation and at least 2.4 m height difference; both denied and accepted proposals are retained. Secondary measures are absolute pose error (APE), trajec-tory completeness, and map count. Source-frame-associated trajectories are evaluated per map with rigid alignment using 
+
+evo ape [31]; global APE is reported only for single-map trajectories. 
+
+F. Computational and Hardware Setup 
+
+Recorded runs were executed on an Intel Core Ultra-series 185H host with approximately 30.7 GiB RAM and an NVIDIA GeForce RTX 4070 Laptop GPU with 8188 MiB memory. The recorded environment is Ubuntu 22.04.5 LTS, ROS 2 Humble, CUDA 12.9, TensorRT 11.0.0.114, and PyTorch 2.8.0+cu129. 
+
+G. Real-World Online Experiment  
+
+> Fig. 4. Online experimental route in Oxford Brookes University and GREEN-LOG teleoperated bike [1] used for real-time evaluation.
+
+Fig. 4 illustrates the approximately 700 m route for the online experiment on a teleoperated delivery bike. The bike is equipped with a ZED 2i stereo camera and Ardusimple GPS with RTK corrections via an Ardusimple base station for ground-truth estimation. The experiments were carried out in stereo mode under two conditions: high-contrast sunny morning and rainy night. Each method was evaluated once per condition. In addition, each traversal comprises three laps to ensure multiple revisits. V. R ESULTS 
+
+This section compares HuMem-VPR with SALAD, Mega-Loc, and ORB-BoW, and evaluates HuMemSLAM against ORB-SLAM3 under varied perceptual conditions. 
+
+A. VPR Accuracy and Latency 
+
+Figure 5 and Table II show that HuMem-VPR offers a strong accuracy–latency compromise, achieving the highest aggregate Recall@1 on the real-image benchmark while operating 2–3 times faster than the learned baselines. The advantage is most evident under the severe KITTI B35/D80 perturbation, where HuMem-VPR reaches 0.91 Recall@1, suggesting that its layered semantic reasoning remains dis-criminative when blur and exposure degradation weaken appearance-based retrieval. However, this advantage is not universal. Under CARLA’s strongest visibility degradation, combined rain and fog, SALAD and MegaLoc retain higher recall. The results therefore suggest that HuMem-VPR is overall faster and most effective when higher-level semantic structure remains observable, while SALAD and MegaLoc are better able to tolerate extreme scene obscuration. 20 30 40 50 60 70 80 
+
+Mean end-to-end latency (ms)  
+
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Mean Recall@1  HuMem-VPR
+> MegaLoc SALAD ORB-BoW
+> Real-image CARLA
+
+Fig. 5. Standalone VPR accuracy–latency trade-off across real-image and CARLA benchmarks. TABLE II VPR RESULTS : ( A) AGGREGATE RETRIEVAL AND LATENCY ; ( B)
+
+> CONDITION
+
+-LEVEL RECALL @1. 
+
+(a) Aggregate benchmark results 
+
+Method R@1 R@5 MRR Latency (ms) 
+
+Real-image benchmark 
+
+HuMem-VPR 0.762 0.926 0.829 21.2 
+
+MegaLoc 0.758 0.932 0.831 69.7 SALAD 0.748 0.932 0.825 60.8 ORB-BoW 0.494 0.694 0.579 56.6 
+
+CARLA benchmark 
+
+HuMem-VPR 0.746 0.828 0.778 30.8 
+
+MegaLoc 0.872 0.962 0.908 65.7 SALAD 0.908 0.988 0.940 67.0 ORB-BoW 0.302 0.418 0.345 75.9 
+
+(b) Condition-level Recall @1 Real-image benchmark 
+
+Condition HuMem-VPR MegaLoc SALAD ORB-BoW Business Fall 0.43 0.48 0.41 0.41 Garage Feb. 0.53 0.59 0.59 0.47 KITTI Clean 0.98 0.98 0.98 0.93 KITTI B15/D80 0.96 0.96 0.97 0.55 KITTI B35/D80 0.91 0.78 0.79 0.11 
+
+CARLA benchmark 
+
+Condition HuMem-VPR MegaLoc SALAD ORB-BoW Clear Noon 1.00 1.00 1.00 0.99 Deep Night 0.93 1.00 0.99 0.16 Dense Fog 0.57 0.77 0.90 0.11 Sunset Glare 0.97 1.00 1.00 0.23 Rain + Fog 0.26 0.59 0.65 0.02 
+
+B. Integrated SLAM and Verification Efficiency 
+
+Figure 6 and Table III show that HuMemSLAM improves mean retrieval across every dataset family while reducing proposals to geometric verification by 74–91%. More ORB-SLAM3 loop closures did not imply lower APE: despite 4 and 43 additional closures on KITTI 05 and 4Seasons Garage, respectively, its APE RMSE was higher (4.9 versus 3.2 m and 3.6 versus 3.0 m). This indicates that trajectory accuracy also depends on constraint quality and pose-graph optimisation. 0.0 0.2 0.4 0.6 0.8 1.0      
+
+> Mean integrated Recall@1
+> KITTI 06 KITTI 00 KITTI 05 4Seasons Garage 4Seasons Business CARLA
+> (a)
+> ORB-SLAM3 HuMemSLAM 020 40 60 80 100
+> Geometric verification reduction (%)
+> KITTI 06 KITTI 00 KITTI 05 4Seasons Garage 4Seasons Business CARLA 84.4% 89.24% 86.5% 79.94% 73.94% 91.13%
+> (b)
+
+Fig. 6. Integrated retrieval and verification efficiency: (a) mean Recall @1; (b) reduction in candidates submitted to the geometric backend. 
+
+C. Perceptual Aliasing and System Failure Boundaries 
+
+Fig. 7. Visually similar observations from different garage levels. 
+
+In the structurally repetitive and visually similar 4Seasons Garage environment (Fig. 7), ORB-SLAM3 produced 10 false loop closures and HuMemSLAM produced 1 (Table IV). Although HuMemSLAM remains susceptible to aliasing, it improves closure precision from approximately 92% to 99%. Table V identifies two ORB-SLAM3 failure modes limiting HuMemSLAM. At B35/D80, HuMemSLAM retrieved candi-dates, but severe degradation prevented geometric verification. At B35/D90, the frontend generated no viable keyframes, so HuMemSLAM remained idle. TABLE III INTEGRATED RETRIEVAL , VERIFICATION , CLOSURE , AND TRAJECTORY RESULTS . APE n IS THE NUMBER OF EVALUABLE GLOBAL TRAJECTORIES .                                                                                                           
+
+> Integrated R@1 Verification attempts Applied closures APE nAPE RMSE (m) ↓
+> Dataset ORB HuMem ORB HuMem Red. ORB HuMem ORB HuMem ORB HuMem KITTI 06 0.014 0.617 27,520 4,292 84.4% 53 58 60 59 1.576 ±1.040 1.746 ±1.021
+> KITTI 00 0.018 0.388 28,809 3,099 89.2% 62 62 20 19 1.714 ±0.962 1.865 ±1.093
+> KITTI 05 0.042 0.309 13,991 1,889 86.5% 34 30 10 11 4.947 ±11 .659 3.171 ±6.372
+> 4Seasons Garage 0.032 0.324 30,998 6,218 79.9% 124 81 29 29 3.635 ±1.159 2.989 ±0.982
+> 4Seasons Business 0.003 0.362 55,484 14,460 73.9% 24 17 20 20 5.596 ±1.310 5.511 ±1.090
+> CARLA 0.074 0.813 62,456 5,541 91.1% 24 28 742.165 ±0.487 1.871 ±0.325
+
+TABLE IV CLOSURE RELIABILITY IN THE 4S EASONS GARAGE . C OUNTS ARE ACCEPTED GEOMETRIC CLOSURES ; PRECISION IS THE VALID FRACTION .Sequence Method Accepted Valid False Precision Dec 2020 ORB-SLAM3 54 54 0 100.0% HuMemSLAM 36 36 0 100.0% Feb 2021 ORB-SLAM3 38 34 4 89.5% HuMemSLAM 21 21 0 100.0% May 2021 ORB-SLAM3 32 26 6 81.3% HuMemSLAM 24 23 1 95.8% Aggregate ORB-SLAM3 124 114 10 91.9% HuMemSLAM 81 80 1 98.8% 
+
+TABLE V HUMEM SLAM FAILURE BOUNDARIES UNDER SEVERE KITTI 06 
+
+> DEGRADATION
+
+.Condition HuMemSLAM R@1 Verif. attempts Closures Observed boundary B35/D80 0.667 972 0 Geometry rejects B35/D90 N/A 0 0 No semantic query 
+
+D. Ablation Study 
+
+TABLE VI HUMEM -VPR ABLATION . F ULL DENOTES SCAL+OSRL+OGTL. 
+
+Aggregate performance 
+
+Metric SCAL SCAL+ OSRL SCAL+ OGTL Full Mean R@1 ↑ 0.711 0.746 0.751 0.757 
+
+Mean R@5 ↑ 0.842 0.878 0.870 0.877 Mean MRR ↑ 0.797 0.804 0.798 0.803 Mean latency (ms) ↓ 13.7 21.3 24.3 25.1 Mean p95 (ms) ↓ 15.0 26.4 31.3 32.9 
+
+Condition-level Recall @1 
+
+Condition SCAL SCAL+ OSRL SCAL+ OGTL Full Business Fall 0.30 0.35 0.43 0.43 
+
+Garage Feb. 0.45 0.53 0.55 0.55 
+
+KITTI Clean 0.98 0.98 0.98 0.98 
+
+KITTI B15/D80 0.97 0.96 0.97 0.97 
+
+KITTI B35/D80 0.89 0.91 0.91 0.91 
+
+CARLA Clear Noon 1.00 1.00 1.00 1.00 
+
+CARLA Deep Night 0.92 0.93 0.93 0.93 
+
+CARLA Dense Fog 0.45 0.57 0.54 0.57 
+
+CARLA Rain + Fog 0.20 0.26 0.23 0.26 
+
+CARLA Sunset Glare 0.95 0.97 0.97 0.97 
+
+Table VI shows that SCAL is a strong low-latency base-line. SCAL+OGTL gives higher mean Recall @1, whereas SCAL+OSRL gives higher mean Recall @5 and MRR at lower latency. Full achieves the best mean Recall @1 (0.757). Gains vary by condition: the best configuration improves Business Fall, Garage Feb., and CARLA Dense Fog by 13, 10, and 12 Recall @1 points over SCAL. Thus, OSRL and OGTL provide complementary, condition-dependent evidence for the global SCAL hypothesis. 
+
+E. Real-World Online Evaluation 
+
+Fig. 8 shows that HuMemSLAM achieved higher Recall@1 than ORB-SLAM3, most notably under rainy-night condition, whilst reducing geometric verification attempts by approxi-mately 63–65% across both traversals. 0.0 0.2 0.4 0.6 0.8 1.0 Rainy night High-contrast sunny morning 0.000 0.059 0.435 0.195 
+
+(a) Recall@1      
+
+> 01000 2000 3000 4000 5000 Rainy night High-contrast sunny morning 1,453 4,689 533 1,620
+
+(b) Geometric-verification attempts  
+
+> ORB-SLAM3 HuMemSLAM
+
+Fig. 8. Real-world online evaluation: (a) Recall @1 and (b) geometric-verification attempts on the two campus runs. 
+
+VI. C ONCLUSION 
+
+We presented HuMem-VPR, a novel human-inspired place-recognition method, and HuMemSLAM, its integration with ORB-SLAM3. Across the evaluated datasets, HuMemSLAM substantially improved integrated Recall @1 while reducing proposals to the geometric backend by approximately 74– 91%. In the perceptually aliased 4Seasons Garage, false loop closures were reduced from 10 to 1. HuMem-VPR also achieved the highest aggregate retrieval accuracy on the real-image benchmark and competitive CARLA performance while operating approximately two to three times faster than the evaluated learned VPR baselines. Severe-degradation experiments nevertheless exposed a dependency on the underlying geometric pipeline: successful semantic retrieval cannot yield a SLAM correction when viable keyframes or geometric correspondences are absent. These results suggest that low-latency semantic retrieval can support more responsive visual SLAM while reducing unnecessary geometric computation, an increasingly important capability for autonomous vehicles operating at higher speeds or in rapidly changing environments. Future work will investigate learned local features to strengthen geometric verification under severe appearance degradation, alongside INT8 quantisation and further hardware-aware optimisation to reduce inference latency and memory requirements. Together, these directions aim towards robust semantic localisation under progressively tighter computational and temporal constraints. REFERENCES [1] S. Donnelly, R. Anderson, G. Economides, J. Broughton, P. Ball, A. Rast, and A. Bradley, “Seg-jpeg: Simple visual semantic commu-nications for remote operation of automated vehicles over unreliable wireless networks,” in 2026 15th International Symposium on Commu-nication Systems, Networks and Digital Signal Processing (CSNDSP) ,2026, pp. 1–6. [2] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. M. Montiel, and J. D. Tard´ os, “Orb-slam3: An accurate open-source library for visual, visual–inertial, and multimap slam,” IEEE Transactions on Robotics ,vol. 37, no. 6, pp. 1874–1890, 2021. [3] D. G´ alvez-L´ opez and J. D. Tard´ os, “Bags of binary words for fast place recognition in image sequences,” IEEE Transactions on Robotics ,vol. 28, no. 5, pp. 1188–1197, 2012. [4] S. Lowry, N. S¨ underhauf, P. Newman, J. J. Leonard, D. Cox, P. Corke, and M. J. Milford, “Visual place recognition: A survey,” IEEE Transactions on Robotics , vol. 32, no. 1, pp. 1–19, 2016. [5] C. Masone and B. Caputo, “A survey on deep visual place recognition,” 
+
+IEEE Access , vol. 9, pp. 19 516–19 547, 2021. [6] G. Berton, G. Trivigno, B. Caputo, and C. Masone, “Eigenplaces: Training viewpoint robust models for visual place recognition,” in 
+
+Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV) , 2023, pp. 11 080–11 090. [7] N. Keetha, A. Mishra, J. Karhade, K. M. Jatavallabhula, S. Scherer, M. Krishna, and S. Garg, “Anyloc: Towards universal visual place recognition,” IEEE Robotics and Automation Letters , vol. 9, no. 2, pp. 1286–1293, 2024. [8] S. Izquierdo and J. Civera, “Optimal transport aggregation for visual place recognition,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2024, pp. 17 658– 17 668. [9] G. Berton and C. Masone, “Megaloc: One retrieval to place them all,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW) , 2025, pp. 2886–2892. [10] M. Labb´ e and F. Michaud, “Rtab-map as an open-source lidar and visual simultaneous localization and mapping library for large-scale and long-term online operation,” Journal of Field Robotics , vol. 36, no. 2, pp. 416–446, 2019. [11] S. Liu, L. Liu, J. Tang, B. Yu, Y. Wang, and W. Shi, “Edge computing for autonomous driving: Opportunities and challenges,” Proceedings of the IEEE , vol. 107, no. 8, pp. 1697–1716, 2019. [12] A. Ali-bey, B. Chaib-draa, and P. Gigu` ere, “MixVPR: Feature mixing for visual place recognition,” in Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV) , 2023, pp. 2997–3006. [13] A. Oliva and A. Torralba, “Building the gist of a scene: The role of global image features in recognition,” in Progress in Brain Research ,2006, vol. 155, pp. 23–36. [14] M. Bar, K. S. Kassam, A. S. Ghuman, J. Boshyan, A. M. Schmid, A. M. Dale, M. S. H¨ am¨ al¨ ainen, K. Marinkovic, D. L. Schacter, B. R. Rosen, and E. Halgren, “Top-down facilitation of visual recognition,” 
+
+Proceedings of the National Academy of Sciences , vol. 103, no. 2, pp. 449–454, 2006. [15] R. Arandjelovic, P. Gronat, A. Torii, T. Pajdla, and J. Sivic, “Netvlad: Cnn architecture for weakly supervised place recognition,” in Pro-ceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , 2016, pp. 5297–5307. [16] S. Arshad and T.-H. Park, “Svs-vpr: A semantic visual and spatial information-based hierarchical visual place recognition for autonomous navigation in challenging environmental conditions,” Sensors , vol. 24, no. 3, p. 906, 2024. [17] Z. Hong, Y. Petillot, D. Lane, Y. Miao, and S. Wang, “Textplace: Visual place recognition and topological localization through reading scene texts,” in Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV) , 2019, pp. 2861–2870. [18] E. Garcia-Fidalgo and A. Ortiz, “ibow-lcd: An appearance-based loop-closure detection approach using incremental bags of binary words,” 
+
+IEEE Robotics and Automation Letters , vol. 3, no. 4, pp. 3051–3057, 2018. [19] S. Arshad and G.-W. Kim, “Slgd-loop: A semantic local and global descriptor-based loop closure detection for long-term autonomy,” IEEE Transactions on Intelligent Transportation Systems , vol. 25, no. 12, pp. 19 714–19 728, 2024. [20] M. J. Milford, G. F. Wyeth, and D. Prasser, “Ratslam: A hippocampal model for simultaneous localization and mapping,” in Proceedings of the IEEE International Conference on Robotics and Automation (ICRA) , vol. 1, 2004, pp. 403–408. [21] Z. Chen, S. Lowry, A. Jacobson, M. E. Hasselmo, and M. Milford, “Bio-inspired homogeneous multi-scale place recognition,” Neural Networks ,vol. 72, pp. 48–61, 2015. [22] C. Fan, Z. Chen, A. Jacobson, X. Hu, and M. Milford, “Biologically-inspired visual place recognition with adaptive multiple scales,” 
+
+Robotics and Autonomous Systems , vol. 96, pp. 224–237, 2017. [23] S. Colomer, N. Cuperlier, G. Bresson, P. Gaussier, and O. Romain, “Lpmp: A bio-inspired model for visual localization in challenging environments,” Frontiers in Robotics and AI , vol. 8, p. 703811, 2022. [24] B. Zhou, A. Lapedriza, A. Khosla, A. Oliva, and A. Torralba, “Places: A 10 million image database for scene recognition,” IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 40, no. 6, pp. 1452– 1464, 2018. [25] G. Jocher, J. Qiu, M. Liu, S. Lyu, F. C. Akyon, and M. E. Kalfaoglu, “Ultralytics YOLO26: Unified real-time end-to-end vision models,” 
+
+arXiv preprint arXiv:2606.03748 , 2026. [26] G. Neuhold, T. Ollmann, S. Rota Bul` o, and P. Kontschieder, “The mapillary vistas dataset for semantic understanding of street scenes,” in Proceedings of the IEEE International Conference on Computer Vision (ICCV) , 2017, pp. 4990–4999. [27] C. Cui, Y. Zhang, T. Sun, X. Wang, H. Liu, M. Lin, Y. Zhang, T. Gao, C. Zhou, J. Liu, Z. Zhang, J. Zhang, J. Zhang, and Y. Liu, “PP-OCRv5: A specialized 5m-parameter model rivaling billion-parameter vision-language models on OCR tasks,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2026, pp. 2467–2476. [28] A. Geiger, P. Lenz, and R. Urtasun, “Are we ready for autonomous driving? the KITTI vision benchmark suite,” in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) ,2012, pp. 3354–3361. [29] A. Dosovitskiy, G. Ros, F. Codevilla, A. L´ opez, and V. Koltun, “CARLA: An open urban driving simulator,” in Proceedings of the Conference on Robot Learning (CoRL) , ser. Proceedings of Machine Learning Research, vol. 78, 2017, pp. 1–16. [30] P. Wenzel, R. Wang, N. Yang, Q. Cheng, Q. Khan, L. von Stumberg, N. Zeller, and D. Cremers, “4Seasons: A cross-season dataset for multi-weather SLAM in autonomous driving,” in Proceedings of the German Conference on Pattern Recognition (GCPR) , 2020, pp. 404–417. [31] M. Grupp, “evo: Python package for the evaluation of odometry and SLAM,” Software repository, 2017.

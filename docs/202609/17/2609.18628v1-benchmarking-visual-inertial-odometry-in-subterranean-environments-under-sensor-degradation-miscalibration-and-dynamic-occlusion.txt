@@ -1,0 +1,217 @@
+Title: Benchmarking Visual-Inertial Odometry in Subterranean Environments Under Sensor Degradation, Miscalibration, and Dynamic Occlusion
+
+URL Source: https://arxiv.org/pdf/2609.18628v1
+
+Published Time: Thu, 17 Sep 2026 01:31:56 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Benchmarking Visual-Inertial Odometry in Subterranean Environments Under Sensor Degradation, Miscalibration, and Dynamic Occlusion 
+
+Yueying Zhu 1,†, Xiang Li 2,†, Thien-Minh Nguyen 3, Xuehe Wang 4, Shenghai Yuan 1
+
+Abstract — Visual-inertial odometry (VIO) is a core capability for autonomous operation in GPS-denied subterranean environ-ments, yet its reliability can degrade sharply under sensor drift, calibration errors, and dynamic occlusion. Existing evaluations mainly emphasize nominal-condition accuracy, offering limited insight into when practical deployment failures occur. In this work, we present a failure-centric stress-test benchmark for VIO in underground environments using the CERBERUS dataset. We systematically evaluate four representative VIO systems spanning filtering-, optimization-, and learning-based paradigms under nine practical perturbation settings, including IMU bias and noise variation, camera intrinsic and extrinsic drift, and dynamic scene occlusion. Beyond conventional tra-jectory error, we analyze robustness limits through coverage ratio and failure thresholds, revealing breakdown behaviors that are not captured by nominal-condition performance alone. Our study shows distinct vulnerability patterns across VIO paradigms: some methods are more sensitive to inertial degra-dation, while others are more affected by geometric miscalibra-tion or dynamic interference. These results provide deployment-oriented guidance for VIO selection, calibration prioritization, and reliable operation in challenging underground scenarios. To support reproducible evaluation and future extensions, we will release the full benchmark scripts and evaluation pipeline. 
+
+I. INTRODUCTION Visual-Inertial Odometry (VIO) has become a standard technique for autonomous navigation in GPS-denied envi-ronments, including extreme scenarios such as underground mining and the DARPA Subterranean Challenge [1], [2]. By fusing camera measurements with inertial data, VIO estimates a robot’s six-degree-of-freedom motion in three-dimensional space [3]–[5]. While modern systems can be highly accurate in well-lit and richly textured scenes, their field reliability often degrades sharply in harsh real-world conditions [6]–[8]. Underground environments are partic-ularly challenging due to low illumination, texture-scarce structures, and pervasive dynamic obstacles [9], [10]. These stressors can reduce effective feature support, increase spuri-ous correspondences, and destabilize estimation, culminating in failure outcomes such as tracking loss, map corruption, or divergence. A central but still poorly quantified question for deploy-ment is: under what conditions does VIO fail? In practice, failures are triggered not only by environmental stressors but also by operational constraints. Sensors are frequently re-mounted for maintenance, exposed to mechanical shocks, or operated with imperfect time synchronization, causing     
+
+> 1Nanyang Technological University, Singapore. 2Dalian University of Technology, China. 3Queensland University, Australia. 4Sun Yat-sen Uni-versity, China. †
+
+Equal contribution 
+
+drift in camera intrinsics, camera-IMU extrinsics, and IMU bias/noise parameters [11], [12]. VIO pipelines often ex-hibit nonlinear cliff effects: performance may appear stable under small deviations until a threshold is crossed, after which tracking becomes unreliable or collapses. Yet existing evaluations rarely provide actionable failure boundaries, i.e., how much deviation in which parameter (and under which stressor) is sufficient to induce breakdown. Despite continued advances, prior studies expose several limitations. Many works examine environmental robustness in isolation [13], [14], for example, improving performance in low light using event cameras [15] or learned features, without quantifying when these methods break under realistic parameter drift [16], [17]. Conversely, calibration-oriented studies highlight that focal length drift, distortion mismatch, and IMU bias errors can significantly degrade accuracy, but precise collapse thresholds remain poorly defined and rarely compared across different VIO paradigms [12], [18]. Finally, widely used benchmarks such as EuRoC primarily evaluate under comparatively idealized conditions, limiting their ability to inform reliability in extreme deployments [19]. To address this gap, we conduct a controlled, failure-centric stress test of four representative VIO systems spanning major paradigms: AirSLAM, OpenVINS, ORB-SLAM3, and SchurVINS [5], [17], [20], [21]. We perturb nine sensor parameters that commonly drift in practice, including four IMU terms (accelerometer and gyroscope biases and noises), three camera intrinsics (focal length, principal point, and distortion coefficient), and two camera-IMU extrinsics (relative rotation and translation) [18]. To keep the evaluation tractable while revealing interpretable sensitivity trends, we adopt a one-at-a-time (OAT) per-turbation protocol rather than a full factorial design. We report failure-aware metrics that remain meaningful under early termination, including a coverage ratio measuring the fraction of the ground-truth trajectory completed before tracking loss [22], as well as relative RMSE normalized by baseline performance. Beyond outcome metrics, we use observability and numerical-stability diagnostics (e.g., information-matrix rank, Jacobian conditioning, and Hessian definiteness) to connect breakdowns to concrete mechanisms [23]. Our results map robustness envelopes and collapse thresholds across paradigms, providing actionable guidance for extreme-environment deployment. Our contribution can be summarized as:  
+
+> •
+
+We establish a stress-test benchmark for visual-inertial odometry in subterranean environments, covering con-arXiv:2609.18628v1 [cs.RO] 16 Sep 2026 trolled sensor drift and dynamic occlusion on the CER-BERUS dataset.  
+
+> •
+
+We identify robustness limits of four representative VIO systems across nine practical perturbation set-tings, showing when accurate estimators break under deployment-relevant stress.  
+
+> •
+
+We provide actionable guidance on VIO selection, cal-ibration tolerance, and operating conditions for under-ground deployment. II. R ELATED WORK 
+
+Research on SLAM benchmarking in complex environ-ments primarily unfolds across datasets, algorithm evalua-tion, and framework development. Research on datasets for underground mine scenarios has largely revolved around the DARPA Subterranean (SubT) Challenge [1]. Beyond the official competition dataset, vari-ous research teams have released representative underground environment datasets, including CERBERUS [2], Tunnel-Circuit CTU [24], [25], and Robotic Interestingness [26]. These benchmarks effectively compare algorithmic perfor-mance under extreme conditions, yet most evaluations lack a core focus on visual inertial odometry (VIO) and lack sys-tematic stress testing. Furthermore, existing mine-scenario benchmarks like OIVIO [27], MIN3D [28], [29], and Chilean [30] exhibit specific limitations, including missing or poorly synchronized IMU data, and visual sequences rendered uninitializable by estimators due to extremely low illumina-tion. Mainstream benchmarking efforts have shifted toward developing cloud-based or containerized automated tools [31]–[34], where SLAMFuse [35] introduces the software engineering concept of fuzzing, dynamically injecting bright-ness/contrast variations or image blur to probe algorithmic boundaries. While this approach identifies visual front-end vulnerabilities, it remains limited to image-level degradation and cannot simulate sensor hardware degradation common in mine tunnel scenarios (e.g., IMU bias drift or inter-nal/external parameter calibration errors). Despite existing standard trajectory evaluation tools, current literature lacks a unified framework to couple internal sensor parameter drift with external environmental stressors. Existing tests fail to identify which specific input degradation triggers estimator failure. This paper addresses this gap by conducting sensor noise and dynamic occlusion stress tests on 4 VIO algorithms with CERBERUS dataset. III. VIO ALGORITHMS AND DATASETS 
+
+A. Algorithms 
+
+We select four representative VIO algorithms to cover the main design paradigms (learning-based, filtering, and optimization) and to reflect methods widely used in real deployments. We evaluate them under identical perturbations to enable a fair, apples-to-apples robustness comparison:  
+
+> •
+
+AirSLAM : Learning-based front-end with strong ro-bustness under challenging visual conditions [17].  
+
+> •
+
+OpenVINS : Filtering-based VIO with real-time perfor-mance and widespread use [20].  
+
+> •
+
+ORB-SLAM3 : Global optimization-based SLAM that jointly estimates poses and IMU states [5].  
+
+> •
+
+SchurVINS : Optimization-based VIO using Schur complement for efficient marginalization [21]. 
+
+B. Dataset 
+
+The evaluation is conducted on the CERBERUS dataset, recorded during the DARPA Subterranean Challenge at the Louisville Mega Cavern [2]. This dataset represents one of the most demanding benchmarks for mobile robot perception due to its extreme operational conditions. The environment comprises a complex mixture of man-made tunnels and nat-ural cave networks. These settings introduce three simultane-ous perceptual stressors: (i) severe non-uniform illumination from onboard LEDs, (ii) repetitive, low-gradient textures on rock surfaces, and (iii) high-frequency mechanical vibrations induced by the quadrupedal gait.  
+
+> •
+
+Robot Platform & Sensor Suite: We utilize recordings from four ANYmal C quadrupedal robots. Each plat-form is equipped with a Sevensense Alphasense Core unit, integrating a factory-calibrated stereo monochrome camera (720×540 px at 20 Hz) and a six-axis IMU (200 Hz). For ground truth generation, a Velodyne VLP16 Puck LITE LiDAR provides high-resolution geometric constraints.  
+
+> •
+
+Dynamic Sequence Extraction: Unlike conventional pre-clipped benchmarks, the CERBERUS raw record-ings contain comprehensive multi-modal streams in-cluding LiDAR and secondary sensors. For our VIO stress-testing framework, we specifically extracted the synchronized data from the two monochrome cameras (cam0 and cam1 ) and the IMU. To ensure evaluation rigor, we manually curated segments of active locomo-tive motion from the full mission logs, yielding eight high-intensity sequences ( seq0 –seq7 ) totaling approxi-mately 22 minutes. This targeted curation ensures that our metrics reflect true kinematic drift rather than being diluted by stationary intervals.  
+
+> •
+
+Ground-Truth and Trajectories: CERBERUS adopt the post-processed CompSLAM post state estimates as the definitive ground truth reference. This reference is generated by registering VLP16 pointclouds against the DARPA-provided global map. All trajectories are syn-chronized and exported in the TUM format (timestamp, position, and orientation quaternions), enabling precise absolute trajectory error (ATE) evaluation using the evo 
+
+toolkit. IV. EXPERIMENTS To evaluate the robustness of various VIO/SLAM algo-rithms during the critical initialization phase, we designed a comprehensive Parameter Stress Analysis. By subjecting the state estimators to controlled perturbations across multiple dimensions using a fixed dataset and ground-truth trajectory, we characterize the sensitivity of each algorithm as a function of perturbation intensity. (a) 0% (Baseline) (b) 3.35% (Nominal) (c) 30% (Significant) (d) 60% (High Occlusion) Fig. 1: Representative samples of synthetic occlusion masks applied to the CERBERUS subterranean dataset. The masks progress from (a) a baseline clear environment to (b) nominal personnel interference, (c) significant obstruction within the critical poisoning zone, and (d) severe feature starvation. These centered masks simulate the typical visual footprint of personnel and equipment in narrow mining corridors. 
+
+A. Sensor Noise and Calibration Stress Tests 
+
+The core of our evaluation is a ”one-at-a-time” sensitivity analysis. In each trial, a single parameter dimension is perturbed while all others remain at their nominal values, allowing for the isolation of specific failure modes.The primary metric is the trajectory Root Mean Square Error (RMSE) in meters, calculated after SE(3) alignment with the ground-truth trajectory by EVO. To account for the multi-degree-of-freedom nature of certain parameters (e.g., 3-axis rotation or translation), we employ three random seeds ( s0, s 1, s 2). These seeds represent different directional vectors or axes of perturbation, effectively projecting high-dimensional uncertainty into a distance-based scalar analysis for consistent comparison. To evaluate the system’s sensi-tivity, we sampled 11 perturbation levels for each of the nine critical sensor parameters. These perturbations range from nominal performance to system divergence, as detailed below:  
+
+> •
+
+Accelerometer Bias ( ba): Scaled by 10 x, with x ∈{− 2.0, −1.6, −1.2, −0.8, −0.4, 0.0, 0.4, 0.8, 1.2, 1.6, 2.0}.Unit: [m/s 2]. 
+
+> •
+
+Gyroscope Bias ( bg ): Scaled by the same logarithmic factors 10 x as ba. Unit: [rad/s ]. 
+
+> •
+
+Accelerometer Noise ( σa): Noise density scaled by 
+
+10 x. Unit: [m/s 2/√Hz ]. 
+
+> •
+
+Gyroscope Noise ( σg ): Noise density scaled by 10 x.Unit: [rad/s/ √Hz ]. 
+
+> •
+
+Extrinsic Rotation ( RIC ): Rotational deviations ∆θ ∈{0, ±0.4, ±0.8, ±1.2, ±1.6, ±2.0}◦ superimposed on the nominal extrinsic matrix along a selected axis.  
+
+> •
+
+Extrinsic Translation ( tIC ): Translational shifts ∆t ∈{0, ±1, ±2, ±3, ±4, ±5} cm applied along a specific direction.  
+
+> •
+
+Focal Length (f ): Nominal focal length scaled by 
+
+{0.89 , 0.91 , 0.93 , 0.95 , 0.98 , 1, 1.02 , 1.05 , 1.07 , 1.1, 1.12 }. 
+
+> •
+
+Principal Point (cp): Pixel-wise offsets ∆c ∈{0, ±10 , ±20 , ±30 , ±40 , ±50 } px applied to the image center.  
+
+> •
+
+Radial Distortion (k1): The dis-tortion coefficient scaled by 
+
+{0.5, 0.58 , 0.66 , 0.76 , 0.87 , 1, 1.15 , 1.32 , 1.51 , 1.74 , 2}.
+
+B. Dynamic and Occlusion Resilience Tests 
+
+To systematically evaluate the robustness of VIO algo-rithms against dynamic interference and limited visibility, we propose a multi-dimensional stress-testing framework. This framework simulates varying degrees of dynamic stress by manipulating two key parameters: the occlusion ratio p and the dynamic factor d. The dynamic factor d governs the perceived temporal dynamics of the environment, defined by the ratio between the observed frame rate and the original dataset frequency: 
+
+d = Fmask 
+
+Fdataset 
+
+(1) where Fdataset is the nominal 20 Hz capture rate. By adjust-ing d, we simulate a wide spectrum of obstacle velocities, ranging from quasi-static motion at low d values to extreme high-speed traversals at the upper bound of the scale. Simultaneously, centered synthetic masks are applied to the visual stream to simulate the spatial footprint of dynamic obstacles encountered in subterranean operations, as illus-trated in Fig. 1. These occlusion levels are categorized into specific operational scenarios to provide physical context to the numerical results:  
+
+> •
+
+3.35% (Nominal Personnel): Represents a single per-son passing at a distance, which is a standard condition in active mines.  
+
+> •
+
+30% (Significant Obstruction): Simulates nearby per-sonnel or equipment, creating a critical “poisoning zone” where dynamic features often bypass outlier rejection.  
+
+> •
+
+High Occlusion (over 50%): Marks the onset of feature starvation and severe visibility loss, testing the limits of geometric constraints in narrow tunnels. The discrete parameter sets utilized for the sensitivity analysis are summarized as follows:  
+
+> •
+
+Occlusion Rate: {3.35 , 10 , 20 , 30 , 40 , 50 , 60 , 70 , 80 , 90 }%. 
+
+> •
+
+Dynamic Factor: {0.05 , 0.1, 0.2, 0.5, 1, 2, 5, 10 , 20 }.
+
+C. Evaluation Metrics 
+
+Localization fidelity is quantified via the Root Mean Square Error (RMSE) of the SE (3) -aligned Absolute Trajec-tory Error (ATE), which effectively captures the geometric Fig. 2: Qualitative analysis of trajectory deformations under isolated sensor perturba-tions. Spatial divergence in the xy -plane and vertical susceptibility in the distance- 
+
+> zinset highlight characteristic geometric artifacts, such as scale drift and stochastic oscillations, induced by intrinsic and inertial stressors.
+
+deformations—ranging from scale drift to stochastic oscilla-tions—induced by the sensor perturbations illustrated in Fig. 2. To evaluate mission survivability in subterranean envi-ronments, we define the Coverage Ratio C = dtrack /d total ,where dtrack denotes the distance traversed prior to estimator failure, typically precipitated by feature starvation or state divergence. To mitigate reporting bias from premature termination, a constant drift penalty of 0.025 m/s is integrated into the RMSE for truncated segments, ensuring the metric holisti-cally reflects the entire mission profile. V. DISCUSSION 
+
+A. Sensor Perturbation and Calibration Sensitivity Analysis 
+
+The comprehensive sensitivity analysis delineated in Fig. 3 elucidates fundamentally distinct failure mechanisms across the evaluated VIO frameworks, which are categorized herein into algorithm-specific behaviors, dimensional sensitivities, and operational deployment guidelines. To empirically char-acterize the impact of these perturbations, the qualitative deformations of trajectories exhibiting maximum estimator drift are visualized in Fig. 5, revealing that IMU accelerom-eter noise ( σa) serves as a primary driver of unrectifiable quadratic position drift that exceeds the correction capabili-ties of visual update cycles. 
+
+OpenVINS: Despite demonstrating significant stability against visual parameter variances and extrinsic miscalibra-tion, OpenVINS demonstrates acute vulnerability to iner-tial perturbations, particularly accelerometer bias ( ba) and noise ( σa), where an abrupt estimator divergence occurs as these parameters exceed a 2.512 × baseline threshold (10 0.4), corresponding to ba ≈ 0.2512 m/s 2 and σa ≈
+
+0.02512 m/s 2/√Hz. As an EKF-based MSCKF architecture, its estimator consistency is strictly constrained by the noise covariance matrix Q, such that innovation terms exceeding the first-order Taylor expansion’s confidence interval trigger linearization failures. Unlike optimization-based paradigms, the EKF lacks a retrospective iterative refinement mecha-nism, such as Bundle Adjustment, to mitigate early-stage integration drift, resulting in unrecoverable state divergence as quadratic error accumulation ( p(t) = p0 + v0t + 12 atrue t2 + 
+
+> 12
+
+bat2) overwhelms the visual measurement model. 
+
+AirSLAM: Conversely, AirSLAM maintains superior im-munity to high-magnitude IMU noise through a learning-based front-end robust to motion-blur-induced degradations, yet its backend enforces rigid geometric constraints that amplify reprojection residuals linearly in the absence of robust cost functions. Furthermore, its instability in low-noise regimes suggests a susceptibility to numerical ill-conditioning when persistent excitation is insufficient to distinguish sensor bias from true kinematic states within the geometric state space. 
+
+ORB-SLAM3: This framework provides the most bal-anced state estimation by leveraging mature IMU pre-integration and Factor Graph Optimization (FGO) to effec-tively decouple inertial biases from kinematic states. Nev-ertheless, as a purely geometric formulation, it preserves a strict linear dependency on the intrinsic matrix K, where offsets in focal length or the principal point induce system-atic geometric residuals that cannot be suppressed through increased data redundancy. 
+
+SchurVINS: As shown in Fig.5 SchurVINS is resilient to IMU noise and exhibits high sensitivity to extrinsic, where minor misalignments trigger rapid estimator divergence due to the high sensitivity of its Schur-complement-based marginalization to the spatial-temporal alignment of gravity vectors and visual landmarks. Additionally, the fragility of its photometric consistency assumption renders the SVO-based front-end prone to tracking failure under the non-uniform illumination and mechanical vibrations characteristic of sub-terranean environments. The cross-dimensional sensitivity analysis identifies funda-mental architectural trade-offs in multi-sensor fusion: Factor Graph Optimization (FGO)-based frameworks demonstrate superior mitigation of inertial bias drift compared to EKF-based systems through iterative re-linearization, while Open-VINS and ORB-SLAM3 utilize robust cost functions to suppress the influence of spatial miscalibration, contrasted by the requirement of AirSLAM and SchurVINS for precise extrinsic rotation ( RIC ) to preserve geometric consistency within the estimation backend. Moreover, while rigorous pre-processing ensures robustness against radial distortion ( k1), the MSCKF architecture of OpenVINS inherently provides geometric redundancy that desensitizes the estimator to ab-solute intrinsic precision, unlike the critical focal length and principal point dependencies observed in optimization-heavy Fig. 3: Robustness and sensitivity analysis under varying parameter perturbations. We evaluate the positioning accuracy (RMSE) of AirSLAM, OpenVINS, ORB3, and SchurVINS against three categories of system uncertainties: (a-b, d-e) Stress tests on IMU: impact of accelerometer/gyroscope biases ( ba, bg ) and noise densities ( σa, σg ) on system stability. (c, f) Stress tests on extrinsics: sensitivity to initial calibration errors in camera-IMU rotation ( RIC ) and translation ( tIC ). (g-i) Stress tests on intrinsics: robustness against inaccuracies in camera focal length ( f ), principal point ( cp), and distortion coefficient ( k1). Solid lines represent the mean RMSE across multiple trials, while the shaded regions denote the standard deviation. The sharp V-shape curves (e.g., in extrinsics and intrinsics) highlight the system dependency on accurate parameter initialization. 
+
+frameworks. To ensure optimal reliability in challenging environments, we propose the following guidelines: 1) Geometric Calibration: For AirSLAM and SchurVINS, priority must be given to extrinsic (RIC ) and intrinsic (cp, f ) calibration accuracy to prevent excessive geometric residuals. 2) Inertial Noise Control: For EKF-based systems like OpenVINS, the IMU noise floor and bias must be hardware-constrained within 2.5× of the nominal cal-ibration. While for learned front-ends like AirSLAM, a minimum level of IMU excitation is beneficial to ensure numerical stability and prevent optimization ill-conditioning. 
+
+B. Dynamic and Occlusion Resilience Analysis 
+
+The evaluation results illustrated in Fig. 4 demonstrate a systematic degradation in localization fidelity as a function of simultaneous increases in dynamics scale ( d) and occlusion rate ( p). This performance decay is primarily attributable to the severe attenuation of observable static landmarks and the concomitant increase in structured outlier interference during Fig. 4: Comparative robustness heatmaps for AirSLAM, OpenVINS, and ORB3 evaluated across 270 configurations. The heatmaps illustrate the localization RMSE (meters) as a function of occlusion rates (up to 90.0%) and dynamics scales ( d,representing obstacle velocity). A higher d indicates faster movement of personnel within the environment. 
+
+the estimator’s measurement update phase. 
+
+OpenVINS: This framework exhibits the highest suscep-tibility to these perturbations, with a distinct failure envelope emerging at a 30% occlusion rate where the Absolute Trajec-tory Error (ATE) RMSE peaks at 5.54 m, signifying catas-trophic estimator divergence. This vulnerability originates from the Extended Kalman Filter (EKF) update mechanism; at this specific threshold, dynamic features associated with moving personnel coalesce into structured motion clusters that bypass standard geometric consistency checks. Conse-quently, these persistent outliers contaminate the state vector and precipitate rapid covariance inflation, ultimately leading to total tracking loss. 
+
+AirSLAM: This approach demonstrates enhanced sur-vivability relative to EKF-based architectures, maintaining estimator stability at the 30% occlusion threshold despite exhibiting non-negligible drift under extreme configurations, such as the 2.80 m RMSE recorded at ≥ 80% occlusion and d = 20 . While learned feature descriptors afford a degree of resilience against dynamic feature clusters, the results suggest that a lightweight backend lacks the neces-sary redundancy to sustain high-precision localization when environmental static cues are significantly depleted. 
+
+ORB-SLAM3: This system maintains the most robust resilience profile, preserving an exceptionally low RMSE range of 0.04 m to 0.15 m even under the most demanding configurations of 90% occlusion and d = 20 . This robustness is facilitated by a sophisticated backend employing Factor Graph Optimization (FGO) via Bundle Adjustment (BA) and multi-frame RANSAC filtering, which together enforce strict spatiotemporal geometric consistency to isolate dynamic out-liers and prioritize peripheral static environmental structures for high-fidelity state estimation. The comparative analysis of dynamic resilience high-lights a fundamental disparity in how different esti-mation paradigms handle structured visual interference. Optimization-based architectures, by enforcing global ge-ometric consistency over a sliding window, effectively marginalize dynamic outliers even when they occupy asignificant portion of the field of view, whereas filter-based estimators exhibit a critical vulnerability threshold where dynamic feature clusters compromise the innovation term and lead to irreversible state divergence. This divergence is par-ticularly pronounced in narrow subterranean corridors, where the spatial proximity of dynamic obstacles further intensifies the contamination of the visual measurement model, empha-sizing the necessity for backend re-linearization to maintain estimator consistency under extreme dynamic stress. To ensure optimal reliability in challenging environments, we propose the following guidelines: 1) Dynamic Sensor-Weighting: EKF-based estimators should implement dynamic sensor-weighting strategies to prioritize IMU pre-integration as the system ap-proaches the 30% occlusion failure envelope to prevent state contamination. 2) Peripheral Feature Prioritization: Feature tracking within narrow, occluded environments should prioritize peripheral image regions to maximize the utilization of stable environmental structures while naturally attenu-ating the impact of central dynamic disturbances. VI. CONCLUSION While ORB-SLAM3 achieves superior resilience through computationally intensive backend redundancy and Fac-tor Graph Optimization (FGO), lightweight filtering-based (a) Acc. Noise ( σa ) (b) Acc. Bias ( ba ) (c) Extrinsic Rot. ( RIC )        
+
+> (d) Gyro. Noise ( σg )(e) Gyro. Bias ( bg )(f) Extrinsic Trans. ( tIC )
+> (g) Focal Length ( f)(h) Principal Point ( cp )(i) Distortion ( k1)
+
+Fig. 5: Gallery of trajectory deformations under nine distinct sensor perturbations of SchurVINS. While SchurVINS maintains high resilience against IMU stochastic noise and bias, it exhibits acute sensitivity to extrinsic miscalibration, where even minor misalignments in rotation ( RIC ) precipitate rapid estimator divergence. Furthermore, inaccuracies in camera intrinsics—specifically the focal length ( f ) and principal point ( cp)—induce significant geometric residuals , leading directly to characteristic trajectory offsets and scale drift. 
+
+paradigms like OpenVINS prioritize real-time efficiency within a narrower operational envelope sensitive to inertial noise, whereas learned architectures like AirSLAM effec-tively mitigate stochastic noise but remain susceptible to numerical ill-conditioning stemming from calibration inac-curacies. Estimator stability is fundamentally contingent upon the degradation source, as FGO-based re-linearization suppresses systematic internal residuals more effectively than the strict stochastic dependency of EKF architectures, while structured external outliers precipitate divergence by compromising the innovation term, highlighting the multi-modal nature of VIO robustness across sensor models and environmental constraints. To ensure optimal reliability in subterranean deployments, we propose the following guidelines:  
+
+> •
+
+Architectural Selection: Prioritize FGO-based redun-dancy where computational resources allow; otherwise, ensure IMU noise floors remain hardware-constrained within a 2.5× nominal boundary to prevent EKF lin-earization failure.  
+
+> •
+
+Calibration Hardening: Enforce high-fidelity extrinsic (RIC , t IC ) and intrinsic ( cp, f ) calibration to minimize irreconcilable geometric residuals in optimization-heavy backends.  
+
+> •
+
+Dynamic Mitigation: Employ dynamic sensor-weighting and peripheral feature tracking as occlusion approaches 30% to attenuate central outlier interference and maximize reliance on inertial pre-integration. REFERENCES [1] K. Ebadi, L. Bernreiter et al. , “Present and future of SLAM in extreme environments: The DARPA SubT challenge,” IEEE Trans. Robot. ,2024. [2] M. Tranzatto, M. Dharmadhikari et al. , “Team CERBERUS wins the DARPA subterranean challenge: Technical overview and lessons learned,” Field Robot. , 2024. [3] T. Qin, P. Li, and S. Shen, “VINS-Mono: A robust and versatile monocular visual–inertial state estimator,” IEEE Trans. Robot. , 2018. [4] V. Usenko, N. Demmel et al. , “Visual–inertial mapping with nonlinear factor recovery,” IEEE Robot. Autom. Lett. , 2020. [5] C. Campos, R. Elvira et al. , “ORB-SLAM3: An accurate open-source library for visual, visual–inertial, and multimap SLAM,” IEEE Trans. Robot. , 2021. [6] J. Engel, J. Sturm, and D. Cremers, “Semi-dense visual odometry for a monocular camera,” in IEEE Int. Conf. Comput. Vis. (ICCV) , 2013. [7] T. Qin, S. Cao et al. , “A general optimization-based frame-work for global pose estimation with multiple sensors,” 2019, arXiv:1901.03642. [8] L. von Stumberg and D. Cremers, “DM-VIO: Delayed marginalization visual–inertial odometry,” IEEE Robot. Autom. Lett. , 2022. [9] W. Wang, Q. Zhang et al. , “Recent advances in SLAM for degraded environments: A review,” IEEE Sens. J. , 2025. [10] D. Schubert, T. Goll et al. , “The TUM VI benchmark for evaluating visual–inertial odometry,” in IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , 2018. [11] J. A. Hesch, D. G. Kottas et al. , “Consistency analysis and improve-ment of vision-aided inertial navigation,” IEEE Trans. Robot. , 2014. [12] D. Scaramuzza, A. Martinelli, and R. Siegwart, “A toolbox for easily calibrating omnidirectional cameras,” in IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , 2006. [13] X. Liu, Y. Yang et al. , “Benchmarking SLAM algorithms in the cloud: The SLAM hive benchmarking suite,” 2024, arXiv:2406.17586. [14] D. Zhang, J. Zhang et al. , “Towards robust sensor-fusion ground SLAM: A comprehensive benchmark and a resilient framework,” in 
+
+IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , 2025. [15] E. Mueggler, G. Gallego et al. , “Continuous-time visual–inertial odometry for event cameras,” IEEE Trans. Robot. , 2018. [16] A. I. Mourikis and S. I. Roumeliotis, “Predicting the performance of cooperative simultaneous localization and mapping (C-SLAM),” Int. J. Robot. Res. , 2006. [17] K. Xu, Y. Hao et al. , “AirSLAM: An efficient and illumination-robust point-line visual SLAM system,” IEEE Trans. Robot. , 2025. [18] W. Huang and H. Liu, “Online initialization and automatic camera-IMU extrinsic calibration for monocular visual–inertial SLAM,” in 
+
+IEEE Int. Conf. Robot. Autom. (ICRA) , 2018. [19] M. Burri, J. Nikolic et al. , “The EuRoC micro aerial vehicle datasets,” 
+
+Int. J. Robot. Res. , 2016. [20] P. Geneva, K. Eckenhoff et al. , “OpenVINS: A research platform for visual–inertial estimation,” in IEEE Int. Conf. Robot. Autom. (ICRA) ,2020. [21] Y. Fan, T. Zhao, and G. Wang, “SchurVINS: Schur complement-based lightweight visual–inertial navigation system,” in IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR) , 2024. [22] Z. Zhang and D. Scaramuzza, “A tutorial on quantitative trajectory evaluation for visual(-inertial) odometry,” in IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , 2018. [23] J. H. Jung, H. Lee, and C. G. Park, “Performance analysis of visual– inertial navigation system with feature track parameters,” in Int. Conf. Control Autom. Syst. (ICCAS) , 2022. [24] T. Rouˇ cek, M. Pecka et al. , “System for multi-robotic exploration of underground environments CTU-CRAS-NORLAB in the DARPA subterranean challenge,” Field Robot. , 2022. [25] M. Petrl´ ık, P. Petr´ aˇ cek et al. , “UAVs beneath the surface: Cooperative autonomy for subterranean search and rescue in DARPA SubT,” IEEE Trans. Field Robot. , 2025. [26] C. Wang, W. Wang et al. , “Visual memorability for robotic interest-ingness via unsupervised online learning,” in Eur. Conf. Comput. Vis. (ECCV) , 2020. [27] M. Kasper, S. McGuire, and C. Heckman, “A benchmark for visual–inertial odometry systems employing onboard illumination,” in 
+
+IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , 2019. [28] P. Trybała, J. Szrek et al. , “Calibration of a multi-sensor wheeled robot for the 3d mapping of underground mining tunnels,” Int. Arch. Photogramm. Remote Sens. Spat. Inf. Sci. , 2022. [29] ——, “MIN3D dataset: Multi-sensor 3d mapping with an unmanned ground vehicle,” PFG J. Photogramm. Remote Sens. Geoinf. Sci. ,2023. [30] K. Leung, D. L¨ uhr et al. , “Chilean underground mine dataset,” Int. J. Robot. Res. , 2017. [31] M. Bujanca, P. Gafton et al. , “SLAMBench 3.0: Systematic automated reproducible evaluation of SLAM systems for robot vision challenges and scene understanding,” in IEEE Int. Conf. Robot. Autom. (ICRA) ,2019. [32] M. Bujanca, X. Shi et al. , “Robust SLAM systems: Are we there yet?” in IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , 2021. [33] B. Bodin, H. Wagstaff et al. , “SLAMBench2: Multi-objective head-to-head benchmarking for visual SLAM,” in IEEE Int. Conf. Robot. Autom. (ICRA) , 2018. [34] L. Nardi, B. Bodin et al. , “Introducing SLAMBench, a performance and accuracy benchmarking methodology for SLAM,” in IEEE Int. Conf. Robot. Autom. (ICRA) , 2015. [35] N. Radulov, Y. Zhang et al. , “A framework for reproducible bench-marking and performance diagnosis of SLAM systems,” in IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , 2024.

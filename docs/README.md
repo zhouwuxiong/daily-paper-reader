@@ -41,17 +41,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-09-16</span>
+      <span class="dpr-home-dashboard-kicker">2026-09-17</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 0 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 17 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
     <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>0</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>0</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>11</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-09-16 22:07:05 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-09-17 21:43:59 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,7 +62,7 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日无新推荐，系统未产出可展示论文。</p>
+<p>今日筛读17篇、精读6篇，SLAM与空间智能仍是主赛道。最值得看的是满分工作PanoGS-SLAM（全景3D高斯泼溅SLAM）和9分的HuMemSLAM（仿人语义地点识别），分别指向全景建图与语义鲁棒定位。普通读者可先读这两篇精读，再按兴趣速览LiDAR终身建图与视觉重定位方向。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -71,12 +71,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">0 篇</strong>
+    <strong class="dpr-home-dashboard-count">6 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p class="dpr-home-dashboard-empty">今日暂无推荐。</p>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="PanoGS-SLAM: Panoramic 3D Gaussian Splatting SLAM">PanoGS-SLAM: Panoramic 3D Gaussian Splatting SLAM</span></li><li><span class="dpr-home-dashboard-paper-title" title="HuMemSLAM: Efficient Human-Inspired Semantic Place Recognition for Robust Visual SLAM">HuMemSLAM: Efficient Human-Inspired Semantic Place Recognition for Robust Visual SLAM</span></li><li><span class="dpr-home-dashboard-paper-title" title="P-POSEMEM: Projective Semantic Memory for Consistent Language Grounding under Pose-Graph Rewrites">P-POSEMEM: Projective Semantic Memory for Consistent Language Grounding under Pose-Graph Rewrites</span></li></ul>
   </div>
-
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>5</strong></span><span class="dpr-home-dashboard-tag">rl-motion <strong>1</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -84,12 +84,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">速读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">0 篇</strong>
+    <strong class="dpr-home-dashboard-count">11 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p class="dpr-home-dashboard-empty">今日暂无推荐。</p>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="SEAM: Submap-Anchored Evidence for Lifelong LiDAR Mapping under Trajectory Deformation">SEAM: Submap-Anchored Evidence for Lifelong LiDAR Mapping under Trajectory Deformation</span></li><li><span class="dpr-home-dashboard-paper-title" title="DRS-VPT: Directly Relocalizing in a Scan with Vision Point Transformers">DRS-VPT: Directly Relocalizing in a Scan with Vision Point Transformers</span></li><li><span class="dpr-home-dashboard-paper-title" title="Multi-Task Visual Perception Network with LLM Conditioning for Autonomous Navigation">Multi-Task Visual Perception Network with LLM Conditioning for Autonomous Navigation</span></li></ul>
   </div>
-
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>7</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>4</strong></span></div>
 </section>
 </div>
 

@@ -1,0 +1,314 @@
+Title: LiLi: Lie Theory Based 3D LiDAR Scan Alignment Degeneracy Detection
+
+URL Source: https://arxiv.org/pdf/2609.17145v2
+
+Published Time: Thu, 17 Sep 2026 01:18:11 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# LiLi: Lie Theory Based 3D LiDAR Scan Alignment Degeneracy Detection 
+
+Vsevolod Hulchuk ∗ Jan Bayer ∗ Jan Faigl 
+
+Abstract — In this paper, we study 3D LiDAR scan alignment in challenging scenarios with degeneracies, such as straight corridors or flat fields, where the alignment solution is not unique and compromises localization and mapping accuracy. Existing degeneracy detection methods that neglect the potential for reassociating data points are prone to being sensitive to noise and complex degeneracies. Therefore, we propose LiLi – a novel method that leverages Lie theory to identify the full set of degenerate transformations within the SE (3) Lie group of rigid transformations. The method employs perturbations of the optimized solution and compares the resulting optimized poses to ensure robust detection of degeneracies. By leveraging generators from the Lie algebra se (3) , the method provides a systematic approach to describing the set of degenerate transformations. Quantitative evaluations on synthetic data show significant improvement over the state-of-the-art Hessian-based method, reducing alignment error by 50 % , with more significant improvements for datasets featuring noise. In the real-world degenerate datasets, the proposed method integrated into LiDAR-based odometry yields superior localization perfor-mance compared to the reference solution based on the Hessian-based degeneracy detector on a 260 m long trajectory, and succeeds on a 430 m long round-trip tunnel trajectory where the reference fails. 
+
+I. I NTRODUCTION 
+
+3D LiDARs are widely used sensors that provide high-precision 3D point cloud scans of the environment. The alignment of consecutive scans is essential for autonomous navigation when 3D LiDAR scan alignment is used to determine the relative transformation between scans or a scan and a map. It computes the 6D transformation (3D translation and 3D rotation) between scans. Hence, it is a foundational component of LiDAR-based localization and mapping. How-ever, achieving robust alignment becomes challenging in environments where geometric constraints are insufficient, leading to degeneracies. Degeneracy refers to scenarios where specific movements, such as translations, rotations, or combinations thereof, do not significantly affect the perceived alignment due to a lack of distinctive structural features in the scene. For instance, a scan taken in the middle of an open field can be translated along the ground plane or rotated about the vertical axis without significantly affecting the measure of the alignment quality. More complex cases involve coupled translational and rotational motions, as depicted in Fig. 1, which show-cases such degeneracy on both synthetic and real-world data. 
+
+∗These authors contributed equally to this work. The authors are with the Faculty of Electrical Engineering, Czech Technical University, Technická 2, 166 27, Prague, Czech Republic 
+
+{hulchvse|bayerja1|faiglj}@fel.cvut.cz 
+
+(a) Synthetic data results. Local scan (blue), aligned against the reference scan (red). Yellow: LiLi-based scan extension (8) (proposed, Perturbation-based), green: Zhang’s-based scan extension (state-of-the-art, Hessian-based) 
+
+(b) Real-world degenerate scan matching of local scan (blue) against the accumulated map (red) from the custom Tunnel dataset. Localization is in progress, supported by the proposed LiLi degeneracy detection, resulting in the gray trajectory. 3D axes represent the currently estimated robot pose Fig. 1. Examples of complex, coupled degeneracy in 3D LiDAR scan alignment on (a) synthetic and (b) real-world tunnel data. In both cases, a structurally degenerate direction (blue arrow), composed of translational and rotational components, preserves the alignment between the reference scan (red) and the target scan (blue). On the synthetic data, the local scan extension outperforms the baseline. On real-world data, the proposed method enables robust robot localization, while the baseline determines the degeneracy inconsistently, leading to localization failure. 
+
+We consider understanding the space of degenerate mo-tions important because it directly affects the reliability of alignment algorithms. These motions represent degrees of freedom that are not constrained by the scene’s geometry, leading to ambiguities in pose estimation. Identifying the specific types of degeneracies, such as planar translations or axis-aligned rotations, helps in designing methods to mitigate their effects. Addressing these issues improves the robustness of alignment systems, especially in feature-poor environments. Existing methods that focus on analyzing the final align-ment ignore the potential of reassociating the data points. While effective under ideal conditions, such methods may fail to account for degenerate motions that include re-association of data points, especially in noisy and cluttered environments. To address this limitation, we introduce LiLi (Lie Theory Based 3D LiDAR Scan Alignment Degeneracy Detection). Our method leverages Lie theory to characterize the degenerate subspace of rigid motion transformations arXiv:2609.17145v2 [cs.RO] 16 Sep 2026 by analyzing the alignment system’s response to controlled perturbations, explicitly handling the re-association of points to ensure robustness. The contributions of this work are considered as follows.  
+
+> •
+
+A novel formulation of scan alignment degeneracy grounded in Lie theory, which describes the degenerate subspace using generators from the Lie algebra, se (3) . 
+
+> •
+
+The LiLi algorithm, a perturbation-based method that robustly detects and describes the degeneracy by ex-plicitly accounting for the re-association of data points.  
+
+> •
+
+The method validation on synthetic and real-world datasets, demonstrating a significant improvement over the state-of-the-art, especially with the presence of noise, and enabling robust localization in scenarios where the state-of-the-art method fails completely. The remainder of the paper is organized as follows. Sec-tion II provides an overview of related work on degeneracy detection and scan alignment. The proposed scan alignment degeneracy description using Lie theory is presented in Section III. Upon Lie theory formulation of the degeneracy in scan alignment, the problem formulation is presented in Section IV. The proposed method is then detailed in Section V. Evaluation methodology and experimental results are described in Section VI. A discussion of the found insights is covered in Section VII. Finally, Section VIII concludes the paper with a summary of our findings and potential future directions. II. R ELATED WORK 
+
+The LiDAR scan alignment degeneracy is a common challenge in scan alignment algorithms, particularly in point-to-plane methods, which are widely used in LiDAR-based SLAM systems, such as LOAM [1]. The general principle of scan alignment is to find the optimal rotation R and translation t by minimizing the following cost function. 
+
+C(R, t) = X
+
+> i
+
+∥ri∥2, (1) where C(R, t) is the cost function, and ri represents the residual for the i-th correspondence. Specifically, in the point-to-plane alignment, the residual is ri = n⊤ 
+
+> i
+
+(Rp i +
+
+t − qi), where ni is the normal vector at the corresponding plane, pi is the point in the source point cloud, and qi is the point in the target point cloud. One foundational approach in degeneracy detection of the LiDAR scan alignment is Zhang’s degeneracy detec-tion [2]. It formulates degeneracy as a part of the general optimization-based problem, which is solved by local lin-earization. Nonlinear solvers linearize the cost function (1) by computing the Jacobian of the residual vector r with respect to the optimized transformation parameters ( R, t), 
+
+J = ∂r
+
+∂[R, t] , (2) which yields the linearized system Ax = b, where A is the weighted Jacobian retaining the weights of the original prob-lem. The authors of [2] analyze the eigenvalues of A⊤A,and identify the directions in which the smallest eigenvalues fall below a threshold as degenerate, leaving the solution in those directions unchanged by solution remapping . For the least-squares cost (1), the analyzed matrix 
+
+A⊤A ≈ H (3) is the Gauss–Newton approximation of the Hessian H of the cost function, and we thus refer to such methods as Hessian-based . While computationally efficient, Zhang’s degeneracy detection assumes static correspondences and does not ex-plicitly account for dynamic data reassociation during the optimization process. Since this limitation makes Zhang’s method sensitive to noise and less robust in complex or noisy environments where point cloud associations evolve iteratively, we propose to address the limitation in the developed method .Further research has sought to enhance robustness by repeating the eigenvalue analysis at each step of the ICP algorithm [3] or incorporating degeneracy-aware factors for graph optimization [4]. Other efforts have aimed to minimize degeneracy by selecting features that reduce the degeneracy measure [5], applying the method to single-scan observ-ability analysis [6], or evaluating degeneracy using the log-determinant of the Information matrix spectrum [7]. While these methods improve the robustness of the ICP and can be incorporated in global alignment, their handling of noise and data reassociation remains limited .Degeneracy detection has also been extensively studied within the ICP framework through information matrix anal-ysis. For instance, [8] proposed analyzing the information matrix to detect degeneracies, building on earlier work [9] that describes covariance estimation for 2D LiDAR scans. More recently, [10] improved upon these methods by incor-porating measurement uncertainty and applying the approach to geometrically degenerate environments, such as lunar surfaces. However, these methods do not directly address the data reassociation challenges for degeneracy detection in LiDAR scan alignment .Another perspective focuses on the distribution of pla-nar feature normals. For example, [11] introduced a soft-constraint regularization term to prevent optimization along degenerate directions based on the normal distribution. Sim-ilarly, [12] and [13] used the eigenvalue proportions of the covariance matrix of normals to predict degeneracy and scan “alignability,” with [14] proposing an online adaptation of the method for a robust SLAM. These methods are sensitive to noise as it directly affects the estimated directions of the normals . Besides, methods that use the covariance matrix of 3D normals, are limited to extract only translational degeneracies .Alternative strategies have also emerged to detect or tackle degeneracies. For instance, [15] analyzed the torques induced by constraints around a virtual wrench to detect degen-eracy, while neural network-based approaches [16], [17] show promise in efficiently identifying degeneracies. Some methods, such as those described in [18] and [19], detect degeneracy by comparing LiDAR positions with predictions from external sources, such as odometry or IMU. In [20], the authors explicitly analyze the sensitivity of ICP to the pose perturbations. However, the method is not designed to describe the degeneracy space , but to measure the overall standard deviation of the pose. Other approaches bypass degeneracy detection altogether by complementing LiDAR scans with additional data, as seen in R3Live [21], which combines LiDAR scans with visual and inertial data for robust localization, or HECTOR SLAM [22], which utilizes motion models to address corridor degeneracies for 2D LiDAR scans alignment. While significant progress has been made in detecting and mitigating degeneracies, key challenges remain. Notably, handling dynamic data reassociation and noise in coupled rotational and translational degeneracies continues to pose difficulties. Our work seeks to address these gaps by pro-viding a systematic framework for degeneracy detection and representation, advancing the state-of-the-art in LiDAR scan alignment. III. D EGENERACY IN 3D L IDAR S CAN ALIGNMENT 
+
+In this section, we formulate the scan alignment degener-acy based on Lie theory to explicitly characterize the contin-uous space of degenerate transformations in scan alignment. 3D LiDAR scan alignment estimates the transformation between two scans or between a scan and a map. Degeneracy arises when there exists a continuous set of ways to align the scans with negligible differences in the alignment quality. Formally, degeneracy is defined in [2] as a property of the optimization problem underlying scan alignment, expressed as argmin 
+
+> x
+
+f 2(x), (4) where f (x) is the cost function that measures the alignment error. The degeneracy factor D along a direction c in the 6 de-grees of freedom parameter space quantifies the sensitivity of the solution to the perturbations δd as 
+
+D = δd
+
+δxc
+
+, (5) where δd represents the amount of perturbation applied, and 
+
+δxc measures the corresponding change in the solution. 
+
+Degenerate Directions in se (3) and Transformations in 
+
+SE (3) 
+
+Building on the definition (5), the space of degenerate lo-cal twists can be defined using the Lie algebra of twists se (3) ,which represents infinitesimal motions in 3D space, captur-ing both translational and rotational components. Twists in 
+
+se (3) represent degenerate directions in the parameter space that generate paths of degenerate transformations in the Lie group SE (3) .A twist xdegeneracy can be exponentiated using the Lie theory exponential map to generate a continuous path of transformations in SE (3) as 
+
+T(t) = exp( t · xdegeneracy ), (6) where t is a scalar parameter. It produces the trajectory of motions described by the twist. We can identify a set of basis twists b1, b2, . . . , bk
+
+that span the degenerate subspace in se (3) to capture all possible degenerate motions. The complete set of degenerate transformations in SE (3) is then given by 
+
+Tdegenerate = {exp 
+
+
+
+> k
+
+X
+
+> j=1
+
+cj · bj
+
+ | cj ∈ R}, (7) where Tdegenerate is the full set of degenerate transforma-tions in SE (3) , {bj }kj=1 are the basis twists spanning the degenerate subspace in se (3) , and cj are the coefficients defining the linear combinations of the basis twists. It ensures that all degenerate transformations consistent with the local geometry are captured. IV. P ROBLEM STATEMENT 
+
+Given a reference scan, a local scan, the initial position of the local scan, and the alignment algorithm, the goal is to determine a set of basis twists in se (3) that span the subspace of degenerate transformations in SE (3) . Through applying an exponential map to the linear combinations of the basis twists (7), all the degenerate transformations observable within the local geometry of the scans are generated. We propose the following method to evaluate the quality of the determined degenerate directions. 
+
+Proposed Quality Measurement 
+
+We extend the local scan of the surface by applying com-binations of the detected basis twists over time and stacking the corresponding point clouds. The process generates an extended representation of the local scan. The extended scan is computed as 
+
+Sextended =
+
+> n
+
+[
+
+> i=1
+
+Slocal · Ti, (8) where Slocal is the original local scan, n is the number of samples of degenerate motions, and Ti represents the transformations generated by combining the optimized initial position P0 and the span of the detected basis twists 
+
+Ti = P0 · exp 
+
+
+
+> k
+
+X
+
+> j=1
+
+cij · bj
+
+ , (9) with cij being the combination coefficients and k the number of basis twists in the degenerate subspace. The alignment quality is measured by comparing the extended local scan Sextended with the reference scan Sreference .Specifically, we evaluate the median distance from points on 
+
+Sextended to their nearest neighbors in Sreference as 
+
+Q = median 
+
+> pi∈Sextended
+
+ dist (pi, Sreference ), (10) where dist (pi, Sreference ) is the distance from a point pi to its nearest neighbor in Sreference .The proposed metric quantifies how well the detected basis twists capture the local structure of the reference scan. In an ideal case, where the object exhibits perfect local geometries, Q measures the alignment quality by indicating how accurately the basis twists span the degenerate subspace of the local geometry. V. P ROPOSED METHOD 
+
+The proposed method identifies degeneracies by applying a set of axis-aligned perturbations – (∆ tx, ∆rx), (∆ ty , ∆ry ),and (∆ tz , ∆rz ) – to an optimized pose and analyzing the results of re-optimization. The magnitudes for the transla-tional and rotational components are selected adaptively to ensure these perturbations are significant enough to reveal degeneracies without being arbitrarily large. The selection is governed by a single integer parameter, k, which defines a target re-association distance. For each perturbation, the magnitudes of translation and rotation are calculated independently to meet the target. The magnitude is calibrated to displace a benchmark point (one located at the median distance from the scan center) such that its new nearest neighbor in the reference scan is k points away from its original correspondence. For instance, a value of k = 3 means the perturbation is just big enough to make the benchmark point slide two neighbors away to get a new correspondence. The proposed approach ensures the perturbation scale is automatically adjusted based on the local point cloud density. While the initial perturbations are axis-aligned, the set is sufficient to detect arbitrary degenerate directions. Even if a perturbation does not align with a degenerate direc-tion, the re-optimization process naturally causes the pose to converge toward the nearest low-cost region, effectively “sliding” along the degeneracy and revealing its direction. The resulting deviations from the original optimized pose are then analyzed to construct the basis of the degenerate subspace.   
+
+> *The input perturbation set Pis adaptively generated based on the parameter
+> k, as described in Section V.
+
+The overall degeneracy detection and description is out-lined in Algorithm 1 and can be summarized as follows. First, the scan alignment optimization is performed to obtain an optimized pose Popt (Line 1, Algorithm 1). Perturbations are applied in specified combinations of translational and rotational directions. For each perturbation, the system is re-optimized, and deviations are analyzed to detect degeneracy (Lines 3–7, Algorithm 1). Detected degeneracy directions are aggregated, and the Principal Component Analysis (PCA) is applied to identify the degeneracy subspace (Line 8, Algo-rithm 1), retaining only eigenvectors with eigenvalues above the threshold τPCA (Line 9, Algorithm 1). Finally, sparsi-fication is performed to improve interpretability (Line 10, Algorithm 1). The method is further detailed in the remaining part of the section. 
+
+Details of the Method 
+
+The idea of the proposed method is based on the scan alignment system’s sensitivity evaluation to a set of pertur-bations of the optimized solution to uncover potential degen-eracies. First, the optimization is performed to converge to 
+
+Algorithm 1: LiLi Degeneracy Detection Method 
+
+Input: Pinit – Initial pose estimate, 
+
+P = {(∆ tx, ∆rx), (∆ ty , ∆ry ), (∆ tz , ∆rz )}
+
+– Set of perturbations. 
+
+Parameters: Optimization function fopt , Threshold for median displacement τdisplacement ,Threshold for PCA eigenvalues τPCA .
+
+Output: Sdegeneracy – Sparsified degeneracy subspace basis. 
+
+ Optimize pose to obtain Popt  
+
+> 1
+
+Popt ← fopt (Pinit ) 
+
+> 2
+
+foreach perturbation ∆pi ∈ P do 
+
+ Apply perturbation and re-optimize  
+
+> 3
+
+Pperturbed ← fopt (Popt + ∆ pi)
+
+ Compute degeneracy transformation  
+
+> 4
+
+Tdegeneracy ← P−1opt · Pperturbed 
+
+ Extract degeneracy direction  
+
+> 5
+
+tdegeneracy ← log( Tdegeneracy ) 
+
+> 6
+
+if median displacement of points exceeds 
+
+τdisplacement then  
+
+> 7
+
+Store tdegeneracy in Ddegeneracy 
+
+ Analyze degeneracy directions  
+
+> 8
+
+Perform PCA on Ddegeneracy to obtain eigenvectors and eigenvalues.  
+
+> 9
+
+Select eigenvectors with eigenvalues greater than 
+
+τPCA to form SPCA .
+
+ Sparsify PCA subspace to improve interpretability  
+
+> 10
+
+Sdegeneracy ← sparsify( SPCA ) 
+
+> 11
+
+return Sdegeneracy 
+
+a solution Popt . The perturbations (∆ tx, ∆rx), (∆ ty , ∆ry ),
+
+(∆ tz , ∆rz ) are applied to the solution, and the optimization is performed again to obtain Pperturbed .If the median displacement of the point in the re-optimized point cloud, normalized by the median perturbation dis-placement, exceeds the given threshold τdisplacement , the extracted direction is considered degenerate. The degenerate transformation is then computed as 
+
+Tdegenerate = P−1opt · Pperturbed . (11) From the transformation Tdegenerate , the degeneracy di-rection is extracted as an element of the Lie algebra se (3) 
+
+as 
+
+tdegeneracy = log( Tdegenerate ). (12) Detected degeneracy directions from all perturbations are aggregated, and the PCA is applied to perform the degener-acy subspace. The PCA is applied to the covariance matrix of the detected directions 
+
+C = 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+(ti − ¯t)( ti − ¯t)T , (13) where ti are the detected degeneracy directions, and ¯t is their mean. Eigenvectors with eigenvalues above the threshold 
+
+τPCA form the basis of the degeneracy subspace. The basis is sparsified by minimizing the ℓ1-norm of the basis matrix to enhance interpretability using minimize  
+
+> T
+
+∥TB ∥1 subject to TT T = I, (14) where B is the matrix representing the original basis, and T
+
+is an orthogonal matrix that defines the transformation of the basis. The optimal basis transformation, Topt , yields the new sparsified basis represented by basis matrix Bsparse = Topt B.It ensures that the sparsified basis retains interpretability while representing the same degeneracy subspace. For exam-ple, when applied to planar degeneracy, the sparsified basis ideally consists of pure translations along the plane and a rotation around the plane normal. VI. E VALUATION RESULTS 
+
+The proposed method for degeneracy detection has been evaluated on both synthetic and real experimental datasets. The synthetic dataset consists of geometric shapes that represent diverse degeneracy scenarios with and without measurement noise. We measure the quality of the detected degeneracy subspace using the local scan extension align-ment quality metric (10). Furthermore, we demonstrate the method using a real dataset with two trials. We integrate the method into a LiDAR-Inertial localization system and evaluate its performance using standard localization metrics. The localization system is based on the state-of-the-art LiDAR-Inertial localization algorithm [23], with wheel odometry used to constrain the pose along the detected degenerate directions. In both synthetic and real-world sce-narios, we compare the proposed Perturbation-based method 
+
+LiLi with the reference method, which is the state-of-the-art Hessian-based degeneracy detection, referred to as 
+
+Zhang’s [2]. The results on synthetic data are presented in Section VI-A, and the performance of the method in the localization task is reported in Section VI-B. 1
+
+A. Degeneracy Detection on Synthetic Data 
+
+The degeneracy of scan alignment is evaluated against the Hessian-based method on synthetic data generated from five 3D surface structures, each designed to exhibit a specific degeneracy scenario. The scenarios are visualized in Fig. 2. The axes of the shapes are purposely misaligned with the 
+
+x − y − z axes to showcase the robustness of the approach. We test each method’s ability to identify the correct degenerate subspace, which is quantified using the proposed alignment quality metric (10). The evaluation is performed for both ideal conditions and with Gaussian noise with dis-tribution N (0 , 0.02) added to each point of the point clouds along each axis. The average distance between neighboring points in the generated point clouds is 0.05 units. The alignment quality, measured by the median distance to the nearest neighbor of the extended point cloud to the reference point cloud, is summarized in Table I. The                        
+
+> 1The dataset would be made publicly available together with the reference implementation of the proposed method. Due to the double-anonymous review for ICRA 2026, they are not disclosed here.
+> (a) Plane (b) Closed Cylinder
+> (c) Sinusoidal Cylinder (d) Open Cylinder
+> (e) Rotating Tunnel Fig. 2. The generated point clouds used for the synthetic data evaluation. Red: reference scan, blue: target scan. TABLE I ALIGNMENT ERROR FOR SYNTHETIC DATASETS
+> Scenario Zhang’s LiLi
+> Hessian-based Perturbation-based
+> Plane 0.033 (0.251) 0.033 ( 0.057 )Closed Cylinder 0.030 (0.209) 0.027 (0.030 )Sinusoidal Cylinder 0.066 (0.267) 0.030 (0.037 )Open Cylinder 0.382 (0.263) 0.037 (0.126 )Rotating Tunnel 0.025 (0.069) 0.017 (0.046 )
+> Values in the parentheses () denote results under noisy conditions.
+
+results clearly demonstrate the robustness of the proposed method against noise and complex degeneracies. For sim-pler structures like the Plane and Closed Cylinder, both compared methods perform well in noise-free conditions, but the proposed method consistently achieves lower error when the scans include noise. The performance gap becomes significant in scenarios with more complex degeneracies, which involve coupled rotation and translation components, such as for the Open Cylinder. We see an Open Cylinder scenario as the most challenging one, as the degeneracy subspace has a basis of 2 degenera-cies, formed from (1) translation along the cylinder axis and (2) rotation around the cylinder axis. For the local scan pose, rotation around the cylinder axis is a mixed translational-rotational motion in its local frame connected with the scan’s center. As shown in Fig. 3, the proposed method correctly identifies these two coupled directions, allowing the local scan to slide along the surface while maintaining alignment with the reference scan in both noise-free and noisy condi-tions. In contrast, the Hessian-based method performs worse (a) Open Cylinder, no noise  
+
+> (b) Open Cylinder, with noise Fig. 3. The alignment of the Open Cylinder local scan (blue) to the reference scan (red). The extended scan, defined by (8), for the proposed method (yellow) aligns better than for the Hessian-based method (green).
+
+in capturing the full local alignment degenerate subspace even in the absence of noise. The error increases with noise, where the Hessian-based method completely misidentifies the degeneracy space, while our method remains robust due to its ability to account for data point re-association, inherent from the perturbation analysis. 
+
+B. Effect of Detected Degeneracy on Localization Precision 
+
+The effect of the detected degeneracy on localization pre-cision is demonstrated in a 3D LiDAR-Inertial localization system deployed in a tunnel environment, complemented by the wheel odometry. When degeneracy is detected, the wheel odometry-derived local twist is projected into the degeneracy space. It is complementary used in place of the LiDAR-based transformation in the degenerate subspace, similarly to the solution remapping procedure described in [2]. The employed LiDAR-Inertial odometry implementation is based on the LIO-SAM [23] system. Notably, the stan-dard LIO-SAM framework without degeneracy handling, enhanced by solution remapping, fails immediately upon entering the tunnel due to the lack of geometric constraints. Therefore, we use two enhanced versions of the localization system: one using a Hessian-based Zhang’s method as a baseline, and one using the proposed Perturbation-based method LiLi .                   
+
+> TABLE II LOCALIZATION RESULTS IN THE TUNNEL ENVIRONMENT
+> Trial Method ATE [m] RPE [m] Trial 1 Zhang’s 0.370 0.820 LiLi 0.290 0.470
+> Trial 2 Zhang’s Failed Failed LiLi 0.536 1.020
+> Fig. 4. The Clearpath Husky A200 robot equipped with Ouster OS-1 3D LiDAR used for data collection at the tunnel entrance. The ground truth trajectories are captured by a total station that tracks the prism mounted on top of the sensory payload.
+
+We showcase the results on a dataset we collected in a 260 m long curved tunnel, a structurally degenerate envi-ronment, 3D map of which can be observed in Fig. 6c. The experiment was conducted using a Clearpath Husky A200 robot, shown in Fig. 4, equipped with an Ouster OS-1 128 -beam 3D LiDAR featuring a built-in 6-axis IMU. The 3D ground truth position of the robot is captured by a total station Leica TS16, which allows for computing 
+
+Absolute Trajectory Error (ATE) [24] and the translational part of the Relative Pose Error (RPE) [25] as performance indicators of the localization system. We compute the RPE as a root-mean-square error (RMSE) over all relative position errors for all the trajectory intervals with a path length of 
+
+100 m .Two consecutive trials are considered for the evaluation: a 260 m long single pass through the tunnel, and a 430 m 
+
+long round trip in the tunnel, further referred to as Trial 1 and Trial 2, respectively. The performance results are sum-marized in Table II. In a single pass Trial 1, the proposed method achieves the ATE of 0.290 m and the RPE of 0.470 m per 100 m ,outperforming the baseline, as shown in Fig. 5. The performance difference of the proposed and baseline methods is pronounced in round-trip Trial 2. The Hessian-based method failed to maintain localization at the cluttered tunnel entrance, see Fig. 6, leading to a corrupted map and complete failure as a result. In contrast, the proposed method successfully detected the degeneracy and completed the entire trajectory with a high accuracy. VII. D ISCUSSION 
+
+The evaluation results on the synthetic data highlight a key strength of the proposed method: its robustness in noisy conditions and in scenarios with complex, mixed degenera-cies. While the Hessian-based method performs competi-tively in simple, noise-free cases, its performance degrades significantly with the introduction of noise or geometric complexity. We attribute our method’s superior performance to its ability to account for data point re-association through its perturbation-based analysis. Fig. 5. Aligned trajectories for Trial 1, the proposed method, the Hessian-based baseline, and the ground truth. The inset provides a zoomed-in view of the final positions, showing the superior accuracy of the proposed method.   
+
+> (a) Scan registration at entrance (b) Noisy map (Hessian-based)
+> (c) Full, clean map (Perturbation-based) Fig. 6. Map quality visualization. The accumulated map is shown in red, and the current LiDAR scan is blue. (a) A scan at the cluttered tunnel entrance. (b) The map, resulting from the failed localization of Hessian-based Zhang’s method. (c) The map, resulting from the proposed LiLi method.
+
+The robustness translates directly to the real-world local-ization trials. The cluttered tunnel entrance, combined with the tunnel’s structural degeneracy, represents a challenging scenario where the Hessian-based method failed utterly in the longer Trial 2. Its failure to detect the degeneracy at the entrance led to map corruption, and the corrupted map prevented further successful detection of degeneracy as it was a cluttered environment. In contrast, the proposed method successfully handles challenges of the experimental tunnel environment, maintaining accurate localization throughout both trials. Moreover, in case of the Trial 1, where both meth-ods complete the trajectory, the proposed method achieves a 
+
+21 % lower ATE and a 43 % lower RPE than the baseline, showing that the proposed method is not only more robust, but also more accurate in estimating degeneracy directions in the real-world scenarios. It demonstrates that the resilience to noise and complex degeneracies observed in the synthetic tests is critical for reliable performance in real-world appli-cations. Despite its strong performance, the proposed method has a few limitations. We run the localization system at 10 Hz ,which is sufficient for many robotic applications, but may not be suitable for high-speed scenarios. Additionally, it may incorrectly identify degeneracies in highly repetitive environments and is primarily designed for surface-like point clouds rather than dense, volumetric data. A future direction is to mitigate the above limitations, utilize the proposed degeneracy description method for global map optimization, and explore its utility in SLAM applications. VIII. C ONCLUSION 
+
+In the presented work, we address challenges of detecting and characterizing degeneracies in LiDAR scan alignment. In particular, in structurally degenerate and noisy scenarios, the scan can move along specific combined translational and rotational directions without affecting alignment metrics. We proposed a novel degeneracy detection algorithm called LiLi that leverages perturbations of the optimized pose to describe the full subspace of degenerate transformations SE (3) using the basis directions from the Lie algebra se (3) .The presented evaluation on synthetic data demonstrates that the proposed method significantly outperforms the state-of-the-art Hessian-based approach. Specifically, under noisy conditions and in geometrically complex scenarios, the alignment is improved by over 50 % . The practical value of the method’s robustness is further confirmed through experimental validation based on integration of the method into a LiDAR-Inertial odometry system. In the real-world, structurally degenerate tunnel environment, the proposed approach enabled continuous and accurate localization over a 430 m long round-trip trajectory, a task where the baseline system equipped with a Hessian-based detector failed, and outperformed the baseline accuracy in cases where both methods succeeded. The achieved result underscores the method’s ability to prevent catastrophic localization failure and ensures the theoretical basis for reliable navigation in real-world applications. IX. A CKNOWLEDGMENTS 
+
+The authors gratefully acknowledge the assistance of Large Language Models, specifically GitHub Copilot and Gemini, in generating code for visualization and integration into the LiDAR-Inertial odometry system. REFERENCES [1] J. Zhang, S. Singh, et al. , “LOAM: Lidar odometry and mapping in real-time.” in Robotics: Science and systems , 2014, pp. 1–9. doi: 10.15607/RSS.2014.X.007 [2] J. Zhang, M. Kaess, and S. Singh, “On degeneracy of optimization-based state estimation problems,” in IEEE International Confer-ence on Robotics and Automation (ICRA) , 2016, pp. 809–816. doi: 10.1109/ICRA.2016.7487211 [3] A. Hinduja, B.-J. Ho, and M. Kaess, “Degeneracy-aware factors with applications to underwater slam,” in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2019, pp. 1293– 1299. doi: 10.1109/IROS40897.2019.8968577 [4] R. Ren, H. Fu, X. Hu, H. Xue, X. Li, and M. Wu, “Towards efficient and robust lidar-based 3d mapping in urban environments,” in 3rd International Conference on Unmanned Systems (ICUS) . IEEE, 2020, pp. 511–516. doi: 10.1109/ICUS50048.2020.9274924 [5] Y. Wang, W. Song, Y. Lou, and H. Yu, “Towards image-grade lidar odometry and mapping,” in IEEE 25th International Conference on Intelligent Transportation Systems (ITSC) , 2022, pp. 1542–1547. doi: 10.1109/ITSC55140.2022.9921943 [6] C. E. Denniston, Y. Chang, A. Reinke, K. Ebadi, G. S. Sukhatme, L. Carlone, B. Morrell, and A.-a. Agha-mohammadi, “Loop closure prioritization for efficient and scalable multi-robot slam,” Robotics and Automation Letters , vol. 7, no. 4, pp. 9651–9658, 2022. doi: 10.1109/LRA.2022.3191156 [7] J. Jiao, Y. Zhu, H. Ye, H. Huang, P. Yun, L. Jiang, L. Wang, and M. Liu, “Greedy-based feature selection for efficient lidar slam,” in 
+
+IEEE International Conference on Robotics and Automation (ICRA) ,2021, pp. 5222–5228. doi: 10.1109/ICRA48506.2021.9561262 [8] A. Censi, “On achievable accuracy for range-finder localization,” in 
+
+IEEE International Conference on Robotics and Automation (ICRA) ,2007, pp. 4170–4175. doi: 10.1109/ROBOT.2007.364120 [9] ——, “An accurate closed-form estimate of icp’s covariance,” in IEEE International Conference on Robotics and Automation (ICRA) , 2007, pp. 3167–3172. doi: 10.1109/ROBOT.2007.363961 [10] W. Talbot, J. Nash, M. Paton, E. Ambrose, B. Metz, R. Thakker, R. Etheredge, M. Ono, and V. Ila, “Principled icp covariance modelling in perceptually degraded environments for the eels mis-sion concept,” in IEEE/RSJ International Conference on Intelli-gent Robots and Systems (IROS) , 2023, pp. 10 763–10 770. doi: 10.1109/IROS55552.2023.10341455 [11] S. B. Nashed, J. J. Park, R. Webster, and J. W. Durham, “Ro-bust rank deficient slam,” in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2021, pp. 6603–6608. doi: 10.1109/IROS51168.2021.9636443 [12] W. Zhen, S. Zeng, and S. Soberer, “Robust localization and localiz-ability estimation with a rotating laser scanner,” in IEEE International Conference on Robotics and Automation (ICRA) , 2017, pp. 6240– 6245. doi: 10.1109/ICRA.2017.7989739 [13] S. Nobili, G. Tinchev, and M. Fallon, “Predicting alignment risk to prevent localization failure,” in IEEE International Conference on Robotics and Automation (ICRA) , 2018, pp. 1003–1010. doi: 10.1109/ICRA.2018.8462890 [14] M. Ramezani, G. Tinchev, E. Iuganov, and M. Fallon, “On-line lidar-slam for legged robots with robust registration and deep-learned loop closure,” in IEEE International Conference on Robotics and Automation (ICRA) , 2020, pp. 4158–4164. doi: 10.1109/ICRA40945.2020.9196769 [15] T. Tuna, J. Nubert, Y. Nava, S. Khattak, and M. Hutter, “X-icp: Localizability-aware lidar registration for robust localization in ex-treme environments,” IEEE Transactions on Robotics , vol. 40, pp. 452–471, 2024. doi: 10.1109/TRO.2023.3335691 [16] J. Nubert, E. Walther, S. Khattak, and M. Hutter, “Learning-based localizability estimation for robust lidar localization,” in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) ,2022, pp. 17–24. doi: 10.1109/IROS47612.2022.9982257 [17] Z. Wang, W. Liu, C. Wen, Y. Shi, X. Yan, J. Tan, C. Wang, and J. Li, “A lidar-based 3d indoor mapping framework with mismatch detection and optimization,” in IEEE International Geo-science and Remote Sensing Symposium , 2022, pp. 7499–7502. doi: 10.1109/IGARSS46834.2022.9883319 [18] S. Nakamura, S. Muto, and D. Takahashi, “Short-range lidar slam utilizing localization data of monocular localization,” ROBOMECH Journal , vol. 8, no. 1, p. 23, 2021. doi: 10.1186/s40648-021-00211-7 [19] V. Hulchuk, J. Bayer, and J. Faigl, “Graph-based lidar-inertial slam enhanced by loosely-coupled visual odometry,” in Euro-pean Conference on Mobile Robots (ECMR) , 2023, pp. 1–8. doi: 10.1109/ECMR59166.2023.10256360 [20] D. Baril, S.-P. Deschênes, O. Gamache, M. Vaidis, D. LaRocque, J. Laconte, V. Kubelka, P. Giguère, and F. Pomerleau, “Kilometer-scale autonomous navigation in subarctic forests: challenges and lessons learned,” Field Robotics , vol. 2, pp. 1628–1660, 2022. doi: 10.55417/fr.2022050 [21] J. Lin and F. Zhang, “R 3 live: A robust, real-time, rgb-colored, lidar-inertial-visual tightly-coupled state estimation and mapping package,” in IEEE International Conference on Robotics and Automation (ICRA) ,2022, pp. 10 672–10 678. doi: 10.1109/ICRA46639.2022.9811935 [22] S. Nagla, “2d hector slam of indoor mobile robot using 2d li-dar,” in International conference on power, energy, control and transmission systems (ICPECTS) . IEEE, 2020, pp. 1–4. doi: 10.1109/ICPECTS49113.2020.9336995 [23] T. Shan, B. Englot, D. Meyers, W. Wang, C. Ratti, and D. Rus, “LIO-SAM: Tightly-coupled lidar inertial odometry via smooth-ing and mapping,” in IEEE/RSJ International Conference on In-telligent Robots and Systems (IROS) , 2020, pp. 5135–5142. doi: 10.1109/IROS45743.2020.9341176 [24] O. Wulf, A. Nüchter, J. Hertzberg, and B. Wagner, “Benchmarking urban six-degree-of-freedom simultaneous localization and mapping,” 
+
+Journal of Field Robotics , vol. 25, no. 3, pp. 148–163, 2008. doi: 10.1002/rob.20234 [25] R. Kümmerle, B. Steder, C. Dornhege, M. Ruhnke, G. Grisetti, C. Stachniss, and A. Kleiner, “On measuring the accuracy of slam algorithms,” Autonomous Robots , vol. 27, no. 4, pp. 387–407, 2009. doi: 10.1007/s10514-009-9155-6
