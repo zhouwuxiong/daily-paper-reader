@@ -1,0 +1,366 @@
+Title: ReRadar: Robust Radar Global Localization via Rotation-Equivariant Descriptor Learning
+
+URL Source: https://arxiv.org/pdf/2609.18092v1
+
+Published Time: Thu, 17 Sep 2026 00:33:46 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+> 1
+
+# ReRadar: Robust Radar Global Localization via Rotation-Equivariant Descriptor Learning 
+
+Duc Manh Nguyen 1*, Truong Giang Dao 1*, Gia Nghiem Luong 1, Viet Trung Hoang 2, Anh Quang Nguyen 1
+
+Abstract —Global localization with scanning millimeter-wave radar remains challenging because place-recognition descriptors often discard spatial structure needed for accurate pose retrieval. We present ReRadar, a radar global localization pipeline that extracts rotation-equivariant intermediate features using steer-able convolutional neural networks, forms rotation-invariant de-scriptors through group pooling and NetVLAD aggregation, and combines descriptor retrieval with landmark-based matching to estimate the robot’s three-degree-of-freedom (3-DoF) pose. Across fixed database–query evaluations, ReRadar with target-dataset adaptation achieves 99.37% Recall@1 on OORD Bellmouth, 91.44% Recall@1 with 80.99% F max 1 on Mulran DCC01, and 99.38% Recall@1 on falling-snow Boreas sequence. Without target-dataset data, the cross-dataset model reaches 98.07% Recall@1 on OORD, performing comparably to the evaluated state-of-the-art methods. 
+
+Index Terms —Place Recognition, Global Localization, Pose Estimation, Radar. 
+
+I. I NTRODUCTION 
+
+Place recognition and pose estimation are fundamental prob-lems in autonomous exploration and long-term operation, es-pecially in Simultaneous Localization and Mapping (SLAM), where they help mitigate accumulated drift through reliable loop-closure constraints [1]–[4]. While extensive research has focused on cameras and LiDAR [5], automotive radar is particularly attractive for real-world deployment because it provides long-range sensing and robust perception under adverse weather, poor lighting, and other visually degraded conditions [3], [6]. Recent years have seen substantial progress in radar-based place recognition. Existing methods include handcrafted de-scriptors [7]–[9] and deep learning approaches. The lat-ter include formulating place recognition as a classification problem [10], using NetVLAD [11] with pretrained back-bones [12], and adopting contrastive learning strategies [13], [14]. Although these methods achieve strong place-recognition performance, most are primarily designed to produce global descriptors and do not explicitly preserve spatial information from radar scans. As a result, many existing radar place-recognition methods are not directly applicable to pose re-trieval or global localization tasks that require accurate spatial correspondences.   
+
+> 1Duc Manh Nguyen, Truong Giang Dao, Gia Nghiem Luong, and Anh Quang Nguyen are with the School of Electrical and Electronic Engineering, Hanoi University of Science and Technology, Vietnam.
+> 2Viet Trung Hoang is with the School of Information and Communications Technology, Hanoi University of Science and Technology, Vietnam. * Equal contribution. Corresponding author: quang.nguyenanh@hust.edu.vn.
+
+To address this gap, we propose ReRadar, a radar global-localization pipeline that learns translation- and rotation-equivariant features using steerable convolutional neural net-works, aggregates them with NetVLAD [11] for robust place retrieval, and performs landmark-based matching for final 3-DoF pose estimation. In summary, our main contributions are as follows:  
+
+> •
+
+We design ReRadar , a global localization framework that combines rotation-equivariant descriptor learning and landmark-based geometric matching to recover 3-DoF pose from radar scans.  
+
+> •
+
+We introduce a multi-stage training strategy with the InfoNCE objective [15] for descriptor learning, and we detail how this training pipeline improves robustness under cross-environment localization.  
+
+> •
+
+We evaluate the method on OORD, Mulran, and Boreas [13], [16], [17] using fixed database–query con-figurations under both in-dataset and cross-dataset train-ing settings, showing strong place-recognition and pose-estimation performance.  
+
+> •
+
+We validate embedded deployment on NVIDIA Jetson Orin Nano with an end-to-end runtime of 294.98 ms per frame, showing near real-time operation for practical autonomous systems. II. R ELATED WORK 
+
+A. Radar-based Place Recognition 
+
+Radar-based place recognition methods can be broadly categorized according to their sensor inputs into single-chip radar and scanning radar approaches [8]. For single-chip radar, AutoPlace [18] combines measure-ments from five automotive radars and employs dynamic-point removal, spatiotemporal feature embedding, and can-didate refinement for place recognition. mmPlace [19] trans-forms intermediate-frequency radar signals into range–azimuth heatmaps and extracts spatial features from concatenated heatmaps acquired using a rotating radar platform. SPR [20] provides a lightweight place-recognition framework that op-erates on a single-chip radar scan. These methods address the limitations of single-chip radar measurements through multi-sensor integration, enhanced radar representations, and lightweight descriptor learning. In contrast, ReRadar operates on polar intensity images acquired by a 360 ◦ scanning radar and is not directly applica-ble to the sparse automotive-radar point-cloud inputs provided by datasets such as nuScenes [21]. For scanning-radar place recognition, RaPlace [7] uses the Radon transform to capture global linear structures and achieve rotation robustness without arXiv:2609.18092v1 [cs.RO] 16 Sep 2026 2
+
+learning. RingKey, as defined in the OORD benchmark [13], uses the ring-key component of Scan Context [22]: obser-vations at each fixed radial distance are averaged to form a compact rotation-invariant descriptor, without applying Scan Context’s orientation-refinement stage. RaPlace requires a polar-to-Cartesian conversion before descriptor extraction. Open-RadVLAD [9] (hereafter referred to as RadVLAD) instead operates directly on polar radar data. It applies a 1D Fourier transform along radar radial beams and aggregates the resulting frequency responses using VLAD (Vector of Locally Aggregated Descriptors) [23]. These approaches illustrate different choices of representation and aggregation for constructing global radar descriptors. Learning-based approaches provide an alternative to hand-crafted descriptors. Gadd et al. [14] employ contrastive learn-ing to obtain discriminative radar representations. The neural baseline in OORD [13] combines a ResNet18 backbone [24] with NetVLAD aggregation [11]. This architecture aggregates local deep features into a fixed-length global descriptor for place retrieval; its initialization and adaptation settings in our evaluation are specified in Section IV-C. Other learning-based methods include Kidnapped [12], which uses NetVLAD with a VGG16 backbone [25], and the approach of Agarwal et al. [10], which formulates place recog-nition as a classification problem. These methods primarily target global place recognition rather than explicit local cor-respondence estimation. Consequently, retrieving a candidate place does not by itself recover the relative pose between the query and the corresponding map observation, motivating the integration of retrieval with geometric matching. 
+
+B. Radar Scan Matching 
+
+Radar scan matching estimates relative motion by register-ing radar observations using geometric or feature correspon-dences. Cen et al. [26] introduce a radar-specific landmark detector and matching pipeline for ego-motion estimation, and subsequently improve correspondence estimation through graph matching [27]. These methods provide radar-specific mechanisms for detecting landmarks and establishing corre-spondences between observations. CFEAR Radarodometry [28] extracts a sparse set of ori-ented surface points by conservatively filtering radar returns and registers scans against a history of keyframes using a robust point-to-line objective. ORORA [1] addresses erroneous radar correspondences by decoupling rotation and translation estimation while accounting for the anisotropic uncertainty of radar measurements. These methods primarily focus on local alignment between temporally or spatially nearby observations. Their registration mechanisms can complement place-recognition systems by estimating the relative pose after a candidate map observation has been retrieved. ReRadar adopts this combined strategy: global descriptor retrieval identifies a candidate radar scan, followed by radar-specific landmark matching and RANSAC-based 3-DoF pose estimation. 
+
+C. Radar-based Place Recognition with Pose Estimation 
+
+Global localization requires more than identifying a previ-ously observed place: it also requires estimating the pose of the current observation relative to the map. Existing approaches differ in their map modality and in how they combine place recognition with metric pose estimation. In radar-to-LiDAR localization, RaLL [29] localizes radar observations directly in a LiDAR map using a differentiable measurement model combined with a Kalman filter to ex-ploit temporal continuity during pose estimation. RaLF [30] instead formulates metric localization as a flow estimation problem, predicting pixel-level flow between radar and LiDAR image representations to infer the 3-DoF pose transformation. RoLM [31] employs a Scan Projection Descriptor (SPD) to represent radar scans and LiDAR maps in a unified density-descriptor space. These approaches use cross-modal represen-tations to connect radar observations to a LiDAR reference map. Radar-only localization avoids dependence on a pre-built LiDAR map. RadarLoc [32] jointly models global and relative pose to capture spatial structure and incorporates a self-attention mechanism to mitigate the effects of noise and dynamic objects in urban radar environments. ReFeree [8] exploits free-space information to construct descriptors for place recognition and initial-heading estimation, rather than directly estimating the full translational and rotational pose. ReRadar also addresses radar-only localization, combining global retrieval with local landmark correspondences to re-cover the full 3-DoF pose. The retrieval stage selects a can-didate map observation, while geometric matching estimates the relative transformation between that observation and the query. This separation allows place-recognition performance and geometric localization reliability to be evaluated explicitly. III. M ETHOD 
+
+A. Global Localization Pipeline 
+
+Given a query radar scan Iq , the global localization task is decomposed into two main steps: (1) place recognition to retrieve the most similar database entry, and (2) relative pose estimation between the query and the retrieved entry. We first extract the global descriptor dq of the query scan (detailed in Section III-A1). During offline database construction, the global descriptor di of every keyframe radar image is precomputed using the same descriptor extractor. The best-matching database index ˆm is then retrieved by nearest-neighbor search as follows: 
+
+ˆm = arg min  
+
+> m∈{ 1,...,N db }
+
+∥dq − dm∥2. (1) where Ndb is the number of database entries. The relative 2D rigid-body transformation between the query scan Iq and the retrieved database scan I ˆm is subse-quently estimated by the pose estimation module as follows: 
+
+ˆTq→ ˆm = PoseEst( Iq , I ˆm), (2) where ˆTq→ ˆm = [ˆ x, ˆy, ˆθ]⊤ denotes the estimated relative trans-lation and heading angle. The function PoseEst( ·) performs 3
+
+Fig. 1: Overview of the proposed pipeline. A polar radar image is first transformed into a Cartesian image and then fed into ReResNet [33] to extract local descriptors. In parallel, the polar radar image is processed by a landmark detection module to detect keypoints. NetVLAD [11] is then used to aggregate features into a global descriptor. When the global descriptors of a query image and a database image are matched, the corresponding precomputed keypoint descriptors are used to estimate their relative pose via RANSAC [34]. keypoint detection, local descriptor assignment, correspon-dence matching, and robust RANSAC-based transformation estimation (detailed in Section III-A2). 
+
+1) Rotation-Equivariant and Invariant Descriptors: For robust place recognition under arbitrary heading changes, we learn intermediate feature maps that are equivariant to trans-lation and rotation, and subsequently transform them into a rotation-invariant global descriptor. Standard convolutions are naturally translation-equivariant in Cartesian coordinates [35], whereas polar representations effectively convert this prop-erty into rotation equivariance; however, due to non-uniform sampling, they often degrade translation consistency [36], [37]. Therefore, we operate on Cartesian radar images, which preserve the translation-equivariant behavior of standard CNNs and are more compatible with conventional convolutional architectures [35], then explicitly learn rotation-equivariant representations. We adopt a ResNet-style backbone [24] and replace stan-dard convolutions with steerable convolutions [38], yielding a ReResNet-based rotation-equivariant encoder [33]. Given a Cartesian radar input I ∈ RH×W , the encoder produces rotation-equivariant feature maps as follows: 
+
+F ∈ RH′×W ′×C×| G|, (3) where H′ and W ′ denote the spatial resolution, C is the number of base feature channels, and |G| is the number of discrete rotations in the group. Group pooling removes the explicit orientation index, producing orientation-invariant channel vectors while retaining the spatially equivariant ar-rangement of the feature map: 
+
+F ′ ∈ RH′×W ′×C . (4) The map F ′ is flattened into M = H′W ′ local de-scriptors {fn ∈ RC }Mn=1 . These descriptors are aggregated using NetVLAD [11] with K learnable cluster centers {ck ∈
+
+RC }Kk=1 . The k-th VLAD vector is computed as follows: 
+
+vk =
+
+> M
+
+X
+
+> n=1
+
+ank (fn − ck), (5) where ank denotes the soft-assignment weight. The final global descriptor is defined as follows: 
+
+d = [ v1, . . . , vK ] ∈ RCK , (6) Under an input rotation, the spatial positions in F ′ rotate accordingly, whereas their channel representation is invariant to the pooled orientation index. Because NetVLAD aggregates the local descriptors over spatial positions without preserving their ordering, the resulting global descriptor d is rotation-invariant. Thus, equivariance refers to the intermediate spatial feature maps, while invariance refers to the final descriptor used for retrieval. 
+
+2) Pose Estimation: Reliable relative-pose estimation re-quires stable keypoints and local descriptors. As illustrated in Fig. 2, FAST [39], SIFT [40], and ORB [41], which target textured camera images, perform poorly on sparse, noisy radar scans, whereas the radar-specific detectors of Cen et al. [26], [27] are more repeatable under speckle noise and sparsity. Among the two radar-specific detectors, we adopt the method 4    
+
+> (a) Radar scan (b) SIFT [40] (c) ORB [41]
+> (d) FAST [39] (e) Cen [26] (f) Cen [27]
+
+Fig. 2: Qualitative comparison of keypoint detection methods on OORD [13] radar scans. Traditional detectors (SIFT [40], ORB [41], and FAST [39]) yield sparse and unstable keypoints under speckle noise and low-texture conditions, whereas radar-specific landmark detectors (Cen et al. [26], [27]) produce denser and more repeatable keypoints, demonstrating their suitability for robust pose estimation. of Cen et al. [26] because it provides more usable keypoints than the method in [27], as illustrated in Fig. 2. Specifically, each detected keypoint is mapped to its cor-responding discrete location on the spatially equivariant fea-ture map F ′, whose channel vectors are orientation-invariant (Section III-A1), and its local descriptor is obtained by direct indexing. Tentative correspondences are then established by nearest-neighbor descriptor matching in descriptor space. Let M = {(ujq , uj
+
+> ˆm
+
+)}Jj=1 denote the set of matched key-points between the query image Iq and the retrieved database image I ˆm, where ujq = ( ujq , v jq )⊤ and uj 
+
+> ˆm
+
+= ( uj
+
+> ˆm
+
+, v j
+
+> ˆm
+
+)⊤ are 2D coordinates in the metric Cartesian BEV frame. Before RANSAC, the detected pixel coordinates are converted to meters using the radar-image resolution of 0.64 m /pixel .We estimate a planar rigid transform T[t,θ ] with translation 
+
+t = [ˆ x, ˆy]⊤ and rotation θ ∈ [0 , 360) ◦ as follows: 
+
+T[t,θ ](u) = R(θ) u + t, (7) where u ∈ R2 is a 2D metric BEV coordinate, t is expressed in meters, and R(θ) is the corresponding 2×2 rotation matrix. The optimal transformation is found using RANSAC [34] by maximizing the number of inliers as follows: 
+
+ˆTq→ ˆm = arg max  
+
+> Tq→ˆm
+> J
+
+X
+
+> j=1
+
+1
+
+h
+
+uj 
+
+> ˆm
+
+− T q→ ˆm(ujq ) 2
+
+≤ ϵ
+
+i
+
+, (8) where ϵ > 0 is the inlier threshold. Finally, the relative pose estimate [ˆ x, ˆy, ˆθ]⊤ is extracted from ˆTq→ ˆm.
+
+B. Network Training 1) Training Strategy: Training from scratch is computa-tionally expensive and requires substantial data. To improve convergence and data efficiency, we adopt the two-stage strat-egy illustrated in Fig. 3. The ReResNet backbone [33] is initialized with ImageNet-pretrained weights [42]; Cartesian inputs are processed by ReResNet, and the resulting features are aggregated into global descriptors using NetVLAD [11]. In the first stage, the model is adapted on BEV images from KITTI sequence 00 [43] using the InfoNCE loss [15] with sampled positive and negative descriptor pairs. The KITTI-adapted model is then fine-tuned on radar data using the same objective. 
+
+2) Loss Function: To train ReResNet for place recognition, we optimize the InfoNCE loss [15] on global descriptors. For each query descriptor dq , with a positive descriptor d+ and 
+
+Nneg negative descriptors {d− 
+
+> j
+
+}Nneg  
+
+> j=1
+
+, the loss is defined as follows: 
+
+L = − log exp 
+
+ d⊤ 
+
+> qd+
+> τ
+
+
+
+exp 
+
+ d⊤ 
+
+> qd+
+> τ
+
+
+
++ PNneg  
+
+> j=1
+
+exp 
+
+ d⊤ 
+
+> qd−
+> j
+> τ
+
+ (9) where all descriptors are ℓ2-normalized, so inner products correspond to cosine similarity. The positive sample is selected within a predefined spatial radius of the query, while negatives are sampled outside that radius. The temperature τ controls similarity concentration, and the objective encourages higher similarity for positive pairs than for negatives. IV. E XPERIMENTS 
+
+A. Dataset 
+
+To evaluate the proposed pipeline under diverse operating conditions, we used three public datasets: OORD [13] for off-road environments, Mulran [16] for urban scenes, and Boreas [17] for long-term seasonal and weather variations. 
+
+1) OORD: The OORD dataset consists of radar data collected in four off-road environments in rural regions of England, where each location is traversed multiple times along the same routes at different times. This characteristic makes OORD well suited for multi-session place recognition evaluation. In this paper, we used the trajectory pairs defined by the dataset benchmark: Bellmouth 2 vs Bellmouth 1, Hydro 1 vs Hydro 2, Hydro 1 vs Hydro 3, Maree 1 vs Maree 2, and Two Lochs 2 vs Two Lochs 1. 
+
+2) Mulran: For Mulran, we used a single-session evaluation protocol and split each sequence into database and query subsets. The DCC01 sequence was split at scan 765, while KAIST03 was split at scan 1420; scans before each split were used to construct the database, and the subsequent scans formed the query set. Mulran contains long radar sequences with multiple loops and diverse dynamic objects, providing a challenging setting for evaluating place recognition perfor-mance under repetitive structures and dynamic environments. 
+
+3) Boreas: Boreas contains 44 driving sequences spanning more than 350 km, primarily repeated traversals of the Glen Shields route near Toronto over one year, together with routes in unseen environments. Its 360 ◦ scanning-radar data cover substantial seasonal and weather variations, including rain and snow, supporting long-term place-recognition evaluation. 5
+
+Fig. 3: Overview of the proposed two-stage training pipeline. Stage 1 performs intermediate pretraining on KITTI sequence 00 [43] from ImageNet-pretrained initialization, and Stage 2 fine-tunes on the target radar dataset using InfoNCE loss [15]. We used the sunny sequence 2021-03-02-13-38 as the database and the snow-covered 2020-11-26-13-58 and falling-snow 2021-01-26-11-22 sequences as queries. 
+
+B. Radar-Domain Training Settings 
+
+All experiments used the fixed database–query configura-tions in Section IV-A. Our (1) was trained only on KITTI [43]. Our (2) was adapted from Our (1) using only non-target radar data: one loop from each of the Mulran sequences KAIST02 ,
+
+DCC02 , Riverside01 , and Sejong03 for the OORD and Boreas models, and Boreas sequences 2021-05-06-13-19 ,
+
+2020-12-01-13-26 , and 2021-01-19-15-08 for the Mulran model. Our (3) was instead adapted using target-dataset data: Two Lochs 2 for OORD, KAIST02 for Mul-ran, and boreas-2020-12-01-13-26 for Boreas. None was used as a query sequence; however, Two Lochs 2 also served as the database for its evaluation pair, making that setting map-adapted rather than scene-disjoint. 
+
+C. Implementation Details 
+
+For the baseline methods RaPlace [7], RadVLAD [9], RingKey [22], ReFeree [8], and ResNet18-NetVLAD [13], we followed the experimental settings reported in [13] to ensure a fair comparison. For ResNet18-NetVLAD, the ImageNet-pretrained backbone was not fine-tuned on target radar data; following OORD [13], only the NetVLAD centers were ini-tialized by k-means++ on deep features from the reference trajectory. For our method, we used ReResNet-50 [33] up to the second stage, implemented using the rotational-equivariant layers of 
+
+E(2) -CNN [38] with the cyclic group G8, producing feature maps with C = 512 channels. Following [14], the input polar radar images were first converted to 200 × 200 Cartesian images at a resolution of 0.64 m/pixel, covering a spatial range of 128 m. We then trained using the InfoNCE loss [15] with temperature τ = 0 .1, 14 negative samples per query, a batch size of 2, and 30 epochs. For the backbone ablation, Our (2)-ResNet and Our (3)-ResNet used the corresponding settings in Section IV-B, replacing ReResNet with a standard ResNet. All models were trained on an NVIDIA RTX 3090 GPU with learning rates of 10 −4 from ImageNet initialization [42] and 10 −5 when adapting the KITTI-pretrained model. 
+
+D. Evaluation Metrics 
+
+Following prior radar place-recognition studies [7], [12], we report Recall@1: 
+
+Recall@1 = T P GT , (10) A query is counted as a true positive (TP) when its top-ranked retrieval lies within 25 m of the ground truth on OORD [13], or within 20 m on Mulran and Boreas [16], [17]; GT is the total number of queries. To summarize the precision–recall trade-off independently of a fixed descriptor-distance threshold, we also report 
+
+F max 1 = max 
+
+> δ
+
+2 P (δ) R(δ)
+
+P (δ) + R(δ) , (11) where P (δ) and R(δ) are precision and recall at threshold δ.For geometric accuracy, we report mean translation error ˆet in meters and rotation error ˆer in degrees, both computed over successful cases only. Following BEVPlace++ [35], we additionally report lo-calization success rate (SR). A localization succeeds when translation and rotation errors are jointly below (25 m , 10 ◦)
+
+on OORD or (20 m , 10 ◦) on Mulran and Boreas. Since ReF-eree [8] does not estimate translation, its success requires correct place retrieval and rotation error below 10 ◦:
+
+SR = Nsucc 
+
+GT . (12) where Nsucc is the number of successful localizations. V. R ESULTS 
+
+The following experiments used the same database–query pairs for all three ReRadar settings, allowing the effects of KITTI-only training, cross-dataset radar adaptation, and target-dataset radar adaptation to be compared directly. 6
+
+TABLE I: Quantitative comparison on OORD [13]. The ReRadar settings and evaluation metrics are defined in Sections IV-C and IV-D, respectively. Best values are shown in bold.                                                                                                                                                                                                                                                                                             
+
+> Bellmouth 2-vs-Bellmouth 1 Hydro 1-vs-Hydro 2 Hydro 1-vs-Hydro 3 Maree 1-vs-Maree 2 Two Lochs 2-vs-Two Lochs 1 Method Recall@1 Fmax 1SR ˆerˆetRecall@1 Fmax 1SR ˆerˆetRecall@1 Fmax 1SR ˆerˆetRecall@1 Fmax 1SR ˆerˆetRecall@1 Fmax 1SR ˆerˆet
+> RaPlace [7] 98.45 98.48 –––92.65 94.69 –––95.34 96.96 –––94.28 95.58 –––85.82 87.61 –––RadVLAD [9] 98.87 99.15 –––93.51 95.79 –––96.00 97.86 –––96.88 96.75 –––84.27 83.83 –––ResNet18-NetVLAD [13] 97.67 97.67 –––93.78 96.15 –––95.70 97.15 –––97.14 97.14 –––5.41 5.44 –––ReFeree [8] 89.29 88.79 73.03 2.52 –90.13 90.13 82.10 2.41 –91.55 92.37 80.59 2.6 –88.69 88.68 77.76 2.95 –70.75 69.75 53.61 3.83 –RingKey [22] 94.29 94.29 –––91.15 92.66 –––94.06 94.12 –––91.76 91.76 –––72.96 74.59 –––
+> Our (1) 96.41 96.41 85.00 2.58 1.98 92.55 94.24 88.00 2.32 1.63 96.01 96.03 86.00 2.27 1.60 92.89 93.58 83.00 2.80 2.36 87.21 83.64 65.00 3.74 7.05
+> Our (2) 96.13 96.19 83.00 2.37 1.63 98.07 98.07 87.00 2.35 1.62 97.70 97.75 86.00 2.28 1.56 96.36 96.28 84.00 2.85 2.37 84.74 80.02 65.00 3.78 7.63
+> Our (3) 99.37 99.37 87.00 2.42 2.07 98.71 98.71 88.00 2.31 1.87 97.24 97.81 87.00 2.37 1.78 97.90 97.76 85.00 2.83 2.47 96.97 94.41 73.00 3.76 6.20
+> Our (2)-ResNet 84.30 84.35 70.00 2.34 1.69 91.32 91.38 84.00 2.39 1.46 91.30 91.34 83.00 2.33 1.47 88.66 88.60 78.00 2.74 2.21 31.69 34.35 16.00 3.85 6.51
+> Our (3)-ResNet 99.58 99.58 88.00 2.38 1.97 98.02 98.02 89.00 2.27 1.67 96.42 97.73 88.00 2.26 1.68 97.99 97.84 85.00 2.69 2.29 92.46 87.24 69.00 3.80 5.62
+
+A. Results on OORD 
+
+We first examine how radar-domain adaptation transfers across the five OORD trajectory pairs in Table I. Our (1), trained only on KITTI, is already competitive on most pairs, but its performance decreases on the more challenging Two Lochs route. Cross-dataset adaptation in Our (2) is particularly effective on Hydro, increasing Recall@1 to 98.07% on Hydro (1-vs-2) and 97.70% on Hydro (1-vs-3), despite using no OORD data for adaptation. Target-dataset adaptation provides the most consistent re-trieval performance. Our (3) achieves the highest Recall@1 among the external baselines on all five pairs and the highest 
+
+F max 1 on four; only on Hydro (1-vs-3) is its F max 1 marginally below RadVLAD. The largest gain occurs on Two Lochs, where Recall@1 and SR increase from 84.74% and 65% for Our (2) to 96.97% and 73% for Our (3). Across the equivariant ReRadar settings, rotation errors remain within 2.27 ◦–3.78 ◦,while Two Lochs retains the largest translation error. 
+
+B. Results on Mulran 
+
+We next evaluate adaptation across the two urban Mulran routes in Table II. The benefit is most pronounced on DCC01: Our (1) matches RadVLAD in Recall@1, while cross-dataset adaptation in Our (2) increases Recall@1 and F max 1 to 81.28% and 78.67%, respectively. On KAIST03, both settings remain competitive, indicating that adaptation improves the difficult route without substantially degrading the easier one. With target-dataset adaptation, Our (3) achieves the highest Recall@1 on both sequences, reaching 91.44% on DCC01 and 98.33% on KAIST03. Its F max 1 is also highest on DCC01, while remaining slightly below RadVLAD on KAIST03. Our (3) attains SR values of 88.24% and 97.99%; however, the lowest rotation and translation errors are distributed across different ReRadar settings, so adaptation does not improve every pose metric monotonically. Using the target-dataset-adapted model Our (3), we further visualize geometric regis-tration, trajectory-level retrieval consistency, and a challenging correctly retrieved query in Figs. 4–6. 
+
+C. Results on Boreas 
+
+Finally, we assess long-term robustness under seasonal and weather changes using the two Boreas query sequences in Table III. The KITTI-only model Our (1) reaches 86.85% and 77.54% Recall@1. Adapting with Mulran data increases these values to 94.09% and 83.47%; thus, Our (2) nearly matches 
+
+Fig. 4: Visualization of registration results produced by the target-dataset-adapted ReRadar model, Our (3), on the Mulran KAIST03 sequence [16]. The top row shows successful regis-tration under rotation, while the bottom row shows successful registration under translation. D-Start D-Start D-End D-End Q-Start Q-Start Q-End Q-End 
+
+Fig. 5: Qualitative comparison of trajectory-level retrieval con-sistency on Mulran DCC01 [16]. ReRadar uses Our (3); solid and dashed black curves denote database and query trajecto-ries. Retrieval links are shown for ReRadar and RadVLAD [9], where green indicates true positives and red indicates false positives. TABLE II: Quantitative comparison on Mulran [16]. The ReRadar settings and evaluation metrics are defined in Sec-tions IV-C and IV-D, respectively. Best values are shown in bold.                                                                                                                  
+
+> DCC01 KAIST03 Method Recall@1 Fmax 1SR ˆerˆetRecall@1 Fmax 1SR ˆerˆet
+> RaPlace [7] 64.71 66.47 –––92.98 94.70 –––RadVLAD [9] 75.94 76.55 –––96.66 97.95 –––ResNet18-NetVLAD [13] 43.85 46.79 –––89.63 90.17 –––ReFeree [8] 54.55 56.46 44.39 1.74 –87.63 87.77 77.26 1.16 –RingKey [22] 54.01 54.88 –––86.29 86.53 –––
+> Our (1) 75.94 74.30 75.40 1.46 5.40 95.32 93.12 94.98 0.79 0.85
+> Our (2) 81.28 78.67 79.68 1.81 3.56 94.98 94.46 93.98 0.85 0.81
+> Our (3) 91.44 80.99 88.24 1.66 3.87 98.33 97.47 97.99 0.81 0.79 Our (2)-ResNet 75.94 72.73 70.05 1.97 2.49 95.32 93.56 95.32 0.95 0.80
+> Our (3)-ResNet 81.28 77.90 74.87 2.21 2.99 97.32 95.52 97.32 0.84 0.84 7
+
+Fig. 6: Qualitative comparison of retrieval results on a chal-lenging query from Mulran KAIST03. ReRadar results use the target-dataset-adapted model, Our (3). The figure compares retrieval outputs from different methods for the same query. TABLE III: Quantitative comparison on Boreas [17]. The ReRadar settings and evaluation metrics are defined in Sec-tions IV-C and IV-D, respectively. Best values are shown in bold.                                                                                                                  
+
+> 2020-11-26-13-58 2021-01-26-11-22
+> Method Recall@1 Fmax 1SR ˆerˆetRecall@1 Fmax 1SR ˆerˆet
+> RaPlace [7] 94.93 94.93 –––96.99 96.99 –––RadVLAD [9] 91.30 91.80 –––94.78 94.78 –––ResNet18-NetVLAD [13] 74.52 74.94 –––73.98 73.98 –––ReFeree [8] 73.67 73.90 65.38 1.26 –69.47 69.47 54.47 1.43 –RingKey [22] 58.33 58.33 –––65.31 65.31 –––
+> Our (1) 86.85 86.85 86 0.72 3.64 77.54 78.49 77 0.80 3.77
+> Our (2) 94.09 94.09 94.00 0.67 3.61 83.47 83.47 82.00 0.69 4.01
+> Our (3) 97.35 97.35 97.00 0.59 3.47 99.38 99.43 99.00 0.75 3.39 Our (2)-ResNet 87.70 87.70 87.00 0.75 3.73 83.29 83.37 83.00 0.82 3.67
+> Our (3)-ResNet 97.35 97.40 97.00 0.66 3.37 97.26 97.34 97.00 0.78 3.56
+
+RaPlace on 2020-11-26-13-58 , but a larger gap remains on the more challenging 2021-01-26-11-22 .Target-dataset adaptation closes this gap. Our (3) reaches 97.35% and 99.38% Recall@1, surpassing the strongest ex-ternal baseline on both sequences, and obtains SR values of 97% and 99%. Its mean rotation errors remain below one degree and its translation errors are below 3.5 m, showing that the retrieved candidates also support accurate geometric pose estimation. 
+
+D. Computational Time 
+
+For ReRadar on the OORD Bellmouth sequence with batch size one, the polar-to-Cartesian conversion, landmark-based pose-estimation, global-descriptor generation, and database-retrieval stages require 13.29, 190.00, 90.40, and 1.29 ms on the Jetson Orin Nano (294.98 ms total), and 1.45, 128.66, 18.85, and 0.75 ms on the RTX 3090 (149.71 ms total). Landmark-based pose estimation is the main bottleneck on both platforms. For descriptor generation alone on Boreas 
+
+2021-03-02-13-38 , Fig. 7 reports 90.40 ms on the Jetson and 20.35 ms on the RTX 3090. ReRadar is faster than RaPlace and ReFeree but slower than RadVLAD and RingKey. At the typical 4 Hz radar rate, the end-to-end RaPlace RadVLAD ResNet18-NetVLAD ReFeree RingKey ReRadar 
+
+Method 10 −1
+
+10 0
+
+10 1
+
+10 2
+
+> Runtime (ms)
+> 242.11 9.49 16.22 176.97 3.42 90.40 224.02 10.08 1.24 143.40 1.46 20.35
+
+On Jetson On 3090 
+
+Fig. 7: Global-descriptor generation runtime on Boreas 
+
+2021-03-02-13-38 using the Jetson Orin Nano and RTX 3090 (logarithmic scale). pipeline is close to real time, with further gains possible through optimization or parallelization. 
+
+E. Backbone Ablation 
+
+To isolate the effect of rotation-equivariant feature extrac-tion, we compare Our (2) and Our (3) with their standard-ResNet counterparts under identical training settings. In the cross-dataset setting, ReResNet provides the clearest gains on difficult domain shifts: Recall@1 improves over Our (2)-ResNet by 53.05 percentage points on OORD Two Lochs, 5.34 points on Mulran DCC01, and 6.39 points on Boreas 
+
+2020-11-26-13-58 . On easier sequences such as Mulran KAIST03 and the second Boreas query, the two backbones are closer, indicating that equivariance is most beneficial when appearance and viewpoint changes are severe. The same trend remains after target-dataset adaptation. Relative to Our (3)-ResNet, Our (3) improves Recall@1 by 4.51 points on OORD Two Lochs, 10.16 points on Mulran DCC01, and 2.12 points on Boreas 2021-01-26-11-22 .Standard ResNet can still match or slightly exceed ReResNet on some easier OORD pairs, and their pose errors are gen-erally comparable. Thus, the principal benefit of ReResNet is stronger retrieval robustness on the most challenging cross-environment and long-term localization conditions rather than uniform improvement in every metric. 
+
+F. Controlled Yaw-Rotation Evaluation 
+
+To isolate the rotation-equivariant behavior of the interme-diate feature maps, we conducted a controlled yaw-rotation evaluation using the ResNet and ReResNet variants trained on OORD Two Lochs 2. The trained models were kept fixed and evaluated separately on radar scans from OORD and Mulran. For each scan Ii and controlled yaw angle θ ∈ [0 ◦, 360 ◦], we extracted local feature maps Fi = f (Ii) and Fi,θ = f (Rθ Ii),where Rθ denotes spatial rotation by θ. To undo the applied yaw before comparison, the rotated feature map was inversely aligned as eFi,θ = R−θ (Fi,θ ). For each evaluation dataset 
+
+D ∈ { OORD , Mulran }, the mean feature consistency was computed as 80 45 90 135 180 225 270 315 360 
+
+> Yaw rotation ( ◦)
+> 0.84 0.88 0.92 0.96 1.00
+> Mean cosine similarity
+> ResNet–MulRan ResNet–OORD ReResNet–MulRan ReResNet–OORD
+
+Fig. 8: Mean cosine consistency of spatially aligned local feature maps under controlled yaw rotations. ResNet and ReResNet are trained on OORD Two Lochs 2 and evaluated separately on OORD and Mulran. 
+
+SD (θ) = 1
+
+ND
+
+> ND
+
+X
+
+> i=1
+
+1
+
+|Ωi,θ |
+
+X
+
+> p∈Ωi,θ
+
+Fi(p)⊤ eFi,θ (p)
+
+∥Fi(p)∥2 ∥ eFi,θ (p)∥2
+
+, (13) where ND is the number of scans in dataset D and Ωi,θ 
+
+excludes locations affected by rotation padding or cropping. A score near one indicates that inverse alignment recovers nearly the same local representation. We compare aligned local-feature consistency across the full yaw range in Fig. 8. On both datasets, ReResNet maintains cosine similarity above approximately 0.95, whereas ResNet decreases to approximately 0.84–0.87 for intermediate yaw rotations. The closely aligned OORD and Mulran curves indicate that the rotation-equivariant behavior learned from Two Lochs 2 transfers across datasets. VI. C ONCLUSION 
+
+In this paper, we presented a deep learning-based radar place-recognition and global-localization pipeline built on radar image representations. By repurposing radar-specific features, originally designed for ego-motion estimation, as keypoints for pose estimation and combining them with the InfoNCE objective for robust contrastive feature learning, the proposed method achieves strong performance on mul-tiple public radar datasets. The comparison among KITTI-only, cross-dataset, and in-dataset training settings shows that radar-domain adaptation transfers effectively across datasets, while target-dataset adaptation provides further gains on the most challenging sequences. After target-dataset adaptation, ReRadar exceeds the strongest external baseline in Recall@1 on all evaluated OORD, Mulran, and Boreas database–query pairs. Despite these encouraging results, there is further space for improvement. Our current pipeline still has notable runtime overhead in the landmark-based pose-estimation stage. In future work, we will improve inference speed by reducing the runtime of this stage and designing more lightweight descriptors. REFERENCES [1] H. Lim, K. Han, G. Shin, G. Kim, S. Hong, and H. Myung, “Orora: Outlier-robust radar odometry,” arXiv preprint arXiv:2303.01876 , 2023. [2] J. Zhang, H. Zhuge, Z. Wu, G. Peng, M. Wen, Y. Liu, and D. Wang, “4dradarslam: A 4d imaging radar slam system for large-scale environ-ments based on pose graph optimization,” in 2023 IEEE International Conference on Robotics and Automation (ICRA) , pp. 8333–8340, IEEE, 2023. [3] Z. Hong, Y. Petillot, and S. Wang, “Radarslam: Radar based large-scale slam in all weathers,” in 2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , pp. 5164–5170, IEEE, 2020. [4] D. Wang, Y. Duan, X. Fan, C. Meng, J. Ji, and Y. Zhang, “Maroam: Map-based radar slam through two-step feature selection,” arXiv preprint arXiv:2210.13797 , 2022. [5] P. Yin, J. Jiao, S. Zhao, L. Xu, G. Huang, H. Choset, S. Scherer, and J. Han, “General place recognition survey: Toward real-world autonomy,” IEEE Transactions on Robotics , vol. 41, pp. 3019–3038, 2025. [6] S. M. Patole, M. Torlak, D. Wang, and M. Ali, “Automotive radars: A review of signal processing techniques,” IEEE Signal Processing Magazine , vol. 34, no. 2, pp. 22–35, 2017. [7] H. Jang, M. Jung, and A. Kim, “Raplace: Place recognition for imaging radar using radon transform and mutable threshold,” in 2023 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) ,pp. 11194–11201, IEEE, 2023. [8] H. Kim, B. Choi, E. Choi, and Y. Cho, “ReFeree: Radar-based lightweight and robust localization using feature and free space,” IEEE Robotics and Automation Letters , 2024. [9] M. Gadd and P. Newman, “Open-RadVLAD: Fast and robust radar place recognition,” in 2024 IEEE Radar Conference (RadarConf24) , pp. 1–6, IEEE, 2024. [10] S. Agarwal, J. Yuan, P. Newman, D. De Martini, and M. Gadd, “Bayesian radar cosplace: Directly estimating location uncertainty in radar place recognition,” IET Radar, Sonar & Navigation , vol. 19, no. 1, p. e70002, 2025. [11] R. Arandjelovic, P. Gronat, A. Torii, T. Pajdla, and J. Sivic, “Netvlad: Cnn architecture for weakly supervised place recognition,” in Proceed-ings of the IEEE conference on computer vision and pattern recognition ,pp. 5297–5307, 2016. [12] S¸ . S˘ aftescu, M. Gadd, D. De Martini, D. Barnes, and P. Newman, “Kidnapped radar: Topological radar localisation using rotationally-invariant metric learning,” in 2020 IEEE International Conference on Robotics and Automation (ICRA) , pp. 4358–4364, IEEE, 2020. [13] M. Gadd, D. De Martini, O. Bartlett, P. Murcutt, M. Towlson, M. Widojo, V. Mus ¸at, L. Robinson, E. Panagiotaki, G. Pramatarov, 
+
+et al. , “Oord: The oxford offroad radar dataset,” IEEE Transactions on Intelligent Transportation Systems , 2024. [14] M. Gadd, D. D. Martini, and P. Newman, “Contrastive learning for unsupervised radar place recognition,” 2021. [15] A. v. d. Oord, Y. Li, and O. Vinyals, “Representation learning with contrastive predictive coding,” arXiv preprint arXiv:1807.03748 , 2018. [16] G. Kim, Y. S. Park, Y. Cho, J. Jeong, and A. Kim, “Mulran: Multimodal range dataset for urban place recognition,” in 2020 IEEE international conference on robotics and automation (ICRA) , pp. 6246–6253, IEEE, 2020. [17] K. Burnett, D. J. Yoon, Y. Wu, A. Z. Li, H. Zhang, S. Lu, J. Qian, W.-K. Tseng, A. Lambert, K. Y. K. Leung, A. P. Schoellig, and T. D. Barfoot, “Boreas: A multi-season autonomous driving dataset,” The International Journal of Robotics Research , vol. 42, no. 1–2, pp. 33–42, 2023. [18] K. Cai, B. Wang, and C. X. Lu, “Autoplace: Robust place recognition with single-chip automotive radar,” in 2022 International Conference on Robotics and Automation (ICRA) , pp. 2222–2228, IEEE, 2022. [19] C. Meng, Y. Duan, C. He, D. Wang, X. Fan, and Y. Zhang, “mmplace: Robust place recognition with intermediate frequency signal of low-cost single-chip millimeter wave radar,” 2024. [20] D. C. Herraez, L. Chang, M. Zeller, L. Wiesmann, J. Behley, M. Hei-dingsfeld, and C. Stachniss, “Spr: Single-scan radar place recognition,” 
+
+IEEE Robotics and Automation Letters , vol. 9, no. 10, pp. 9079–9086, 2024. [21] H. Caesar, V. Bankiti, A. H. Lang, S. Vora, V. E. Liong, Q. Xu, A. Krishnan, Y. Pan, G. Baldan, and O. Beijbom, “nuscenes: A multi-modal dataset for autonomous driving,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pp. 11621– 11631, 2020. [22] G. Kim and A. Kim, “Scan context: Egocentric spatial descriptor for place recognition within 3d point cloud map,” in 2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) ,pp. 4802–4809, IEEE, 2018. 9
+
+[23] H. J´ egou, M. Douze, C. Schmid, and P. P´ erez, “Aggregating local descriptors into a compact image representation,” in 2010 IEEE Com-puter Society Conference on Computer Vision and Pattern Recognition ,pp. 3304–3311, 2010. [24] K. He, X. Zhang, S. Ren, and J. Sun, “Deep residual learning for image recognition,” in Proceedings of the IEEE conference on computer vision and pattern recognition , pp. 770–778, 2016. [25] K. Simonyan and A. Zisserman, “Very deep convolutional networks for large-scale image recognition,” 2015. [26] S. H. Cen and P. Newman, “Precise ego-motion estimation with millimeter-wave radar under diverse and challenging conditions,” in 
+
+2018 IEEE International Conference on Robotics and Automation (ICRA) , pp. 6045–6052, IEEE, 2018. [27] S. H. Cen and P. Newman, “Radar-only ego-motion estimation in difficult settings via graph matching,” in 2019 International Conference on Robotics and Automation (ICRA) , pp. 298–304, IEEE, 2019. [28] D. Adolfsson, M. Magnusson, A. Alhashimi, A. J. Lilienthal, and H. Andreasson, “CFEAR radarodometry—conservative filtering for ef-ficient and accurate radar odometry,” in 2021 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , pp. 5462–5469, IEEE, 2021. [29] H. Yin, R. Chen, Y. Wang, and R. Xiong, “Rall: End-to-end radar lo-calization on lidar map using differentiable measurement model,” IEEE Transactions on Intelligent Transportation Systems , vol. 23, pp. 6737– 6750, 2020. [30] A. Nayak, D. Cattaneo, and A. Valada, “Ralf: Flow-based global and metric radar localization in lidar maps,” 2024 IEEE International Conference on Robotics and Automation (ICRA) , pp. 5097–5103, 2023. [31] Y. Ma, X. Zhao, H. Li, Y. Gu, X. Lang, and Y. Liu, “Rolm: Radar on lidar map localization,” in 2023 IEEE International Conference on Robotics and Automation (ICRA) , pp. 3976–3982, IEEE, 2023. [32] W. Wang, P. P. B. de Gusmo, B. Yang, A. Markham, and N. Trigoni, “Radarloc: Learning to relocalize in fmcw radar,” 2021 IEEE Interna-tional Conference on Robotics and Automation (ICRA) , pp. 5809–5815, 2021. [33] J. Han, J. Ding, N. Xue, and G.-S. Xia, “Redet: A rotation-equivariant detector for aerial object detection,” in Proceedings of the IEEE/CVF conference on computer vision and pattern recognition , pp. 2786–2795, 2021. [34] M. A. Fischler and R. C. Bolles, “Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography,” Communications of the ACM , vol. 24, no. 6, pp. 381–395, 1981. [35] L. Luo, S.-Y. Cao, X. Li, J. Xu, R. Ai, Z. Yu, and X. Chen, “Bevplace++: Fast, robust, and lightweight lidar global localization for unmanned ground vehicles,” IEEE Transactions on Robotics , 2025. [36] C. Esteves, C. Allen-Blanchette, X. Zhou, and K. Daniilidis, “Polar transformer networks,” in ICLR , 2018. [37] P. Serio, G. Pisaneschi, A. D. Ryals, V. Infantino, L. Gentilini, V. Donzella, and L. Pollini, “Polar perspectives: Evaluating 2-d lidar projections for robust place recognition with visual foundation models,” 2025. [38] M. Weiler and G. Cesa, “General e (2)-equivariant steerable cnns,” 
+
+Advances in neural information processing systems , vol. 32, 2019. [39] E. Rosten and T. Drummond, “Machine learning for high-speed corner detection,” in European conference on computer vision , pp. 430–443, Springer, 2006. [40] D. G. Lowe, “Distinctive image features from scale-invariant keypoints,” 
+
+International journal of computer vision , vol. 60, no. 2, pp. 91–110, 2004. [41] E. Rublee, V. Rabaud, K. Konolige, and G. Bradski, “Orb: An efficient alternative to sift or surf,” in 2011 International conference on computer vision , pp. 2564–2571, Ieee, 2011. [42] O. Russakovsky, J. Deng, H. Su, J. Krause, S. Satheesh, S. Ma, Z. Huang, A. Karpathy, A. Khosla, M. Bernstein, et al. , “Imagenet large scale visual recognition challenge,” International journal of computer vision , vol. 115, no. 3, pp. 211–252, 2015. [43] A. Geiger, P. Lenz, and R. Urtasun, “Are we ready for autonomous driving? the kitti vision benchmark suite,” in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) ,pp. 3354–3361, 2012.

@@ -1,0 +1,816 @@
+Title: PESTO: Formally Correct Registration of LiDAR Point Clouds with Limited Overlap
+
+URL Source: https://arxiv.org/pdf/2609.18082v1
+
+Published Time: Thu, 17 Sep 2026 00:32:32 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# PESTO: Formally Correct Registration of LiDAR Point Clouds with Limited Overlap 
+
+Valen Yamamoto 1, Matteo Marchi 1, and Paulo Tabuada 1
+
+Abstract — In this paper we tackle the problem of aligning LiDAR point clouds also known as the point cloud registration problem. We propose a new algorithm, PESTO, that exploits tetrahedra as “universal features” for LiDAR data, i.e., features that are agnostic to the environment where the LiDAR sensors are deployed. We show empirically that PESTO is competitive with existing solutions for aligning LiDAR point clouds, espe-cially in environments with occlusions. Moreover, we establish PESTO’s formal correctness by proving worst-case bounds on the alignment error. 
+
+I. I NTRODUCTION 
+
+With the increasing deployment of autonomous vehicles in traffic with human drivers, it is critical that algorithms within the self-driving autonomy stack provide performance and safety guarantees. Point cloud registration, the problem of finding the rigid transformation that aligns two point clouds, is an integral part of LiDAR localization algorithms. When these algorithms are used on real-world LiDAR data, we need to contend with several additional challenges. First, the point clouds being aligned do not entirely describe the same area due to occlusions. In other words, the subset of the environment that is visible in both point clouds, that we term the common area , is a strict subset of the point clouds. Implicitly or explicitly, each alignment algorithm identifies the common area, and this problem is combinatorial in nature as one must search over all possible subsets. Second, the large number of points produced by 3D LiDAR sensors renders algorithms that work at the level of individual points too inefficient. To circumvent this, feature extraction methods were developed to distill large point clouds into a smaller sets of distinct features like corners and edges. However, these methods either require prior knowledge of the size and type of features prevalent in the environment or are data-driven deep learning solutions, both of which are not robust to changes in the environment. Third, most point cloud registration algorithms fail silently, i.e., these algorithms produce correct and wildly incorrect estimates with the same confidence, unable to provide a measure of how well they have performed. With                         
+
+> *This material is based upon work supported by the National Science Foundation Graduate Research Fellowship Program under Grant No. DGE-2444110 and DGE-2034835, and by NSF project 2211146. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation.
+> 1Valen Yamamoto, Matteo Marchi, and Paulo Tabuada are with the Electrical and Computer Engineering Department, University of California at Los Angeles, Los Angeles, CA 90095 USA (e-mail:
+
+{valenyamamoto, matmarchi, tabuada }@ucla.edu ). 
+
+the addition of feature extraction methods, even point cloud registration algorithms with performance guarantees cannot provide an end-to-end bound on the quality of the pro-duced rigid transformations. In particular, data-driven neural network solutions, often overfit to their training data, can fail unpredictably and provide a dramatically incorrect rigid transformation estimate for a pair of point clouds that are similar to a pair they correctly align; an example of this phenomenon can be seen in Figure 1. As LiDAR point cloud registration is increasingly being deployed in safety-critical applications, it is crucial that alignment algorithms determine the uncertainty in their estimates. Motivated by these difficulties, we propose PESTO 2, a point cloud registration algorithm with formal performance guarantees designed to work on LiDAR data with small common areas.  
+
+> Fig. 1. A visualization of alignments provided by PESTO and the Neural Network (NN) GeoTransformer for two pairs of LIDAR scans, one in red and the other in green, from the KITTI Odometry Benchmark, collected as the car makes a left turn at an intersection. Both tools correctly align scan 48, but GeoTransformer provides a very incorrect transformation for scan 49, even though it covers almost the same area as scan 48.
+
+Our contributions are as follows: 1) The PESTO algorithm, which uses Delaunay Tetrahe-dralization to efficiently compute the rigid transforma-tion that best aligns the common area of two point clouds; 2) Formal worst-case guarantees on the alignment error when using PESTO’s rigid transformation estimate;     
+
+> 2PASTA Employing Simplex Transformation Objective arXiv:2609.18082v1 [eess.SY] 16 Sep 2026
+
+3) An empirical comparison of PESTO to existing point cloud registration tools and a validation of PESTO’s worst case guarantees on real world LiDAR data. II. R ELATED WORK 
+
+Point cloud registration algorithms fall into two cat-egories: correspondence-based and correspondence-free. Correspondence-based algorithms take as input a set of corresponding features from both point clouds. Horn [1] pro-vided a closed-form solution for the best, in a least-squares sense, rigid transformation between two sets of points. This method, however, is sensitive to incorrect (outlier) correspondences; to combat such correspondences, robust correspondence-based registration algorithms like RANSAC [2] and other maximization consensus variants [3] first find a set of correct (inlier) correspondences and then calculate their transformation estimates based on the correct corre-spondences. Correspondences are obtained using tools such as Fast Point Feature Histograms (FPFH) [4] or probabilistic methods like the normal distribution transform [5] to find corresponding features. Correspondence-free algorithms si-multaneously solve for the correspondences and the trans-formation. ICP [6] and its variants minimize a cost function that works directly with the points of the point cloud. Since they employ nonlinear optimization methods, they are only guaranteed to find local solutions close to an initial guess. Algorithms that are guaranteed to find the globally optimal solution, like Go-ICP [7], are too computationally expensive to run in real time. To run either correspondence-based or correspondence-free algorithms under real-time constraints, methods to downsample or distill the raw LiDAR point clouds into a smaller point cloud are needed to reduce amount of computations [8]. With the advent of neural network architectures which work directly on point clouds, deep learning-based tools for point cloud registration have become increasingly popular and have shown great accuracy on many benchmarks. In particular, the tools Predator [9] and GeoTransformer [10] have shown great accuracy in aligning point clouds with low overlap; however, these algorithms suffer from the same drawbacks that all deep learning perception methods are subject to. They require very large amounts of data to train and do not generalize to different environments and LiDAR models, requiring users to collect and label a glut of data to re-train the network for every new environment they expect to use the neural network in [11]. While neural networks outperform model-based methods on benchmarks, they tend to fail in a sporadic, uninterpretable manner, making them an undesirable option for safety-critical systems. Few point cloud registration tools provide performance guarantees. Tools that return the globally optimal trans-formation such as Go-ICP, some maximization consensus algorithms, and CGA [12], have guarantees on returning the transformation that minimizes their cost functions, but their minima may not correspond to the estimate with the cor-rect transformation. TEASER [13] and PASTA [14] provide worst-case performance guarantees on their estimates but the quality of these guarantees is conditional on assumptions that limit their use on real-world data. III. P RELIMINARIES 
+
+Denote the set of real numbers by R, the set of nonnegative real numbers by R≥0, the set of strictly positive real numbers by R>0, and the set of natural numbers starting at 1 by N.Given a set P, denote its boundary by ∂ P, its volume by Vol P, and its cardinality by |P|. We use Bε (x) = 
+
+{y ∈ Rn|∥ x − y∥ < ε} to denote the ball of radius ε ∈ R>0
+
+centered at x ∈ Rn. The first moment of a finite set P ⊂ Rn
+
+is given by μ(P) = 1 
+
+> |P|
+
+∑x∈P x, and its second moment by 
+
+Σ(P) = 1 
+
+> |P|
+
+∑x∈P (x − μ(P)) ( x − μ(P)) ⊺ where (·)⊺ denotes matrix transposition. The symbol I represents the identity matrix. A matrix M ∈
+
+Rn×n is orthogonal if M⊺M = I. The set of all such n × n
+
+matrices forms a group under matrix multiplication, called the orthogonal group, which we denote by O(n). If we add the additional constraint that the determinant of M must be 1 we have the special orthogonal group, denoted by SO (n).A rigid transformation (R, ρ) consists of a rotation matrix 
+
+R ∈ SO (n) and a translation vector ρ ∈ Rn. A vector x ∈ Rn
+
+is transformed by (R, ρ) into the vector Rx + ρ ∈ Rn.IV. P ROBLEM STATEMENT 
+
+In this paper, we consider the problem of aligning point clouds generated by a 3D LiDAR sensor. A LiDAR sensor’s measurement, called a scan, consists of a set of distance measurements from where the sensor is placed in the en-vironment to various other objects around it. Hence, scans depend on the sensor’s location and orientation in the envi-ronment. We formally define the pose of a LiDAR sensor as the position and orientation of a frame attached to it with respect to a frame of reference. We represent the pose of a LiDAR by the rigid transformation mapping the reference frame to the LiDAR’s frame. A LiDAR scan at a pose (R, ρ)
+
+is a finite set of pairs (d, v) ∈ R≥0 ×R3, where d is a distance measurement and v is a unit vector in the direction of the measurement. Given a LiDAR scan S at a pose (R, ρ), we can construct the corresponding point cloud P ⊂ R3:
+
+P = dv ∈ R3|(d, v) ∈ S .
+
+It will be convenient to apply a rigid transformation (R, ρ)
+
+not to a point but to a point cloud P ⊂ R3. We denote such application by R(P) + ρ and define it as: 
+
+R(P) + ρ = y ∈ R3 | y = Rx + ρ, x ∈ P .
+
+Consider two point clouds P1, P2 ⊂ R3 generated from a LiDAR sensor at poses p1, p2 ∈ SO (3) × R3, respectively, where (R, ρ) ∈ SO (3) × R3 is the rigid transformation from 
+
+p1 to p2. The objective of this paper is to solve the following problem: 
+
+Given P 1 and P 2, estimate (R, ρ)
+
+and provide worst-case error bounds on the estimate. 
+
+In the following section we describe the architecture and logic of our algorithm. V. PESTO A LGORITHM 
+
+Given two point clouds, PESTO uses the Delaunay Tetra-hedralization to efficiently sift through possible point-to-point correspondences from the first point cloud to the sec-ond. This search is conducted, not at the level of individual points, but at the level of tetrahedra for two reasons: 1) A tetrahedron is defined by four points, which is the minimum number of points needed to uniquely define a rigid transformation between the point clouds; 2) The tetrahedra constructed by the Delaunay Tetrahe-dralization only depend on neighboring points. This means that tetrahedra will not change when a point cloud is altered away from a tetrahedron. These observations suggest that tetrahedra represent local patterns and are a middle ground between fully processing the data to extract specific features and working directly with the points. Moreover, the “features” defined by tetrahedra are universal in the sense they do not depend on any knowledge about the environement where the measurements are taken. Before describing the key steps in PESTO, we introduce some notation and concepts related to tetrahedra. 
+
+A. Delaunay Tetrahedralization 
+
+A tetrahedron ∆ is a polyhedron in R3 consisting of four vertices and six edges with triangular facets. Given an ordering for the vertices, we denote the ith vertex of 
+
+∆ by vi(∆). The length of the edge connecting the ith and jth vertices is given by si j (∆) = s ji (∆) = ∥vi(∆) −
+
+v j(∆)∥2. For a tetrahedron with vertices i, j, k, l, we de-fine the gap value for vi as gi(∆) = min i̸= j̸ =k{| si j (∆) −
+
+sik (∆)|} and represents the smallest difference between the lengths of edges with vi as a vertex. We de-fine the signed volume of a tetrahedron as SVol (∆) =  
+
+> 14
+
+det   v1(∆) − v2(∆) v1(∆) − v3(∆) v1(∆) − v4(∆) . The centroid of ∆ is defined as the first moment of the set con-sisting of the tetrahedron’s vertices and is denoted by μ(∆).A tetrahedron’s circumsphere is a sphere whose boundary contains all the tetrahedron’s vertices. Given a set of points Q ⊂ R3 and a tetrahedron whose vertices are points of Q, the tetrahedron satisfies the empty circumsphere property if there are no points of Q in the interior of the tetrahedron’s circumsphere. We utilize the Delaunay tetrahedralization, which is a generalization of the Delaunay triangulation for sets of three-dimensional points. The Delaunay tetrahedralization of a set of points Q ⊂ R3,denoted by DT (Q), is a set of tetrahedra with points of Q as vertices such that all tetrahedra in DT (Q) satisfy the empty circumsphere property. 
+
+B. Key Steps in PESTO 
+
+Starting from the Delaunay Tetrahedralization of the first point cloud, PESTO finds tetrahedra in the second that are similar to ones in the first point cloud to create pairs of matched tetrahedra. The pairs of similar tetrahedra are then used to compute the transformation that maximizes the common area between point clouds. 
+
+1) Step 1: Calculating Tetrahedron Vectors: Given two point clouds P1 and P2, PESTO takes the Delaunay Tetra-hedralization of each. To each tetrahedron ∆, we assign a tetrahedron vector, defined as: 
+
+−→
+
+∆ =  s12 (∆), s13 (∆), s14 (∆),
+
+s23 (∆), s24 (∆), s34 (∆), sign (SVol (∆)) × max   
+
+> i̸=j
+
+si j (∆).
+
+where the vertices of ∆ are ordered by gap value, i.e., for any vertices i and j, i < j implies gi(∆) ≥ g j(∆). PESTO filters the tetrahedra to keep only those with gap sizes above a certain user-set threshold ζ ∈ R>0 and collects these in the sets F(P1) and F(P2)
+
+2) Step 2: Matching by Tetrahedron Vectors: From the pairs of tetrahedra (∆1, ∆2) ∈ F(P1) × F(P2), PESTO collects the m ∈ N pairs that have the smallest distance between their tetrahedron vectors ∥−→
+
+∆ 1 − −→
+
+∆ 2∥ in the set Mm(P1, P2). On each of the pairs in Mm(P1, P2), PESTO uses Horn’s Method [1] to calculate the rigid transformation that aligns them. 
+
+3) Step 3: Filter Pairs by Heuristic: For each pair of tetrahedra (∆1, ∆2) ∈ Mm(P1, P2) and its associated rigid transformation ( ˜R, ˜ρ), PESTO evaluates a heuristic on a small ball around each tetrahedron: N1 = Br(μ(∆1)) ∩ P1,
+
+N2 = Br(μ(∆2)) ∩ P2, where r ∈ R>0 is chosen such that 
+
+∆1 ⊆ Br(μ(∆1)) and ∆2 ⊆ Br(μ(∆2)) . PESTO evaluates the following heuristic function on N1 and N2:
+
+H(∆1, ∆2) = μ(N2)–( ˜R(μ(N1)) + ˜ρ) 22 +
+
+ν Σ(N2) − ˜RΣ(N1) ˜R⊺ 
+
+> F
+
++ η −→
+
+∆1 − −→
+
+∆2 2 , (1) where ν, η ∈ R>0 are design parameters, and collects the 
+
+k ∈ N pairs with the smallest value of H in the set MHk (P1, P2).
+
+4) Step 4: Cost function: For each pair of tetrahedra 
+
+(∆1, ∆2) ∈ MHk (P1, P2) and its associated rigid transformation 
+
+( ˜R, ˜ρ), PESTO calculates its common area, defined as: 
+
+C   ˜R, ˜ρ = (x1, x2) ∈ P1 × P2| ˜Rx 1 + ˜ρ − x2 2 ≤ ξ , (2) where ξ ∈ R>0 is a user-defined parameter. PESTO uses the following cost function to evaluate the size of the common area while also checking how well the points of the common area are aligned: 
+
+J( ˜R, ˜ρ) = Vol ∂C   ˜R, ˜ρ − β ∑
+
+> (x1,x2)∈C
+
+( ˜R, ˜ρ)
+
+˜Rx 1 + ˜ρ − x2 2 ,
+
+(3) where β ∈ R>0 is a user-defined parameter. A description on how we calculate Vol ∂C can be found in Appendix A. Finally, PESTO returns the rigid transformation that maximizes the cost function J.
+
+C. Discussion on Algorithm 
+
+We chose the form of the tetrahedron vector to make it invariant under rigid transformations; the signed volume term ensures that two tetrahedra related by a reflection have a last term that differs by sign. Additionally, filtering based on gap sizes renders the algorithm robust to noise by removing tetrahedra whose side ordering may change by a small amount of noise and reducing the number of erroneous matches due to sensor noise. The heuristic (1) is based on necessary conditions on the first and second moments of two point clouds related by a rigid transformation, derived in our previous work on PASTA [14]. We filter tetrahedra in two steps because calculating the distance between tetrahedron vectors in Step 2 is more computationally efficient than calculating the heuristic in Step 3. The asymptotic behavior of the algorithm’s runtime as the size of the point clouds increases is dominated by the construction of the Delaunay Tetrahedralization, which for point clouds comprised of n ∈ N points has a computational complexity of O(n log n); PESTO therefore also has a com-putational complexity of O(n log n) for point clouds of size 
+
+n. 3 The runtime of the algorithm can be made faster by downsampling the point clouds to use fewer points, which is already common practice when running point cloud regis-tration algorithms in real-time applications, or by decreasing 
+
+m and k to check fewer tetrahedron pairs. VI. W ORST -C ASE ERROR BOUNDS 
+
+In addition to its rigid transformation estimate, PESTO provides theoretical worst-case guarantees on the error be-tween its estimate and the true transformation. Proofs for Theorems 1 and 2 can be found in Appendix B. PESTO’s bounds are calculated using four point-to-point correspondences from the vertices of the matched tetrahe-dron pair used to calculate its rigid transformation estimate. In the ideal case, the vertices of the matched tetrahe-dra provide a set of four point-to-point correspondences 
+
+{(x1, y1), (x2, y2), (x3, y3), (x4, y4)}, which are related exactly by the true rigid transformation (R, ρ), i.e., yi = Rx i + ρ.When working with the real point clouds, the points yi are perturbed by “noise” εi ∈ Bδ (0) and the correspondences become {(x1, ˆy1), (x2, ˆy2), (x3, ˆy3), (x4, ˆy4)}, where ˆ yi = yi +
+
+εi. Note that the “noise” term εi accounts for measurement noise as well as the quantization effects created by only being able to measure distances in a finite number of directions radiating out from the LiDAR sensor. Theoretical guarantees on the quality of PESTO’s rigid transformation estimate are based on the following assump-tion. 
+
+Assumption 1: Let (xi, ˆyi), i = 1, . . . , 4, be the corre-spondences used by PESTO to compute its output. The “noise” terms εi = ˆyi − Rx i − ρ, where (R, ρ) is the rigid transformation between the poses of the LiDAR sensor when the measurements were acquired, satisfy ∥εi∥ ≤ δ (∥xi∥) for all i = 1, . . . , 4 where δ : R≥0 → R≥0 is a non-negative, non-decreasing function of the magnitude of the distance measurements. Within Assumption 1, we encapsulate two concepts: first, that the magnitude of the “noise” on LiDAR measurements is bounded but may increase with the distance, and second,   
+
+> 3Using the KDTree data structure, searching for corresponding points to calculate the heuristic function and the common area scales at a rate of
+> O(nlog n).
+
+that maximizing the common area will result in approxi-mately correct correspondences. In practice, the first can be easily satisfied given knowledge of the LiDAR sensor characteristics and the environment in which it is deployed. The second relates to the size of the common area that will be found during a mission. The user needs to use their domain knowledge to determine if this is a reasonable assumption. To calculate the rotation bound, we first define: 
+
+x′ 
+
+> i
+
+= xi − μ ({x1, . . . , x4}) , y′ 
+
+> i
+
+= yi − μ ({y1, . . . , y4}) ,
+
+ˆy′ 
+
+> i
+
+= ˆyi − μ ({ ˆy1, . . . , ˆy4}) ,
+
+and arrange these points into matrices A = [ x′
+
+> 1
+
+|x′
+
+> 2
+
+|x′
+
+> 3
+
+|x′
+
+> 4
+
+], B =[y′
+
+> 1
+
+|y′
+
+> 2
+
+|y′
+
+> 3
+
+|y′
+
+> 4
+
+] , ∆B = [ ˆy′
+
+> 1
+
+| ˆy′
+
+> 2
+
+| ˆy′
+
+> 3
+
+| ˆy′
+
+> 4
+
+]−B. Using these matrices we can upper bound the error in the rotation matrix as follows. 
+
+Theorem 1: Denote the singular values of the matrix A by 
+
+σ1 ≥ σ2 ≥ σ3 > 0 and let γ ∈ R>0 satisfy: min  
+
+> R∈SO (3)
+
+∥RA − B∥F ≤ γ <  σ 22 + σ 23
+
+ 12 − 2ω, (4) where ω =
+
+q
+
+∑4 
+
+> i=1
+
+δ (∥xi∥)2 + 34
+
+ ∑4 
+
+> i=1
+
+δ (∥xi∥)2. Under As-sumption 1, the error in the rotation matrix produced by PESTO is upper bounded as follows: 
+
+R − ˆR F ≤ 2
+
+vuuuuuuut1 −
+
+1 − ω2
+
+ σ 22 + σ 23
+
+ 12 − γ
+
+2
+
+
+
+> 12
+
+. (5) To provide a bound for the translation error, we introduce the alignment error θi = ˆyi − ˆRx i − ˆρ for the pairs (xi, ˆyi),
+
+i = 1, . . . , 4 and define: 
+
+wi j = yi − y j, ˆwi j = ˆyi − ˆy j, zi j = xi–x j. ∀i < jTheorem 2: Under Assumption 1, the error in the transla-tion vector produced by PESTO is upper bounded as follows: 
+
+∥ρ − ˆρ∥2 ≤ 14
+
+> 4
+
+# ∑
+
+> i=1
+
+δ (∥xi∥)+ ∑
+
+> j<k
+
+α(i)
+
+> jk
+
+ δ (∥x j∥) + δ (∥xk∥) + θ j 2 + ∥θk∥2
+
+!
+
+, (6) where α(i) 
+
+> jk
+
+∈ R are selected so that xi = ∑ j<k α(i) 
+
+> jk
+
+z jk .To get a tighter translation bound, we use the point-to-point correspondences collected when computing C( ˆR, ˆρ) to create a basis of vectors z jk that reduce the magnitude of the coefficients α(i) 
+
+> jk
+
+.VII. E XPERIMENTS 
+
+We first compare PESTO’s registration performance against other point cloud registration algorithms on a real-world dataset, the KITTI Odometry Benchmark [15], on which we also experimentally validate PESTO’s worst-case error bounds. We evaluate the relative rotation error (RRE) and relative translation error (RTE), defined as follows: 
+
+RT E (ρ1, ρ2) = ∥ρ1 − ρ2∥2 ,Fig. 2. A comparison of PESTO’s performance on the KITTI Odometry Benchmark. 
+
+RRE (R1, R2) = arccos tr  R⊺ 
+
+> 1
+
+R2
+
+ − 12 .
+
+We implemented PESTO in Python 3, relying on SciPy’s im-plementation of the Delaunay Tetrahedralization algorithm. For all experiments, the parameters for PESTO were set as follows: ζ = 0.005, ν = 50, η = 10, β = 0.0001, ξ = 0.02, 
+
+γ = 0.018, m = 30, and k = 5. We scale the point clouds to be within the interval [−1, 1]3. We compare PESTO against other model-based algorithms used for point cloud alignment in LiDAR localization applications: ICP, RANSAC, and TEASER. TEASER cannot run with large amounts of points due to memory constraints and requires correspondences to be known ahead of time, so we have used Fast Point Feature Histograms (FPFH) to determine correspondences; RANSAC is also fed correspondences from FPFH for better performance and faster runtime. For the best performance, we did not set a runtime cap on RANSAC and ICP. As the other tools do not exploit any knowledge about the motion of the vehicle, ICP is provided a random transformation as an initial guess, with a rotation sampled uniformly from SO (3)
+
+and a translation uniformly sampled from [−1, 1]3.For each LiDAR scan, we downsample each point cloud uniformly by keeping every tenth point, creating a point cloud comprised of around 10,000 points. Feature extraction further reduces the number of points to less than 1,000 pairs of corresponding points used to generate estimates with RANSAC and TEASER. A pair of scans are correctly aligned if RRE < 5◦ and RT E < 12 + 16
+
+j ∥ρ∥
+
+> 2
+
+k
+
+meters, where ρ is the true translation between the scans and 
+
+j ∥ρ∥
+
+> 2
+
+k
+
+is the floor of  
+
+> ∥ρ∥
+> 2
+
+. Note that the threshold for RT E grows with distance. We measure recall as the percent of correctly aligned scans. For each of the 11 sequences, the tools align each scan with each of the 15 subsequent scans (recall that scans are taken along the path followed by the LiDAR equipped vehicle). We sorted the pairs of scans aligned into bins based on how far the vehicle moved between scans, using this as an approximate measure of the amount of overlap between the scans. Results from the experiments on the KITTI Odometry Benchmark can be found in Table I and in Figure 2. PESTO outperforms the other tools in registration recall at every distance between scans, and its performance degrades more slowly than the other tools as the distance between scans increases. TEASER matches PESTO’s performance at smaller distances but correctly aligns only half as many scans as PESTO when the distance between scans is between 10 and 12 meters. RANSAC, which relies on features from FPFH like TEASER, has a similar drop in performance as TEASER but performs worse than TEASER at every dis-tance. Similarly to its performance on the Stanford models, ICP is largely unable to find the correct alignment. On the KITTI dataset, PESTO had an average runtime of 0 .32 seconds, compared to 0 .07 seconds for TEASER, 0.05 seconds for RANSAC, and 0 .83 seconds for ICP. While PESTO has a longer runtime than TEASER and RANSAC, we note that PESTO is using more than 10 times the number of points and that we have not yet optimized our algorithm for speed as the other algorithms presumably have been; faster runtimes for PESTO can be achieved either by further downsampling the point clouds or by using features at the cost of a slight decrease in performance. Furthermore, we believe that PESTO might able to run at a lower frequency given its better recall at larger distances.                               
+
+> TABLE I REGISTRATION RECALL ON THE KITTI O DOMETRY BENCHMARK .Distance (m) TEASER RANSAC ICP PESTO 0-2 0.973 0.731 0.134 0.976
+> 2-4 0.928 0.499 0.116 0.936
+> 4-6 0.850 0.496 0.069 0.878
+> 6-8 0.708 0.354 0.034 0.825
+> 8-10 0.528 0.205 0.011 0.755
+> 10-12 0.352 0.093 0.002 0.692
+
+We validated PESTO’s performance bounds on a sequence of 100 scans from the KITTI Odometry Benchmark sequence 00, as shown in Figure 3. Each scan is aligned with the third subsequent scan. To calculate the bounds, we modeled the noise on the LiDAR measurements as an affine function of the magnitude of the distance measurement δ (r) = 0.1r +
+
+0.02. We converted the norm of the difference between the true and estimated rotation matrices into degrees for ease of interpretation. The error bounds are relatively conservative but are tighter than the bounds in the Stanford Bunny experiment because the tetrahedra used to align the point clouds in KITTI have larger singular values, which tightens the bound. The spikes in the bound and error correspond to when the tetrahedra used to calculate the estimate have less similar tetrahedra vectors. 
+
+A. Comparison to Neural Network Registration 
+
+We compared PESTO to GeoTransformer [10], a neural network point cloud registration tool designed to align point clouds with limited overlap, on the KITTI 10m Bench-mark used to evaluate GeoTransformer. For this experiment, we defined a correct rigid transformation as incurring an error within 10 degrees and 3 meters. GeoTransformer outperforms PESTO with a registration recall of 99% to Fig. 3. PESTO’s bounds as evaluated on a sequence of 100 scans from the KITTI Odometry Benchmark.  
+
+> Fig. 4. A comparison of alignment error from PESTO and neural network GeoTransformer aligning a sequence of point clouds from KITTI
+
+PESTO’s 85% and has an average runtime of 0 .35 seconds. However, GeoTransformer sometimes provides completely wrong alignments even for pairs of point clouds that PESTO aligns correctly. In Figure 4, we compare the performance of PESTO and GeoTransformer on a sequence of scans from KITTI sequence 7, starting at scan 2 and aligning each subsequent scan with the first scan and stopping when the vehicle has moved 15 meters from its starting position. For most scans, both tools find a correct rigid transformation, but GeoTransformer has slightly better performance, providing rigid transformation estimates with smaller error. However, towards the end of the sequence, GeoTransformer returns rigid transformations that are wildly incorrect; a visualization of the estimated rigid transformation in one of these cases can be seen in Figure 1. Given that PESTO correctly aligned the point clouds, it appears that there are enough corre-sponding features between the point clouds to find a correct rigid transformation, and considering GeoTransformer is trained specifically on a dataset comprised of point clouds at least 10 meters apart, there is no discernible reason why GeoTransformer could not align the point clouds. PESTO, with its error bounds and model-based algorithm, is more interpretable and arguably a better choice for safety-critical applications. With its worst-case error bounds, PESTO can supervise GeoTransformer’s rigid transformation estimates, using its worst-case error bounds to discard estimates that lie outside its error bounds and replace them with a trans-formation within the error bounds. VIII. C ONCLUSION AND FUTURE WORK 
+
+We propose PESTO, a LiDAR point cloud registration algorithm with formal worst-case error bounds, and show that PESTO performs well on real-world point cloud registration problems, especially as the overlap between the point clouds shrinks. PESTO’s worst-case error bounds provide invalu-able information on the uncertainty in its estimate, making PESTO’s estimates more interpretable and useful in real-world, safety-critical applications; future work could leverage these error bounds to supervise neural network registration tools, combining the performance of neural networks with the formal guarantees provided by PESTO. We are currently working to implement PESTO in C++ to reduce its running time for use on larger datasets under real-time constraints. APPENDIX 
+
+A. Calculating Vol (∂C)
+
+We will use the notation C1(R, ρ) to denote the projection of C in P1:
+
+C1(R, ρ) = {x1 ∈ P1|(x1, x2) ∈ C(R, ρ)} .
+
+We define a triangle as a polygon with three vertices and three edges and define the interior of a triangle τ with vertices (v1, v2, v3) as the set: 
+
+I(τ) = 
+
+(
+
+x ∈ R3|x =
+
+> 3
+
+# ∑
+
+> i=1
+
+αivi, 0 < αi < 1,
+
+> 3
+
+# ∑
+
+> i=1
+
+αi = 1
+
+)
+
+.
+
+We will approximate Vol (∂C) as the surface area of ∂C.First, we assign an ordering to the points in C1 (R, ρ) and denote the ith element of C1 (R, ρ) by C1(i). We define points 
+
+C1(i) and C1( j) as neighbors if the distance 
+
+C1(i)
+
+∥C1(i)∥2
+
+− C1( j)
+
+∥C1( j)∥2 2
+
+is below threshold γ ∈ R>0, where γ is a design parameter. To approximate the volume of the boundary of C1 (R, ρ), we triangulate C1(R, ρ) by creating triangles out of neighboring points and calculate the surface area using the sum of their areas. We construct the set Φ(C1) of triangles with the following properties: 1) For any triangle in Φ(C1), each of its vertices are neighbors of the other two vertices; 2) For any two triangles in Φ(C1), the intersection of their interiors is empty; 3) For any point C1(i), the ray from the origin to through 
+
+C1(i) does not intersect the interior of any triangle in 
+
+Φ, i.e., there does not exist constant ω ∈ R>0 such that 
+
+ωC1(i) ∈ I(τ), ∀τ ∈ Φ(C1);4) No edges can be added between neighboring points 
+
+C1(i) and C1( j) without intersecting another edge. Vol ∂C is approximated as the combined area of all the triangles in Φ(C1):Vol ∂C1 (R, ρ) = ∑
+
+> τ∈Φ(C1)
+
+Area (τ), (7) where Area (τ) is the area of the triangle τ.B. Proofs for Formal Worst-Case Guarantees Proof of Theorem 1: 
+
+Note that we can recover R and ˆ R using A, B, and ∆B as follows: 
+
+R = arg min  
+
+> R∈SO (3)
+
+∥RA − B∥F ,
+
+ˆR = arg min  
+
+> R∈SO (3)
+
+∥RA − (B + ∆B)∥F ,
+
+where Horn’s method provides the solution to the above minimization problems [1]. We can bound the difference between y′ 
+
+> i
+
+and ˆ y′ 
+
+> i
+
+as follows: 
+
+y′ 
+
+> i
+
+− ˆy′  
+
+> i2
+
+= yi − 14
+
+> 4
+
+# ∑
+
+> j=1
+
+y j − ˆyi + 14
+
+> 4
+
+# ∑
+
+> j=1
+
+ˆy j
+
+> 2
+
+= −εi + 14
+
+> 4
+
+# ∑
+
+> i=1
+
+ε j
+
+> 2
+
+≤ ∥ εi∥2 + 14
+
+> 4
+
+# ∑
+
+> j=1
+
+ε j 2
+
+≤ δ (∥xi∥) + 14
+
+> 4
+
+# ∑
+
+> j=1
+
+δ (∥x j∥).
+
+Using the above expression, we can bound the perturbation 
+
+∆B as follows: 
+
+∥∆B∥F =
+
+s 4
+
+# ∑
+
+> i=1
+
+(y′ 
+
+> i
+
+− ˆy′
+
+> i
+
+)⊺(y′ 
+
+> i
+
+− ˆyi)
+
+≤
+
+vuut 4
+
+# ∑
+
+> i=1
+
+δ (∥xi∥) + 14
+
+> 4
+
+# ∑
+
+> j=1
+
+δ (∥x j∥)
+
+!2
+
+≤
+
+vuut 4
+
+# ∑
+
+> i=1
+
+δ (∥xi∥)2 + 34 ∑
+
+> i=1
+
+δ (∥xi∥)
+
+!2
+
+= ω.
+
+A bound on the rotation error, ∥R − ˆR∥F is now directly obtained from Theorem 2.1 page 2 in [16] where we used Assumption 1 to replace εB in [16] with 4 δ .
+
+Proof of Theorem 2: 
+
+Using all the correspondences (xi, yi), we can express ρ
+
+as follows: 
+
+ρ = 14
+
+> 4
+
+# ∑
+
+> i=1
+
+(yi − Rx i) . (8) Using Horn’s method, we calculate ˆ ρ using the following expression: ˆρ = 14
+
+> 4
+
+# ∑
+
+> i=1
+
+  ˆyi − ˆRx i
+
+ . (9) Subtracting (8) from (9), we obtain: 
+
+∥ ˆρ − ρ∥2 = 14
+
+> 4
+
+# ∑
+
+> i=1
+
+ˆyi − yi − ˆRx i + Rx i
+
+> 2
+
+= 14
+
+> 4
+
+# ∑
+
+> i=1
+
+εi + ( R − ˆR)xi
+
+> 2
+
+≤ 14
+
+> 4
+
+# ∑
+
+> i=1
+
+∥εi∥2 +
+
+> 4
+
+# ∑
+
+> i=1
+
+(R − ˆR)xi 2
+
+≤ 14 ∑
+
+> i=1
+
+δ (xi) + 14
+
+> 4
+
+# ∑
+
+> i=1
+
+(R − ˆR)xi 2 .
+
+To bound  R − ˆR xi , we can rewrite each xi as a linear combination of vectors z jk :
+
+> 4
+
+# ∑
+
+> i=1
+
+ R − ˆR xi
+
+> 2
+
+=
+
+> 4
+
+# ∑
+
+> i=1
+
+ R − ˆR
+
+# ∑
+
+> j<k
+
+α(i) 
+
+> jk
+
+z jk 
+
+!
+
+> 2
+
+≤
+
+> 4
+
+# ∑
+
+> i=1
+
+# ∑
+
+> j<k
+
+α(i)
+
+> jk
+
+ R − ˆR z jk 2 .
+
+To bound  R − ˆR z jk 2, first note that wi j and zi j are related by: 
+
+wi j = yi − y j = Rx i + ρ − Rx j − ρ = Rz i j , (10) and similarly relate ˆ wi j and zi j by: ˆwi j = ˆyi − ˆy j
+
+= ˆRx i + ˆρ + θi − ˆRx j − ˆρ − θ j
+
+= ˆRz i j + θi − θ j. (11) Using (11) and (10), we get the following expression bound-ing (R − ˆR)z jk 2:
+
+Rz jk − ˆRz jk 2 = w jk − w jk + ε j − εk − θ j + θk 2
+
+= ε j + εk − θ j + θk 2
+
+≤ ε j 2 + ∥εk∥2 + θ j 2 + ∥θk∥2
+
+≤ δ (xi) + δ (x j) + θ j 2 + ∥θk∥2 .
+
+Combining these together, we get the final bound: 
+
+∥ ˆρ − ρ∥2 ≤ 14 ∑δ (∥xi∥) + 14
+
+> 4
+
+# ∑
+
+> i=1
+
+ R − ˆR xi
+
+> 2
+
+≤ 14 ∑
+
+> i=1
+
+δ (∥xi∥) + 14
+
+> 4
+
+# ∑
+
+> i=1
+
+# ∑
+
+> j<k
+
+α(i)
+
+> jk
+
+ R − ˆR z jk 2
+
+≤ 14
+
+> 4
+
+# ∑
+
+> i=1
+
+δ (∥xi∥) + 
+
+> 4
+
+# ∑
+
+> i=1
+
+# ∑
+
+> j<k
+
+α(i) 
+
+> jk
+
+(δ (∥x j∥)+ δ (∥xk∥) + θ j 2 + ∥θk∥2
+
+ .REFERENCES [1] B. K. P. Horn, “Closed-form solution of absolute orientation using unit quaternions,” J. Opt. Soc. Am. A, vol. 4, no. 4, pp. 629–642, Apr 1987. [Online]. Available: https://opg.optica.org/josaa/abstract.cfm?URI=josaa-4-4-629 [2] M. A. Fischler and R. C. Bolles, “Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography,” Commun. ACM , vol. 24, no. 6, p. 381–395, June 1981. [Online]. Available: https://doi.org/10.1145/358669.358692 [3] T.-J. Chin and D. Suter, “The maximum consensus problem: Recent algorithmic advances,” in Synthesis Lec-tures on Computer Vision , 2017. [Online]. Available: https://api.semanticscholar.org/CorpusID:207319519 [4] R. B. Rusu, N. Blodow, and M. Beetz, “Fast point feature histograms (fpfh) for 3d registration,” in 2009 IEEE International Conference on Robotics and Automation , 2009, pp. 3212–3217. [5] P. Biber and W. Strasser, “The normal distributions transform: a new approach to laser scan matching,” in Proceedings 2003 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS 2003) (Cat. No.03CH37453) , vol. 3, 2003, pp. 2743–2748 vol.3. [6] P. Besl and N. D. McKay, “A method for registration of 3-d shapes,” 
+
+IEEE Transactions on Pattern Analysis and Machine Intelligence ,vol. 14, no. 2, pp. 239–256, 1992. [7] J. Yang, H. Li, and Y. Jia, “Go-icp: Solving 3d registration efficiently and globally optimally,” in 2013 IEEE International Conference on Computer Vision , 2013, pp. 1457–1464. [8] M. Elhousni and X. Huang, “A survey on 3d lidar localization for autonomous vehicles,” in 2020 IEEE Intelligent Vehicles Symposium (IV) , 2020, pp. 1879–1884. [9] S. Huang, Z. Gojcic, M. Usvyatsov, A. Wieser, and K. Schindler, “Predator: Registration of 3d point clouds with low overlap,” in 2021 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2021, pp. 4265–4274. [10] Z. Qin, H. Yu, C. Wang, Y. Guo, Y. Peng, S. Ilic, D. Hu, and K. Xu, “Geotransformer: Fast and robust point cloud registration with geometric transformer,” IEEE Transactions on Pattern Analysis and Machine Intelligence , vol. 45, no. 8, pp. 9806–9821, 2023. [11] L. Chen, C. Feng, Y. Ma, Y. Zhao, and C. Wang, “A review of rigid point cloud registration based on deep learning,” Frontiers in Neurorobotics , vol. Volume 17 - 2023, 2024. [12] F. X. Vasconcelos and J. C. Nascimento, “Correspondence free multivector cloud registration using conformal geometric algebra,” 2024. [Online]. Available: https://arxiv.org/abs/2406.11732 [13] H. Yang, J. Shi, and L. Carlone, “Teaser: Fast and certifiable point cloud registration,” IEEE Transactions on Robotics , vol. 37, no. 2, pp. 314–333, 2021. [14] M. Marchi, J. Bunton, B. Gharesifard, and P. Tabuada, “Lidar point cloud registration with formal guarantees,” in 2022 IEEE 61st Con-ference on Decision and Control (CDC) , 2022, pp. 3462–3467. [15] A. Geiger, P. Lenz, and R. Urtasun, “Are we ready for autonomous driving? the kitti vision benchmark suite,” in Conference on Computer Vision and Pattern Recognition (CVPR) , 2012. [16] I. S¨ oderkvist, “Perturbation analysis of the orthogonal procrustes problem,” BIT Numerical Mathematics , vol. 33, no. 4, pp. 687–694, Dec 1993. [Online]. Available: https://doi.org/10.1007/BF01990543

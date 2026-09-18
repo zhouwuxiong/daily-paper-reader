@@ -1,0 +1,470 @@
+Title: SOL-SLAM: Inverse Compositional Gauss-Newton Direct Registration for Fast Sonar-Only Local SLAM
+
+URL Source: https://arxiv.org/pdf/2609.18893v1
+
+Published Time: Thu, 17 Sep 2026 01:27:03 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# SOL-SLAM: Inverse Compositional Gauss-Newton Direct Registration for Fast Sonar-Only Local SLAM 
+
+Kalvik Jakkala and Jason O’Kane 
+
+Abstract — Autonomous underwater navigation typically re-lies on complex and expensive multi-modal sensor suites designed to prioritize global Simultaneous Localization and Mapping (SLAM) accuracy. However, local reactive behaviors such as coarse navigation and obstacle avoidance require only local consistency—a capability that should be feasible using only a Forward-Looking Sonar (FLS), yet remains largely unaddressed, leaving a critical gap in FLS-only local SLAM. Moreover, existing acoustic SLAM frameworks predomi-nantly rely on sparse feature extraction methods that discard substantial portions of the already information-sparse acoustic returns. To overcome these limitations, this work introduces a dense direct registration approach that aligns full acoustic intensity scans to a recursively updated local map. Real-time ex-ecution is achieved via an Inverse Compositional Gauss-Newton optimization strategy that minimizes compute overhead. Experimental evaluations show that this dense method yields significant improvements on translation error compared to sparse keypoint baselines, maintaining stable sub-meter tracking precision over wide displacement gaps. Moreover, this approach delivers odometry performance comparable to multi-sensor fusion pipelines (FLS, DVL, and IMU), bypassing expensive payload dependencies in feature-rich environments. We validate real-world applicability through AUV field trials, running the full local SLAM approach onboard an embedded, resource-constrained computer. 
+
+I. I NTRODUCTION 
+
+Reliable environmental perception and localized state estimation are critical for autonomous subsea navigation. However, aquatic mediums rapidly attenuate electromagnetic waves—rendering the Global Positioning System (GPS) and radar infeasible—while turbidity and caustics make optical cameras unreliable. Consequently, Forward-Looking Sonar (FLS) has emerged as the primary perception modality for underwater vehicles [1], [2]. Nonetheless, extracting tracking information from FLS data introduces severe technical challenges: (1) Elevation Ambiguity: The 3D-to-2D projection discards the vertical axis, collapsing geometry and introducing structural ambigu-ity. (2) Speckle Noise: Coherent wave reflections generate high-frequency interference that corrupts structural bound-aries. (3) Acoustic Shadows: Geometric occlusions cast viewpoint-dependent, zero-signal shadows that shift dynami-cally with motion. (4) Non-Uniform Resolution: Azimuthal resolution degrades linearly with range due to beam fanning, dilating far-field returns. To mitigate these factors, contemporary underwater Si-multaneous Localization and Mapping (SLAM) systems [3], 
+
+> 1Kalvik Jakkala and Jason O’Kane are with Texas A&M University
+
+{kalvik, jokane }@tamu.edu 
+
+Fig. 1: Aqua2 AUV during the field trial (left) alongside the local map estimated by SOL-SLAM (right). [4], [2] rely on complex, cost-prohibitive sensor suites fus-ing cameras, sonars, Inertial Measurement Units (IMUs), Doppler Velocity Logs (DVLs), Ultra-Short Baseline (USBL) systems, and depth sensors to compensate for individual sensor limitations and ensure global accuracy. However, local reactive behaviors like obstacle avoidance require only local accuracy—a capability that should be viable using only an FLS, without the cost and complexity of multi-sensor fusion. Consequently, a distinct research gap exists for a lightweight, FLS-based local SLAM approach. This work introduces a local SLAM approach operating exclusively on FLS data to yield real-time relative motion estimates for standalone coarse navigation and obstacle avoidance. To overcome sparse keypoint extractors (e.g., AKAZE [5] or SONIC [6]), which discard valuable geomet-ric context, we leverage a dense direct registration approach that aligns full acoustic intensity scans to a recursively updated local map. To achieve real-time execution, we for-mulate the registration via an Inverse Compositional Gauss-Newton optimization strategy [7]. This shifts spatial gradient calculations onto the static map, enabling fast second-order convergence. Crucially, by actively updating this dense local map with statistical noise decay, our approach goes beyond simple frame-to-frame odometry to directly provide the spa-tial awareness required for closed-loop navigation. The primary contributions of this work are as follows:  
+
+> •
+
+SOL-SLAM (Sonar-Only Local SLAM): We present the first FLS-only, direct registration-based local SLAM approach, which formulates scan matching as cross-correlation and solves it using an efficient inverse-compositional Gauss–Newton algorithm. By operating directly on full sonar scans rather than sparse features, 1arXiv:2609.18893v1 [cs.RO] 16 Sep 2026 our approach achieves robust real-time performance in feature-degraded environments.  
+
+> •
+
+Field Trial Validation: We validate the feasibility of our approach through a real-world deployment on an Autonomous Underwater Vehicle (AUV), relying solely on an FLS and onboard compute. II. R ELATED WORK 
+
+Constrained by GPS denial and acoustic noise, subsea navigation typically utilizes tightly coupled multi-modal architectures [1], [8]. This section reviews key methods, contrasting them with our SOL-SLAM approach. 
+
+A. Odometry Tracking vs. SLAM Architecture  
+
+> •
+
+Odometry Tracking: Subsea odometry methods generally leverage multi-modal sensor fusion to bound local track-ing drift. For example, DISO [2] minimizes sonar scan intensity gradients by incorporating synchronized Doppler Velocity Log (DVL) and Inertial Measurement Unit (IMU) inputs.  
+
+> •
+
+SLAM Architectures: Simultaneous Localization and Mapping (SLAM) systems maintain global consistency across extended vehicle trajectories. These architectures typically utilize incremental smoothing techniques like iSAM2 [8], Expectation-Maximization loops (EM-loops) with virtual landmarks [4], or tightly coupled multi-sensor optimizations [3], [9], which jointly processes visual, in-ertial, sonar, and depth data. 
+
+Distinction: Existing approaches rely on complex multi-modal sensor suites for tracking stability [2], [10], [3], [8] or incur considerable latency via global factor graph optimization [8] to ensure global accuracy. In contrast, the proposed SOL-SLAM approach focuses on locally accurate SLAM, which allows it to omit global factorizations and rely only on a single Forward-Looking Sonar (FLS), delivering real-time spatial awareness for local navigation. 
+
+B. Feature Extraction  
+
+> •
+
+Handcrafted Primitives: Traditional handcrafted meth-ods isolate distinct structural transitions, such as acoustic edge-shadow boundaries [11], or employ Contrast-Limited Adaptive Histogram Equalization to enhance visual key-points [3].  
+
+> •
+
+Direct Density Fields: Direct methods minimize intensity errors across dense pixel grids. These approaches include extracting raw spatial gradients [2], tracking whole-frame intensity displacement fields via optical flow [12], or registering raw intensity scans directly in the context of radar data [13].  
+
+> •
+
+Learned Operators: Deep neural networks extract data-driven feature representations by utilizing specialized polar range-bearing image descriptors [6], cross-branch attention mechanisms [14], or Multi-scale Constant False Alarm Rate (MCFAR) filters [10]. 
+
+Distinction: Sparse handcrafted and learned descriptors are highly vulnerable to underwater speckle noise and tracking dropouts [14], [2], [6]. While direct methods like DRO were explicitly meant for radar modalities, our approach shows how to effectively generalize these direct, featureless representations to FLS sonar data. 
+
+C. Scan Registration  
+
+> •
+
+Geometric Primitives: Traditional geometric methods align structural geometry by applying the Iterative Closest Point (ICP) algorithm to associate and align extracted con-tours, utilizing the Normal Distributions Transform (NDT) across discrete grids [11], or projecting 2D FLS scans into 3D point clouds to perform joint point-to-line or point-to-surface matching [10]. To mitigate drift across multiple scans, some geometric pipelines additionally incorporate local bundle adjustment to jointly optimize consecutive sensor poses and mapped spatial landmarks over a sliding window [10].  
+
+> •
+
+Direct Photometric Alignment: Photometric techniques optimize relative transformations directly on the motion manifold using dead-reckoning priors [2], perform scan-to-local-map registration directly on radar intensity in-formation [13], or employ coarse pixel-level Orthogonal Matching Pursuit coupled with Recursive Least Squares adaptive filtering [12].  
+
+> •
+
+Frequency-Domain Alignment: Spectral methods resolve relative pose via phase correlation [15] or project spectral magnitudes into the Radon domain using learnable upsam-pling and phase estimation modules [14]. 
+
+Distinction: While geometric registration is highly sensitive to initialization [11], [10] and spectral methods require com-putationally demanding coordinate resampling [12], [15], [14], the proposed SOL-SLAM approach mitigates both issues. It avoids the heavy computational costs of generalized direct methods through an Inverse Compositional Gauss-Newton formulation, which enables the precomputation of spatial gradients on a smoothed local map. Coupled with Gauss-Newton updates, this precomputation drastically ac-celerates inference, efficiently resolving motion parameters over dense grids for sub-pixel precision and minimal over-head. 
+
+D. Loop Closure  
+
+> •
+
+Handcrafted Vocabularies and Gated Matrices: 
+
+Some methods compress descriptive features into search-able indices by querying a binary Bag-of-Words (DBoW2) database [3], while others gate loop candidates via Peak-to-Noise Ratio (PNR) thresholds derived from spectral correlation [15].  
+
+> •
+
+Learned and Pose-Supervised Tracking: Recent tech-niques automate place recognition using convolutional Siamese networks [8], Variational Autoencoders (VAEs) with semantic dynamic filtering [8], or pose-supervised geometric objectives—such as SONIC [6]—that minimize epipolar distance loss. 
+
+Distinction: Global loop closure introduces critical pro-cessing bottlenecks due to continuous dictionary queries, deep neural network inference, and batch factor graph op-timizations, presenting a challenge for real-time deployment 2Fig. 2: Forward-Looking Sonar (FLS) scans: raw (left) and denoised (right). on embedded subsea computing stacks [8]. The proposed SOL-SLAM approach intentionally omits global loop closure and global pose-graph relaxation to minimize computational overhead. By registering dense scans directly against arolling local map, our approach bounds tracking drift locally to realize a fast, locally consistent SLAM approach opti-mized for real-time navigation and reactive hazard avoidance. For broader surveys of underwater mapping and estimation paradigms, see [1], [8], [16]. III. B ACKGROUND 
+
+A. FLS Operation and Polar Representation 
+
+A Forward-Looking Sonar (FLS) scans subsea environ-ments by emitting acoustic pings across a horizontal field of view Φfov with a narrow vertical beamwidth ( 1◦–3◦). This process yields a complete acoustic scan represented as a 2D polar matrix P ∈ [0 , 1] Nr ×Nϕ , where Nr and Nϕ denote the total number of range bins and discrete acoustic beams, respectively. Individual bin intensities Pi,j map directly to backscatter amplitudes and are indexed by discrete range ri
+
+and bearing ϕj :
+
+ri ∈ [Rmin , R max ], ϕj ∈
+
+
+
+− Φfov 
+
+2 , Φfov 
+
+2
+
+
+
+.
+
+B. Cartesian Space Mapping 
+
+To perform state estimation, the polar scan P is mapped into a dense Cartesian image I. A continuous polar coor-dinate pair (r, ϕ ) maps to a spatial coordinate vector u =[x, y ]T via forward geometric projection: 
+
+x = r cos ϕ, y = r sin ϕ . 
+
+To avoid the non-uniform spatial sampling inherent to direct forward projection, a backward-lookup mapping is used to construct a uniformly discretized image I:
+
+r = px2 + y2, ϕ = arctan2( y, x ) .
+
+The final intensity value for an individual pixel I(u) is computed via bilinear interpolation over the four surrounding discrete bins Pi,j . This transformation yields a spatially consistent dense image I optimized for direct, intensity-based tracking. 
+
+C. Kinematic Warp Function 
+
+Let M : Ω → [0 , 1] denote the local map defined over a bounded Cartesian spatial domain Ω = [ Xmin , X max ] ×
+
+[Ymin , Y max ] ⊂ R2, where M (u) assigns an acoustic inten-sity to each coordinate vector u = [ x, y ]T ∈ Ω. Let x =[tx, t y , θ ]T ∈ R2 × S1 define the state vector parameterizing the vehicle pose in SE(2) relative to the local map frame, where S1 denotes the angular domain. The kinematic warp function W (u; x) defines a rigid 2D transformation mapping a spatial coordinate vector u ∈ Ω from the local map frame into the FLS sensor frame: 
+
+W (u; x) = 
+
+cos θ − sin θ
+
+sin θ cos θ
+
+
+
+u +
+
+tx
+
+ty
+
+
+
+.
+
+IV. SOL-SLAM (S ONAR -O NLY LOCAL SLAM) This section presents our Forward-Looking Sonar (FLS)-only local SLAM approach. Using streaming sonar scans from an FLS without auxiliary sensing, the approach con-currently maintains a robot-centric local map and tracks the vehicle’s relative SE(2) pose. To ensure real-time execu-tion for reactive obstacle avoidance, we formulate dense scan-to-map alignment as a cross-correlation optimization problem, solved efficiently using an Inverse Compositional Gauss–Newton (IC-GN) formulation. 
+
+A. Data Preprocessing and Dense Feature Extraction 
+
+Raw FLS scans are highly susceptible to acoustic speckle noise and coherent phase interference. To prevent these signal-level artifacts from corrupting direct registration, a background suppression filter is applied directly to the polar matrix prior to coordinate transformation: 
+
+P clean  
+
+> i,j
+
+=
+
+(
+
+Pi,j if Pi,j ≥ μP + βdenoise σP ,
+
+0 otherwise , (1) where Pi,j represents the raw polar intensity at range ri and bearing ϕj , while μP and σP denote the mean and standard deviation of the polar scan intensity distribution, respectively. The scalar βdenoise represents an empirical structural denois-ing coefficient. Following polar scan filtering, the denoised matrix P clean is mapped to Cartesian space via bilinear interpolation, yielding 3a dense intensity image I(u) structured for direct registration (Figure 2). 
+
+B. Scan-to-Map Alignment Optimization Bottleneck 
+
+At the start of a mapping sequence, the reference map 
+
+M (u) is initialized directly from the first preprocessed Cartesian scan. Subsequent incoming scans I(u) are then aligned against this reference map. Existing direct alignment approaches establish scan-to-map registration by optimizing the vehicle pose vector x ∈ R2 × S1 via a standard L2
+
+photometric loss: 
+
+LL2 (x) = 12
+
+X
+
+> u∈Ω
+
+ I W (u; x) − M (u)2 , (2) where W (u; x) is the rigid 2D kinematic warp function mapping coordinates from the local map frame to the sensor frame, as detailed in Section III. However, the L2 norm exhibits poor robustness when applied to FLS imagery. Acoustic shadows cast by topog-raphy or physical hazards yield zero-intensity regions that shift dynamically with the vehicle’s changing perspective. A standard difference norm penalizes these unsonified zones, introducing artificial local minima that degrade tracking accuracy. To overcome this limitation, we formulate the registration objective using Forward Compositional (FC) cross-correlation over the spatial domain, parameterized by an incremental pose adjustment ∆x defined in the map frame: 
+
+LFC (∆ x) = − 1
+
+|Ω|
+
+X
+
+> u∈Ω
+
+I W (W (u; ∆ x); x)M (u). (3) Here, the nested warp W (W (u; ∆ x); x) applies an in-cremental perturbation ∆x to the map coordinate u prior to projecting it into the sensor frame via the current pose estimate x. Evaluating this intensity inner product ensures that zero-signal shadow zones drop out of the summation naturally ( M (u) = 0 or I(·) = 0 ) rather than biasing the residual, rendering the tracking approach robust to fluctuating acoustic illumination and non-overlapping shadows. To optimize this objective, evaluating the first-order derivative of the forward compositional loss LFC with respect to ∆x at ∆x = 0 yields the gradient vector: 
+
+gFC = ∂LFC 
+
+∂∆x ∆x=0
+
+= − 1
+
+|Ω|
+
+X
+
+> u∈Ω
+
+M (u)JFC (u; x), (4) where JFC (u; x) ∈ R3×1 represents the dynamic forward compositional steepest descent vector: 
+
+JFC (u; x) = 
+
+
+
+∇I W (u; x) cos θ − sin θ
+
+sin θ cos θ
+
+  1 0 −y
+
+0 1 x
+
+ T
+
+An inspection of JFC (u; x) reveals a severe computational bottleneck. Because ∆x represents only a local step eval-uated around the current linearization point, the tracking pose must be updated at each iteration ( x ← x ◦ ∆x), shifting the warped coordinates W (u; x). Although the raw scan I is static, updating x shifts these projection points to new continuous, sub-pixel locations. Consequently, the spa-tial gradients ∇I(W (u; x)) must be repeatedly interpolated across all pixels, forcing the steepest descent vector to be re-computed. This per-iteration recalculation introduces severe computational overhead. 
+
+C. Inverse Compositional Registration Approach 
+
+We eliminate the computational bottleneck by executing a change of variables under an Inverse Compositional (IC) approach. An alternative coordinate space is defined to absorb the incremental parameter perturbation: 
+
+u′ = W (u; ∆ x) = ⇒ u = W (u′; ∆ x)−1. (5) Because W represents a strictly rigid 2D transformation, it defines a bijective mapping over the spatial grid Ω, preserv-ing the domain area. Substituting this coordinate transfor-mation into the objective function and renaming the index variable of summation back to u yields the IC registration objective: 
+
+LIC (∆ x) = − 1
+
+|Ω|
+
+X
+
+> u∈Ω
+
+I W (u; x)M  W (u; ∆ x). (6) Through this mathematical substitution, the incremental pa-rameter updates are shifted from the dynamic scan I onto the static reference map M . Linearizing the map intensity expression around an identity perturbation ( ∆x = 0) via a first-order Taylor expansion yields: 
+
+M  W (u; ∆ x) ≈ M (u) + ∇M (u) ∂W (u; ∆ x)
+
+∂∆x ∆x, (7) where ∇M (u) = [Mx(u), M y (u)] represents the spatial gradient vector of the local map. Projecting these spatial derivatives onto the rigid 2D geometric Jacobian yields the constant steepest descent image vector J(u) ∈ R3×1:
+
+J(u) = 
+
+
+
+∇M (u)
+
+1 0 −y
+
+0 1 x
+
+ T
+
+=
+
+
+
+Mx(u)
+
+My (u)
+
+−yM x(u) + xM y (u)
+
+
+
+The first-order gradient of the alignment loss, g ∈ R3×1,evaluated at ∆x = 0, is derived directly as: 
+
+g = ∂LIC 
+
+∂∆x ∆x=0
+
+= − 1
+
+|Ω|
+
+X
+
+> u∈Ω
+
+I W (u; x)J(u). (8) Crucially, because the local map M remains static during the registration of a single incoming scan, both the spatial map gradients and the steepest descent vectors J(u) are constant. They are evaluated exactly once per incoming scan, unlocking fast optimization speeds at a fraction of the traditional computational cost. 
+
+D. Gauss-Newton Optimization Loop 
+
+To enable fast alignment across dense spaces, we employ a Gauss-Newton optimization approach. While traditional direct alignment methods evaluate a dynamic Hessian at every optimization iteration, the Inverse Compositional (IC) 4formulation enables the Hessian matrix, H ∈ R3×3, to be ap-proximated using the outer product of the precomputed first-order steepest descent vectors, bypassing expensive second-order derivative computations: 
+
+H ≈ 1
+
+|Ω|
+
+X
+
+> u∈Ω
+
+J(u)J(u)T . (9) To prevent matrix singularities and numerical instability when operating over feature-sparse or geometrically de-generate topologies, Levenberg-Marquardt (LM) damping is applied via a regularization factor λ:
+
+HLM = H + λI, (10) where I denotes the 3 × 3 identity matrix. Because H and its regularized inverse H−1 
+
+> LM
+
+depend solely on the static map parameters, they are computed and inverted exactly once per incoming scan prior to entering the iterative tracking loop. Inside the loop, the pose state vector is updated iteratively at iteration i via: 
+
+x(i+1) = x(i) − γH−1
+
+> LM
+
+g(i), (11) where γ represents the operational step size. Acoustic speckle noise frequently introduces random in-tensity spikes that can inject destabilizing outliers into the image gradients. We counter this issue by implementing a dynamic gradient clipping scheme. If the Euclidean norm of the first-order gradient exceeds a maximum allowable threshold gmax , the vector is scaled to preserve its directional trajectory while enforcing numerical stability: 
+
+g(i) ← g(i) min 
+
+
+
+1, gmax 
+
+∥g(i)∥
+
+
+
+. (12) The internal optimization loop terminates when the pa-rameter update magnitude ∥x(i+1) − x(i)∥ drops below a specified tolerance limit or when the fractional change in the correlation loss satisfies ∆LIC < ϵ tol .
+
+E. Kinematic State Propagation and Map Maintenance 
+
+Following the convergence of the optimization approach, the vehicle’s relative displacement over the tracking interval is processed by a kinematic motion model to maintain tempo-ral trajectory consistency across sequential scans. Assuming a constant velocity profile over the inter-scan interval ∆t,the local-frame displacement vector xk = [tx, t y , θ ]T is converted into linear and angular velocities: 
+
+vx = tx
+
+∆t , vy = ty
+
+∆t , vθ = θ
+
+∆t . (13) These velocity components update the trajectory estimate and provide a predictive warm-start initialization x(0)  
+
+> k+1
+
+for the subsequent registration cycle, effectively seeding the optimization within its basin of attraction: 
+
+x(0)  
+
+> k+1
+
+= ∆ t vx vy vθ
+
+T . (14) Following the state propagation step, map maintenance is performed by projectively warping the current preprocessed scan into the map frame, Ialigned  
+
+> k
+
+(u) = Ik
+
+ W (u; xk), and recursively integrating it into the local map via an Exponen-tial Moving Average (EMA): 
+
+Mk(u) = (1 − α)Mk−1(u) + αI aligned  
+
+> k
+
+(u), (15) where α ∈ (0 , 1] represents the map update coefficient. Because acoustic speckle noise accumulates over extended temporal horizons, direct integration can saturate the local map with high-frequency noise and transient landmarks. To counter this saturation and preserve sharp geometric hazard boundaries, a statistical noise decay filter is applied im-mediately following the EMA update to dynamically prune intensities based on global grid metrics: 
+
+Mk(u) ←
+
+(
+
+Mk(u) if Mk(u) ≥ μM + βdecay σM ,
+
+0 otherwise , (16) where μM and σM denote the mean and standard deviation of the local map intensity field, respectively, and βdecay 
+
+represents the empirical decay coefficient. Finally, the reference map is transformed to the updated vehicle pose via bilinear interpolation, and an obstacle point cloud is extracted by thresholding high-intensity acoustic returns into 2D points. V. B ENCHMARKS AND FIELD TRIAL 
+
+This section presents the experimental validation of SOL-SLAM. Since our approach addresses local rather than global SLAM, we evaluate performance over trajectory sub-sequences that do not necessitate loop closure. 
+
+A. Benchmark Setup 
+
+The proposed SOL-SLAM approach is evaluated using the Aracati dataset [17], which was collected at the Yacht Club marina in Rio Grande, Brazil, 2017. The experimen-tal platform comprised a SeaBotix LBV 300 ROV with a Teledyne BlueView P900 FLS (130° FoV, 50 m max range, and 2.54 cm range resolution). To establish a ground-truth reference for localization tracking, a Differential GPS (DGPS) receiver and a magnetic heading compass were mounted on a surface-floating platform coupled directly to the vehicle. All benchmark evaluations were executed on a workstation with an Intel Core i9-14900K CPU, 64 GB of RAM, and an NVIDIA T1000 GPU. 
+
+B. Feature Registration Performance 
+
+Research Question 1: What is the performance impact of dense direct sonar registration compared to sparse keypoint methods? 
+
+Key Finding: SOL-SLAM delivers the fastest optimiza-tion speeds and substantially reduces translation er-ror—sustaining sub-meter precision across expanding displacements—while matching the rotational accuracy of sparse baselines. 
+
+5Fig. 3: Quantitative evaluation under progressive initial misalignments across 5-, 10-, and 15-frame separation gaps, bounded by maximum translation T and rotation R. Plots compare mean translation error, mean rotation error, and average execution runtime. The results highlight that our dense SOL-SLAM approach considerably minimizes translation error relative to all evaluated baselines, maintaining stable tracking precision where sparse methods degrade. 
+
+Fig. 4: Estimated local trajectory traces mapped against Ground Truth (GPS) across two distinct sub-sequences from the Aracati dataset. The metrics demonstrate that our FLS-only local SLAM performance remains competitive with the multi-modal SLAM (DISO). 
+
+Research Question 2: What is the performance im-pact of employing an Inverse Compositional Gauss-Newton (IC-GN) formulation relative to standard For-ward Compositional Gradient Descent? 
+
+Key Finding: The IC-GN approach yields superior tracking accuracy—demonstrating reduced translation and rotation errors—while simultaneously delivering drastically faster optimization speeds. 
+
+To evaluate the efficacy of dense sonar features against traditional sparse keypoint methods and to assess the impact of our optimization strategy, we analyze tracking precision under progressively increasing frame-to-frame displacement intervals. The dense direct registration approach is evaluated in two configurations: our proposed Inverse Compositional Gauss-Newton (IC-GN) formulation and a comparative For-ward Compositional Gradient Descent (FC-GD) variant op-timized with Adam. These are benchmarked against three prominent sparse feature extraction methods: AKAZE [5] (a computationally efficient, handcrafted scale-space de-scriptor), SuperPoint [18] (a deep-learning-based approach optimized for visual imagery), and SONIC [6] (a learned descriptor trained specifically on acoustic sonar data). For the sparse baselines, scan matching is executed via a Brute-Force (BF) matcher, and the rigid SE(2) transformation aligning successive scans is estimated using Random Sample Consensus (RANSAC). Tracking robustness and convergence constraints are eval-uated by pairing scans across frame-separation gaps of 5, 10, and 15 steps. This systematic increase in frame separa-tion introduces larger initial misalignments, allowing us to characterize the capture range and stability of each method’s convergence basin. The estimated transformation parameters (translations tx, ty and heading angle θ) are evaluated against the DGPS-compass ground truth using the root-mean-square error (RMSE) and mean computational runtime. Figure 3 demonstrates that the IC-GN SOL-SLAM ap-proach substantially reduces translation error across all dis-placement thresholds, consistently maintaining sub-meter precision. Even under severe 15-frame gaps (representing a maximum translation displacement of 1.48 m and angular displacement of 34 .14 ◦), our dense direct approach demon-65 4 3 2 1 0 1 2              
+
+> X (meters)
+> 6
+> 5
+> 4
+> 3
+> 2
+> 1
+> Y (meters)
+> SOL-SLAM (FLS only; Ours) DVL Start Point End Point RMSE vs DVL
+> Translation: 0.55 m Rotation: 12.99° 86420
+> X (meters)
+> 9
+> 8
+> 7
+> 6
+> 5
+> 4
+> 3
+> Y (meters)
+> SOL-SLAM (FLS only; Ours) DVL Start Point End Point RMSE vs DVL
+> Translation: 0.67 m Rotation: 14.65° 86420
+> X (meters)
+> 7
+> 6
+> 5
+> 4
+> 3
+> 2
+> Y (meters)
+> SOL-SLAM (FLS only; Ours) DVL Start Point End Point RMSE vs DVL
+> Translation: 1.29 m Rotation: 23.75°
+
+Fig. 5: Estimated local trajectories from SOL-SLAM running fully onboard the Aqua2 AUV, evaluated against a DVL baseline. While accurate rotation estimation remains challenging, the results demonstrate the feasibility of onboard, sonar-only local SLAM on resource-constrained embedded hardware. strates exceptional robustness. By effectively leveraging the full acoustic intensity profile, SOL-SLAM sustains tight alignment where sparse baselines (AKAZE, SuperPoint, and SONIC) yield translation errors ranging from 7.5 m to over 
+
+24 m. When evaluating the two dense optimization strategies, the IC-GN formulation unlocks significant performance gains over the FC-GD approach. As shown in Figure 3, IC-GN achieves tighter bounds on both translation and rotation errors across all tested separation intervals compared to the Adam-optimized FC-GD variant. Most notably, the IC-GN strategy efficiently precomputes spatial gradients to drasti-cally accelerate inference. By eliminating the computational overhead of continuous gradient re-evaluation, the IC-GN approach achieves an execution latency of approximately 
+
+40 ms ( 25 Hz), well within the real-time processing con-straints required for closed-loop subsea navigation. While rotational error for the IC-GN approach scales slightly at wider frame separations, this variation is easily mitigated in practical deployments by bounding heading drift with a low-cost Inertial Measurement Unit (IMU)—a standard sensor payload on autonomous underwater platforms. 
+
+C. Comparison with Multi-Sensor Odometry Approaches 
+
+Research Question 3: How does the proposed FLS-only local SLAM approach compare against multi-sensor systems that fuse FLS, DVL, and IMU data with loop closure? 
+
+Key Finding: The standalone, FLS-only SOL-SLAM approach achieves highly competitive trajectory esti-mation accuracy relative to a state-of-the-art multi-sensor odometry system, despite operating entirely without auxiliary velocity or inertial data. 
+
+We evaluate the capability of the proposed SOL-SLAM approach to sustain continuous local trajectory estimation in the complete absence of auxiliary velocity or inertial mea-surements. SOL-SLAM is benchmarked against DISO [2], a state-of-the-art multi-sensor underwater odometry system that ensures robust tracking by tightly coupling FLS regis-tration with synchronous Doppler Velocity Log (DVL) and IMU inputs. Benchmarking is performed across two dataset subsequences where sufficient acoustic feature density is preserved, with each active frame retaining a minimum of 1% sonar features above the operational intensity threshold. Because the physical platform deployed for the Aracati dataset lacked a physical DVL, the DISO baseline utilizes the vehicle’s internal commanded control velocities as a proxy for dead-reckoning sensor feedback. Since the vehicle relied on high-accuracy DGPS for closed-loop navigation, it closely tracked these commanded trajectories, rendering the control inputs a reliable substitute for true DVL measurements within the baseline system. The estimated trajectories are illustrated in Figure 4. In Subsequence 1, DISO yields a translation RMSE of 0.57 mand a rotation RMSE of 2.85 ◦, whereas SOL-SLAM achieves a competitive translation RMSE of 1.76 m and a rotation RMSE of 3.16 ◦. In Subsequence 2, the performance gap narrows significantly: our approach tracks the trajectory with a translation RMSE of 0.92 m and a rotation RMSE of 
+
+4.30 ◦, closely matching the performance of DISO ( 0.65 mand 2.63 ◦). These benchmarks validate that our FLS-only SOL-SLAM approach achieves local SLAM precision com-parable to multi-sensor configurations, eliminating the need for expensive auxiliary sensors in feature rich environments. 
+
+D. AUV Field Trial with Onboard Processing 
+
+Research Question 4: Can SOL-SLAM sustain fast local SLAM onboard an AUV? 
+
+Key Finding: Executing onboard an NVIDIA Jetson Orin Nano SoC at 8 Hz, SOL-SLAM demonstrates the feasibility of fully self-contained local SLAM. 
+
+We validated SOL-SLAM in real-world field trials using an Aqua2 AUV [19] (Fig. 1) equipped with a Sonoptix Echo forward-looking sonar (120° FoV, 12 m max range, and 8 mm range resolution). The vehicle was manually piloted in depth-hold mode inside a swimming pool, while SOL-SLAM executed fully onboard an embedded NVIDIA Jetson Nano SoC. Figure 5 compares the trajectory estimated by SOL-SLAM with DVL-based odometry used as a proxy ground truth. 7Operating at 8 Hz, SOL-SLAM achieves sufficient throughput for closed-loop navigation on resource-constrained embedded hardware. Consistent with benchmark evaluations, while rotational drift remains a challenge, the system accurately resolves translational motion and closely tracks the DVL baseline. VI. L IMITATIONS AND FUTURE WORK 
+
+Rotational Sensitivity: SOL-SLAM currently struggles with rapid rotational motion. Future iterations could address this by fusing data from an on-board IMU—a low-cost sensor present on most AUV platforms. 
+
+Scan-to-Map Drift: To prevent substantial drift from occasional scan-matching failures, future work will explore leveraging IMU measurements for mismatch detection and drift suppression without the computational overhead of full pose-graph loop closure. 
+
+Feature Sparsity: Like most SLAM approaches, per-formance degrades in acoustically degraded or featureless environments. While the extended sensing range of forward-looking sonar (often exceeding 100 m) helps maintain track-able returns, future work will integrate SOL-SLAM with active, perception-aware navigation strategies (e.g., Aqua-Vis [20]) to autonomously guide the vehicle toward feature-rich regions. VII. C ONCLUSION 
+
+This paper presented SOL-SLAM, a direct local SLAM approach operating exclusively on Forward-Looking Sonar (FLS) imagery. While conventional methods rely on sparse feature extraction—often discarding valuable information in already information-sparse acoustic returns—our method directly leverages full, dense acoustic scans. To mitigate the computational overhead of dense alignment, we introduced an efficient inverse compositional direct registration approach that achieves real-time performance. Key contributions and findings include:  
+
+> •
+
+Direct Registration Accuracy: SOL-SLAM achieves sub-meter translational accuracy over large displace-ments, consistently outperforming sparse keypoint methods (AKAZE, SuperPoint, and SONIC) vulnerable to acoustic mismatching.  
+
+> •
+
+Competitive with Multi-Sensor Odometry: Operating without auxiliary inertial (IMU) or Doppler velocity (DVL) measurements, our FLS-only approach achieves accuracy competitive with state-of-the-art multi-modal odometry (DISO).  
+
+> •
+
+Field Trial Validation: Field trials with an FLS-equipped AUV verified the method’s real-world via-bility, demonstrating reliable state estimation executing entirely on the vehicle’s onboard embedded computer. REFERENCES [1] X. Wang, X. Fan, P. Shi, J. Ni, and Z. Zhou, “An Overview of Key SLAM Technologies for Underwater Scenes,” Remote Sensing , vol. 15, no. 10, 2023. [2] S. Xu, K. Zhang, Z. Hong, Y. Liu, and S. Wang, “DISO: Direct Imaging Sonar Odometry,” in IEEE International Conference on Robotics and Automation (ICRA) , 2024, pp. 8573–8579. [3] S. Rahman, A. Q. Li, and I. Rekleitis, “SVIn2: An Underwater SLAM System using Sonar, Visual, Inertial, and Depth Sensor,” in 2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2019, pp. 1861–1868. [4] J. Wang, F. Chen, Y. Huang, J. McConnell, T. Shan, and B. Englot, “Virtual Maps for Autonomous Exploration of Cluttered Underwater Environments,” IEEE Journal of Oceanic Engineering , vol. 47, no. 4, pp. 916–935, 2022. [5] P. F. Alcantarilla, J. Nuevo, and A. Bartoli, “Fast Explicit Diffusion for Accelerated Features in Nonlinear Scale Spaces,” in British Machine Vision Conference, BMVC 2013, Bristol, UK, September 9-13, 2013 .BMVA Press, 2013. [6] S. Gode, A. Hinduja, and M. Kaess, “SONIC: Sonar Image Correspon-dence using Pose Supervised Learning for Imaging Sonars,” in 2024 IEEE International Conference on Robotics and Automation (ICRA) ,2024, pp. 3766–3772. [7] S. Baker and I. Matthews, “Lucas-Kanade 20 Years On: A Unifying Framework,” International Journal of Computer Vision , vol. 56, no. 3, pp. 221–255, Feb 2004. [8] M. Heshmat, L. Saad Saoud, M. Abujabal, A. Sultan, M. Elmezain, L. Seneviratne, and I. Hussain, “Underwater SLAM Meets Deep Learning: Challenges, Multi-Sensor Integration, and Future Direc-tions,” Sensors , vol. 25, no. 11, 2025. [9] D. Yang, J. Hong, J. J. Leonard, and Y. Girdhar, “ReefMapGS: Enabling Large-Scale Underwater Reconstruction by Closing the Loop Between Multimodal SLAM and Gaussian Splatting,” arXiv, 2026. [10] J. Bai, D. Zhu, M. Chen, and C. Luo, “SIO-UV: Rapid and Robust Sonar Intertial Odometry for Underwater Vehicles,” IEEE Transactions on Industrial Electronics , 2025. [11] H. Johannsson, M. Kaess, B. Englot, F. Hover, and J. Leonard, “Imaging sonar-aided navigation for autonomous underwater harbor surveillance,” in 2010 IEEE/RSJ International Conference on Intelli-gent Robots and Systems , 2010, pp. 4396–4403. [12] B. T. Henson and Y. V. Zakharov, “Attitude-Trajectory Estimation for Forward-Looking Multibeam Sonar Based on Acoustic Image Registration,” IEEE Journal of Oceanic Engineering , vol. 44, no. 3, pp. 753–766, 2019. [13] C. L. Gentil, L. Brizi, D. Lisus, X. Qiao, G. Grisetti, and T. Barfoot, “DRO: Doppler-Aware Direct Radar Odometry with Gyroscope,” in 
+
+Proceedings of Robotics: Science and Systems , LosAngeles, CA, USA, June 2025. [14] P. Yao, Q. Liu, Y. Sun, Y. Wang, and J. Yu, “Deep Learning-Based Fourier Registration for Forward-Looking Sonar Odometry in Texture-Sparse Underwater Environments,” IEEE Robotics and Automation Letters , pp. 4817–4824, 2026. [15] N. Hurt´ os, X. Cuf’, Y. Petillot, and J. Salvi, “Fourier-based registra-tions for two-dimensional forward-looking sonar image mosaicing,” in 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems , 2012, pp. 5298–5305. [16] M. dos Santos, G. de Oliveira, P. de Oliveira Evald, P. Drews-Jr, and S. da Costa Botelho, “Underwater Robots Localization using Multi Domain Images: A Survey,” Journal of Intelligent & Robotic Systems ,vol. 111, no. 2, p. 52, Apr 2025. [17] H. F. Chame, M. M. dos Santos, and S. S. da Costa Botelho, “Reliable fusion of black-box estimates of underwater localization,” in 2018 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2018, pp. 1900–1905. [18] D. DeTone, T. Malisiewicz, and A. Rabinovich, “SuperPoint: Self-Supervised Interest Point Detection and Description,” in 2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW) , 2018, pp. 337–33 712. [19] G. Dudek, P. Giguere, C. Prahacs, S. Saunderson, J. Sattar, L.-a. Torres-Mendez, M. Jenkin, A. German, A. Hogue, A. Ripsman, J. Zacher, E. Milios, H. Liu, P. Zhang, M. Buehler, and C. Georgiades, “AQUA: An Amphibious Autonomous Robot,” Computer , vol. 40, no. 1, pp. 46–53, 2007. [20] M. Xanthidis, M. Kalaitzakis, N. Karapetyan, J. Johnson, N. Vitzi-laios, J. M. O’Kane, and I. Rekleitis, “AquaVis: A Perception-Aware Autonomous Navigation Framework for Underwater Vehicles,” in 
+
+IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2021, pp. 5410–5417. 
+
+8

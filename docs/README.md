@@ -41,7 +41,7 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-09-17</span>
+      <span class="dpr-home-dashboard-kicker">2026-09-18</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
     <strong class="dpr-home-dashboard-count">共 17 篇</strong>
@@ -51,7 +51,7 @@
     <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
     <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>11</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-09-17 21:43:59 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-09-18 21:16:42 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -62,7 +62,9 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日筛读17篇、精读6篇，SLAM与空间智能仍是主赛道。最值得看的是满分工作PanoGS-SLAM（全景3D高斯泼溅SLAM）和9分的HuMemSLAM（仿人语义地点识别），分别指向全景建图与语义鲁棒定位。普通读者可先读这两篇精读，再按兴趣速览LiDAR终身建图与视觉重定位方向。</p>
+<p>2026-09-18 日报完成：扫描 17 篇，精读 6 篇、速读 11 篇，聚焦 SLAM 与多模态里程计。</p>
+<p>最值得看的是两篇 9 分工作：声呐纯定位的 SOL-SLAM 和动态感知的 Dynamic-LIVO，均直击复杂环境下的实时定位难点。</p>
+<p>普通读者可优先了解 LiDAR-惯性-视觉融合与动态物体处理，这两条路线正加速走向实用。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -74,9 +76,9 @@
     <strong class="dpr-home-dashboard-count">6 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="PanoGS-SLAM: Panoramic 3D Gaussian Splatting SLAM">PanoGS-SLAM: Panoramic 3D Gaussian Splatting SLAM</span></li><li><span class="dpr-home-dashboard-paper-title" title="HuMemSLAM: Efficient Human-Inspired Semantic Place Recognition for Robust Visual SLAM">HuMemSLAM: Efficient Human-Inspired Semantic Place Recognition for Robust Visual SLAM</span></li><li><span class="dpr-home-dashboard-paper-title" title="P-POSEMEM: Projective Semantic Memory for Consistent Language Grounding under Pose-Graph Rewrites">P-POSEMEM: Projective Semantic Memory for Consistent Language Grounding under Pose-Graph Rewrites</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="SOL-SLAM: Inverse Compositional Gauss-Newton Direct Registration for Fast Sonar-Only Local SLAM">SOL-SLAM: Inverse Compositional Gauss-Newton Direct Registration for Fast Sonar-Only Local SLAM</span></li><li><span class="dpr-home-dashboard-paper-title" title="Dynamic-LIVO: A Dynamic-Aware LiDAR-Inertial-Visual Odometry System Using Spatio-Temporal Normals">Dynamic-LIVO: A Dynamic-Aware LiDAR-Inertial-Visual Odometry System Using Spatio-Temporal Normals</span></li><li><span class="dpr-home-dashboard-paper-title" title="AMB3R-SLAM: Kilometer-scale SLAM with Hierarchical Backend">AMB3R-SLAM: Kilometer-scale SLAM with Hierarchical Backend</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>5</strong></span><span class="dpr-home-dashboard-tag">rl-motion <strong>1</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>6</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -87,9 +89,9 @@
     <strong class="dpr-home-dashboard-count">11 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="SEAM: Submap-Anchored Evidence for Lifelong LiDAR Mapping under Trajectory Deformation">SEAM: Submap-Anchored Evidence for Lifelong LiDAR Mapping under Trajectory Deformation</span></li><li><span class="dpr-home-dashboard-paper-title" title="DRS-VPT: Directly Relocalizing in a Scan with Vision Point Transformers">DRS-VPT: Directly Relocalizing in a Scan with Vision Point Transformers</span></li><li><span class="dpr-home-dashboard-paper-title" title="Multi-Task Visual Perception Network with LLM Conditioning for Autonomous Navigation">Multi-Task Visual Perception Network with LLM Conditioning for Autonomous Navigation</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="GLAM: Training a latent world model over global spatiotemporal memory for active exploration and navigation">GLAM: Training a latent world model over global spatiotemporal memory for active exploration and navigation</span></li><li><span class="dpr-home-dashboard-paper-title" title="LG-VLN: A Zero-Shot Vision-and-Language Navigation Framework with LangGraph State Orchestration">LG-VLN: A Zero-Shot Vision-and-Language Navigation Framework with LangGraph State Orchestration</span></li><li><span class="dpr-home-dashboard-paper-title" title="JEPLO: Joint-Embedding Predictive Learning for LiDAR-Based Legged Locomotion">JEPLO: Joint-Embedding Predictive Learning for LiDAR-Based Legged Locomotion</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>7</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>4</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">d-slam <strong>5</strong></span><span class="dpr-home-dashboard-tag">robot-nav <strong>5</strong></span><span class="dpr-home-dashboard-tag">rl-motion <strong>1</strong></span></div>
 </section>
 </div>
 
