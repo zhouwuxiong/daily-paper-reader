@@ -1,0 +1,417 @@
+Title: Pose-aware Legged Robot Semantic Exploration with Omnidirectional Perception in Confined Unknown Environments
+
+URL Source: https://arxiv.org/pdf/2609.19460v1
+
+Published Time: Fri, 18 Sep 2026 00:27:12 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# Pose-aware Legged Robot Semantic Exploration with Omnidirectional Perception in Confined Unknown Environments 
+
+Xiaoyang Zhan *, Shiyu Chen *, and Kenji Shimada 
+
+Abstract — Semantic exploration in confined environments requires both environment mapping and detailed observation of target objects. For ground robots, limited sensors vertical fields of view and restricted standoff distances can leave upper object surface unobserved from planar viewpoints. Body tilting can improve coverage, but additional observations and posture transitions increase mission time. To balance this trade-off, we present POSE, a pose-aware semantic exploration system that exploits a legged robot’s intrinsic body pitch and roll with omnidirectional Camera-LiDAR perception. The proposed pose-aware viewpoint sampling module selects body postures from partial object maps according to expected coverage gain, while aim-aligned execution reduces unnecessary body reorientation. Further, we introduce an object-centric viewpoint pruning strategy assisted by a vision-language model (VLM), which uses persistent observation history and bird’s-eye-view (BEV) maps to reduce redundant inspection visits. The resulting semantic viewpoints are combined with geometric exploration viewpoints in a global exploration planner. Simulations show that POSE improves final target-surface coverage by 8–10 per-centage points over the planar planning baseline while reducing exploration time by 17–32%, and achieves the highest mean object coverage AUC among the evaluated baselines. Real-world experiments with a legged robot carrying an 360 degrees omnidirectional Camera-LiDAR suite in a machine shop further demonstrate the system’s applicability. These results support adaptive body-posture planning for improving the coverage– efficiency trade-off in legged robot semantic exploration. We plan to release the code for community benefit in the future. 
+
+I. INTRODUCTION Autonomous exploration has been extensively studied for efficient mapping of unknown environments [1]–[4]. Appli-cations such as industrial inspection and digital twins further motivate semantic exploration, which combines environment mapping with target observation for tasks ranging from object search to reconstruction [5]–[9]. Ground robots offer a practical platform for these tasks, particularly in indoor industrial environments, where endurance and safe operation are important. Previous work for ground robot semantic exploration, in general, selects viewpoints in a planar space [5], [8]– [11]. However, this could be insufficient in confined space such as industrial facilities. For example, in narrow aisles, limited standoff distances can leave upper regions of tall objects outside the sensors’ vertical field of view (FOV) at all reachable level-body viewpoints. A legged robot could leverage its body pose, including pitch and roll rotation, to extend its perception limit and address this problem. 
+
+> *
+
+These authors contributed equally to this work. The authors are with the Department of Mechanical Engineering, Carnegie Mellon University, Pittsburgh, PA 15213 USA. 
+
+xzhan2@andrew.cmu.edu LiDAR Pose 
+
+> Object Viewpoint
+> Robot Odometry
+> Path History
+
+(a)  (c) 
+
+(d) 
+
+(e) 
+
+> (b)
+
+Fig. 1. POSE inspecting a machine shop with a Boston Dynamics Spot. (a) At an object semantic viewpoint, Spot pitches its body up by −30 ◦,raising the LiDAR’s FOV onto a machine. (b) The same viewpoint with its executed pitch in the map. Point cloud of the detected object are colored by height. (c) The forward camera frame at this posture. (d) Overall map: accumulated point cloud, detection bounding boxes, object viewpoints (red spheres), robot odometry at executed postures, and the traveled path. (e) A 
+
+360 ◦ photo with every target object boxed in the same color as in (d). 
+
+Expanding viewpoint planning from planar poses to poses with pitch and roll introduces a trade-off between surface coverage completeness and mission time. Although addi-tional postures can reveal missing surfaces, each execution costs additional time, and a poorly chosen viewpoint with posture costs travel as well without adding coverage. There-fore, a balance between the observation coverage and time efficiency is necessary. This raises two challenges. First, the selection of observation viewpoints must balance observa-tion richness and efficiency. Omitting posture observations preserves the coverage gap, whereas executing them at every candidate viewpoint introduces redundant travel and posture motion. The planner must decide which viewpoints remain valuable as observations of each object accumulate. This requires considering the object’s observation history when deciding whether another posture observation justifies its arXiv:2609.19460v1 [cs.RO] 16 Sep 2026 cost in time. Second, posture selection for each viewpoint itself must also account for both the completeness and exe-cution time cost. A newly discovered object is only partially mapped, so its complete model is uncertain. The robot must choose a necessary tilt from this incomplete estimate and refine its decisions as new observations arrive. Also, with omnidirectional perception, different combinations of body heading, pitch, and roll can provide the same observation effect. Therefore, the execution strategy e take advantage of this flexibility to reduce unnecessary reorientation. To address these challenges, we propose POSE : a PO se-aware legged robot Semantic Exploration system with om-nidirectional perception. POSE adopts a hierarchical planner that incorporates pose-aware object semantic viewpoints in a global exploration framework to plan a global tour. For each target object’s semantic observation, POSE proposes a pose-aware viewpoint sampling module with an associated aim-aligned posture execution mechanism. They work together to choose appropriate observation viewpoints with postures and derive an efficient robot body pose for posture execution with less re-orientation. To reduce unnecessary observa-tion while maintaining observation quality, POSE designs an object-centric VLM-assisted pruning strategy that uses persistent observation context to remove redundant semantic viewpoints. Our experiments show that across three simu-lated industrial environments, POSE improves final target-surface coverage by 8–10 percentage points over the planar exploration baseline while reducing exploration time by 17– 32%. It also achieves the highest mean object coverage AUC among the evaluated baselines, demonstrating its ability to accumulate greater surface coverage earlier in the mission. The system is also validated in a university machine shop (Fig. 1). The contributions of this work are:  
+
+> •
+
+A pose-aware semantic viewpoint sampling module 
+
+that extends planar semantic viewpoints with body pitch and roll to improve object-surface coverage and uses aim-aligned posture transitions to reduce reorientation.  
+
+> •
+
+An object-centric VLM-assisted viewpoint pruning strategy that takes BEV maps and accumulated ob-servations through persistent VLM sessions to reduce redundant visits.  
+
+> •
+
+An integrated semantic exploration and mapping framework that jointly optimizes pose-aware seman-tic inspection and geometric exploration visits with omnidirectional Camera-LiDAR fusion and real-time semantic mapping. The system is validated in industrial simulations and real-world machine-shop experiments. II. RELATED WORK We review exploration planning work for environmental coverage, semantic exploration, and active perception meth-ods that exploit additional sensing degrees of freedom (DoF). 
+
+A. Autonomous Exploration 
+
+Autonomous exploration aims to cover unknown space in the shortest time and mainly follows two approaches: frontier-based methods drive robots toward the boundaries between free and unknown space [1], while sampling-based methods select next-best views (NBVs) from online graphs [2], [4], [12]. Recent planners organize candidate viewpoints into global coverage tours [3], [13]–[15]. These methods support volumetric exploration but do not guarantee object-level completeness. 
+
+B. Semantic Exploration and Inspection 
+
+Semantic information guides exploration toward different objectives. Dang et al. [16] prioritize object observation to detect targets and build coarse semantic maps during exploration. Luo et al. [6] improve efficiency by jointly planning target search and environment coverage through global tours. Hou et al. [17] scale search and exploration to larger environments with lower computational and memory costs. Ginting et al. [8] use a semantic belief behavior graph to locate inspection targets while reducing uncertainty. Papatheodorou et al. [7] introduce utility functions that pri-oritize camera-based mesh reconstruction quality during ex-ploration. Dharmadhikari et al. [18] plan for complete mesh reconstruction with image-resolution and viewing-angle re-quirements. Zhan et al. [5] coordinate object-observation and geometric-coverage viewpoints for dense semantic mapping and efficient exploration. Although aerial platforms can ad-just viewing altitude, ground robots in confined spaces may have insufficient vertical coverage from planar viewpoint changes alone. However, legged robots can exploit its pitch and roll to offer an additional means of improving target-surface coverage during exploration. 
+
+C. Pose-Aware Viewpoint Planning for Active Perception 
+
+There have been attempts that utilize additional sensing degrees of freedom to obtain task-relevant observations on various platforms. Hu et al. [19] sample pitch angles for semantic observation on a legged robot, without considering long-horizon exploration. Wang et al. [20] use predefined body-roll sequences for quadruped inspection. Zhang et al. [21] combine base–arm viewpoint configurations for object search and exploration, with evaluation focused on target-detection completeness and motion efficiency. VLM also guides active viewpoint selection for reconstruction, information gathering, and question answering [22]–[24]. In general, an open challenge still remains: how to exploit the body posture of the legged robot to improve the coverage of semantic objects during exploration of confined unknown environments, while controlling the cost of additional ob-servations. We address this challenge by integrating geo-metric pitch-and-roll selection, efficient posture execution, and object-level viewpoint pruning with VLM guidance into a unified exploration framework, achieving the balance between surface coverage and exploration efficiency. III. P ROBLEM STATEMENT 
+
+A quadruped robot explores an unknown, bounded en-vironment E ⊂ R3 containing an initially unknown set of targets O from known semantic classes. Its sensors comprise Fusion & Mapping 
+
+> Point cloud
+> RGB Image
+> Occupancy Map
+> Pose-Aware VP Sampling
+> VLM Hybrid Prompt
+> VP Candidates
+> Re-projected Images
+> Pruned Semantic VPs
+> Geometric frontiers & Viewpoints
+> LiDAR
+> Computer
+> BEV maps
+> VP Candidates Table
+
+Pose-Aware Viewpoint Sampling   
+
+> VLM Pruning
+> Global TSP Planner
+> Aim-Aligned Posture Execution
+> 5-DoF Waypoint: (x, y, ψ, θ, ϕ ) = (x, y, yaw, pitch, roll)
+> Locomotion Controller
+> Robot + Sensors
+> Panoramic Camera Object-Centric VLM Session
+
+(b) 
+
+(a) 
+
+(c) 
+
+(d) 
+
+(e) 
+
+(g) 
+
+(f)  
+
+> (x, y)
+> (ψ, θ, ϕ )
+
+# +Fig. 2. Overview of POSE. LiDAR scans and omnidirectional images are fused into a point cloud and construct, from which an occupancy map with per-object models is constructed (b). Around each mapped object, semantic viewpoints are sampled over sectors, standoffs, and postures. A Object-Centric VLM session is opened upon encountering a new object. Each session consists of images, a table and a text prompt. VLM consult and heartbeat calls return verdicts that prune the viewpoint set. When VLM is not available, verdict fallback to geometric default (dashed line). Details are in Sec. IV-C. All viewpoints’ visiting sequence is ordered as a TSP (g), and the aim-aligned posture is executed on arrival (f). Orange blocks are the contributions of this paper; gray blocks follow [5]. 
+
+a 360 ◦ LiDAR with vertical FOV ±ε and an omnidirectional camera system. A viewpoint with posture is 
+
+v = ( x, y, ψ, θ, ϕ ), (1) where (x, y, ψ ) is the planar pose, and θ ∈ [−θmax , θ max ]
+
+and ϕ ∈ [−ϕmax , ϕ max ] are body pitch and roll. Observations progressively classify the environment’s voxel set V into free and occupied subsets, Vfree (t) and 
+
+Vocc (t), at time t. For each target o, let S∗ 
+
+> o
+
+be its complete surface voxel set, and So(t) be the reconstructed surface associated with o at time t. Define Vres and So, res as environment voxels and object-surface voxels, respectively, that cannot be observed from any reachable, feasible config-uration under the sensor and posture constraints. The task is to select and execute feasible viewpoints to explore the environment, discover targets, and reconstruct their observable surfaces while limiting travel time. Ideal task completion at time T requires all the background en-vironment voxels to be observed except those unobservable, i.e., Vfree (T ) ∪ Vocc (T ) = V \ Vres , and all the surface of objects to be reconstructed excluding those unobservable, i.e., So(T ) = S∗ 
+
+> o
+
+\ S o, res for ∀o ∈ O .IV. M ETHODOLOGY 
+
+POSE comprises semantic mapping and planning pipelines (Fig. 2). The mapping pipeline fuses omnidirectional cam-era observations and LiDAR measurements to build back-ground and object-centric voxel maps with dense point cloud (Sec. IV-A). At the global level, the planner iteratively solves an open traveling salesman problem (TSP) over two viewpoint sets (Sec. IV-E): exploration viewpoints sampled around frontiers for volumetric coverage, following [5], and semantic inspection viewpoints sampled around target objects with geometrically selected body postures for surface coverage (Sec. IV-B). After viewpoints sampling, the object-centric VLM-assisted pruning removes redundant inspection candidates using persistent observation context (Sec. IV-C). During execution, Aim-Aligned Posture Execution realizes the sampled scan-band orientation from the arrival head-ing by re-solving pitch and roll, avoiding unnecessary re-orientation (Sec. IV-D). 
+
+A. Sensor Fusion and Semantic Mapping 
+
+The intrinsics of fisheye cameras are calibrated with the unified spherical camera model, and the extrinsics between LiDAR and the two fisheye lenses are calibrated follow-ing [25]. The LiDAR point cloud and camera RGB images are thus fused given their extrinsics and intrinsics, yielding a LiDAR depth image registered to each camera frame. Instance segmentation [26] runs on the fisheye images with a valid detection range of dmax . Given the instance mask and LiDAR depth image, the point cloud associated with the target object can be extracted. The details of semantic mapping are provided in [5], which merges detections into object-centric voxel models with per-sector key-frame statis-tics. Every object o exposes its centroid co, its box size so,and a dense point cloud registered in the object model. Viewing frustum   
+
+> Object bbox
+> VP Candidate
+> Object voxel
+
+(a)     
+
+> Candidate visibility score S(deg 2)Tilted ( -30° , -20° ): G = 801
+> Flat ( 0° , 0° ): G_0 = 168
+
+(b)  
+
+> Object cloud
+
+Fig. 3. Pose-aware semantic viewpoint sampling. (a) Candidates sampled in sector rings (dashed circles segmented by radial dashed lines) around a detected object, colored by their visibility score S. (b) Posture gain: the level band (blue) and the tilted (θ∗, ϕ ∗) (yellow) scan the inflated object box (dashed); the unknown voxels they reach give G0 and G, and the tilt is adopted only if G > G 0.
+
+B. Pose-Aware Semantic Viewpoint Sampling 
+
+This section describes how semantic inspection viewpoints are sampled around a mapped object and how each viewpoint receives its body posture. 
+
+a) Candidate generation: The space around each object is divided into Ns angular sectors. In every sector, candidates are sampled on the ray from the object centroid at a set of standoff distances D, with the base yaw facing the object, as Fig. 2(c) illustrates. Candidates with colliding footprints or without valid connecting paths are removed. A sector is retired once the robot has visited one of its candidates. 
+
+b) Visibility score: Each remaining candidate receives a visibility score S(v): the mapped voxels of the object are ray cast from the candidate, and S(v) is the panoramic area of the visible ones. Candidates being occluded or S(v) below a minimum area Smin are discarded. The other candidates are kept for the pruning stage of Sec. IV-C. 
+
+c) Posture selection: As shown in Fig. 2(c), each candidate also carries a body pitch and roll, chosen on a discrete grid Θ × Φ that includes the level gaze and whose extreme values are the body limits θmax and ϕmax . The gain of a posture is the number of unknown voxels inside an inflated object box Bo that the tilted sensor band reaches (Fig. 3(b)). The object bounding box is expanded by δb to include potentially unmapped regions. The resulting posture gain is denoted by G(v, θ, ϕ ), which counts unique unknown voxels within Bo reached by rays cast through the sensor FOV at posture (θ, ϕ ) with the maximum ray-cast range 
+
+ρmax . The selected posture of the candidate is 
+
+(θ∗, ϕ ∗) = arg max  
+
+> (θ,ϕ )∈Θ×Φ
+
+G(v, θ, ϕ ), (2) and it is adopted only if G(v, θ ∗, ϕ ∗) exceeds the posture gain at level-gaze G0 = G(v, 0, 0) .The candidates with posture (e.g., white spheres in Fig. 2(c)) will be provided to VLM for pruning in Sec. IV-C. 
+
+C. Object-Centric VLM-Assisted Viewpoint Pruning 
+
+For semantic target observation, visiting each sector’s best viewpoint can introduce redundancy, as accumulated views may already cover regions visible from unvisited sectors. Summary of Prompt: Select inspection viewpoints for one object so a ground robot's range sensor (FOV +/-22.5 deg, tilt +/-30 deg) can 3D-scan all of it, especially the top. Object: machine ~3.7 m tall, mapped height 3.3 m and growing. Sectors: [1,255,0,0,0,0,0,255] (0 unseen, 1 seen, 255 unreachable). IMG (map crop, numbered candidates), IMG, IMG, IMG (photos; green = already scanned).  
+
+> Candidates: #3 sec 2, 3 m, top@-30 4.6 m; #6 sec 4, 4 m, top@-30 5.2 m; ... Task: keep <= 3 (one per sector); prune only fully green sectors; if more than half green, keep at
+> most one and set done. JSON.
+
+(c)   
+
+> Viewpoint
+> Candidate
+> Robot Odom
+> Location
+> Gray Voxel – Unknown
+> White Voxel – Free
+> Black Voxel – Occupied
+> In BEV map (a):
+> In RGB img (b):
+> Green tint:
+> Mapped object voxels
+
+(a)  (b) 
+
+Fig. 4. One consult input of a VLM session, with example values from a real run. (a): The top-down map crop around the object with its mapped voxels and the numbered candidates. (b): The first-person sector images. (c): The candidate table (sector, standoff, object height reached at each tilt angle, visibility score, sector state) and the filled text prompt. 
+
+Deciding which visits remain useful needs interpreting the accumulated visual observations along with candidate view-ing capabilities. POSE thus selects the necessary viewpoints with postures with the assistance of VLM. It maintains a per-object session, which is a persistent asynchronous dialog that follows the accumulation of observations of the object and returns keep-only verdicts on its candidate set Vo. The session issues two kinds of calls: consults, which return verdicts, and heartbeats, in which a lightweight model checks between consults whether the current verdict still holds. 
+
+a) Inputs: Inputs are generated from real-time mapping (Fig. 2(b)). A fixed text template is filled at consult time with the sensor geometry, the object class and its mapped history, the observation state of each sector, previous consult records and the candidate table. Fig. 4 shows one filled instance. Each consult includes up to three images (Fig. 4(b)). Mapped object voxels are re-projected onto the sector images as a tint to indicate observed regions. The candidate table lists the object height each tilted sensor band would reach, helping the model identify unscanned regions and candidates that can observe them. Note that the height is estimated online by given parameters and sensor measurement. The prompt asks the model to retain candidates that cover untinted regions and unseen sectors, and to prune redundant ones. Heartbeats use only the top-down map and the text prompt. 
+
+b) Output: The response is a JSON with the kept candidates, a confidence score, a one-sentence reason, and a done flag. An example reply reads: 
+
+{"keep": [3], "confidence": 0.76, "reason": "...a single farther viewpoint that can reach above 4 m is enough to finish the top coverage.", "done": true }
+
+A guardrail in the prompt counters the tendency of the model to request more views: once an object is mostly tinted, it is declared done with at most one further candidate. The Algorithm 1 Object-Centric VLM session (one tick) 
+
+Input: η ∈ {OBSERVING , CONSULTING , MONITORING ,
+
+> CLOSED
+
+}, last verdict ν 
+
+> 1:
+
+cacheObservations() ▷ crops, map crop, candidate table  
+
+> 2:
+
+if η = OBSERVING and lastConsultPassed( Tc) then  
+
+> 3:
+
+consultVLM(); η ← CONSULTING ▷ asynchronous  
+
+> 4:
+
+else if η = CONSULTING and replyReady() then  
+
+> 5:
+
+ν ← parseVerdict(); publish( ν); η ← MONITORING 6: else if η = CONSULTING and apiFailed() then  
+
+> 7:
+
+waitSec(120); η ← CONSULTING 8: else if η = MONITORING then  
+
+> 9:
+
+status ← heartbeat()  
+
+> 10:
+
+if status ̸ = ok or newObjectDetected() then  
+
+> 11:
+
+η ← OBSERVING 12: if objectIdle() then η ← CLOSED 13: planner: Vo ← keep( ν) if ACCEPT (ν, o ) else fallback() posture is not part of the verdict and remains the geometric choice of Eq. 2. 
+
+c) Receding-horizon session: The session works in a receding-horizon manner. Each verdict selects semantic viewpoint candidates for one object and is reassessed as the robot moves. Algorithm 1 shows one tick. A consult is called only in OBSERVING state (Line 11) and the previous consult is passed by period Tc (Line 2). The call is asynchronous, so the planner keeps running on the previous verdict. Between consults, each heartbeat asks whether the kept candidates still being informative on the updated map. Response other than ”ok” push back to OBSERVING state (Line 11). Each verdict expires after a lifetime Tttl or when the object centroid drifts beyond a tolerance. The planner then fallbacks to geometric default candidates (Line 13), which is the best viewpoint in each sector (Sec. IV-B(c)). If no consult is called after n periods, the session is marked IDLE (Line 12). The prompt in Fig. 4(c) carries the previous verdicts and the consult count, so context persists across ticks. 
+
+D. Aim-Aligned Posture Execution 
+
+For an ideal z-axis symmetric omnidirectional Camera-LiDAR suite, different body orientations can produce the same FOV if the sensor position and scan-band axis remain unchanged. POSE sample a pre-defined candidate yaw angles set, choose the smallest feasible yaw adjustment such that the target scan-band orientation of sensor can be reached. In this way, POSE reduces unnecessary turning angle during posture execution. With body axes pointing forward, left, and upward, we use 
+
+R(ψ, θ, ϕ ) = Rz (ψ)Ry (θ)Rx(ϕ). The sampled viewpoint 
+
+v = ( x, y, ψ vp , θ ∗, ϕ ∗), whose heading ψvp faces the target, defines the world-frame band axis 
+
+n∗ = R(ψvp , θ ∗, ϕ ∗)ez , (3) where ez = (0 , 0, 1) ⊤. POSE preserves this scan-band axis during execution, allowing the body roll, pitch, and yaw to change. For a candidate heading ψ, POSE expresses this axis as m(ψ) = Rz (−ψ)n∗ and recovers: 
+
+ϕ(ψ) = − arcsin my (ψ), θ (ψ) = atan2  mx(ψ), m z (ψ).
+
+(4) This recovery is exact within |θ|, |ϕ| < π/ 2.Let ψ0 be the robot’s heading upon arrival at the target viewpoint. The corresponding yaw adjustment is β0 =wrap [−π,π )(ψvp − ψ0). POSE searches for the smallest absolute yaw adjustment that reproduces the sampled scan-band axis within the pitch and roll limits. The candidate adjustments are 
+
+Dψ = {kδ ψ : k ∈ Z, |kδ ψ | ≤ | β0|} ∪ { β0}, (5) where δψ is the search step. The selected adjustment is 
+
+∆ψ∗ = arg min 
+
+> ∆ψ∈D ψ
+
+|∆ψ|,
+
+s.t. |θ(ψ0 + ∆ ψ)| ≤ θmax ,
+
+|ϕ(ψ0 + ∆ ψ)| ≤ ϕmax .
+
+(6) Candidates are checked in increasing absolute rotation, start-ing from zero and searching both directions. if the search fails, the original target-facing turn β0 provides a feasible fallback which satisfies the limits by construction. At the selected heading ψ∗ = ψ0+∆ ψ∗, the robot executes the roll–pitch–yaw command (ϕ(ψ∗), θ (ψ∗), ψ ∗) and holds it for observation. 1
+
+E. Exploration Planning 
+
+The preceding modules generate posture-aware semantic inspection viewpoints. To complement them with volumetric coverage, we sample geometric exploration candidates in active frontier regions and connect them to the path-searching graph, following [5]. For each candidate, a path P =(n1, . . . , n K ) from the robot to the candidate is evaluated by 
+
+r(P ) = 
+
+PKj=1 γK−j g(nj )
+
+L(P )/u , (7) where K is the number of path nodes, nj is the j-th node, and nK is the candidate viewpoint. The gain g(nj ) estimates observable unknown space by ray casting, γ ∈ (0 , 1] dis-counts earlier nodes, and L(P )/u estimates travel time from path length L(P ) and nominal speed u. Intermediate gains are evaluated at spatially separated locations for efficiency. Candidates are processed in descending reward order and retained only if they provide sufficient additional coverage. Geometric exploration and retained semantic inspection viewpoints form a TSP following [5]. The resulting tour is executed through local paths with periodic replanning in a receding-horizon manner. The execution state machine permits planning into unknown space, validates local paths against updated observations, and triggers re-planning or backward recovery when execution is blocked. 
+
+> 1The yaw change could shift the sensor origin by a fraction of the mounting offset, which is negligible at the standoff distances used, and the object stays within the omnidirectional camera coverage.
+
+TABLE I SUMMARY OF KEY PARAMETERS 
+
+Parameter Value 
+
+Θ (pitch grid) {− 30 , −15 , 0, 15 , 30 }◦
+
+Φ (roll grid) {− 20 , 0, 20 }◦
+
+Ns (number of sectors) 8
+
+D (standoff distances) {3, 4, 5} m (real: {1.2, 1.8, 2.4} m) 
+
+dmax (detection range) 6.0 m (real: 3.5 m) 
+
+ρmax (ray-casting range) 8.0 m (real: 3.5 m) 
+
+Smin 10 3 px 2
+
+δb 0.5 m Candidates retained per verdict ≤ 3 (real: ≤ 5)VLM (consult; heartbeat) GPT-5.4; GPT-5.4 mini 
+
+u 1.2 m/s (real: 0.8 m/s) 
+
+ω 0.6 rad/s (real: 0.5 rad/s) 0 200 400 600 800 1000 1200 0.0 0.2 0.4 0.6 0.8 1.0                                     
+
+> object surface cov.
+> Warehouse
+> SEDEM (AUC 0.55) SEDEM-5DoF (AUC 0.50) VLM-at-Arrival (AUC 0.49) POSE (AUC 0.70)
+> 0200 400 600 800 1000 1200 0.0 0.2 0.4 0.6 0.8 1.0
+> scene cov.
+> SEDEM (AUC 0.69) SEDEM-5DoF (AUC 0.61) VLM-at-Arrival (AUC 0.60) POSE (AUC 0.74)
+> 0100 200 300 400 500 600 700 800 0.0 0.2 0.4 0.6 0.8 1.0
+> object surface cov.
+> Factory A
+> SEDEM (AUC 0.58) SEDEM-5DoF (AUC 0.60) VLM-at-Arrival (AUC 0.52) POSE (AUC 0.68)
+> 0100 200 300 400 500 600 700 800 0.0 0.2 0.4 0.6 0.8 1.0
+> scene cov.
+> SEDEM (AUC 0.79) SEDEM-5DoF (AUC 0.77) VLM-at-Arrival (AUC 0.70) POSE (AUC 0.83)
+> 0100 200 300 400 500 600 700
+> time [s]
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> object surface cov.
+> Factory B
+> SEDEM (AUC 0.56) SEDEM-5DoF (AUC 0.57) VLM-at-Arrival (AUC 0.48) POSE (AUC 0.63)
+> 0100 200 300 400 500 600 700
+> time [s]
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> scene cov.
+> SEDEM (AUC 0.80) SEDEM-5DoF (AUC 0.75) VLM-at-Arrival (AUC 0.66) POSE (AUC 0.82)
+
+Fig. 5. Object-surface (left) and scene (right) coverage over time in Warehouse, Factory A, and Factory B (top to bottom). Curves are means over valid runs with ±1σ bands. The time axis extends to T , the longest run end among all runs of the scene. Methods finishing earlier are held at their final coverage. Legend entries give the mean per-run object and scene coverage AUC over [0 , T ], as in Table I. 
+
+V. E XPERIMENTS 
+
+A. Implementation Details 
+
+Simulation experiments use a kinematic Boston Dynamics Spot model in Isaac Sim with a LiDAR covering 360 ◦
+
+horizontally and ±22 .5◦ vertically, and two fisheye cameras whose images are combined into a panorama. Real-world ex-periments use a Spot with an Ouster OS-1 LiDAR matching the simulated configuration and an Insta360 camera, contain-ing of two fisheye lens with a 210 ◦ FOV. All computation runs on a ROG NUC mini PC with an Intel Core Ultra 9 CPU and an NVIDIA RTX 4070 GPU. For real-world perception, YOLOv8 [26] provides instance segmentation and FAST-LIO2 [27] provides real-time dense mapping. The pruning module accesses VLM inference asynchronously through an API. Table I summarizes the key planning parameters, shared by simulation and real-world experiments unless a real-world value is given in parentheses. 
+
+B. Simulation Experiments 
+
+We evaluate the planner through benchmark comparisons and ablation studies in three industrial environments: Ware-house, Factory A, and Factory B. The warehouse covers a 
+
+39 × 57 m floor with seven forklifts about 3.9 m tall, parked in narrow aisles. Factory A covers 30 × 30 m with three forklifts and two stacked crates, all about 4.0 m tall. Factory B covers 36 × 25 m with two machines and two forklifts of about 4.0 m. In every scene, the target tops lie above the level sensor band at the permitted standoffs. Ground-truth instance segmentation is provided to isolate planning performance from segmentation errors. All methods share the same semantic mapping pipeline and termination criteria. A run ends when scene coverage exceeds 90% and grows by less than 0.1 points over a 30 s window, or when the time limit of 1200 s is reached. For finished runs, the effective terminal is the start of the final 30 s window, and all metrics use data up to this cutoff. For timeouts, the cutoff is the time limit. 
+
+1) Benchmark: We compare POSE with three baselines. SEDEM [5] is a recent legged-robot semantic exploration planner using planar viewpoints. SEDEM-5DoF extends SE-DEM with posture-aware viewpoints: it samples the same candidates, selects the pose with the highest unknown-voxel gain without inflating the object bounding box (Sec. IV-B), and faces the object during posture execution. VLM-at-Arrival applies a naive VLM-based viewpoints posture se-lection method and follows the same exploration framework without viewpoint pruning; It captures the panoramic image, and asks the VLM, the same consult model as POSE, for the best viewpoints with postures selections. We report six valid runs per method in each scene, including timeouts. We use normalized AU C o as the primary metric for the trade-off between object-surface coverage and time. For each run, the AU C o is the area under its object-surface coverage curve (Fig. 5, left) on [0 , T ] divided by T , where the common horizon T is the longest run duration among all methods compared in the same scene. Shorter runs hold their terminal coverage until T . Higher AU C o means more coverage achieved earlier. Fig. 5 shows object-surface and scene coverage over time, and Tables II and III report the mean ± standard deviation over valid runs. We also report effective exploration time teff , effective travel distance Leff ,posture executions Npost , object-surface coverage Co, scene coverage Cs, and VLM token usage in thousands. With the notation of Sec. III, 
+
+Co(t) = 
+
+P
+
+o∈O |S o(t)|
+
+P
+
+o∈O |S ∗
+
+o | , Cs(t) = |Vfree (t) ∪ Vocc (t)||V | .
+
+(8) Here, O, V and S∗
+
+o are obtained from ground truth. The effective time and distance are the elapsed time and the travel distance at the effective terminal defined above. In Table II, POSE achieves the highest mean AU C o, the lowest effective exploration time, and the shortest travel distance in every scene. Compared with SEDEM, it improves the final object-surface coverage by 8–10 percentage points while reducing effective exploration time by 17–32%, with scene coverage unchanged. Compared with the two posture-aware baselines, it reaches comparable object coverage in 35–48% less time than SEDEM-5DoF and 46–62% less TABLE II SEMANTIC EXPLORATION BENCHMARK OVER THREE SCENES 
+
+Scene Method AU C o ↑ teff [s] ↓ Leff [m] ↓ Npost Co ↑ Cs ↑ Tokens [k] Warehouse SEDEM 0.55 ± 0.03 812 ± 225 600 ± 137 0.0 ± 0.0 0.79 ± 0.01 0.92 ± 0.01 –SEDEM-5DoF 0.50 ± 0.18 950 ± 152 563 ± 149 35.3 ± 13.6 0.88 ± 0.03 0.84 ± 0.20 –VLM-at-Arrival 0.49 ± 0.07 1130 ± 110 566 ± 97 34.5 ± 4.5 0.85 ± 0.06 0.89 ± 0.09 60.4 ± 7.5 POSE 0.70 ± 0.05 614 ± 124 432 ± 80 16.3 ± 3.0 0.89 ± 0.03 0.92 ± 0.02 28.8 ± 4.1 
+
+Factory A SEDEM 0.58 ± 0.01 415 ± 102 261 ± 73 0.0 ± 0.0 0.72 ± 0.01 0.92 ± 0.00 –SEDEM-5DoF 0.60 ± 0.03 545 ± 100 230 ± 42 42.7 ± 6.7 0.85 ± 0.08 0.95 ± 0.02 –VLM-at-Arrival 0.52 ± 0.03 750 ± 67 229 ± 32 41.8 ± 3.4 0.82 ± 0.06 0.93 ± 0.02 72.4 ± 6.4 POSE 0.68 ± 0.03 283 ± 46 174 ± 21 12.2 ± 2.0 0.81 ± 0.03 0.93 ± 0.01 17.7 ± 2.7 
+
+Factory B SEDEM 0.56 ± 0.03 352 ± 95 222 ± 65 0.0 ± 0.0 0.67 ± 0.02 0.92 ± 0.01 –SEDEM-5DoF 0.57 ± 0.03 475 ± 81 199 ± 34 33.2 ± 3.8 0.77 ± 0.05 0.95 ± 0.02 –VLM-at-Arrival 0.48 ± 0.02 627 ± 97 226 ± 32 31.3 ± 6.1 0.77 ± 0.05 0.94 ± 0.01 54.4 ± 10.2 POSE 0.63 ± 0.03 292 ± 52 173 ± 20 9.0 ± 0.9 0.75 ± 0.02 0.93 ± 0.02 16.5 ± 5.2 (a) Warehouse  (b) Factory A  (c) Factory B SEDEM SEDEM-5DoF            
+
+> VLM-at-Arrival POSE SEDEM SEDEM-5DoF
+> VLM-at-Arrival POSE SEDEM SEDEM-5DoF
+> VLM-at-Arrival POSE SEDEM SEDEM-5DoF
+> VLM-at-Arrival POSE SEDEM SEDEM-5DoF
+> VLM-at-Arrival POSE SEDEM SEDEM-5DoF
+> VLM-at-Arrival POSE
+
+Fig. 6. Top-down trajectories of the run with median final object-surface coverage for each method, in Warehouse, Factory A, and Factory B (left to right). Black squares mark target objects; red stars mark executed postures. The bottom row images are screenshots of every scene. 
+
+time than VLM-at-Arrival with 53–73% fewer postures, which indicates the effectiveness of our selective posture observation. SEDEM-5DoF attains 2–4 points higher final coverage in Factory A and B, but at two to four times the postures and 35–48% more time. POSE also uses 52– 76% fewer VLM tokens than VLM-at-Arrival. Fig. 6 shows trajectories and posture locations. 
+
+2) Ablation Study: We evaluate three ablation variants with all other components unchanged: w/o VP disables VLM-assisted viewpoint pruning, w/o PS disables viewpoint posture selection, and restricts all viewpoints to level-body configurations, and w/o AA disables aim-aligned execution. Thus the robot must face the object before tilting. POSE achieves the highest mean AU C o in all scenes. Compared with w/o VP, pruning reduces posture executions by 55– 68% and effective exploration time by 20–38% at the best or comparable object coverage, which confirms the effec-tiveness of VLM-assisted pruning. Compared with w/o PS, POSE improves final object coverage by 10–12 percentage points and AU C o by 0.09–0.14, so pose-aware sampling is what raises surface coverage. Compared with w/o AA, aim-aligned execution saves 3–13% of effective time and raises 
+
+AU C o by 0.03–0.07 in every scene; the time differences are within one standard deviation but consistent in sign. 
+
+C. Real-world Experiments 
+
+We deploy POSE in a machine-shop laboratory (Fig. 1(e)) measuring about 11 .7 × 18 × 3 m with five machines selected as semantic targets: an engine lathe, two turret milling machines, a vertical band saw and a horizontal band saw, with maximum height around 2.5 m. Multiple runs are conducted, while Fig. 1 presents a representative run. The supplementary video presents an additional real-world run, illustrating more details about posture execution and the resulting object-map updates. During exploration, Spot selects semantic inspection view-TABLE III ABLATION STUDY OVER THREE SCENES 
+
+Scene Method AU C o ↑ teff [s] ↓ Npost Co ↑
+
+Warehouse POSE 0.70 ± 0.05 614 ± 124 16.3 ± 3.0 0.89 ± 0.03 
+
+w/o VP 0.61 ± 0.02 830 ± 159 36.5 ± 5.2 0.89 ± 0.03 
+
+w/o PS 0.56 ± 0.03 684 ± 92 0.0 ± 0.0 0.78 ± 0.02 w/o AA 0.63 ± 0.05 634 ± 67 15.3 ± 2.4 0.86 ± 0.02 Factory A POSE 0.68 ± 0.03 283 ± 46 12.2 ± 2.0 0.81 ± 0.03 w/o VP 0.64 ± 0.03 455 ± 81 37.8 ± 3.7 0.85 ± 0.04 
+
+w/o PS 0.59 ± 0.03 278 ± 43 0.0 ± 0.0 0.69 ± 0.03 w/o AA 0.65 ± 0.02 319 ± 73 12.8 ± 1.5 0.79 ± 0.02 Factory B POSE 0.63 ± 0.03 292 ± 52 9.0 ± 0.9 0.75 ± 0.02 
+
+w/o VP 0.59 ± 0.05 366 ± 61 26.5 ± 7.0 0.74 ± 0.08 w/o PS 0.53 ± 0.04 307 ± 93 0.0 ± 0.0 0.65 ± 0.01 w/o AA 0.60 ± 0.07 300 ± 54 9.3 ± 1.5 0.74 ± 0.04 
+
+points and adjusts its body posture to observe the upper surface of tall machines. Fig. 1(a) shows an upward-tilted observation, while Fig. 1(b) displays the corresponding robot pose and the reconstructed object point cloud in RViz. Fig. 1(c) shows the raw image from the front fisheye camera. The run takes 209.7 s and a travel distance of 44.9 m, with five tilted postures executed at semantic viewpoints. As shown in Fig. 1(d), all five target machines are detected and reconstructed along with a dense background point cloud, and the red spheres with frustums show the history of inspection postures. VI. CONCLUSIONS We presented POSE, a semantic exploration system that selectively exploits the body pitch and roll of a legged robot to improve object-surface coverage in confined, unknown en-vironments. It integrates geometric posture selection, object-centric VLM-assisted viewpoint pruning, and aim-aligned execution into a global exploration planning framework. In three simulated industrial scenes, POSE improves object-surface coverage by 8–10 percentage points over the pla-nar baseline while reducing exploration time by 17–32%, and achieves the highest mean coverage AU C o with 53– 73% fewer postures than the two posture-aware baselines. Real-world experiments demonstrate its deployability. These results support selective posture planning for improving the coverage–efficiency trade-off in legged semantic exploration. REFERENCES [1] B. Yamauchi, “A frontier-based approach for autonomous exploration,” in IEEE International Symposium on Computational Intelligence in Robotics and Automation (CIRA) , 1997, pp. 146–151. [2] A. Bircher, M. Kamel, K. Alexis, H. Oleynikova, and R. Siegwart, “Receding horizon “next-best-view” planner for 3d exploration,” in 
+
+IEEE International Conference on Robotics and Automation (ICRA) ,2016, pp. 1462–1468. [3] C. Cao, H. Zhu, H. Choset, and J. Zhang, “TARE: A hierarchical framework for efficiently exploring complex 3d environments,” in 
+
+Robotics: Science and Systems (RSS) , 2021. [4] T. Dang, M. Tranzatto, S. Khattak, F. Mascarich, K. Alexis, and M. Hutter, “Graph-based subterranean exploration path planning using aerial and legged robots,” Journal of Field Robotics , vol. 37, no. 8, pp. 1363–1388, 2020. [5] X. Zhan, S. Zhou, Q. Yang, Y. Zhao, H. Liu, S. C. Ramineni, and K. Shimada, “Semantic exploration and dense mapping of complex environments using ground robot with panoramic lidar-camera fusion,” 
+
+IEEE Robotics and Automation Letters , vol. 10, no. 11, pp. 11 196– 11 203, 2025. [6] Y. Luo, Z. Zhuang, N. Pan, C. Feng, S. Shen, F. Gao, H. Cheng, and B. Zhou, “Star-searcher: A complete and efficient aerial system for autonomous target search in complex unknown environments,” IEEE Robotics and Automation Letters , vol. 9, no. 5, pp. 4329–4336, 2024. [7] S. Papatheodorou, N. Funk, D. Tzoumanikas, C. Choi, B. Xu, and S. Leutenegger, “Finding things in the unknown: Semantic object-centric exploration with an mav,” in 2023 ICRA , 2023, pp. 3339–3345. [8] M. F. Ginting, D. D. Fan, S.-K. Kim, M. J. Kochenderfer, and A.-A. Agha-Mohammadi, “Semantic belief behavior graph: Enabling autonomous robot inspection in unknown environments,” in 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2024, pp. 7604–7610. [9] C. Tatsch and Y. Gu, “Sge: Semantically-guided exploration for unstructured environments via image-space waypoint sampling,” 2026. [Online]. Available: https://arxiv.org/abs/2608.29315 [10] H. Zheng, Z. Chen, Y. Huang, H. Liu, J. Wang, M. Yang, and T. Qin, “TravExplorer: Cross-floor embodied exploration via traversability-aware 3-D planning,” arXiv:2605.19958, 2026. [11] N. Yokoyama, S. Ha, D. Batra, J. Wang, and B. Bucher, “VLFM: Vision-language frontier maps for zero-shot semantic navigation,” in 
+
+IEEE International Conference on Robotics and Automation (ICRA) ,2024. [12] A. Zacharia, M. Dharmadhikari, M. Singh, and K. Alexis, “Omniplan-ner: Universal exploration and inspection path planning across robot morphologies,” arXiv:2603.04284, 2026. [13] B. Zhou, Y. Zhang, X. Chen, and S. Shen, “FUEL: Fast UAV explo-ration using incremental frontier structure and hierarchical planning,” 
+
+IEEE Robotics and Automation Letters , vol. 6, no. 2, pp. 779–786, 2021. [14] H. Zhu, C. Cao, Y. Xia, S. Scherer, J. Zhang, and W. Wang, “DSVP: Dual-stage viewpoint planner for rapid exploration by dynamic ex-pansion,” in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2021, pp. 7623–7630. [15] Y. Zhang, X. Chen, C. Feng, B. Zhou, and S. Shen, “Falcon: Fast autonomous aerial exploration using coverage path guidance,” IEEE Transactions on Robotics , vol. 41, pp. 1365–1385, 2025. [16] T. Dang, C. Papachristos, and K. Alexis, “Autonomous exploration and simultaneous object search using aerial robots,” in 2018 IEEE Aerospace Conference , 2018, pp. 1–7. [17] X. Hou, Z. Pan, H. Lan, Z. Zou, Y. Chen, C. Zhu, Y. Lyu, J. Hu, and C. Zhao, “Slider: Sparse history-guided aerial robot target search using sliding local maps,” IEEE Robotics and Automation Letters , vol. 11, no. 9, pp. 10 617–10 624, 2026. [18] M. Dharmadhikari and K. Alexis, “Semantics-aware exploration and inspection path planning,” in 2023 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2023, pp. 3360–3367. [19] B. Hu, C. Chang, J. Ge, M. Namgung, X. Lin, A. Krieger, and T. Mohsenin, “OA-NBV: Occlusion-aware next-best-view plan-ning for human-centered active perception on mobile robots,” arXiv:2603.11072, 2026. [20] Y. Wang, M. Ramezani, and M. Fallon, “Actively mapping indus-trial structures with information gain-based planning on a quadruped robot,” in IEEE International Conference on Robotics and Automation (ICRA) , 2020. [21] H. Zhang, Y. Wang, W. Zhang, Y. Wang, and H. Chen, “Heats: A hierarchical framework for efficient autonomous target search with mobile manipulators,” in 2025 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2025, pp. 14 371–14 378. [22] V. Sripada, S. Carter, F. Guerin, and A. Ghalamzan, “Scene exploration by vision-language models,” arXiv:2409.17641, 2024. [23] T. Xu, S. Gan, L. Gu, Y. Li, F. Zhan, and H. Pfister, “AREA3D: Active reconstruction agent with unified feed-forward 3D perception and vision-language guidance,” in IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2026. [24] J. Yang, Y. Han, Y. Xie, N. Guo, and W. Lian, “Look, zoom, understand: The robotic eyeball for embodied perception,” arXiv:2511.15279, 2025. [25] K. Koide, S. Oishi, M. Yokozuka, and A. Banno, “General, single-shot, target-less, and automatic LiDAR-camera extrinsic calibration toolbox,” in IEEE International Conference on Robotics and Automa-tion (ICRA) , 2023. [26] G. Jocher, “Yolov8: Ultralytics yolov8 repository,” https://github.com/ ultralytics/yolov8, 2023, accessed: 2025-02-16. [27] W. Xu, Y. Cai, D. He, J. Lin, and F. Zhang, “Fast-lio2: Fast direct lidar-inertial odometry,” IEEE IEEE Trans. Robot. , vol. 38, no. 4, pp. 2053–2073, 2022.
