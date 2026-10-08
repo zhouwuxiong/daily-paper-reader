@@ -1,0 +1,972 @@
+Title: Observability Analysis and Online Calibration of Visual-Inertial-Wheel Odometry for 4WIS4WID Mobile Robots
+
+URL Source: https://arxiv.org/pdf/2609.38462v1
+
+Published Time: Thu, 01 Oct 2026 00:18:45 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# Observability Analysis and Online Calibration of Visual-Inertial-Wheel Odometry for 4WIS4WID Mobile Robots 
+
+Branimir ´ Caran 1, Vladimir Mili´ c1, Bojan ˇ Sekoranja 1, Bojan Jerbi´ c1,2
+
+> This work has been submitted to the IEEE for possible publication. Copyright may be transferred without notice, after which this version may no longer be accessible.
+
+Abstract —In this paper, we present a visual-inertial-wheel odometry (VIWO) framework with online calibration for four-wheel independently steered and driven (4WIS4WID) mobile robots. We derive a 2D odometry model directly from the four driving velocities and steering angles, using both the longitudinal rolling constraints and the lateral no-slip constraints of all wheels. A preintegration model and analytical Jacobians are developed for efficient filtering and calibration. An observability analysis of the linearized VIWO system shows that a drive-only model makes all steering offsets unobservable, whereas the proposed redundant model restores their observability. The analysis also identifies four standard VINS unobservable directions and three additional directions associated with the arbitrary placement of the odometry reference frame. Furthermore, we characterize several degenerate motions, including zero yaw rate, constant steering, and a non-rolling wheel, and derive the corresponding excitation conditions for the thirteen wheel intrinsics that remain after fixing the odometry frame reference. The performance of the proposed system has been demonstrated in both simulation and real-world experiments on a 4WIS4WID mobile robot. 
+
+I. INTRODUCTION Mobile robots with 4WIS4WID kinematics combine the terrain capabilities of conventional wheels with omnidirec-tional planar motion. They have found applications in au-tonomous vehicles [1], service robotics [2], logistics [3] and inspection [4]. Unlike differential drive, Ackermann, and skid-steering platforms, independent steering allows the instanta-neous center of rotation (ICR) to be placed arbitrarily in the plane [5], enabling lateral motion, tight turning, and contin-uous reconfiguration of the wheel constraint directions [6]. Fig. 1 shows the resulting wheel geometry and the per-wheel decomposition of the contact-point velocity. This maneuverability comes at the cost of substantially increased kinematic complexity. The considered 4WIS4WID model contains sixteen intrinsic parameters: four wheel radii, eight wheel positions and four steering angle offsets [7]. This is considerably more than in commonly studied wheeled platforms such as differential drive, Ackermann, and skid-steering robots [8] and introduces additional calibration and observability challenges when wheel measurements are tightly coupled with visual and inertial sensing. Wheel encoders are commonly fused with visual-inertial odometry (VIO) to improve state estimation for ground robots. Wu et al. [9] incorporated wheel measurements together               
+
+> 1Authors are with Faculty of Mechanical Engineering and Naval Arhitecture, University of Zagreb, Zagreb, 10000, Croatia
+
+branimir.caran@fsb.unizg.hr        
+
+> 2Bojan Jerbic is with Croatian Academy of Sciences and Arts, Zagreb, 10000, Croatia 𝜔 1
+> 𝐩 1
+> 𝛿 1
+> {𝑂}
+> 𝑥 𝑜
+> 𝑦 𝑜
+> 𝐩 2
+> 𝛿 2
+> 𝐩 3
+> 𝛿 3
+> 𝜔 3
+> 𝜔 4
+> 𝐩 4𝛿 4
+> 𝜔 2
+> 𝑧 𝐼 𝑥 𝐼 𝑥 𝐶
+> 𝑧 𝐶
+> {𝐶}
+> 𝑂 𝒑 𝐼
+> 𝐼 𝒑 𝑪
+> {𝐼} 𝐝 1
+> 𝐮 1
+> 𝐼𝐶𝑅
+> Fig. 1. 4WIS4WID mobile robot where each wheel iis independently steered by δiand driven at ωdi, so the ICR may be placed anywhere in the plane.
+
+with planar and non-holonomic constraints into a sliding-window estimator, showing that proprioceptive odometry can resolve the scale ambiguity arising under constant acceleration motion. Zhang et al. [10] formulated the motion manifold of non-holonomic ground robots parametrically, enabling 6 DoF state estimation from inherently planar wheel measure-ments. Optimization based VIWO formulations have also been proposed [11], incorporating wheel measurements into sliding-window optimization with initialization and extrinsic calibration. These approaches generally assume a fixed and known wheel kinematic model. Since wheel parameters may vary due to tire wear, load changes, pressure variation, and mechani-cal inaccuracies, several works have considered their online estimation together with the navigation state. Martinelli [12] analysed the observability of wheel intrinsics and planar sensor extrinsics and identified degenerate motion conditions, while Censi et al. [13] studied simultaneous calibration of wheel odometry and sensor parameters and characterized motions under which these parameters are observable. Lee et al. [14] derive a 2D wheel odometry measurement model directly from raw encoder readings, preintegrate it between camera clones, and jointly estimate the wheel radii, baseline length, and odometry-IMU spatiotemporal extrinsics within a Multi-State Constraint Kalman Filter (MSCKF). Their observability analysis identifies several degenerate motions for the calibration parameters. Related formulations have consid-ered different kinematic structures and sensing modalities. Zuo et al. [15] model skid-steering platforms through ICR and estimate time and terrain varying ICR parameters online, while arXiv:2609.38462v1 [cs.RO] 29 Sep 2026 tightly coupled LiDAR-IMU-wheel formulations with online kinematic calibration have also been investigated [16]. Observability analysis determines which states and calibra-tion parameters can be recovered from the available measure-ments and is fundamental to consistent estimator design [17], [18]. For VIO systems, Hesch et al. [17] established the four standard unobservable directions corresponding to global position and rotation about gravity. Yang et al. [19] extended this analysis to full sensor self-calibration, showing that VINS with complete calibration of IMU and camera intrinsics and spatiotemporal extrinsics retains these four unobservable direc-tions under sufficiently exciting motion. Related observability analyses have been presented for aided inertial navigation with heterogeneous geometric features [20], differential drive VIWO [14], skid-steering systems [15], and optimization-based formulations [11]. Existing wheel-odometry calibration and observability anal-yses primarily consider differential drive, Ackermann, or skid-steering platforms, whose ICR is constrained by the kinematic structure with a small number of parameters. 4WIS4WID plat-forms introduce sixteen intrinsic parameters and allow the ICR to move freely throughout the plane. Although 4WIS4WID robots have been extensively studied from the perspective of kinematics, dynamics, and control [21], their online calibration and observability properties remain largely unexplored. Prior work on these robots [22] presented a loosely coupled pose estimator fusing wheel odometry, visual odometry, and inertial measurements, with the kinematic parameters calibrated of-fline and subsequently held fixed. To the best of the authors’ knowledge, online calibration and observability analysis for this platform have not yet been addressed. In this work, we develop a tightly coupled VIWO frame-work with online calibration for 4WIS4WID mobile robots. The camera-IMU calibration and odometry-IMU spatial and temporal measurement models follow established VIWO for-mulations, allowing the analysis to focus on the previ-ously unexplored observability properties introduced by the 4WIS4WID kinematics and their coupling with the VIO system. The main contributions of this work are as follows:  
+
+> •
+
+We develop a preintegration based framework for on-line calibration of the 13 kinematic parameters of a 4WIS4WID robot and show that incorporating lateral no-slip constraints enables observability of the steering offsets, which remain unobservable in a drive-only model.  
+
+> •
+
+We provide an observability analysis of the 4WIS4WID kinematic model, identifying three motion independent gauge freedoms associated with the SE (2) placement of the odometry frame and characterizing motion depen-dent degeneracies that affect calibration of the remaining wheel intrinsics.  
+
+> •
+
+We validate the proposed calibration and estimation framework in simulation and real world experiments, demonstrating improved pose estimation accuracy com-pared with using fixed kinematic parameters. II. 4WIS4WID VISUAL-INERTIAL-WHEEL ODOMETRY We employ the standard Multi-State Constraint Kalman Fil-ter (MSCKF) formulation [23], consisting of the current iner-tial state xIk and a sliding window of cloned IMU poses xCk .Camera-IMU spatiotemporal calibration is assumed known. To enable online calibration of the wheel odometry, the MSCKF state is augmented with the odometry-IMU extrinsics xW E ,temporal offset O tI , and the 4WIS4WID kinematic parameters 
+
+xW I :
+
+xk = x⊤ 
+
+> Ik
+
+x⊤ 
+
+> Ck
+
+x⊤  
+
+> W E O
+
+tI x⊤
+
+> W I
+
+⊤ . (1) The inertial and cloned states are 
+
+xIk = Ik 
+
+> G
+
+¯q⊤ Gp⊤
+
+> Ik
+> G
+
+v⊤ 
+
+> Ik
+
+b⊤ 
+
+> g
+
+b⊤
+
+> a
+
+⊤ , (2) 
+
+xCk =
+
+hIk−1 
+
+> G
+
+¯q⊤ Gp⊤ 
+
+> Ik−1
+
+· · · Ik−n 
+
+> G
+
+¯q⊤ Gp⊤
+
+> Ik−n
+
+i⊤
+
+, (3) where Ik 
+
+> G
+
+¯q represents the orientation of the IMU frame {I}
+
+with respect to the global frame {G}, GpIk and GvIk are the IMU position and velocity, and bg and ba are the gyroscope and accelerometer biases. The nominal and error states are related through x = ˆ x ⊞ ˜x.IMU propagation, pose cloning, and visual feature updates follow the standard MSCKF formulation [23]. The remainder of this section derives the wheel odometry measurement model and the Jacobians required for online calibration of the 4WIS4WID-specific parameters. 
+
+A. 4WIS4WID Kinematic Model 
+
+Each wheel is equipped with steering and drive encoders providing 
+
+δmi = δi + δoi + nδi , ωmd i = ωdi + ndi , (4) where δi and ωdi are the true steering angle and drive angular velocity of wheel i, δoi is its constant steering offset, and nδi and ndi are zero-mean measurement noises. For 
+
+i = 1 , . . . , 4, these measurements constrain the planar body twist ξ = [ vx vy ω]⊤ expressed in the odometry frame {O}.Under the rigid body assumption, the velocity of the ground contact point of wheel i, expressed in the odometry frame {O},is 
+
+ui =
+
+vx − ywi ωvy + xwi ω
+
+
+
+= I2 Jpi
+
+ ξ,J =
+
+0 −11 0
+
+
+
+, pi =
+
+xwi
+
+ywi
+
+
+
+.
+
+(5) For a conventional wheel rolling without slipping, this ve-locity is constrained to lie along the rolling direction di =[cos δi sin δi]⊤ with magnitude vi = ωdi ri, giving the standard 4WIS4WID kinematic constraint ui = di vi [7]. Note that ui comprises two scalar equations per wheel: the four wheels therefore impose eight constraints on a 2 DoF planar twist. Premultiplying ui by R(δi)⊤ resolves the constraint into the wheel’s own frame and separates it into a longitudinal and a lateral component, 
+
+a⊤ 
+
+> i
+
+ξ = vi, b⊤ 
+
+> i
+
+ξ = 0 (6) 
+
+a⊤ 
+
+> i
+
+= cos δi sin δi ci
+
+ , b⊤ 
+
+> i
+
+= − sin δi cos δi ¯ci
+
+
+
+(7) 
+
+ci = −ywi cos δi + xwi sin δi, ¯ci = ywi sin δi + xwi cos δi
+
+(8) The first of (6) states that the contact-point velocity projected onto the rolling direction equals the measured wheel speed; the second states that its lateral component vanishes, i.e. the wheel does not slide sideways. Stacking (6) over the four wheels yields 
+
+
+
+ωd1 r1
+
+ωd2 r2
+
+ωd3 r3
+
+ωd4 r4
+
+04×1
+
+| {z }
+
+> ¯v
+
+= [ a1 a2 a3 a4 b1 b2 b3 b4 ]⊤
+
+| {z }     
+
+> ¯A(δ,xw,yw) = [ A;B]
+
+
+
+vx
+
+vy
+
+ω
+
+| {z } 
+
+> ξ
+
+(9) and the body twist follows in a least-squares sense as 
+
+ξ = ¯A† ¯v = ( ¯A⊤ ¯A)−1 ¯A⊤ ¯v, e⊥ = ¯ v − ¯Aξ (10) where xwi and ywi denote the position of wheel i relative to the baselink frame {O}. The residual e⊥ spans a five-dimensional subspace and quantifies the extent to which the eight encoder readings fail to be explained by any single rigid body twist, it is identically zero for a kinematically exact, slip-free configuration. The pseudo-inverse in (10) requires 
+
+¯A ∈ R8×3 to have full column rank, rank( ¯A) = 3 , so that 
+
+¯A⊤ ¯A is invertible. 
+
+Remark 1. We adopt the wheel frame form because it sepa-rates the longitudinal and lateral constraints, whose distinct roles in parameter observability are established in Section III. The first two preclude the closed-form pseudo-inverse avail-able under a symmetric layout [7], so (10) is evaluated numerically. 
+
+Remark 2. Discarding the lateral rows of (9) yields the reduced map v = Aξ, in which each wheel contributes only its rolling measurement. This reduction is exact whenever the no-slip assumption holds, and is the form implied by treating the four wheel speeds as the odometric measurements. Sec-tion III-B shows that the steering offsets become unobservable under every motion, and the reduced map loses rank under lateral motion. B. Odometry Preintegration 
+
+Wheel odometry typically runs at 200-500Hz, performing EKF update for every measurment would be computationally expensive, wheel odometry measurments are therefore preinte-grated between two consectuive camera frames at times tk and 
+
+tk+1 to obtain relative motion increasment. The increasment is expressed in the starting integration frame {Ok} and re-initialized to zero at each new frame while 2D orientation evolves continously over integration interval and this evolving yaw is what rotates the body frame velocity into the position increment. Robot velocities are then integrated from tk to tk+1 
+
+to obtain relative 2D pose measurment: 
+
+zk+1 =
+
+" Ok+1  
+
+> Ok
+
+θ 
+
+> Ok
+
+pOk+1 
+
+#
+
+=
+
+R tk+1  
+
+> tk
+> Ot
+
+ω dt 
+
+R tk+1  
+
+> tk
+
+R
+
+Ot 
+
+> Ok
+
+θ
+
+ Ot v dt 
+
+ (11) 
+
+=: g δi(k:k+1) , ωdi(k:k+1) , xW I 
+
+ (12) where Ot v = Ot vx Ot vy
+
+T , R(·) is the standard 2D rotation matrix, Oτ 
+
+> Ok
+
+θ is local yaw angle, Ok xOτ and Ok yOτ are position of {Oτ } in starting frame {Ok}.If all spatiotemporal parameters between the wheel odome-try, camera, and IMU are known, the odometry measurements introduced above can be directly incorporated into the MSCKF framework. However, in practice, mobile robot kinematic pa-rameters can vary over time due to inaccurate robot calibration, mechanical inaccuracies, and vibrations. To account for such time-varying parameters, this work performs online calibration of the 4WIS4WID robot’s intrinsic xW I and extrinsic xW E 
+
+parameters, including the kinematic parameters of the wheel odometry model and the spatial transformation between the odometry and IMU frames. The wheel odometry–IMU tem-poral offset model is adopted from [14] and is not derived here,  
+
+> O
+
+tI remains part of the filter state and is estimated online. The camera–IMU spatiotemporal calibration is assumed known. 
+
+C. Odometry Measurement with Intrinsics 
+
+The integration (12) depends on the wheel intrinsics, and should in principle be repeated whenever a new estimate becomes available which would reduce the efficiency of prein-tegration. We instead linearise the preintegrated measurement about the current estimate ˆxW I , accounting for both the linearisation error and the encoder noise, 
+
+zk+1 ≃ g δm(k:k+1) , ωmd (k:k+1) , ˆxW I 
+
+ + ∂g
+
+∂ ˜xW I 
+
+˜xW I + ∂g
+
+∂nw
+
+nw
+
+(13) with the sixteen intrinsics collected as xW I := r⊤ x⊤ 
+
+> w
+
+y⊤ 
+
+> w
+
+δ⊤
+
+> o
+
+⊤ ∈ R16 , nw collects drive, steering and lateral slip noise nτ of all subintervals in [tk, t k+1 ]. Three of these are unobservable for any motion and are fixed by convention which is established in Section III. For full-column-rank ¯A, the sensitivity of the least-squares twist ξ = ¯A† ¯v to a parameter p entering through ¯A is 
+
+∂ξ
+
+∂p = − ¯A†Dξ + ( ¯A⊤ ¯A)−1D⊤e⊥, D := ∂ ¯A∂p (14) the second term being present only because ¯A has more rows than columns; it vanishes identically for a square kinematic map. Only rows j and 4+ j of ¯A depend on the parameters of wheel j. It is therefore convenient to collect the corresponding columns of the pseudo-inverse and components of the residual, 
+
+¯A† 
+
+> j
+
+:= [ ¯A†]:,j [ ¯A†]:,4+ j
+
+ ∈ R3×2, e⊥,j := 
+
+ e⊥,j 
+
+e⊥,4+ j
+
+
+
+(15) Differentiating (7) with respect to δj shows that the two rows rotate into one another, 
+
+∂∂δ j
+
+a⊤
+
+> j
+
+b⊤
+
+> j
+
+
+
+= −J
+
+a⊤
+
+> j
+
+b⊤
+
+> j
+
+
+
+, ∂c j
+
+∂p⊤
+
+> j
+
+= −n⊤ 
+
+> j
+
+, ∂¯cj
+
+∂p⊤
+
+> j
+
+= d⊤
+
+> j
+
+(16) Applying (14) blockwise then gives the instantaneous twist Jacobian Hξ,xW I := ∂ξ/∂ xW I ∈ R3×16 . All quantities below are evaluated at ˆxW I and at the measured δmj , ωmd j .The radii enter ¯v only, leaving ¯A unchanged: 
+
+∂ξ
+
+∂r j
+
+= ωmd j [ ¯A†]:,j (17) The steering offsets enter ¯A only, through ∂δ j /∂δ oj = −1:
+
+∂ξ
+
+∂δ oj
+
+= ¯A†
+
+> j
+
+ b⊤ 
+
+> j
+
+ξ
+
+−a⊤ 
+
+> j
+
+ξ
+
+
+
+− ( ¯A⊤ ¯A)−1 bj −aj
+
+ e⊥,j (18) The wheel positions enter ¯A through cj and ¯cj :
+
+∂ξ
+
+∂p⊤
+
+> j
+
+=
+
+
+
+ω ¯A† 
+
+> j
+
+− ( ¯A⊤ ¯A)−1e3 e⊤⊥,j 
+
+  n⊤
+
+> j
+
+−d⊤
+
+> j
+
+
+
+(19) whose two columns are placed in the xwj and ywj positions of Hξ,xW I . e3 = [0 0 1] ⊤ selects the yaw rate column of ¯A,the only column through which the wheel position enters; the two columns of (19) are placed in the xwj and ywj positions of Hξ,xW I .
+
+Remark 3. The 2 × 2 factor in (19) is orthogonal, so both components of pj influence the twist independently at every instant. Under the reduced map v = Aξ this is not the case: 
+
+xwj and ywj then enter only through the single scalar cj , and only that combination is observable. 
+
+Collect the drive and steering encoder noises together with a lateral term, n = [ n⊤ 
+
+> d
+
+n⊤ 
+
+> δ
+
+n⊤ 
+
+> ℓ
+
+]⊤ ∈ R12 , where nℓ enters the lower block of ¯v and represents residual lateral slip not captured by the rolling constraint ui. Since ωdj = ωmd j − ndj
+
+and ∂δ j /∂n δj = ∂δ j /∂δ oj = −1,
+
+∂ξ
+
+∂n dj
+
+= −ˆrj [ ¯A†]:,j , ∂ξ
+
+∂n δj
+
+= ∂ξ
+
+∂δ oj
+
+, ∂ξ
+
+∂n ℓj
+
+= [ ¯A†]:,4+ j
+
+(20) so the steering block is obtained without additional com-putation. Stacking these gives Hξ,n ∈ R3×12 , with Qτ =diag( σ2
+
+> d
+
+I4, σ 2 
+
+> δ
+
+I4, σ 2 
+
+> ℓ
+
+I4).Let τ index the encoder samples in [tk, t k+1 ], with sub-interval length ∆t = tτ +1 − tτ , and let gτ = [ θτ xτ yτ ]⊤
+
+denote the increment preintegrated up to tτ , so that gk = 0
+
+and gk+1 = g. The intrinsics affect every sub-interval of the preintegration, so ∂g/∂ ˜xW I must be accumulated alongside the increment itself. With θm := θτ − ω∆t/ 2 and ρ := (2 /ω ) sin( ω∆t/ 2) the position increment over the sub-interval is 
+
+∆x = ρ (vx cos θm + vy sin θm),
+
+∆y = ρ (−vx sin θm + vy cos θm) (21) This is the singularity-free form of the position increment: the body velocity rotated by the mid-interval yaw θm and scaled by the arc factor ρ. It is obtained from the exact integral of (11) over [tτ , t τ +1 ] by applying sum-to-product identities, which removes the 1/ω singularity present in the direct evaluation and is therefore valid for the zero-yaw-rate motions analysed in Section III-C. The increment Jacobians with respect to the running pose and the twist are 
+
+Φtr,τ =
+
+ 1 0 0∆y 1 0
+
+−∆x 0 1
+
+ ,
+
+Φξ,τ =
+
+
+
+0 0 −∆tρ cos θm ρ sin θm ρ′ 
+
+> ρ
+
+∆x − ∆t 
+
+> 2
+
+∆y
+
+−ρ sin θm ρ cos θm ρ′ 
+
+> ρ
+
+∆y + ∆t 
+
+> 2
+
+∆x
+
+
+
+(22) with ρ′ = ∆t2 
+
+> 2
+
+(z cos z − sin z)/z 2 and z := ω∆t/ 2. Compos-ing with the instantaneous Jacobians, 
+
+ΦW I,τ = Φ ξ,τ Hξ,xW I ,τ , Φn,τ = Φ ξ,τ Hξ,n,τ (23) and propagating from zero initial conditions at τ = k,
+
+∂gτ +1 
+
+∂ ˜xW I 
+
+= Φ tr,τ 
+
+∂gτ
+
+∂ ˜xW I 
+
++ Φ W I,τ (24) 
+
+Pm,τ +1 = Φ tr,τ Pm,τ Φ⊤ 
+
+> tr,τ
+
++ Φ n,τ Qτ Φ⊤ 
+
+> n,τ
+
+(25) yields at τ = k+1 the quantities required in (13). Factoring the kinematics-agnostic integration Jacobian Φξ,τ from the kinematics-specific twist Jacobians is what keeps the sixteen-parameter case tractable; the inlined form used for differential drive VIWO does not scale to this many intrinsics. 
+
+D. Odometry Measurement with Extrinsics 
+
+The preintegrated measurement (12) is a 2D relative pose in the odometry frame {O}, whereas the filter state contains 3D IMU poses. Relating the two requires the odometry-IMU spatial extrinsics xW E and the temporal offset O tI .Since this relation is independent of the wheel kinematic model, we adopt the measurement function and corresponding Jacobians derived in [14] without modification. We denote the predicted odometry measurement as 
+
+hk+1 = h xIk+1 , xCk+1 , xW E , O tI
+
+ , (26) whose first-order perturbation can be written as 
+
+δhk+1 ≃ HI ˜xIk+1 + HC ˜xCk+1 + HW E ˜xW E + Ht O ˜tI , (27) where HI , HC , HW E , and Ht are the corresponding Jacobian blocks given in [14]. Although unchanged from the differential drive formulation, these blocks are retained in the complete measurement Jacobian since the odometry-IMU extrinsics and temporal offset enter the observability analysis of Section III. 
+
+Remark 4. The extrinsics xW E and the wheel geometry 
+
+{xw, yw, δo} are not independently observable. The placement of {O} on the robot body is an arbitrary choice of coordi-nates. Therefore, any planar rigid transformation of the wheel array can be absorbed by a compensating change in OI ¯q and  
+
+> O
+
+pI without altering the measurements. This introduces three motion-independent unobservable directions corresponding to the SE (2) freedom in the placement of {O}, which are characterised in Section III. E. Odometry Measurement Update 
+
+Sections II-C and II-D supply the two halves of the update: the preintegrated measurement zk+1 with its intrinsic Jacobian 
+
+∂g/∂ ˜xW I and accumulated covariance Pm, and the prediction 
+
+h(·) relating that 2D relative pose to the 3D state. Equating them, 
+
+g δm(k:k+1) , ωmd (k:k+1) , xW I 
+
+ = h xIk+1 , xCk+1 , xW E , O tI
+
+
+
+(28) and linearising each side about the current estimates, the left via (13), the right via (27) which yields the residual 
+
+˜zk+1 := g δm(k:k+1) , ωmd (k:k+1) , ˆxW I 
+
+ − h ˆxIk+1 , ˆxCk+1 , ˆxW E , O ˆtI
+
+
+
+(29) and the linearised measurement model 
+
+˜zk+1 ≃
+
+ ∂h
+
+∂ ˜xI
+
+∂h
+
+∂ ˜xC
+
+∂h
+
+∂ ˜xW E 
+
+∂h
+
+∂O ˜tI
+
+− ∂g
+
+∂ ˜xW I 
+
+| {z }
+
+> Hk+1
+
+˜xk+1 − ∂g
+
+∂nw
+
+nw
+
+(30) with block ordering following (1). The intrinsic block carries a negative sign because the intrinsics enter through the mea-surement rather than its prediction, and has dimension 3 × 16 
+
+against 3 × 3 for a differential drive platform; all remaining blocks are structurally identical to that case. The effective measurement noise is the accumulated co-variance Pm from (25), which already propagates the driv-ing, steering and lateral-slip noise through the least-squares twist recovery. Following [14], candidate measurements are screened by a Mahalanobis distance test with three degrees of freedom, 
+
+˜z⊤
+
+> k+1
+
+ Hk+1 Pk+1 |kH⊤ 
+
+> k+1
+
++ Pm
+
+−1˜zk+1 < χ 23, α (31) so that intervals corrupted by unmodelled effects such as wheel slippage are rejected. 
+
+Remark 5. Unlike differential drive, the 4WIS4WID system provides a consistency signal through e⊥. While zero for a square kinematic map, e⊥ spans a five dimensional subspace here and detects encoder measurements inconsistent with a rigid body twist. Thus, timesteps can be gated on ∥e⊥∥
+
+during preintegration, rejecting slip before it corrupts the accumulated increment. 
+
+III. O BSERVABILITY ANALYSIS 
+
+Observability analysis determines which states and parame-ters are recoverable from a given measurement and is a prereq-uisite for consistent estimator design [17], [18]. Following [14] we consider a state containing a single cloned pose and a single point feature, 
+
+xk = x⊤ 
+
+> Ik
+
+x⊤ 
+
+> Ck
+
+x⊤
+
+> etc
+
+⊤ , xetc = x⊤  
+
+> W E O
+
+tI x⊤ 
+
+> W I G
+
+p⊤
+
+> f
+
+⊤
+
+(32) for which the observability matrix over [t0, t k] is 
+
+M =
+
+h
+
+H⊤
+
+> 0
+
+ H1Φ(t1,t 0)
+
+⊤ · · ·  HkΦ(tk ,t 0)
+
+⊤i⊤
+
+(33) with Hk the stacked visual and wheel measurement Jacobians (30). Any n with Mn = 0 is an unobservable direction: perturbing the initial state along n leaves every measurement unchanged, so no estimator can resolve it and the correspond-ing covariance is unbounded. The state transition matrix Φ(tk ,t 0) is not immediate when clones are included in the state, and we adopt the construction of [14], in which cloning and propagation are unified into a single linear map and the coincidence of the initial IMU pose and initial clone is imposed as an error-state constraint:                                                          
+
+> ˜xk+1 =
+> 
+> ΦI11 0303ΦI14 03030303×26
+> ΦI21 I3ΦI23 ΦI24 ΦI25 030303×26
+> ΦI31 03I3ΦI34 ΦI35 030303×26
+> 030303I303030303×26
+> 03030303I3030303×26
+> 030303ΨC14 03ΨC11 0303×26
+> 0303ΨC23 ΨC24 ΨC25 ΨC21 I303×26
+> 026 ×3026 ×3026 ×3026 ×3026 ×3026 ×3026 ×3I26
+> 
+> ˜x0
+
+(34) where all blocks are evaluated over (tk+1 , t 0), the block rows correspond in order to the IMU orientation, position, velocity, gyroscope and accelerometer biases, the cloned orientation and position, and finally xetc . The ΦI∗ are the standard inertial error-state transition blocks and ΨC∗ (tk+1 , t 0) = ΦI∗ (tk, t 0)
+
+encode the clone constraint, both given explicitly in [14]. Two observations justify reusing (34) without rederivation: Φ
+
+describes only inertial propagation and the clone/marginalise bookkeeping of the sliding window, so no wheel measurement enters it and it is independent of the kinematic model; and all calibration parameters are constant, so their transition block is the identity regardless of their number. Only its dimension changes, from I13 for the differential drive case to I26 here. 
+
+A. Structure of the Wheel Measurement Jacobian 
+
+Observability is evaluated at the true state, where the calibration is exact and no slippage occurs. Hence e⊥ = 0,
+
+a⊤ 
+
+> j
+
+ξ = vj and b⊤ 
+
+> j
+
+ξ = 0 , so the second term of (14) vanishes identically and (17)-(19) reduce as follows. 
+
+Proposition 1 (Per-wheel constraint structure) . At the true state, the four intrinsics of wheel j influence the recovered twist only through the two columns collected in ¯A† 
+
+> j
+
+of (15) :
+
+∂ξ
+
+∂˜rj ˜δoj ˜xwj ˜ywj
+
+ = ¯A† 
+
+> j
+
+Cj , Cj =
+
+"
+
+ωmd j 0 ω d⊥
+
+> j
+> ⊤
+
+0 −vj −ω d⊤
+
+> j
+
+#
+
+(35) Since rank( Cj ) ≤ 2, at least two distinct steering config-urations are required before all four intrinsics of a wheel can be identified. The entries of (35) also indicate the excitation each parameter demands: the radius sensitivity scales with the wheel rate ωmd j , the steering offset sensitivity with the wheel speed vj , and both position sensitivities with the yaw rate ω. Every degeneracy below is a mechanism by which S 
+
+> t
+
+rowspace( Cj (t)) fails to span R4.B. Necessity of the Lateral Constraints 
+
+Remark 2 noted that discarding the lateral rows of (9) yields a reduced map v = Aξ, exact under the no-slip assumption. It is nonetheless inadmissible for calibration. 
+
+Lemma 1. Under ξ = A†v, the steering offsets δo are unobservable under every motion. Proof. For the reduced map, the counterpart of (18) is 
+
+∂ξ/∂δ oj = (b⊤ 
+
+> j
+
+ξ)[ A†]:,j − e⊥,j (A⊤A)−1bj . With uj the contact point velocity (5), 
+
+b⊤ 
+
+> j
+
+ξ = d⊥
+
+> j
+> ⊤
+
+uj (36) which is the lateral slip velocity of wheel j and vanishes identically under rolling without slipping. At the true state 
+
+e⊥ = 0, so the second term vanishes also, and the four columns of M associated with δo are identically zero. The rolling measurements alone report only how fast each wheel turns; they never test whether the four steering angles are mutually consistent with a single ICR, which is where steering offset information resides. Retaining the lateral rows restores it: from (35) the offset enters through [ ¯A†]:,4+ j with coefficient −vj , non-zero whenever the wheel is rolling. 
+
+Remark 6. The augmented map is also better conditioned: for 
+
+A, a configuration with all steering angles equal renders the first two columns parallel and (A⊤A)−1 undefined, whereas for ¯A they remain independent for any steering configuration. The pseudo-inverse is thus well defined in precisely the lateral translation mode a 4WIS4WID platform is built to execute. 
+
+Lemma 2. Under general motion, four directions are unob-servable, corresponding to global position and rotation about gravity, as in standard VINS [17], [19]. Proof. The null basis of [14], extended by zeros in the wheel-intrinsic block: the wheel measurements (12) are expressed entirely in the local frame {Ok} and are invariant to global translation and to rotation about gravity. 
+
+Lemma 3. Three further directions are unobservable under every motion , corresponding to the SE (2) freedom in placing 
+
+{O} on the robot body. Proof. Let {O′} have origin q = [ qx qy ]⊤ and axes rotated by β, expressed in {O}, and let ν := [ vx vy ]⊤. Then              
+
+> p′
+> j=R(β)⊤(pj−q),δ′
+> j=δj−β, ξ′=
+> R(β)⊤(ν+ωJ q)
+> ω
+> 
+
+(37) and, since the physical encoder reading δmj = δj + δoj is unaltered by a change of coordinates, δ′ 
+
+> oj
+
+= δoj + β. Using 
+
+d′ 
+
+> j
+
+= R(β)⊤dj and JR (β)⊤ = R(β)⊤J,
+
+v′ 
+
+> j
+
+= d′⊤ 
+
+> j
+
+ ν′ + ωJ p′
+
+> j
+
+ = d⊤
+
+> j
+
+ν + ωJ pj
+
+ = vj (38) and identically b′⊤  
+
+> j
+
+ξ′ = b⊤ 
+
+> j
+
+ξ, so every wheel measurement is unchanged. The prediction h(·) is likewise unchanged provided xW E absorbs the frame change, which it can since both OI ¯q and O pI are estimated. Linearising (37) for small 
+
+β = α and q gives the intrinsic block of the null basis, 
+
+˜r = 0, ˜δoj = α, ˜xwj = αy wj − qx, ˜ywj = −αx wj − qy
+
+(39) spanned by α, qx and qy .Lemma 3 differs structurally from the degeneracies reported for differential drive [14] and skid-steering [15] platforms, all of which are motion dependent: it holds under fully general excitation, and has no differential drive analogue, the corresponding intrinsic there being a scalar baselink rather than an SE (2) object. The wheel geometry is therefore observable only up to the choice of odometry frame. We fix the gauge by holding xw1 , yw1 and δo1 at their nominal values and estimating the remaining thirteen intrinsics online; residual error in these three is absorbed by xW E without introducing bias. Lemmas 2 and 3 identify seven motion independent unobservable directions under general motion: four standard VINS directions and three associated with the arbitrary placement of the odometry frame. 
+
+C. Degenerate Motions 
+
+The following follow from rank conditions on Cj in (35), and are summarised in Table I. 
+
+Lemma 4. If ω ≡ 0, all eight wheel positions are unobserv-able. Proof. ω = 0 annihilates both position columns of Cj for every j.This covers straight line and pure lateral motion where the wheel positions enter only through the moment arm acting against the yaw rate, which without rotation produces no signal. 
+
+Lemma 5. If all δj are held constant and ω̸ ≡ 0, two of the four intrinsics of every wheel are unobservable, regardless of trajectory duration. Proof. A constant steering configuration fixes the ICR c in the body frame, so λj := vj /ω = ∥pj − c∥ and ηj := ωmd j /ω =
+
+λj /r j are constant and Cj (t) = ω(t) C0 
+
+> j
+
+with C0 
+
+> j
+
+fixed. The accumulated row space is the fixed 2D rowspace( C0 
+
+> j
+
+), whose null directions, parameterised by (˜ xwj , ˜ywj ), are 
+
+˜rj = sin δj ˜xwj − cos δj ˜ywj
+
+ηj
+
+, ˜δoj = − cos δj ˜xwj + sin δj ˜ywj
+
+λj
+
+(40) This is the most restrictive result in practice, excluding straight line, lateral and constant radius circular motion, trajec-tories most naturally chosen for calibration. Increasing speed or duration does not help, since ω(t) scales Cj without altering its row space. TABLE I DEGENERATE MOTIONS AND THE CORRESPONDING UNOBSERVABLE CALIBRATION PARAMETERS .                         
+
+> Motion Unobservable
+> General motion 4 inertial +3 gauge Zero yaw rate ( ω≡0)xw,yw
+> Constant steering configuration 2 per wheel (8 total) Wheel jnot rolling rj,δoj
+> Pure translation OpI
+> One axis rotation OpIalong axis Constant local v,ωOtI
+> No motion all calibration parameters
+
+IV. SIMULATION VALIDATION The analytical results of Section III establish the observable and unobservable directions of the proposed system. Simu-lation is used here to verify that the estimator exhibits the predicted convergence and degeneracy behaviour. A Monte-Carlo simulator generates IMU, camera, and eight channel wheel encoder measurements together with ground truth cali-bration parameters. The camera, IMU, and wheel-encoder rates are 10, 200, and 100 Hz, respectively. The MSCKF uses 11 clones and at most 100 features per update with σpx = 1 
+
+px. Drive- and steering-encoder noise standard deviations are 
+
+0.001 rad/s and 0.001 rad, respectively, with lateral pseudo-noise σlat = 0 .001 . For the perturbed initialization, wheel radii are offset by 1%, wheel positions by 0.01 m, steering offsets and extrinsic orientation by 0.01 rad, extrinsic position by 0.1 m, and the temporal offset by 0.01 s. Six trajectories are considered: the ICR-sweep excitation trajectory, straight line, lateral, circular, stationary, and figure eight motion. Following Section III-B, xw1 , yw1 , and δo1 are fixed to remove the odometry frame gauge freedom. 
+
+A. Calibration and Degeneracy Validation 
+
+Fig. 2 shows the estimation errors and 3σ bounds for six Monte-Carlo runs along the ICR-sweep trajectory. The small number of runs makes this figure ilustrative (not to be used as the primary statistical validation). Statistical consis-tency/accuracy is presented in Table I (20 runs) All estimated calibration parameters converge toward their ground truth values within the reported bounds. The wheel radii converge faster initially than the wheel positions, consistent with (35), since their sensitivities scale with ωmd j and ω, respectively. The predicted degeneracies were also reproduced numerically. For straight line and lateral motion ( ω ≡ 0), the uncertainty of the wheel position parameters does not contract, confirming Lemma 4. Under constant steering, the covariance projected onto the two null directions predicted by the corresponding observability analysis remains unchanged, while uncertainty in the orthogonal complement decreases. A stationary platform leaves all calibration parameters unobservable, as summarized in Table I. 
+
+B. Estimation Accuracy and Consistency 
+
+Table II reports relative pose error and mean NEES over 20 Monte-Carlo runs. With accurate initialization, enabling online calibration has little effect. In contrast, incorrect fixed -0.04 0.00 0.04                                                
+
+> x [rad] Extrinsic orientation
+> -0.02 0.00 0.02
+> x [m] Extrinsic position
+> -0.002 0.000 0.002
+> r1 [m] Wheel intrinsics
+> -0.04 0.00 0.04
+> y [rad]
+> -0.02 0.00 0.02
+> y [m]
+> -0.04 0.00 0.04
+> δo2 [rad]
+> 020 40
+> time [s]
+> -0.04 0.00 0.04
+> z [rad]
+> 020 40
+> time [s]
+> -0.12 0.00 0.12
+> z [m]
+> 020 40
+> time [s]
+> -0.04 0.00 0.04
+> xw2 [m]
+> Fig. 2. Estimation error (solid) and 3σbound (dotted) for six Monte-Carlo runs along the ICR-sweep trajectory. Shown are the IMU-odometry extrinsics and representative wheel intrinsics ( r1,δo2,xw2). TABLE II RELATIVE POSE ERROR (RPE) AND MEAN NEES OVER 20 MONTE -C ARLO RUNS .
+> Configuration RPE 10 [deg] RPE 10 [m] RPE 25 [deg] RPE 25 [m] NEES True init., calib. ON 0.014 0.0045 0.021 0.0055 3.56 True init., calib. OFF 0.050 0.0071 0.081 0.0111 10.39 Bad init., calib. ON 0.014 0.0046 0.018 0.0060 3.72 Bad init., calib. OFF 0.602 20.9823 1.465 47.4002 170.75
+
+calibration causes severe degradation, whereas online calibra-tion recovers performance close to the accurately initialized case. These results show that the proposed calibration is particularly beneficial when the nominal kinematic parameters are inaccurate. With calibration enabled the pose NEES is 3.56 and 3.72 
+
+against a reference value of 6, i.e. mildly conservative, since a minimum noise floor is added to the wheel relative pose covariance. Disabling calibration raises it to 10 .39 , the unmod-elled parameter error not being represented in the covariance; the value of 170 .75 reflects divergence in 5 of 20 runs (median 
+
+2.03 ) rather than a consistency level. V. EXPERIMENTAL VALIDATION The entire VIWO system was additionally validated on a real 4WIS4WID mobile robot. The robot is equipped with eight Dynamixel XH430-V210-T motors that have the option of synchronous command transmission and reading of velocity and position values. For VIWO, an Intel RealSense T265 was used, which has a stereo pair of fisheye cameras and an IMU, whose intrinsic and extrinsic parameters were calibrated using Kalibr [24]. The ground truth position of the robot was measured using the OptiTrack system. Figure 3 shows the trajectories of wheel odometry, VIWO with calibration (VIWO w. calib), VIWO without calibration (VIWO wo. calib), and VIO. The root mean square errors of the listed trajectories are: VIWO w. calib 0.212/1.64, VIWO wo. calib 0.343/3.04, VIO 0.566/2.06, and wheel odometry 0.774/17.46 (meters/degrees). The initial values of the robot parameters, as well as the final ones, can be seen in the Table III. The parameters converged with respect to the initial Fig. 3. Experimental results TABLE III VALUES OF THE CALIBRATION PARAMETERS BEFORE AND AFTER ONLINE CALIBRATION FOR REAL WORLD EXPERIMENT                         
+
+> Parameter Before After
+> wheel radii r[mm] [25.6, 25.6, 25.6, 25.6] [26.3, 26.3, 28.1, 26.8] wheel positions xw[m] [-0.1125, -0.1125, 0.1125] [-0.1029, -0.1029, 0.1454] wheel positions yw[m] [0.1125, -0.1125, -0.1125] [0.1267, -0.1216, -0.1216] steering offsets δo[rad] [0.0, 0.0, 0.0] [0.0168, -0.0098, -0.0633] Ext. Pos [m] [0.1457, 0.0279, 0.0576] [0.1696, 0.0192, 0.0244] Ext. Ori [rad] [1.2085, 1.2093, 1.2091] [1.2498, 1.2060, 1.2206] Time offset [s] 0.00000 -0.00656
+
+values by a small amount, but such a change can have a much greater influence over longer distances. The influence of the parameters is visible from the graphs and the RMS error values. VI. CONCLUSION AND FUTURE WORK In this paper, we developed a tightly coupled MSCKF based VIWO system for 4WIS4WID mobile robots that fuses camera, IMU, and wheel encoder measurements while performing online calibration. The estimator simultaneously estimates the spatiotemporal odometry extrinsics and thirteen kinematic parameters using a redundant 2D wheel odometry model using longitudinal rolling and lateral no-slip constraints. Observability analysis showed that a drive only model leaves all steering offsets unobservable, while the proposed model restores their observability and increases measurement re-dundancy. In addition to the standard VINS unobservable directions, three motion independent directions related to the arbitrary SE (2) odometry frame placement were identified, together with several degenerate motions and the excitation conditions required for calibration. The system was validated in simulation (on 20 Monte Carlo runs) and real world experiment on a 4WIS4WID robot. Future work will focus on validation on vertical surfaces and over longer travelled distances, where calibration errors are expected to have a stronger effect. We also plan to incorporate robot dynamics to account for wheel slip and violations of the no-slip assumptions used by the current kinematic model. ACKNOWLEDGMENT The authors acknowledge the support of the VANGUARD project, funded by the European Union under the Competi-tiveness and Cohesion Programme 2021–2027. REFERENCES [1] Y. Jeong and S. Yim, “Path tracking control with four-wheel independent steering, driving and braking systems for autonomous electric vehicles,” 
+
+IEEE Access , vol. 10, pp. 74 733–74 746, 2022. [2] W.-T. Chen, E.-C. Tsui, W.-S. Yu, and P.-C. Lin, “Indoor and outdoor multi-terrain stair-climbing robot design,” in 2025 IEEE International Conference on Robotics and Automation (ICRA) , 2025, pp. 14 419– 14 425. [3] T. Hu, S. Yuan, R. Bai, X. Xu, Y. Liao, F. Liu, and L. Xie, “Swept volume-aware trajectory planning and mpc tracking for multi-axle swerve-drive amrs,” in 2025 IEEE International Conference on Robotics and Automation (ICRA) , 2025, pp. 14 505–14 512. [4] M. Boˇ zi´ c, B. ´ Caran, M. ˇ Svaco, B. Jerbi´ c, and M. Serdar, “Mobile wall-climbing robot for ndt inspection of vertical concrete structures,” in In-ternational Symposium on Non-Destructive Testing in Civil Engineering (NDT-CE 2022) , vol. 27, no. 9, 2022. [5] T. L. Lam, H. Qian, Y. Xu, and G. Xu, “Omni-directional steer-by-wire interface for four wheel independent steering vehicle,” in 2009 IEEE International Conference on Robotics and Automation , 2009, pp. 1383– 1388. [6] M. Aoki, K. Honda, H. Okuda, and T. Suzuki, “Switching sampling space of model predictive path-integral controller to balance efficiency and safety in 4wids vehicle navigation,” in 2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) , 2024, pp. 3196– 3203. [7] M.-H. Lee and T.-H. S. Li, “Kinematics, dynamics and control design of 4WIS4WID mobile robots,” The Journal of Engineering , vol. 2015, no. 1, pp. 6–16, 2015. [8] R. Siegwart, I. R. Nourbakhsh, and D. Scaramuzza, Introduction to Autonomous Mobile Robots , 2nd ed. Cambridge, MA, USA: MIT Press, 2011. [9] K. J. Wu, C. X. Guo, G. Georgiou, and S. I. Roumeliotis, “VINS on wheels,” in 2017 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2017, pp. 5155–5162. [10] M. Zhang, X. Zuo, Y. Chen, Y. Liu, and M. Li, “Pose estimation for ground robots: On manifold representation, integration, reparameteriza-tion, and optimization,” IEEE Transactions on Robotics , vol. 37, no. 4, pp. 1081–1099, 2021. [11] J. Liu, W. Gao, C. Xie, and Z. Hu, “Implementation and observability analysis of visual-inertial-wheel odometry with robust initialization and online extrinsic calibration,” Robotics and Autonomous Systems , vol. 176, p. 104686, 2024. [12] A. Martinelli, “State estimation based on the concept of continuous symmetry and observability analysis: The case of calibration,” IEEE Transactions on Robotics , vol. 27, no. 2, pp. 239–255, 2011. [13] A. Censi, A. Franchi, L. Marchionni, and G. Oriolo, “Simultaneous calibration of odometry and sensor parameters for mobile robots,” IEEE Transactions on Robotics , vol. 29, no. 2, pp. 475–492, 2013. [14] W. Lee, K. Eckenhoff, Y. Yang, P. Geneva, and G. Huang, “Visual-inertial-wheel odometry with online calibration,” in 2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS) .IEEE, 2020, pp. 4559–4566. [15] X. Zuo, M. Zhang, M. Wang, Y. Chen, G. Huang, Y. Liu, and M. Li, “Visual-based kinematics and pose estimation for skid-steering robots,” 
+
+IEEE Transactions on Automation Science and Engineering , vol. 21, no. 1, pp. 91–105, 2024. [16] T. Okawara, K. Koide, S. Oishi, M. Yokozuka, A. Banno, K. Uno, and K. Yoshida, “Tightly-coupled LiDAR-IMU-wheel odometry with online calibration of a kinematic model for skid-steering robots,” IEEE Access ,vol. 12, pp. 134 728–134 738, 2024. [17] J. A. Hesch, D. G. Kottas, S. L. Bowman, and S. I. Roumeliotis, “Con-sistency analysis and improvement of vision-aided inertial navigation,” 
+
+IEEE Transactions on Robotics , vol. 30, no. 1, pp. 158–176, Feb. 2014. [18] G. P. Huang, A. I. Mourikis, and S. I. Roumeliotis, “Analysis and improvement of the consistency of extended kalman filter based slam,” in 2008 IEEE International Conference on Robotics and Automation ,2008, pp. 473–479. [19] Y. Yang, P. Geneva, X. Zuo, and G. Huang, “Online self-calibration for visual-inertial navigation: Models, analysis, and degeneracy,” IEEE Transactions on Robotics , vol. 39, no. 5, pp. 3479–3498, Oct. 2023. [20] Y. Yang and G. Huang, “Observability analysis of aided INS with heterogeneous features of points, lines, and planes,” IEEE Transactions on Robotics , vol. 35, no. 6, pp. 1399–1418, Dec. 2019. [21] X. Wang, W. Zhao, C. Wang, X. Zhou, and Z. Luan, “Robust path tracking control of 4wis-4wid vehicle considering model mismatch un-certainty and actuator fault,” IEEE Transactions on Automation Science and Engineering , vol. 23, pp. 1–14, 2026. [22] B. ´ Caran, V. Mili´ c, M. ˇ Svaco, and B. Jerbi´ c, “Odometry calibration and pose estimation of a 4WIS4WID mobile wall climbing robot,” in 2025 European Conference on Mobile Robots (ECMR) . IEEE, 2025, pp. 1–8. [23] A. I. Mourikis and S. I. Roumeliotis, “A multi-state constraint Kalman filter for vision-aided inertial navigation,” in Proceedings 2007 IEEE International Conference on Robotics and Automation (ICRA) . IEEE, 2007, pp. 3565–3572. [24] P. Furgale, J. Rehder, and R. Siegwart, “Unified temporal and spatial calibration for multi-sensor systems,” in 2013 IEEE/RSJ International Conference on Intelligent Robots and Systems , 2013, pp. 1280–1286.

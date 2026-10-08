@@ -1,140 +1,766 @@
 {
-  "generated_at": "2026-10-07T23:51:20.740812+00:00",
-  "updated_date": "20261007",
+  "generated_at": "2026-10-08T02:42:47.948175+00:00",
+  "updated_date": "20260929-20261008",
   "carryover_days": 9,
   "tag_states": {
     "d-slam": {
-      "updated_date": "20261007",
-      "carryover_days": 9,
-      "items": []
-    },
-    "robot-nav": {
-      "updated_date": "20260815-20260824",
+      "updated_date": "20260929-20261008",
       "carryover_days": 9,
       "items": [
         {
-          "id": "2608.20111v1",
+          "id": "2610.06594v1",
           "source": "arxiv",
-          "title": "Planning-Oriented End-to-End Autonomous Driving: Architectures, Evaluation, and Emerging Paradigms",
-          "abstract": "End-to-end autonomous driving has evolved from camera-to-control regression toward planning-oriented systems that use structured representations, trajectory-level outputs, and increasingly realistic evaluation protocols. This survey reviews this transition across behavior cloning, conditional imitation learning, privileged distillation, BEV and vectorized planning, unified perception-prediction-planning architectures, world-model-based planners, and vision-language-action systems. We argue that the key distinction in modern end-to-end driving is not whether intermediate representations are used, but whether they are learned, supervised, and evaluated to support safe, feasible, and route-compliant planning. To organize the literature, we synthesize existing methods along four axes: input representation, planning output, supervision signal, and evaluation protocol. We further examine the benchmark shift from open-loop trajectory matching to closed-loop simulation, non-reactive real-log evaluation, long-tail testing, and human-preference-aware metrics. Our analysis highlights that architectural progress is difficult to interpret without benchmark-consistent evaluation, and that displacement-based open-loop metrics alone provide limited evidence for safe and human-aligned driving. We conclude with open challenges in uncertainty-aware planning, learner-expert mismatch, runtime safety assurance, language-action grounding, world-model validation, and reproducible benchmarking.",
+          "title": "VGGT-Bridge: Beyond Sequential Pose Graphs via Coarse-Stride Skip Edges",
+          "abstract": "Feed-forward visual geometry transformers such as VGGT reconstruct dense 3D structure from images in a single forward pass, simplifying multi-view 3D reconstruction. However, their quadratic attention complexity makes them difficult to scale to long sequences with thousands of frames. Chunk-and-align frameworks address this by splitting a long sequence into overlapping chunks and stitching their local reconstructions into a pose graph. Yet existing methods connect only sequentially adjacent chunks, so small per-frame errors accumulate along the chain into large-scale drift. To move beyond sequential edges, we propose VGGT-Bridge, which adds long-range skip edges that directly constrain non-adjacent chunks without retraining. By running VGGT on sparsely sampled coarse chunks, each coarse chunk bridges distant fine chunks into a single direct constraint. We further turn VGGT's first-frame scale bias into a drift correction by feeding selected coarse chunks in reverse, and a loop-aware policy keeps this reversal compatible with existing loop closures. VGGT-Bridge reduces ATE by 28.3% on KITTI Odometry, 18.8% on Virtual KITTI, and 10.0% on Waymo Open over the SwiftVGGT baseline, achieving the best performance among all chunk-and-align methods.",
           "authors": [
-            "Yanchen Guan",
-            "Xingcheng Liu",
-            "Bin Rao",
-            "Chengyue Wang",
-            "Guofa Li",
-            "Yunjian Li",
-            "Lishengsa Yue",
-            "Zhiyong Cui",
-            "Chengzhong Xu",
-            "Zhenning Li"
-          ],
-          "primary_category": "cs.RO",
-          "categories": [
-            "cs.RO",
-            "cs.ET"
-          ],
-          "published": "2026-08-20T14:41:36+00:00",
-          "link": "https://arxiv.org/pdf/2608.20111v1",
-          "tags": [
-            "keyword:robot-nav",
-            "query:robot-nav"
-          ],
-          "llm_score": 8.0,
-          "llm_evidence_en": "Survey of planning-oriented end-to-end autonomous driving, reviewing architectures, evaluation, and emerging paradigms",
-          "llm_evidence_cn": "综述面向规划的端到端自动驾驶架构、评估与新兴范式",
-          "llm_evidence": "综述面向规划的端到端自动驾驶架构、评估与新兴范式",
-          "canonical_evidence": "综述面向规划的端到端自动驾驶架构、评估与新兴范式",
-          "llm_tldr_en": "This survey reviews the evolution of end-to-end autonomous driving from camera-to-control regression to planning-oriented systems, covering structured representations, trajectory-level outputs, and emerging evaluation protocols.",
-          "llm_tldr_cn": "端到端自动驾驶正从直接的摄像头-控制回归转向面向规划的系统。本文系统综述该转换过程，涵盖行为克隆、条件模仿、特权蒸馏、BEV与矢量化规划、统一感知-预测-规划、世界模型规划及视觉-语言-动作系统等范式，并强调规划层面的安全性与可行性评估。文章梳理关键架构与评估趋势，为自动驾驶规划技术研究提供全景参考。",
-          "llm_tldr": "端到端自动驾驶正从直接的摄像头-控制回归转向面向规划的系统。本文系统综述该转换过程，涵盖行为克隆、条件模仿、特权蒸馏、BEV与矢量化规划、统一感知-预测-规划、世界模型规划及视觉-语言-动作系统等范式，并强调规划层面的安全性与可行性评估。文章梳理关键架构与评估趋势，为自动驾驶规划技术研究提供全景参考。",
-          "llm_tags": [
-            "query:robot-nav"
-          ],
-          "matched_query_tag": "query:robot-nav",
-          "matched_query_text": "latest research trends in robot navigation",
-          "matched_requirement_id": "req-6",
-          "selection_source": "carryover_cache",
-          "paper_id": "2608.20111v1",
-          "carry_days": 1
-        },
-        {
-          "id": "2608.19866v1",
-          "source": "arxiv",
-          "title": "A 360-Degree Vision Dataset for Learning Yaw Control on GPS-Denied Micro-UAVs in Disaster-Response-Relevant Environments",
-          "abstract": "This paper presents a novel data-driven approach to camera-based autonomy for micro-drones in GPS-denied, radio-challenging indoor environments. The target application is disaster and emergency response, where micro-UAVs can provide rapid situational awareness in hazardous settings such as firefighting and chemical, biological, radiological, and nuclear (CBRN) incidents while reducing risk for human responders. When the communication link is lost, the micro-drone uses a learned yaw controller to autonomously navigate toward open space, preserving onboard sensor data that would otherwise be lost with the vehicle. A custom micro-drone equipped with a 360-degree camera was used to record diverse industrial, underground, and training scenarios representative of communication-denied field operations. We introduce a preprocessing pipeline that converts equirectangular 360-degree footage into planar front views and dynamically generates image-label pairs for AI training. We then train and compare multiple convolutional neural network variants that predict a continuous yaw command from a single monocular view. Evaluation on a held-out test set confirms the feasibility of the learned yaw-prediction approach. A semi-autonomous real-world test further demonstrates the practicality of the method while revealing key failure modes, particularly reflections and glare.",
-          "authors": [
-            "Niklas Voigt",
-            "Hartmut Surmann"
+            "Sungjae Choi",
+            "Hanna Bae",
+            "Sunghyun Baek",
+            "Junmo Kim"
           ],
           "primary_category": "cs.CV",
           "categories": [
             "cs.CV"
           ],
-          "published": "2026-08-20T10:21:57+00:00",
-          "link": "https://arxiv.org/pdf/2608.19866v1",
+          "published": "2026-10-05T16:07:04+00:00",
+          "link": "https://arxiv.org/pdf/2610.06594v1",
           "tags": [
+            "keyword:d-slam",
             "keyword:robot-nav",
+            "query:d-slam",
             "query:robot-nav"
           ],
           "llm_score": 8.0,
-          "llm_evidence_en": "camera-based yaw control for autonomous navigation of micro-UAVs in GPS-denied indoor environments",
-          "llm_evidence_cn": "基于视觉的偏航控制，用于GPS拒止环境下微型无人机自主导航",
-          "llm_evidence": "基于视觉的偏航控制，用于GPS拒止环境下微型无人机自主导航",
-          "canonical_evidence": "基于视觉的偏航控制，用于GPS拒止环境下微型无人机自主导航",
-          "llm_tldr_en": "Presents a 360-degree vision dataset and a learned yaw controller enabling camera-based autonomy for micro-drones in GPS-denied, radio-challenging indoor environments; when communication is lost, the drone navigates toward open space preserving data.",
-          "llm_tldr_cn": "针对GPS拒止、通信受限的灾后室内环境中微型无人机需要依赖相机自主导航的问题，本文构建了一个360度视觉数据集，并训练学习式偏航控制器。当通信链路中断时，无人机可自主朝开阔区域飞行以保留传感器数据。该数据集覆盖多种工业环境，为灾难响应中的无人机视觉导航提供了数据支撑。",
-          "llm_tldr": "针对GPS拒止、通信受限的灾后室内环境中微型无人机需要依赖相机自主导航的问题，本文构建了一个360度视觉数据集，并训练学习式偏航控制器。当通信链路中断时，无人机可自主朝开阔区域飞行以保留传感器数据。该数据集覆盖多种工业环境，为灾难响应中的无人机视觉导航提供了数据支撑。",
+          "llm_evidence_en": "pose graph optimization with long-range skip edges to reduce drift",
+          "llm_evidence_cn": "用长程跳跃边优化位姿图以抑制漂移",
+          "llm_evidence": "用长程跳跃边优化位姿图以抑制漂移",
+          "canonical_evidence": "用长程跳跃边优化位姿图以抑制漂移",
+          "llm_tldr_en": "VGGT-Bridge adds long-range skip edges to chunk-and-align pose graphs, constraining non-adjacent chunks without retraining to reduce accumulated drift in large-scale 3D reconstruction.",
+          "llm_tldr_cn": "前馈视觉几何变换器VGGT能单次前向重建稠密三维结构，但二次注意力复杂度使其难以扩展到数千帧长序列。分块对齐框架虽可拼接局部重建为位姿图，却只连接相邻块，导致逐帧误差沿链累积成大尺度漂移。本文提出VGGT-Bridge，在稀疏运行VGGT的基础上加入长程跳跃边，无需重训练即可直接约束非相邻块。该方法有效抑制漂移，为大规模三维重建与全局一致定位提供了新途径。",
+          "llm_tldr": "前馈视觉几何变换器VGGT能单次前向重建稠密三维结构，但二次注意力复杂度使其难以扩展到数千帧长序列。分块对齐框架虽可拼接局部重建为位姿图，却只连接相邻块，导致逐帧误差沿链累积成大尺度漂移。本文提出VGGT-Bridge，在稀疏运行VGGT的基础上加入长程跳跃边，无需重训练即可直接约束非相邻块。该方法有效抑制漂移，为大规模三维重建与全局一致定位提供了新途径。",
+          "llm_tags": [
+            "query:d-slam"
+          ],
+          "matched_query_tag": "query:d-slam",
+          "matched_query_text": "pose graph optimization methods for global consistency in simultaneous localization and mapping",
+          "matched_requirement_id": "req-5",
+          "selection_source": "carryover_cache",
+          "paper_id": "2610.06594v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2609.40244v1",
+          "source": "arxiv",
+          "title": "StreamRig: Exploiting Intra-Rig Geometry for Streaming Multi-Camera Odometry",
+          "abstract": "Mobile robots and vehicles carry synchronized multi-camera rigs, yet many streaming 3D foundation models are designed for monocular input, leaving efficient use of rig geometry a challenge. We present StreamRig, a freeze-and-stream framework that builds causal streaming odometry for calibrated rigs on a frozen multi-view 3D foundation model. The frozen front-end jointly perceives the synchronized views using rig calibration. A Rig-Resampler compresses their features, a CausalBridge applies causal attention with a key-value cache, and a lightweight head regresses rig poses. A periodic re-anchoring protocol supports stable pose estimation over long sequences. Only these modules are trained, 74.6M parameters in total, with relative poses as the sole supervision. Our two-stage training strategy combines group relocalization pretraining with causal rig training to transfer the geometric priors of the frozen front-end and the alignment ability of the pretrained modules to streaming odometry. We evaluate on NCLT, TartanGround, KITTI-360, and our self-collected humanoid-robot dataset ZJH, where training uses only simulation and real-world evaluation is zero-shot. Across all four datasets, StreamRig achieves lower translation and rotation drift than the evaluated non-oracle monocular streaming and rig-aware offline models, while maintaining low inference cost. Ablations and controlled camera-count experiments identify the sources of these gains. We further examine how longer training windows affect inference over longer horizons. Code has been released at https://github.com/WeiYuFei0217/StreamRig.",
+          "authors": [
+            "Yufei Wei",
+            "Shuhao Ye",
+            "Qi Wang",
+            "Xin Zheng",
+            "Qing Huang",
+            "Rong Xiong",
+            "Yue Wang"
+          ],
+          "primary_category": "cs.CV",
+          "categories": [
+            "cs.CV",
+            "cs.RO"
+          ],
+          "published": "2026-09-30T17:34:58+00:00",
+          "link": "https://arxiv.org/pdf/2609.40244v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "streaming multi-camera odometry and pose estimation",
+          "llm_evidence_cn": "流式多相机里程计与位姿估计",
+          "llm_evidence": "流式多相机里程计与位姿估计",
+          "canonical_evidence": "流式多相机里程计与位姿估计",
+          "llm_tldr_en": "StreamRig builds causal streaming odometry for calibrated multi-camera rigs on a frozen multi-view 3D foundation model, adding a Rig-Resampler, causal attention and re-anchoring to regress rig poses stably.",
+          "llm_tldr_cn": "移动机器人与车辆常配备同步多相机装置，但许多流式三维基础模型面向单目输入，难以高效利用装置几何。本文提出StreamRig，在冻结的多视图三维基础模型上为标定相机装置构建因果流式里程计，通过Rig-Resampler压缩特征、CausalBridge施加带键值缓存的因果注意力，并由轻量头回归装置位姿。周期性重锚定协议支持长序列稳定位姿估计，仅训练约7460万参数，为多相机增量位姿估计提供了高效方案。",
+          "llm_tldr": "移动机器人与车辆常配备同步多相机装置，但许多流式三维基础模型面向单目输入，难以高效利用装置几何。本文提出StreamRig，在冻结的多视图三维基础模型上为标定相机装置构建因果流式里程计，通过Rig-Resampler压缩特征、CausalBridge施加带键值缓存的因果注意力，并由轻量头回归装置位姿。周期性重锚定协议支持长序列稳定位姿估计，仅训练约7460万参数，为多相机增量位姿估计提供了高效方案。",
+          "llm_tags": [
+            "query:d-slam"
+          ],
+          "matched_query_tag": "query:d-slam",
+          "matched_query_text": "visual odometry algorithms for incremental camera pose estimation",
+          "matched_requirement_id": "req-3",
+          "selection_source": "carryover_cache",
+          "paper_id": "2609.40244v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2610.07472v1",
+          "source": "arxiv",
+          "title": "SURGE: Sonar-fUsed Reconstruction and localization via image-gated Graph Estimation",
+          "abstract": "Remotely operated vehicles (ROVs) are widely used to explore and inspect underwater environments such as caves, shipwrecks, and submerged infrastructure. These missions require accurate 3D understanding of the surrounding environment, which depends on both reliable vehicle localization and metric scene reconstruction. However, external positioning is often unavailable underwater, requiring small ROVs to rely primarily on onboard perception. Optic vision provides rich visual and geometric information but suffers from scale ambi- guity and trajectory drift, whereas 2D imaging sonar provides metric range but incomplete 3D geometry. Existing underwater reconstruction approaches typically address these limitations separately or assume known sensor poses, leaving localization and reconstruction disconnected. We present SURGE, a camera sonar framework that jointly estimates the ROV trajectory and target location by integrating visual and acoustic observations within a factor graph, then uses the recovered metric poses for sonar Gaussian splatting. Experiments on real underwater RGB sonar observations show that SURGE substantially improves localization consistency over conventional vision based pose estimation and produces a more compact, natively metric reconstruction than RGB Gaussian splatting baselines.",
+          "authors": [
+            "Mohammed Ibrahim M",
+            "Vallabh Deogaonkar",
+            "Trung Dong",
+            "Jane Shin",
+            "Abhilash Somayajula",
+            "Xiaomin Lin"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO"
+          ],
+          "published": "2026-10-05T22:38:27+00:00",
+          "link": "https://arxiv.org/pdf/2610.07472v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "localization and metric scene reconstruction",
+          "llm_evidence_cn": "定位与度量场景重建",
+          "llm_evidence": "定位与度量场景重建",
+          "canonical_evidence": "定位与度量场景重建",
+          "llm_tldr_en": "Proposes SURGE, fusing optic vision and 2D imaging sonar via image-gated graph estimation for reliable underwater vehicle localization and metric 3D scene reconstruction.",
+          "llm_tldr_cn": "针对水下遥控潜航器在无外部定位条件下难以同时获得可靠定位与度量三维重建的问题，本文提出SURGE。方法通过图像门控图估计融合光学视觉与二维成像声呐，兼顾视觉的丰富几何信息与声呐的度量距离。实验表明该框架缓解了视觉尺度模糊与轨迹漂移，同时补全声呐缺失的三维几何。该工作为水下探索任务提供了融合式定位与重建方案。",
+          "llm_tldr": "针对水下遥控潜航器在无外部定位条件下难以同时获得可靠定位与度量三维重建的问题，本文提出SURGE。方法通过图像门控图估计融合光学视觉与二维成像声呐，兼顾视觉的丰富几何信息与声呐的度量距离。实验表明该框架缓解了视觉尺度模糊与轨迹漂移，同时补全声呐缺失的三维几何。该工作为水下探索任务提供了融合式定位与重建方案。",
+          "llm_tags": [
+            "query:d-slam"
+          ],
+          "matched_query_tag": "query:d-slam",
+          "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2610.07472v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2610.05757v1",
+          "source": "arxiv",
+          "title": "Human-in-the-Loop Neuro-Symbolic Drift Anticipation for Reliable Visual SLAM",
+          "abstract": "This paper introduces Hybrid DeepSEE (HDS), a Human-in-the-Loop (HITL) neuro-symbolic framework for proactive drift anticipation in Visual SLAM (V-SLAM). While data-driven models offer predictive power, their \"black-box\" nature often yields physically inconsistent outputs in out-of-distribution (OOD) environments. To address this, HDS integrates neural drift risk estimation with symbolic constraint reasoning. By utilizing a Large Language Model (LLM) as a reasoning bridge, the framework translates qualitative human context into interpretable symbolic constraints. Building upon this architecture, we propose a superior drift anticipation framework that ensures enhanced reliability and consistency in Visual SLAM",
+          "authors": [
+            "Junhyun Nam",
+            "Wonse Jo"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO"
+          ],
+          "published": "2026-10-05T04:06:38+00:00",
+          "link": "https://arxiv.org/pdf/2610.05757v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:rl-motion",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "proactive drift anticipation for reliable visual SLAM",
+          "llm_evidence_cn": "面向可靠视觉SLAM的漂移预判",
+          "llm_evidence": "面向可靠视觉SLAM的漂移预判",
+          "canonical_evidence": "面向可靠视觉SLAM的漂移预判",
+          "llm_tldr_en": "Hybrid DeepSEE combines neural drift risk estimation with symbolic constraint reasoning to anticipate drift reliably in visual SLAM.",
+          "llm_tldr_cn": "视觉SLAM中数据驱动模型虽具预测能力，但其黑箱特性在分布外环境中常产生物理不一致输出。该文提出Hybrid DeepSEE，一种人在回路神经符号框架，将神经漂移风险估计与符号约束推理结合，并用大语言模型作推理桥梁，把人类定性上下文转译为可解释的符号约束。实验表明该框架提升了视觉SLAM漂移预判的可靠性与一致性。其贡献在于为SLAM漂移问题引入了可解释、可干预的预判机制。",
+          "llm_tldr": "视觉SLAM中数据驱动模型虽具预测能力，但其黑箱特性在分布外环境中常产生物理不一致输出。该文提出Hybrid DeepSEE，一种人在回路神经符号框架，将神经漂移风险估计与符号约束推理结合，并用大语言模型作推理桥梁，把人类定性上下文转译为可解释的符号约束。实验表明该框架提升了视觉SLAM漂移预判的可靠性与一致性。其贡献在于为SLAM漂移问题引入了可解释、可干预的预判机制。",
+          "llm_tags": [
+            "query:d-slam"
+          ],
+          "matched_query_tag": "query:d-slam",
+          "matched_query_text": "visual simultaneous localization and mapping",
+          "matched_requirement_id": "req-1",
+          "selection_source": "carryover_cache",
+          "paper_id": "2610.05757v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2610.05546v1",
+          "source": "arxiv",
+          "title": "GR-LIO: A Local Ground-Aware LiDAR-Inertial Odometry System Using Body-to-Ground Height",
+          "abstract": "LiDAR-inertial odometry (LIO) is widely used for state estimation in ground-based autonomous mobile robots. However, the geometric constraints provided by the local ground surface remain largely underexploited in existing LIO systems. This paper proposes a filter-based local ground-aware LIO framework that explicitly incorporates local ground plane geometry into the state estimation process to improve both localization accuracy and computational efficiency. Specifically, a local ground plane is parameterized by the robot orientation and the body-to-ground (B-G) height and continuously propagated within the state estimation process. Based on the proposed B-G geometry model, a propagated local ground plane enables efficient and reliable ground segmentation. The segmented ground points are then incorporated into the filter update through point-to-plane geometric constraints, improving both state estimation accuracy and efficiency. Furthermore, a planar motion update is introduced to exploit the propagated local ground plane as an additional geometric constraint, effectively suppressing vertical drift and improving estimation robustness. To address the initially unknown B-G height, an efficient initialization strategy is developed, followed by an online calibration procedure for continuous refinement. The proposed system is evaluated on several public benchmark datasets and self-collected real-world datasets covering diverse operating scenarios. Experimental results demonstrate that the proposed method consistently outperforms representative LIO methods in terms of both localization accuracy and computational efficiency.",
+          "authors": [
+            "Zhixin Zhang",
+            "Yang Song",
+            "Liang Zhao",
+            "Nathan Shankar",
+            "Barry Lennox",
+            "Pawel Ladosz"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO"
+          ],
+          "published": "2026-10-04T21:18:48+00:00",
+          "link": "https://arxiv.org/pdf/2610.05546v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "LiDAR-inertial odometry for autonomous mobile robot state estimation",
+          "llm_evidence_cn": "面向自主移动机器人状态估计的LiDAR-惯性里程计",
+          "llm_evidence": "面向自主移动机器人状态估计的LiDAR-惯性里程计",
+          "canonical_evidence": "面向自主移动机器人状态估计的LiDAR-惯性里程计",
+          "llm_tldr_en": "GR-LIO is a filter-based LiDAR-inertial odometry system that parameterizes a local ground plane by robot orientation and body-to-ground height, improving localization accuracy and efficiency.",
+          "llm_tldr_cn": "LiDAR-惯性里程计广泛用于地面移动机器人状态估计，但现有系统大多未充分利用局部地面提供的几何约束。本文提出基于滤波器的局部地面感知LIO框架，用机器人朝向与体-地高度参数化局部地面平面，并在状态估计中持续传播该几何模型。该模型提升了定位精度与计算效率，为地面机器人里程计提供新约束来源。",
+          "llm_tldr": "LiDAR-惯性里程计广泛用于地面移动机器人状态估计，但现有系统大多未充分利用局部地面提供的几何约束。本文提出基于滤波器的局部地面感知LIO框架，用机器人朝向与体-地高度参数化局部地面平面，并在状态估计中持续传播该几何模型。该模型提升了定位精度与计算效率，为地面机器人里程计提供新约束来源。",
+          "llm_tags": [
+            "query:d-slam"
+          ],
+          "matched_query_tag": "query:d-slam",
+          "matched_query_text": "simultaneous localization and mapping methods for autonomous navigation",
+          "matched_requirement_id": "req-2",
+          "selection_source": "carryover_cache",
+          "paper_id": "2610.05546v1",
+          "carry_days": 1
+        }
+      ]
+    },
+    "robot-nav": {
+      "updated_date": "20260929-20261008",
+      "carryover_days": 9,
+      "items": [
+        {
+          "id": "2610.01959v1",
+          "source": "arxiv",
+          "title": "Training-Free Diffusion Planning with Analytical Local Scores",
+          "abstract": "Path finding and multi-robot motion planning require trajectories that are smooth, goal-directed, and collision-free in environments with complex geometric constraints. Recent diffusion-based planners have shown that trajectory generation can be cast as iterative denoising which has opened the doors to learning-based approaches that can handle multi-modal trajectory distributions and refine entire trajectories. However, a key limitation is that diffusion planners require training on large collections of feasible trajectories, rendering them map-specific, and difficult to deploy when high-quality demonstrations are unavailable. This paper introduces a training-free diffusion-based motion planner that replaces learned global trajectory scores with analytical local scores derived from obstacle, smoothness, velocity, and inter-agent feasibility terms. The proposed idea relies on a key observation: the score of a trajectory can be reconstructed by considering only local interactions between neighboring waypoints and nearby constraints. This structure exploitation yields a decomposed denoising procedure that retains the optimization structure of classical trajectory methods while inheriting the iterative refinement behavior of diffusion models. Experiments on a large collection of complex environments and large multi-agent planning tasks show that the proposed analytical score produces smooth and feasible trajectories within limited computational costs, for example in generating feasible paths for 300+ agents in environments containing 100+ obstacles in under 6 seconds on a GPU, outperforming strong learning-based and optimization baselines, while avoiding the data requirements of learned diffusion planners.",
+          "authors": [
+            "Michael Y. Fatemi",
+            "Jinhao Liang",
+            "Ferdinando Fioretto"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO",
+            "cs.LG"
+          ],
+          "published": "2026-10-01T16:15:15+00:00",
+          "link": "https://arxiv.org/pdf/2610.01959v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:rl-motion",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "training-free diffusion-based motion planner for smooth collision-free path finding and multi-robot planning",
+          "llm_evidence_cn": "免训练扩散式运动规划器实现平滑无碰撞路径与多机器人规划",
+          "llm_evidence": "免训练扩散式运动规划器实现平滑无碰撞路径与多机器人规划",
+          "canonical_evidence": "免训练扩散式运动规划器实现平滑无碰撞路径与多机器人规划",
+          "llm_tldr_en": "This paper presents a training-free diffusion-based motion planner that replaces learned global trajectory scores with analytical local scores, enabling smooth, goal-directed, collision-free trajectory generation for path finding and multi-robot planning without demonstrations.",
+          "llm_tldr_cn": "论文针对扩散式规划器依赖大量可行轨迹训练、因而与地图绑定且难以在缺乏高质量示范时部署的问题，提出一种免训练的扩散式运动规划方法。作者用解析局部评分替代学习到的全局轨迹评分，从而在复杂几何约束环境中生成平滑、朝向目标且无碰撞的轨迹。该方法适用于路径搜索与多机器人运动规划，去除了对示范数据与特定地图训练的依赖，提升了规划器的通用性与可部署性。",
+          "llm_tldr": "论文针对扩散式规划器依赖大量可行轨迹训练、因而与地图绑定且难以在缺乏高质量示范时部署的问题，提出一种免训练的扩散式运动规划方法。作者用解析局部评分替代学习到的全局轨迹评分，从而在复杂几何约束环境中生成平滑、朝向目标且无碰撞的轨迹。该方法适用于路径搜索与多机器人运动规划，去除了对示范数据与特定地图训练的依赖，提升了规划器的通用性与可部署性。",
+          "llm_tags": [
+            "query:robot-nav"
+          ],
+          "matched_query_tag": "query:robot-nav",
+          "matched_query_text": "path planning algorithms for mobile robots",
+          "matched_requirement_id": "req-18",
+          "selection_source": "carryover_cache",
+          "paper_id": "2610.01959v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2610.07474v1",
+          "source": "arxiv",
+          "title": "Risk-Sensitive Crowd Navigation with Adaptive Ellipsoidal Conformal Prediction",
+          "abstract": "Safe crowd navigation under distribution shift requires uncertainty representations that capture structured human-motion prediction errors and safety objectives that account for rare but consequential failures. Existing uncertainty-aware methods typically represent prediction errors using isotropic regions, which can be either overly conservative or poorly aligned with directional motion uncertainty. We introduce a risk-aware navigation framework that uses anisotropic conformal ellipsoids to translate structured prediction uncertainty into an episode-level conditional value-at-risk (CVaR) signal that regulates the Lagrangian safety penalty. In particular, adaptive ellipsoidal conformal prediction (AECP) captures directional prediction errors and adaptively calibrates uncertainty regions under distribution shift, while the resulting CVaR-regulated navigation policy is optimized using Lagrangian proximal policy optimization. We evaluate our proposed method under both in-distribution settings and out-of-distribution (OOD) settings involving shifts in pedestrian motion patterns. Compared with state-of-the-art baselines, our method maintains competitive in-distribution performance while improving success rates by 5.68-7.44 percentage points and reducing collision rates by 5.44-6.64 percentage points across OOD settings. We further deploy the trained policy without fine-tuning on a physical robot with onboard perception and CPU-only inference, showing that the full pipeline is feasible in physical crowd navigation.",
+          "authors": [
+            "Ruihan A. Li",
+            "Ziyao Guo",
+            "Yingying Li"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO",
+            "eess.SY"
+          ],
+          "published": "2026-10-05T22:40:35+00:00",
+          "link": "https://arxiv.org/pdf/2610.07474v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "risk-aware crowd navigation with anisotropic conformal prediction",
+          "llm_evidence_cn": "基于各向异性共形预测的风险感知人群导航",
+          "llm_evidence": "基于各向异性共形预测的风险感知人群导航",
+          "canonical_evidence": "基于各向异性共形预测的风险感知人群导航",
+          "llm_tldr_en": "Crowd navigation under distribution shift needs uncertainty representations capturing directional human-motion errors. This framework uses anisotropic conformal ellipsoids to turn structured prediction uncertainty into a CVaR safety signal, avoiding overly conservative isotropic regions.",
+          "llm_tldr_cn": "分布偏移下的人群导航需要能捕捉结构化人体运动预测误差的不确定性表示，以及能应对罕见高后果失效的安全目标。现有不确定性方法常用各向同性区域表示预测误差，容易过于保守或与方向性运动不确定性对齐不良。作者提出风险感知导航框架，用各向异性共形椭球将结构化预测不确定性转化为回合级条件风险价值信号，调节拉格朗日安全惩罚。该方法提升人群导航安全性，为不确定环境下的人群导航提供了风险敏感且方向感知的安全框架。",
+          "llm_tldr": "分布偏移下的人群导航需要能捕捉结构化人体运动预测误差的不确定性表示，以及能应对罕见高后果失效的安全目标。现有不确定性方法常用各向同性区域表示预测误差，容易过于保守或与方向性运动不确定性对齐不良。作者提出风险感知导航框架，用各向异性共形椭球将结构化预测不确定性转化为回合级条件风险价值信号，调节拉格朗日安全惩罚。该方法提升人群导航安全性，为不确定环境下的人群导航提供了风险敏感且方向感知的安全框架。",
+          "llm_tags": [
+            "query:robot-nav"
+          ],
+          "matched_query_tag": "query:robot-nav",
+          "matched_query_text": "obstacle avoidance strategies for autonomous robots",
+          "matched_requirement_id": "req-19",
+          "selection_source": "carryover_cache",
+          "paper_id": "2610.07474v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2610.06400v1",
+          "source": "arxiv",
+          "title": "Visual Swarm Navigation via Deep Reinforcement Learning and Evolutionary Hybrid Design",
+          "abstract": "Swarm robotics presents a robust and cost-effective paradigm for advanced automation in complex, dynamic environments, such as those encountered in search and rescue or environmental monitoring. A fundamental challenge for this field is the data-driven design of decentralized controllers capable of generating emergent collective behaviors. This paper proposes a novel, AI-driven hybrid methodology for the automatic synthesis of swarm robotic controllers for autonomous visual navigation. This approach synergistically combines multi-agent reinforcement learning with neuro-evolutionary strategies, specifically leveraging implementations of the cross-entropy method and the covariance matrix adaptation evolution strategy to optimize a pre-trained individual navigation policy. The underlying deep architecture is engineered for low-cost, resource-constrained platforms, utilizing a compact neural network that relies exclusively on monocular camera imagery. This vision-based design emphasizes computational and energy efficiency, a critical requirement for practical swarm deployments. Experiments, performed in a high-fidelity physics simulator, demonstrate that the resulting controllers enable robust and scalable collective exploration of diverse indoor environments. The controller trained using our cross-entropy method achieves superior exploration coverage, visiting 36.20% more regions compared to the covariance matrix adaptation evolution strategy. Critically, our best vision-based policy achieves exploration performance statistically comparable to traditional methods relying on more expensive distance sensors, while delivering a significant 31.40% average reduction in energy consumption. These findings validate an effective and economically viable autonomous control system, establishing a path for deploying highly efficient collective intelligence in real-world engineering applications.",
+          "authors": [
+            "Álvaro Díez",
+            "Fidel Aznar"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO",
+            "cs.MA",
+            "cs.NE"
+          ],
+          "published": "2026-10-05T14:21:11+00:00",
+          "link": "https://arxiv.org/pdf/2610.06400v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:rl-motion",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "visual swarm navigation via deep reinforcement learning",
+          "llm_evidence_cn": "基于深度强化学习的视觉集群导航",
+          "llm_evidence": "基于深度强化学习的视觉集群导航",
+          "canonical_evidence": "基于深度强化学习的视觉集群导航",
+          "llm_tldr_en": "Swarm robotics needs data-driven decentralized controllers producing emergent behavior. This hybrid method combines multi-agent reinforcement learning with neuro-evolution (cross-entropy and CMA-ES) to synthesize controllers for autonomous visual navigation in dynamic environments.",
+          "llm_tldr_cn": "集群机器人需要数据驱动的去中心化控制器以在复杂动态环境中产生涌现集体行为，其自动设计仍具挑战。作者提出AI驱动的混合方法，将多智能体强化学习与神经进化策略相结合，利用交叉熵方法与CMA-ES优化预训练控制器，实现自主视觉导航。该方法能自动合成去中心化集群控制器，在搜索救援与环境监测等复杂动态环境中产生鲁棒的集体导航行为。该工作为集群机器人视觉导航控制器的自动设计提供了强化学习与进化计算融合的有效途径。",
+          "llm_tldr": "集群机器人需要数据驱动的去中心化控制器以在复杂动态环境中产生涌现集体行为，其自动设计仍具挑战。作者提出AI驱动的混合方法，将多智能体强化学习与神经进化策略相结合，利用交叉熵方法与CMA-ES优化预训练控制器，实现自主视觉导航。该方法能自动合成去中心化集群控制器，在搜索救援与环境监测等复杂动态环境中产生鲁棒的集体导航行为。该工作为集群机器人视觉导航控制器的自动设计提供了强化学习与进化计算融合的有效途径。",
           "llm_tags": [
             "query:robot-nav"
           ],
           "matched_query_tag": "query:robot-nav",
           "matched_query_text": "visual navigation using cameras for robots",
-          "matched_requirement_id": "req-4",
+          "matched_requirement_id": "req-20",
           "selection_source": "carryover_cache",
-          "paper_id": "2608.19866v1",
+          "paper_id": "2610.06400v1",
           "carry_days": 1
         },
         {
-          "id": "2608.19004v1",
+          "id": "2610.04916v1",
           "source": "arxiv",
-          "title": "Autonomous Agricultural Tractor: Integrated Weed Detection and LiDAR Navigation for Precision Paddy Farming",
-          "abstract": "Site-specific weed management in paddy farming offers substantial reductions in herbicide use over conventional broadcast spraying, but field deployment has been limited by three persistent challenges: robust crop-row navigation under canopy where GNSS degrades, real-time visual discrimination between rice and morphologically diverse weeds, and the asymmetric cost of misclassifying rice as weed, which is irreversible.   This paper presents AgriNav, an integrated autonomous tractor system built around four ROS-coupled modules: a custom PyTorch reimplementation of WeedDet for rice detection, a parallel lightweight 1.68M-parameter CNN-FPN variant with asymmetric class weighting, an inverted-logic discrimination module that protects the rice class through a hardcoded confidence-gate veto, and a 6-state constant-velocity-turn-rate Extended Kalman Filter fusing GNSS, IMU, and wheel odometry with three-level outage bridging. Our primary system-level contribution is a four-mechanism LiDAR-camera fusion bridge that uses the navigation LiDAR for region-of-interest constraint, world-coordinate projection, ground-plane filtering, and bidirectional confidence fusion at zero additional hardware cost.   Simulation experiments demonstrate continuous position tracking through a 20-second GNSS outage, crop row detection confidence above 0.9 throughout operation, and rice-detection confidences from 0.32 to 0.95 across paddy, aerial, and post-flood imagery. The LiDAR ROI constraint reduces detection inference region by an estimated 30 to 50 percent.",
+          "title": "PreAct-Nav: Agentic Reasoning Before Action for Urban Navigation",
+          "abstract": "Urban navigation requires embodied agents to pursue long-horizon goals through local decisions based on egocentric observations. However, existing agentic navigation methods often struggle to translate distant goals into coherent local decisions in large-scale physical environments. Their reliance on linguistic reasoning over transient observations or limited history constrains anticipation of the consequences of actions and future conditions, despite the importance of such foresight for navigating long and complex urban routes. To bridge this gap, we propose PreAct-Nav, an agentic navigation framework that equips frozen policies with anticipatory reasoning for robust urban navigation. Our central idea is to anchor local decisions in persistent medium-horizon subgoals, assess the consequences of predicted actions before execution, and continually update the reasoning context using actual outcomes. At its core, a navigation memory module maintains the active subgoal and relevant experience across decisions, translating distant goals into actionable intermediate objectives. We further introduce a predictive world sandbox that uses an action-conditioned world model (AC-WM) to forecast world dynamics conditioned on candidate movements. A vision-language model (VLM) reasoner interprets these predictions under the current subgoal to retain or revise actions. After execution, real observations are used to assess outcomes, correct inconsistent assumptions, and update memory to continue or reformulate the subgoal. Extensive evaluations demonstrate that the proposed PreAct-Nav improves action selection through memory updates and visual prediction, with more pronounced gains on longer routes and routes with more turns.",
           "authors": [
-            "Benjamin Merryman-Smith",
-            "Tony Nguyen",
-            "Bilal Dogutas",
-            "Krish Shah",
-            "Anthony Raphael",
-            "Sudip Dhakal"
+            "Jing Xie",
+            "Shouwei Ruan",
+            "Yubin Wang",
+            "Yuxiang Zhang",
+            "Junwei Yang",
+            "Songchang Jin",
+            "Dianxi Shi"
           ],
           "primary_category": "cs.RO",
           "categories": [
             "cs.RO",
-            "cs.CV"
+            "cs.AI"
           ],
-          "published": "2026-08-19T15:04:22+00:00",
-          "link": "https://arxiv.org/pdf/2608.19004v1",
+          "published": "2026-10-04T03:50:39+00:00",
+          "link": "https://arxiv.org/pdf/2610.04916v1",
           "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
             "keyword:robot-nav",
+            "query:d-slam",
+            "query:rl-motion",
             "query:robot-nav"
           ],
           "llm_score": 8.0,
-          "llm_evidence_en": "autonomous tractor system with LiDAR navigation and crop-row following",
-          "llm_evidence_cn": "自主拖拉机激光雷达导航与作物行跟随系统",
-          "llm_evidence": "自主拖拉机激光雷达导航与作物行跟随系统",
-          "canonical_evidence": "自主拖拉机激光雷达导航与作物行跟随系统",
-          "llm_tldr_en": "Presents AgriNav, an autonomous tractor integrating LiDAR-based navigation with asymmetric weed detection for paddy farming, robust under GNSS-degraded canopy conditions.",
-          "llm_tldr_cn": "针对水稻田间GNSS信号受冠层遮挡而退化的问题，提出AgriNav自主拖拉机系统，集成激光雷达导航与杂草检测模块。系统利用ROS耦合的检测与判别模块实现作物行导航和实时杂草区分，并处理将水稻误判为杂草的不可逆代价。实验结果表明该系统在田间条件下能稳健导航并支持精准除草，为农业机器人在退化定位环境中的自主作业提供了可行方案。",
-          "llm_tldr": "针对水稻田间GNSS信号受冠层遮挡而退化的问题，提出AgriNav自主拖拉机系统，集成激光雷达导航与杂草检测模块。系统利用ROS耦合的检测与判别模块实现作物行导航和实时杂草区分，并处理将水稻误判为杂草的不可逆代价。实验结果表明该系统在田间条件下能稳健导航并支持精准除草，为农业机器人在退化定位环境中的自主作业提供了可行方案。",
+          "llm_evidence_en": "agentic navigation framework for urban long-horizon goals",
+          "llm_evidence_cn": "面向城市长时程目标的智能体导航框架",
+          "llm_evidence": "面向城市长时程目标的智能体导航框架",
+          "canonical_evidence": "面向城市长时程目标的智能体导航框架",
+          "llm_tldr_en": "PreAct-Nav equips frozen navigation policies with anticipatory reasoning anchored in persistent medium-horizon representations, improving long-horizon urban navigation over transient-observation baselines.",
+          "llm_tldr_cn": "城市导航要求智能体依据自我中心观测在长时程目标下做出一致的局部决策，但现有方法依赖对瞬时观测的语言推理，难以预见行动后果与未来路况。为此作者提出PreAct-Nav框架，用持久的中等时域表征锚定局部决策，为冻结策略赋予前瞻性推理能力。实验表明该方法在复杂城市长路径导航中优于依赖瞬时观测的基线，提升了决策连贯性与鲁棒性，为具身智能体在真实大尺度环境中的自主导航提供了新思路。",
+          "llm_tldr": "城市导航要求智能体依据自我中心观测在长时程目标下做出一致的局部决策，但现有方法依赖对瞬时观测的语言推理，难以预见行动后果与未来路况。为此作者提出PreAct-Nav框架，用持久的中等时域表征锚定局部决策，为冻结策略赋予前瞻性推理能力。实验表明该方法在复杂城市长路径导航中优于依赖瞬时观测的基线，提升了决策连贯性与鲁棒性，为具身智能体在真实大尺度环境中的自主导航提供了新思路。",
           "llm_tags": [
             "query:robot-nav"
           ],
           "matched_query_tag": "query:robot-nav",
-          "matched_query_text": "robot navigation methods and systems",
-          "matched_requirement_id": "req-1",
+          "matched_query_text": "autonomous navigation of robots in unknown environments",
+          "matched_requirement_id": "req-21",
           "selection_source": "carryover_cache",
-          "paper_id": "2608.19004v1",
+          "paper_id": "2610.04916v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2610.05607v1",
+          "source": "arxiv",
+          "title": "Emergency Obstacle Avoidance Maneuvers in Differential-Drive Mobile Robots",
+          "abstract": "Emergency obstacle avoidance requires a mobile robot to brake or change its heading within the available distance. This paper investigates the dependence of maneuver performance and odometric error on approach speed for a differential-drive robot. A footprint-clearance analysis and a normalized wheel-motion index provide a kinematic description of five braking and turning maneuvers. The principal experiment comprises 540 block-randomized trials on tile, of which 539 are retained, at commanded approach speeds of 45, 55, and 65 cm/s. An overhead camera provides an independent pose reference. When encoder, gyro, and camera heading changes are evaluated over complete motion records, the mean encoder discrepancy increases by 4.7-5.1 degrees for the two reverse-spin maneuvers between the lowest and highest speeds; the arc and brake-assisted pivot change by less than 0.4 degrees. Larger encoder discrepancy is associated with lower avoidance success after adjustment for distance, speed, maneuver, day, and turn direction. Gyro discrepancies remain approximately 3 degrees for the reverse spins. Estimated reaction distances for 90% success and their uncertainty quantify the maneuver trade-offs. The results support speed-specific empirical characterization of emergency maneuvers and distinguish encoder error from recovery motion and measurement-window mismatch.",
+          "authors": [
+            "Kautik Mandve",
+            "Nilay Kant"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO",
+            "eess.SY"
+          ],
+          "published": "2026-10-04T23:19:11+00:00",
+          "link": "https://arxiv.org/pdf/2610.05607v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "emergency obstacle avoidance maneuvers for mobile robots",
+          "llm_evidence_cn": "移动机器人紧急避障机动",
+          "llm_evidence": "移动机器人紧急避障机动",
+          "canonical_evidence": "移动机器人紧急避障机动",
+          "llm_tldr_en": "Studies how approach speed affects braking and turning maneuver performance and odometric error for differential-drive robots across 540 trials with camera pose reference.",
+          "llm_tldr_cn": "紧急避障要求移动机器人在有限距离内制动或转向，但不同接近速度下的机动性能与里程计误差关系尚不明确。本文针对差速驱动机器人，通过足迹间隙分析与归一化轮运动指标，对五种制动与转向机动进行运动学描述。在瓷砖地面上完成540次随机化试验，以俯视相机提供独立位姿参考，结果显示编码器航向偏差随接近速度增大而上升，为紧急避障的可靠控制提供依据。",
+          "llm_tldr": "紧急避障要求移动机器人在有限距离内制动或转向，但不同接近速度下的机动性能与里程计误差关系尚不明确。本文针对差速驱动机器人，通过足迹间隙分析与归一化轮运动指标，对五种制动与转向机动进行运动学描述。在瓷砖地面上完成540次随机化试验，以俯视相机提供独立位姿参考，结果显示编码器航向偏差随接近速度增大而上升，为紧急避障的可靠控制提供依据。",
+          "llm_tags": [
+            "query:robot-nav"
+          ],
+          "matched_query_tag": "query:robot-nav",
+          "matched_query_text": "obstacle avoidance strategies for autonomous robots",
+          "matched_requirement_id": "req-19",
+          "selection_source": "carryover_cache",
+          "paper_id": "2610.05607v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2609.39105v1",
+          "source": "arxiv",
+          "title": "Occlusion-Aware, Quasi-Static, Stability-Oriented Trajectory Planning on Uneven Terrain",
+          "abstract": "Autonomous navigation in unstructured off-road environments requires reasoning about both vehicle--terrain interaction and environmental unknowns. We propose a model-based framework for generating quasi-static, stability-oriented reference trajectories for rigid, non-articulated four-wheeled vehicles on highly uneven terrain. Our work makes three primary contributions. First, we model blind spots caused by terrain occlusion as coverage-induced epistemic uncertainty in a fixed-feature Fourier terrain representation, quantified through a regularized inverse-Hessian estimate. Second, we propagate this uncertainty through the Nonlinear Least-Squares (NLS) pose/contact model using implicit differentiation and incorporate the resulting pose, contact-point, and per-wheel surface-normal uncertainty terms into trajectory optimization based on the Cross-Entropy Method (CEM). Third, we introduce a Flow Matching model that warm-starts terrain fitting, and we evaluate its fitting-accuracy--latency trade-off while retaining model-based refinement. Across six synthetic terrains with 30 matched start--goal pairs per terrain, the complete framework produced an observed failure rate of 18.9%, compared with 46.1% and 41.7% for two representative baselines and 34.4% for an ablation that removed the propagated-uncertainty scoring. Hardware evaluations span six distinct outdoor environments, with two representative executions presented in the paper and four additional executions included in the supplementary video. The evaluation also reports the accuracy--latency trade-off for the Flow Matching warm start.",
+          "authors": [
+            "Amith Manoharan",
+            "Chinmay Mundane",
+            "Aayush Bahukhandi",
+            "K. Madhava Krishna",
+            "Karel Zimmermann",
+            "Arun Kumar Singh"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO"
+          ],
+          "published": "2026-09-30T06:43:44+00:00",
+          "link": "https://arxiv.org/pdf/2609.39105v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "trajectory planning for autonomous navigation on uneven terrain",
+          "llm_evidence_cn": "崎岖地形上自主导航的轨迹规划",
+          "llm_evidence": "崎岖地形上自主导航的轨迹规划",
+          "canonical_evidence": "崎岖地形上自主导航的轨迹规划",
+          "llm_tldr_en": "A model-based framework generates quasi-static stability-oriented trajectories for four-wheeled vehicles on uneven terrain, modeling occlusion as epistemic uncertainty.",
+          "llm_tldr_cn": "非结构化越野环境中的自主导航需同时考虑车辆-地形交互与环境未知性。本文提出模型驱动的框架，为刚性四轮车辆在崎岖地形上生成准静态、面向稳定性的参考轨迹。方法将地形遮挡造成的盲区建模为覆盖诱导的认知不确定性，并通过隐式微分将其传播至位姿与接触模型。该工作提升了越野轨迹规划在未知地形下的安全性与稳定性。",
+          "llm_tldr": "非结构化越野环境中的自主导航需同时考虑车辆-地形交互与环境未知性。本文提出模型驱动的框架，为刚性四轮车辆在崎岖地形上生成准静态、面向稳定性的参考轨迹。方法将地形遮挡造成的盲区建模为覆盖诱导的认知不确定性，并通过隐式微分将其传播至位姿与接触模型。该工作提升了越野轨迹规划在未知地形下的安全性与稳定性。",
+          "llm_tags": [
+            "query:robot-nav"
+          ],
+          "matched_query_tag": "query:robot-nav",
+          "matched_query_text": "path planning algorithms for mobile robots",
+          "matched_requirement_id": "req-18",
+          "selection_source": "carryover_cache",
+          "paper_id": "2609.39105v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2609.38873v2",
+          "source": "arxiv",
+          "title": "DODGER: Safety-Guided Reinforcement Learning for Robot Navigation Among Dynamic Obstacles",
+          "abstract": "Robots operating in human-centered environments must safely navigate among multiple dynamic obstacles to avoid collisions with people and surrounding infrastructure. Control barrier functions (CBFs) provide an effective mechanism for safety filtering, and recent CBF-based reinforcement learning (RL) methods embed such safety information into learned policies. However, executing only safety-filtered actions during training can restrict policy exploration, a limitation that becomes particularly consequential in dynamic scenes where safety depends on relative robot-obstacle motion. We propose DODGER, a safety-guided RL framework that directly executes policy-generated actions to drive training rollouts while using CBF-filtered references and constraint violations to shape the policy toward collision-avoidance behavior. We evaluate DODGER through a Dubins-car safety analysis and demonstrate goal-directed navigation among multiple dynamic obstacles in full-order humanoid simulation and real-world humanoid experiments using LiDAR-based perception, without a runtime safety filter.",
+          "authors": [
+            "Sanghyuk Park",
+            "Kwanwoo Lee",
+            "Taekyung Kim",
+            "Seohyeon Lim",
+            "Yisoo Lee"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO",
+            "eess.SY"
+          ],
+          "published": "2026-09-30T03:22:17+00:00",
+          "link": "https://arxiv.org/pdf/2609.38873v2",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:rl-motion",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "safety-guided RL for robot navigation among dynamic obstacles",
+          "llm_evidence_cn": "面向动态障碍下机器人导航的安全强化学习",
+          "llm_evidence": "面向动态障碍下机器人导航的安全强化学习",
+          "canonical_evidence": "面向动态障碍下机器人导航的安全强化学习",
+          "llm_tldr_en": "DODGER uses control-barrier-function references while executing policy actions, improving exploration for safe navigation among dynamic obstacles.",
+          "llm_tldr_cn": "机器人在以人为中心的环境中需安全避开多个动态障碍，控制屏障函数虽可用于安全过滤，但训练时只执行过滤动作会限制策略探索，在依赖相对运动的动态场景中尤为严重。该文提出DODGER，直接执行策略生成动作驱动训练 rollout，同时用CBF过滤后的参考动作提供安全引导。实验表明该方法在动态障碍场景中兼顾了探索效率与安全性。其贡献在于缓解了安全过滤与强化学习探索之间的冲突。",
+          "llm_tldr": "机器人在以人为中心的环境中需安全避开多个动态障碍，控制屏障函数虽可用于安全过滤，但训练时只执行过滤动作会限制策略探索，在依赖相对运动的动态场景中尤为严重。该文提出DODGER，直接执行策略生成动作驱动训练 rollout，同时用CBF过滤后的参考动作提供安全引导。实验表明该方法在动态障碍场景中兼顾了探索效率与安全性。其贡献在于缓解了安全过滤与强化学习探索之间的冲突。",
+          "llm_tags": [
+            "query:robot-nav"
+          ],
+          "matched_query_tag": "query:robot-nav",
+          "matched_query_text": "obstacle avoidance strategies for autonomous robots",
+          "matched_requirement_id": "req-19",
+          "selection_source": "carryover_cache",
+          "paper_id": "2609.38873v2",
+          "carry_days": 1
+        },
+        {
+          "id": "2610.01573v1",
+          "source": "arxiv",
+          "title": "LiDARFlow: Real-Time Panel-Based MAV Guidance in Unknown Environments",
+          "abstract": "This paper presents a guidance algorithm for micro aerial vehicles operating in unknown, cluttered environments using only onboard sensing. The method is based on a panel formulation originally derived from aerodynamic potential-flow theory and generates smooth, collision-free guidance vectors from locally perceived obstacles. The approach is extended to unknown environments by constructing and updating the obstacle representation online from onboard LiDAR measurements. The resulting obstacle-avoidance field is integrated with a nominal guiding vector field to produce the final control input. The system is experimentally validated in indoor flight tests under two scenarios: waypoint navigation and directional guidance. In both cases, the vehicle successfully completes its task while avoiding all obstacles in real time using only onboard perception. The results demonstrate that the method is computationally lightweight and suitable for onboard implementation, with pointcloud processing identified as the main practical limitation. These results support the feasibility of lightweight onboard guidance in unknown environments.",
+          "authors": [
+            "João Machado",
+            "Zeynep Bilgin",
+            "Matthieu Verdoucq",
+            "Murat Bronz"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO"
+          ],
+          "published": "2026-10-01T12:33:47+00:00",
+          "link": "https://arxiv.org/pdf/2610.01573v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "Collision-free guidance and obstacle avoidance for MAVs",
+          "llm_evidence_cn": "面向微型飞行器的无碰撞引导与避障",
+          "llm_evidence": "面向微型飞行器的无碰撞引导与避障",
+          "canonical_evidence": "面向微型飞行器的无碰撞引导与避障",
+          "llm_tldr_en": "LiDARFlow generates smooth collision-free guidance vectors via an aerodynamic potential-flow panel formulation, building obstacle representations online from onboard LiDAR for MAV guidance in unknown environments.",
+          "llm_tldr_cn": "微型飞行器在未知杂乱环境中仅靠机载传感实现实时避障与引导十分困难。本文基于气动势流理论推导的面板公式，生成平滑无碰撞的引导向量，并利用机载LiDAR在线构建与更新障碍表示，将其与标称引导向量场融合产生控制输入。室内飞行实验在航点导航与定向引导两种场景验证了方法的成功率。",
+          "llm_tldr": "微型飞行器在未知杂乱环境中仅靠机载传感实现实时避障与引导十分困难。本文基于气动势流理论推导的面板公式，生成平滑无碰撞的引导向量，并利用机载LiDAR在线构建与更新障碍表示，将其与标称引导向量场融合产生控制输入。室内飞行实验在航点导航与定向引导两种场景验证了方法的成功率。",
+          "llm_tags": [
+            "query:robot-nav"
+          ],
+          "matched_query_tag": "query:robot-nav",
+          "matched_query_text": "obstacle avoidance strategies for autonomous robots",
+          "matched_requirement_id": "req-19",
+          "selection_source": "carryover_cache",
+          "paper_id": "2610.01573v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2610.00878v1",
+          "source": "arxiv",
+          "title": "UniTrackPLA: Unified Panorama-Language-Action Model for Instruction-Guided Navigation and Dynamic Person Tracking",
+          "abstract": "General-purpose embodied robots should support both navigation toward language-specified destinations and dynamic person tracking under arbitrary initial target azimuths. However, existing methods typically rely on forward-facing observations and address these tasks with separate policies, limiting omnidirectional perception and unified closed-loop control. We present UniTrackPLA, a unified panorama-language-action model for instruction-guided navigation and dynamic person tracking. Its Panoramic-Aware Encoding (PAE) preserves the temporal and azimuthal structure of perspective views projected from each panorama, enabling perspective-pretrained visual encoders to process omnidirectional observations. A shared vision-language backbone grounds instructions in the panoramic context and predicts continuous robot-centric waypoint chunks for both tasks. World-Action Consistency (WAC) further predicts action-conditioned future visual states and verifies waypoint prefixes online, allowing reliable actions to be reused while triggering replanning upon inconsistency. We also introduce OmniTrackNav-Bench, comprising 5,000 simulated tracking trajectories, 10,000 simulated VLN routes, and 96 verified real-world routes, providing 919,978 waypoint-supervision instances. UniTrackPLA improves overall tracking SR from 23.50% to 35.00% and Omni-VLN SR/SPL from 13.00%/12.77% to 19.75%/19.29%. Incorporating 76 real-world routes further improves held-out EP@0.2m from 42.92% to 92.08%. Closed-loop experiments on a Go2-W robot demonstrate unified panoramic tracking and navigation across indoor and outdoor environments. The project page is at https://tw5775.github.io/UniTrackPLA.",
+          "authors": [
+            "Pengfei Qi",
+            "Haoran Lin",
+            "Sizhuang Chen",
+            "Kai Luo",
+            "Sirui Zhang",
+            "Xinqi Liu",
+            "Fei Cheng",
+            "Wenrui Chen",
+            "Liming Yin",
+            "Kailun Yang"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO",
+            "cs.CV",
+            "eess.IV"
+          ],
+          "published": "2026-10-01T00:53:07+00:00",
+          "link": "https://arxiv.org/pdf/2610.00878v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:rl-motion",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "Panorama-language-action model for instruction-guided navigation",
+          "llm_evidence_cn": "面向指令导航的全景-语言-动作模型",
+          "llm_evidence": "面向指令导航的全景-语言-动作模型",
+          "canonical_evidence": "面向指令导航的全景-语言-动作模型",
+          "llm_tldr_en": "UniTrackPLA is a unified panorama-language-action model whose panoramic-aware encoding lets perspective-pretrained encoders process omnidirectional observations for instruction-guided navigation and dynamic person tracking.",
+          "llm_tldr_cn": "通用具身机器人应同时支持语言指定目标导航与动态人员跟踪，但现有方法多依赖前向观测且用独立策略处理两任务，限制全向感知与统一闭环控制。UniTrackPLA 提出统一全景-语言-动作模型，其全景感知编码保留投影视图的时序与方位结构，使透视预训练编码器可处理全向观测。该模型实现导航与人员跟踪的统一闭环控制。",
+          "llm_tldr": "通用具身机器人应同时支持语言指定目标导航与动态人员跟踪，但现有方法多依赖前向观测且用独立策略处理两任务，限制全向感知与统一闭环控制。UniTrackPLA 提出统一全景-语言-动作模型，其全景感知编码保留投影视图的时序与方位结构，使透视预训练编码器可处理全向观测。该模型实现导航与人员跟踪的统一闭环控制。",
+          "llm_tags": [
+            "query:robot-nav"
+          ],
+          "matched_query_tag": "query:robot-nav",
+          "matched_query_text": "visual navigation using cameras for robots",
+          "matched_requirement_id": "req-20",
+          "selection_source": "carryover_cache",
+          "paper_id": "2610.00878v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2609.38928v1",
+          "source": "arxiv",
+          "title": "Local-Minimum Escaper: Programmatic Subgoal Generation for Robust Navigation in Unknown Environments",
+          "abstract": "Mapless navigation in unknown and partially observable environments remains challenging for mobile robots, particularly when local minima prevent the robot from making progress toward its goal. Existing local navigation methods often lack an explicit mechanism for escaping such situations, while deep reinforcement learning (DRL) approaches typically learn recovery behaviors implicitly through reward design and policy optimization. In this work, we propose \\textbf{LME} (Local-Minimum Escaper), a programmatic hierarchical framework that explicitly generates and reasons subgoals to guide robots out of local-minimum regions. LME operates solely on local observations and selects candidate subgoals using interpretable heuristic criteria that account for both surrounding obstacle geometry and candidate-location safety. A local planner then generates low-level motion commands toward the selected subgoal. This design enables LME to handle environments both with and without local minima within a unified framework, while remaining independent of the underlying local planner and requiring no additional training. Extensive experiments in simulated and real-world environments demonstrate that LME provides robust navigation performance and generalizes to challenging unseen scenarios. Furthermore, the generated subgoals can be used to guide different local planners, substantially improving their ability to escape local minima. Successful deployments on both differential-drive and quadruped robots further demonstrate the practical applicability and generality of the proposed framework.",
+          "authors": [
+            "Yin Gu",
+            "Xinming Zhang",
+            "Shanze Wang",
+            "Siwei Cheng",
+            "Wei Zhang"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO"
+          ],
+          "published": "2026-09-30T04:10:16+00:00",
+          "link": "https://arxiv.org/pdf/2609.38928v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:rl-motion",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "programmatic subgoal generation for robust mapless navigation in unknown environments",
+          "llm_evidence_cn": "未知环境下鲁棒无地图导航的程序化子目标生成",
+          "llm_evidence": "未知环境下鲁棒无地图导航的程序化子目标生成",
+          "canonical_evidence": "未知环境下鲁棒无地图导航的程序化子目标生成",
+          "llm_tldr_en": "Proposes LME, a programmatic hierarchical framework that generates and reasons subgoals from local observations to escape local minima, improving robust mapless navigation in unknown environments.",
+          "llm_tldr_cn": "在未知且部分可观测环境中，无地图导航常因局部极小值而停滞，现有局部导航方法缺少显式逃离机制，深度强化学习则只能隐式学习恢复行为。论文提出LME，一种程序化分层框架，仅用局部观测，通过可解释启发式选择候选子目标，引导机器人脱离局部极小区域。方法显式生成并推理子目标，提升了未知环境导航的鲁棒性。该工作为无地图机器人导航提供了可解释的局部极小逃离方案。",
+          "llm_tldr": "在未知且部分可观测环境中，无地图导航常因局部极小值而停滞，现有局部导航方法缺少显式逃离机制，深度强化学习则只能隐式学习恢复行为。论文提出LME，一种程序化分层框架，仅用局部观测，通过可解释启发式选择候选子目标，引导机器人脱离局部极小区域。方法显式生成并推理子目标，提升了未知环境导航的鲁棒性。该工作为无地图机器人导航提供了可解释的局部极小逃离方案。",
+          "llm_tags": [
+            "query:robot-nav"
+          ],
+          "matched_query_tag": "query:robot-nav",
+          "matched_query_text": "autonomous navigation of robots in unknown environments",
+          "matched_requirement_id": "req-21",
+          "selection_source": "carryover_cache",
+          "paper_id": "2609.38928v1",
+          "carry_days": 1
+        }
+      ]
+    },
+    "rl-motion": {
+      "updated_date": "20260929-20261008",
+      "carryover_days": 9,
+      "items": [
+        {
+          "id": "2610.05331v1",
+          "source": "arxiv",
+          "title": "VAMPS: Visual and Motor Policies from Sampling-Based Planning",
+          "abstract": "Learning robot policies directly on physical systems remains difficult because data collection is costly and policy exploration can be unsafe. We introduce Visual and Motor Policies from Sampling-Based Planning (VAMPS), a framework that uses Model Predictive Path Integral (MPPI) control to train reusable policies without human demonstrations. VAMPS supports two training modes. For one-step proprioceptive policies, it operates iteratively in simulation: the policy warm-starts MPPI, and the refined trajectories provide new supervision as the policy changes. A learned terminal value improves short-horizon planning, while an Implicit Q-Learning (IQL) critic guides the policy update. Iterative refinement outperforms training once on frozen MPPI data, and we transfer the learned locomotion policy to a Unitree Go2. For visuomotor policies, VAMPS operates directly from real-robot data. MPPI uses task-specific state estimates to plan and execute trajectories while recording RGB and sensor observations on a Flexiv Rizon 10S. Action Chunking with Transformers predicts action chunks, reducing the effective prediction horizon, and is trained offline on this fixed dataset. We demonstrate visuomotor pick-and-place and force-aware whiteboard erasing. In the latter task, the policy additionally observes the measured $6$-D wrench and desired normal force. These results show that VAMPS can learn policies either in simulation followed by hardware transfer or directly from autonomously collected real-robot data.",
+          "authors": [
+            "Mohamed Yassine Kabouri",
+            "Pietro Noah Crestaz",
+            "Quang-Nam Nguyen",
+            "Qilong Cheng",
+            "Ludovic Righetti",
+            "Nicolas Mansard"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO",
+            "cs.AI",
+            "cs.LG"
+          ],
+          "published": "2026-10-04T15:54:35+00:00",
+          "link": "https://arxiv.org/pdf/2610.05331v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:rl-motion",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "learning robot policies via MPPI and IQL",
+          "llm_evidence_cn": "用MPPI与IQL训练机器人策略",
+          "llm_evidence": "用MPPI与IQL训练机器人策略",
+          "canonical_evidence": "用MPPI与IQL训练机器人策略",
+          "llm_tldr_en": "Proposes VAMPS, a framework using Model Predictive Path Integral control and an Implicit Q-Learning critic to train reusable robot policies without human demonstrations, improving over frozen-data training.",
+          "llm_tldr_cn": "针对在物理系统上直接学习机器人策略成本高且探索不安全的问题，本文提出VAMPS框架。该方法利用模型预测路径积分控制生成轨迹，并结合隐式Q学习评论家迭代优化策略，无需人类示教。实验表明迭代精炼优于在冻结MPPI数据上单次训练，并可将策略迁移到真实系统。该工作为无示教的机器人运动控制策略学习提供了可复用范式。",
+          "llm_tldr": "针对在物理系统上直接学习机器人策略成本高且探索不安全的问题，本文提出VAMPS框架。该方法利用模型预测路径积分控制生成轨迹，并结合隐式Q学习评论家迭代优化策略，无需人类示教。实验表明迭代精炼优于在冻结MPPI数据上单次训练，并可将策略迁移到真实系统。该工作为无示教的机器人运动控制策略学习提供了可复用范式。",
+          "llm_tags": [
+            "query:rl-motion"
+          ],
+          "matched_query_tag": "query:rl-motion",
+          "matched_query_text": "robot control using learning methods",
+          "matched_requirement_id": "req-13",
+          "selection_source": "carryover_cache",
+          "paper_id": "2610.05331v1",
+          "carry_days": 1
+        },
+        {
+          "id": "2609.39751v1",
+          "source": "arxiv",
+          "title": "Beyond Policy Alignment: Closing the Planning-Learning Loop for Robot Control with Learned World Models",
+          "abstract": "Planning with learned world models combines online trajectory optimization with learned value and policy functions for high-dimensional control. Because the planner determines the experience used for learning, while the learned critic and actor in turn score and propose future plans, planning and learning form a closed feedback loop. TD-MPC is a prominent instance of this design. Recent policy-constrained variants strengthen one part of the loop by aligning the learned policy with planner behavior. We introduce PL-MPC (Planning-Learning MPC), which additionally modifies critic supervision and planner terminal-value estimation. Hybrid multi-step TD targets expose critic updates to more realized rewards before bootstrapping; disagreement-aware terminal estimates reduce the influence of uncertain critic values during MPPI planning; and return-weighted actor distillation emphasizes planner-executed actions from high-return episodes. The world-model architecture and MPPI optimizer are otherwise unchanged. On HumanoidBench, the largest gains occur on \\texttt{balance-hard}, where Total Average Return (TAR) increases from $98\\pm18$ to $387\\pm255$, and \\texttt{hurdle}, from $199\\pm13$ to $466\\pm200$; performance across the broader benchmark remains task dependent, and PL-MPC remains competitive on DMControl. Controlled ablations show different component interactions across the two tasks. We further demonstrate zero-shot sim-to-real transfer on wrench-nut alignment with a 7-DoF KUKA IIWA14, obtaining higher observed success than TD-M(PC)^2 on the training object size and two unseen sizes. Code and data will be available at: https://pl-mpc-humanoid.github.io.",
+          "authors": [
+            "Kowndinya Boyalakuntla",
+            "Yuhan Liu",
+            "Abdeslam Boularias"
+          ],
+          "primary_category": "cs.RO",
+          "categories": [
+            "cs.RO"
+          ],
+          "published": "2026-09-30T13:50:51+00:00",
+          "link": "https://arxiv.org/pdf/2609.39751v1",
+          "tags": [
+            "keyword:d-slam",
+            "keyword:rl-motion",
+            "keyword:robot-nav",
+            "query:d-slam",
+            "query:rl-motion",
+            "query:robot-nav"
+          ],
+          "llm_score": 8.0,
+          "llm_evidence_en": "planning-learning loop for robot control",
+          "llm_evidence_cn": "机器人控制的规划学习闭环",
+          "llm_evidence": "机器人控制的规划学习闭环",
+          "canonical_evidence": "机器人控制的规划学习闭环",
+          "llm_tldr_en": "Introduces PL-MPC, which closes the planning-learning loop in learned world models by modifying critic supervision and planner terminal-value estimation for high-dimensional robot control.",
+          "llm_tldr_cn": "针对学习世界模型中规划与学习相互耦合但现有方法仅对齐策略的问题，本文提出PL-MPC方法。该方法在TD-MPC框架上改进评论家监督与规划器终端价值估计，采用混合多步时序差分目标使评论家接触更多实际奖励。实验表明该设计改善了高维控制任务中的规划与学习协同效果。该工作为闭环规划-学习式机器人控制提供了新的监督机制。",
+          "llm_tldr": "针对学习世界模型中规划与学习相互耦合但现有方法仅对齐策略的问题，本文提出PL-MPC方法。该方法在TD-MPC框架上改进评论家监督与规划器终端价值估计，采用混合多步时序差分目标使评论家接触更多实际奖励。实验表明该设计改善了高维控制任务中的规划与学习协同效果。该工作为闭环规划-学习式机器人控制提供了新的监督机制。",
+          "llm_tags": [
+            "query:rl-motion"
+          ],
+          "matched_query_tag": "query:rl-motion",
+          "matched_query_text": "robot control using learning methods",
+          "matched_requirement_id": "req-13",
+          "selection_source": "carryover_cache",
+          "paper_id": "2609.39751v1",
           "carry_days": 1
         }
       ]

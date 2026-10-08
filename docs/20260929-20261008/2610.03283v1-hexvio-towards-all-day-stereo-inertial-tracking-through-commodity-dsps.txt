@@ -1,0 +1,331 @@
+Title: HexVIO: Towards All-Day Stereo-Inertial Tracking Through Commodity DSPs
+
+URL Source: https://arxiv.org/pdf/2610.03283v1
+
+Published Time: Mon, 05 Oct 2026 01:13:57 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# HexVIO: Towards All-Day Stereo-Inertial Tracking Through Commodity DSPs 
+
+Patrick Wolf ∗1, Mateo de Mayo ∗1,2, Daniel Cremers 1,2
+
+Abstract — The ability of a device to localize itself within its surroundings is a fundamental prerequisite for spatial computing. Visual-inertial odometry (VIO) has proven to be a cost-effective and accurate solution for this task. Robots, wearables, XR devices, and drones can benefit significantly from efficient implementations of VIO since they allow for cooler, lighter, and cheaper devices with longer battery life and a better user experience. In this work, we propose to enhance the efficiency of a VIO system by leveraging the Hexagon DSP, a commodity co-processor present in many modern smartphones and XR devices. Our approach offloads the visual frontend of a stereo-inertial odometry system to the DSP while keeping the backend on the main CPU. By optimizing the implementation for the DSP architecture, we achieve significant reductions in power consumption and latency compared to CPU-only execution. Our system, HexVIO, demonstrates a 67% reduction in power consumption or an 86% increase in throughput on a commodity smartphone, with the ability to sustain long-term real-time 30 fps tracking for 0.83 W, corresponding to ∼18 hours of tracking on the testing device. These results highlight the potential of commodity DSPs for enabling all-day visual-inertial tracking in robotics and mobile devices. 
+
+I. INTRODUCTION Recent advancements in robotics [1], [2], computer vision [3]–[6], and foundation models capable of complex reasoning [7]–[9] have started to show the possibilities of perception engineering [10] as a new discipline and of spatial computing [11] as the ever more common class of problems that require a computing device to understand its surroundings. Different instances of this problem arise in important applications like autonomous vehicles, drones, humanoid robotics, wearables like smartglasses, and VR headsets. A fundamental capability that allows much of this reasoning comes from the ability of the device to localize itself and its movements in space. Utilizing cameras and inertial measurement units (IMU) for 
+
+visual-inertial odometry (VIO) and visual-inertial simultane-ous localization and mapping (VI-SLAM) has shown to be a particularly good combination thanks to the low cost of these sensors, their reduced power consumption, and proven accuracy [12], [13]. The field of VIO and VI-SLAM has made rapid progress in the previous decade enabling this technology to be de-ployed in commercial devices like VR headsets and smart-phones. However, existing limitations in terms of accuracy per watt remain in the literature [14], driving research into           
+
+> *Equal contribution.
+> 1Patrick Wolf, Mateo de Mayo, and Daniel Cremers are with the Technical University of Munich, Munich, Germany.
+
+{pm.wolf, mateo.demayo, cremers }@tum.de 
+
+> 2Mateo de Mayo and Daniel Cremers are with the Munich Center for Machine Learning, Munich, Germany.
+
+highly specialized hardware accelerators [15], [16]. These accelerators reach their efficiency through custom silicon, so they only ship in devices designed around them. We instead use a co-processor that existing devices already carry. It is nowadays common to find systems, even low-end ones, that have a GPU alongside the CPU. DSPs have developed from fixed-function audio and modem processors into increasingly general-purpose compute units that run at a fraction of the energy cost of a CPU [17]. The Hexagon DSP is now present in a multitude of devices spanning smartphones, VR, AR, and robotics (e.g., Snapdragon 8, XR2, AR1, and RB5 respectively). The DSP provides very long instruction words with wide vector lanes coupled with fast local memory. When properly utilized, this results in significantly reduced power usage for certain tasks compared to using the CPU or GPU. This kind of co-processor allows robots, XR devices, and smartphones to do long-haul vision tasks thanks to the low power required to perform them on these accelerators. The low power not only extends operation, but can also directly improve the target application: smaller batteries for lighter and cheaper drones, lighter headworn devices for reduced neck strain, and cooler smartglasses for improved comfort. The goal we work towards is tracking that runs for a full day on a device’s own battery. Even with all these benefits, very few works in the literature exploit it for the fundamental task of visual-inertial tracking and, to the best of our knowledge, none of them for the stereo-inertial sensor modality. In this work, we offload the frontend of a visual-inertial odometry system based on Basalt [18] to the Hexagon DSP of a Samsung Galaxy S23 (Snapdragon 8 Gen 2, Hexagon V73). A direct port does not beat the CPU. Sparse tracking branches per feature and reads scattered pixels, the vector unit runs all lanes together and its gather reads only on-chip memory, and each DSP call costs hundreds of microseconds, so calling the DSP once per stage spends much of the gain on round trips. Most of the work is restructuring the frontend around these three constraints. The contributions of this work are:  
+
+> •
+
+The first stereo-inertial odometry system in the literature leveraging the Hexagon DSP co-processor.  
+
+> •
+
+An optimized open-source 1 implementation of the VIO frontend providing insight into the DSP for vision tasks.  
+
+> •
+
+A thorough power, latency, and performance analysis that shows HexVIO achieving an 86% increase of throughput or a 67% reduction of power (Fig. 1).  
+
+> •
+
+An energy-focused configuration that sustains real-time         
+
+> 1The source code will be released arXiv:2610.03283v1 [cs.RO] 2 Oct 2026 01234567
+> Whole-device power [W]
+> 025 50 75 100 125 150 175
+> Throughput [fps]
+> CPU
+> CPU B
+> DSP
+> DSP B
+> matched throughput: 98 fps
+
+67% 
+
+> matched power: 4.5 W
+
+86% −0.5 0.0 0.5 1.0 1.5 2.0 
+
+> x [m]
+> −1.5 −1.0 −0.5 0.0 0.5
+> y [m]
+> DSP, done
+> t = 17 s wall clock ATE: CPU 1.7 cm, DSP 1.8 cm
+> ground truth DSP CPU CPU, 54% of sequence EV102 2×752×480@20fps
+> EMH03 2×752×480@20fps
+> TR2 2×512×512@20fps
+> TR6 2×512×512@20fps
+> MOO02 2×640×480@30fps
+> MOO08 2×640×480@30fps
+> XWALK 2×480×640@30fps
+> XBIKE 2×480×640@30fps
+
+Fig. 1. Top left: efficiency of HexVIO (DSP) against the CPU baseline on a Samsung Galaxy S23, MOO05 sequence. Each curve spans four operating points of one implementation: the paced 30 fps configuration (CPU B , DSP B ), the frontend on two and on four mid-cluster threads, and a fourth point that is unpinned for the CPU and the maximum-performance RPC policy of Table I for the DSP. At the baseline’s maximum throughput (98 fps), HexVIO draws 67 % less power; at HexVIO’s maximum-performance point (4.5 W), it delivers 86 % higher throughput than the CPU at the same power. Filled markers are measured operating points (mean of two runs); curves are shape-preserving cubic interpolants (PCHIP), and open markers are matched points read from the interpolants. Top right: top-down trajectories of both implementations on the same sequence against ground truth, frozen when the unpaced DSP run finishes; the unpaced CPU run has processed 54 % of the sequence at the same wall-clock time, with the same ATE (1.7 vs 1.8 cm). Bottom: one frame from each of the eight evaluation sequences, labeled with camera count, resolution and frame rate. 
+
+30 fps tracking for 0.83 W, corresponding to ∼18 hours of tracking on the testing device. II. RELATED WORK Contemporary VIO and VI-SLAM pipelines generally decompose into a visual frontend, responsible for key-point detection and feature tracking, an inertial integration stage, and a backend optimizer or filter tasked with fusing these modalities. A diverse set of representative systems has emerged in the literature, including optimization-based frameworks such as ORB-SLAM3 [13], which augments feature-based pipelines with inertial measurements and map atlases, and VINS-Mono/VINS-Fusion [19] or OKVIS [20], which rely on sliding-window nonlinear optimization. Filter-based approaches, notably ROVIO [21] and MSCKF [22], also remain widely adopted. In this work, we build upon Basalt [18], incorporating modifications from [23]. Basalt utilizes a fixed-lag smoother that couples patch-based Lucas-Kanade tracking [24], [25], implemented in its inverse-compositional form [26] to keep reference-side linear alge-bra out of the iteration loop, with FAST corner detection [27], preintegrated IMU factors, and first-estimate-Jacobian marginalization. The open implementation of Basalt, along with its balance between performance and accuracy [23], makes it a particularly strong target for frontend acceleration on embedded platforms. 
+
+Mobile VIO systems must additionally sustain the camera frame rate within a strict thermal and power envelope, a dual constraint formalized in embedded VIO benchmarking practices that report tracking accuracy alongside per-frame computational cost on target hardware [28]. One established strategy to meet these constraints involves redesigning the es-timator itself. For instance, LEVIO [16] achieves 20 fps six-DoF tracking below 100 mW on an ultra-low-power RISC-V SoC by employing a streamlined ORB-based frontend alongside a comprehensive hardware-software co-design. In contrast, this work preserves Basalt’s complete pipeline and instead focuses on accelerating its execution. This is areasonable approach given these SoCs are already widely adopted by different industries trying to leverage spatial computing. The visual frontend is a natural hardware acceleration 
+
+target, as its per-feature computations are easy to parallelize and its backend interface reduces to sparse correspondences. Prior work has largely targeted GPUs: vilib [29] and Jetson-SLAM [14] accelerate FAST-based frontends in CUDA (KLT as in ours, and ORB, respectively), while FastTrack [30] offloads portions of ORB-SLAM3 to the GPU. GLidE-SLAM [31] employs OpenGL compute shaders to circum-vent CUDA lock-in and augments indirect features with direct GPU tracking. In contrast, our DSP-based approach frees the GPU for concurrent workloads and sidesteps the thermal constraints and higher power draw typical of GPU acceleration, while still delivering low-power, high-frame-rate tracking. At the other extreme, custom silicon achieves the lowest reported energy per frame. Navion [15] integrates a complete VIO pipeline into a 2 mW ASIC via algorithm-hardware co-design [32], albeit at the cost of fixing the algorithm. FPGA-based solutions offer a more flexible alternative: eSLAM [33] accelerates only ORB extraction and matching, while ac2SLAM [34] accelerates both the ORB-SLAM2 frontend and backend, though neither incorporates inertial fusion. PX4Flow [35] instead computes block-matching optical flow on a microcontroller inside the sensor. Compared to the Hexagon DSP, however, these custom accelerators lack broad availability on commodity platforms, and ASICs offer no post-deployment reprogrammability. 
+
+Hexagon DSPs occupy a middle ground: they are pro-grammable, widely deployed, and optimized for energy-efficient single-instruction multiple-data (SIMD) vector pro-cessing. The Hexagon architecture [17] combines a VLIW scalar core with the HVX wide-vector coprocessor and a software-managed scratchpad. Originally designed for audio and modem tasks, it now supports general-purpose work-loads, including LLM inference [36], while vendor CV/ML stacks (FastCV, SNPE, QNN [37]) and the Halide compiler [38] already target it for dense image processing. Despite this ecosystem, academic use of Hexagon for visual-inertial tracking remains limited. The closest prior work is Muffang’s thesis [39], which offloaded OpenVINS [40] frontend rou-tines to a Snapdragon 845 via FastCV; it reduced CPU load but the offloaded kernels ran slower than their CPU equiv-alents, and no source code was released. An open Hexagon port of the ORB-SLAM3 feature extractor and matcher exists for the Lynx R1 headset [41], but it lacks inertial fusion and requires a rooted device. Crucially, none of the prior efforts support stereo-inertial tracking, a ubiquitous modality in consumer XR and robotics. Relative to this body of work, our system is, to the best of our knowledge, the first to accelerate a multicamera VIO pipeline on the Hexagon DSP of a stock consumer smartphone. While LEVIO shares our energy efficiency goals, it fundamentally redesigns the estimator for minimal compute budgets sacrificing accuracy; approaches like vilib, FastTrack, Jetson-SLAM, and GLidE-SLAM target frontend acceleration but rely on higher-power GPUs; ASIC-, FPGA-and MCU-based solutions like Navion, eSLAM, ac2SLAM, and PX4Flow achieve high efficiency but require hardware that is unavailable on common platforms. Prior Hexagon-based tracking efforts either lack stereo-inertial support, remain closed-source, and/or require rooted devices. In con-trast, our implementation is open-source, runs on unmodified consumer hardware, and demonstrates that the Hexagon DSP can effectively accelerate stereo-inertial VIO frontends at significantly lower power. III. METHOD 
+
+A. Architecture 
+
+Two properties of the V73 shape the frontend, its vector execution model and its memory hierarchy. 
+
+Computation units: The Hexagon V73 compute DSP (cDSP) comprises a scalar core and two coprocessors (Fig. 2): HVX (Hexagon Vector eXtensions) for wide SIMD on 1024-bit registers, which we use, and HMX for matrix              
+
+> Scalar core
+> VLIW core
+> ×6threads
+> GRF R0–R31 · P0–P3 slots S0 S1 S2 S3 L1 L1I L1D
+> HVX
+> vector unit
+> ×4contexts
+> VRF V0 1024 b Q0 128 b
+
+... ...V31 1024 b Q3 128 b units ld mpy mpy shift perm st                 
+
+> HMX
+> matrix unit
+> L2 cache · 1 MB VTCM · 8 MB DDR
+> Fig. 2. The Hexagon V73 compute DSP. The scalar core, HVX vector unit and HMX matrix unit share one memory hierarchy. Each hardware thread has its own scalar registers (GRF, predicates P0–P3); each vector context has its own vector registers (VRF, predicates Q0–Q3) and the six functional units that operate on them. The gather instruction, the basis of sparse feature sampling, addresses VTCM only.
+> Pixel-parallel pyramid, FAST Feature-parallel tracking 001122
+> Fig. 3. Two vectorization axes. Image stages use one pixel per lane: adjacent pixels map to adjacent lanes, and for FAST, ring point kfor all 128 candidates is row y+dy kshifted by dx klanes. Tracking uses one feature per lane: at each offset of the shared 52-point pattern, every lane gathers the word holding its own feature’s pixel pair, so 32 features advance in lockstep.
+
+operations. Every vector instruction occupies one of the four VLIW slots in a thread’s instruction packet, so scalar and vector instructions issue together, subject to the available vector functional units. The six hardware threads attach dynamically to the four vector contexts, and peak vector throughput requires all four active. 
+
+Memory subsystem: The CPU invokes code on the DSP through FastRPC, a remote-procedure-call layer [42]. We allocate every buffer that crosses the boundary as shared memory, which FastRPC maps into the DSP’s address space instead of copying it. On the DSP side, HVX bypasses the scalar core’s L1 and reads from L2 or from VTCM (vector tightly coupled memory), an 8 MB scratchpad under software control. Alongside ordinary loads and stores, DMA can move bulk data from DDR into VTCM. The vector gather instruction can only address VTCM [43, Sec. 3.3], so anything sampled at non-contiguous memory addresses must be resident there rather than merely cached. 
+
+B. Pipeline 
+
+Basalt’s frontend has three stages, pyramid build, FAST-9 detection and sparse inverse-compositional KLT tracking (Fig. 4). We run all three on the DSP and fuse them into one FastRPC call per frame. Each call has a fixed cost. One that carries the image buffers but does no work takes about Camera driver / replay            
+
+> shared DDR buffer Frontend dispatch Backend estimator
+> IMU preintegration observations pose, depth
+> CPU cDSP
+> stereo pair point set, pose seed, depth seed tracks, warps, new corners fused call
+> Pyramid build Temporal tracking Detection L Stereo tracking Detection R VTCM · four pyramid slots: current / previous ×left / right
+> DMA
+> Fig. 4. System partition. The frontend runs on the cDSP in one fused FastRPC call per stereo frame; inertial integration and the estimator stay on the CPU. The call fetches the full-resolution stereo pair from a shared DDR buffer into VTCM by DMA; every other argument is sparse feature data, passed by shared-memory mapping rather than copied. The current and previous stereo pyramids remain resident in VTCM.
+
+0.25 ms at the DSP’s top clock and 0.35 ms at its low-voltage corner under the polling policy, and 0.65 ms under the driver defaults, which let the CPU sleep while it waits and the DSP idle between calls. One call per stage and camera, plus one for stereo matching, would mean seven calls per frame; fusing them amortizes the fixed cost over the whole frontend (Fig. 6). Apart from the images, the call’s inputs and outputs are sparse feature data that scale with the feature count rather than the image size. The image pyramids must reside in VTCM for the tracking gathers, so the call begins by fetching the full-resolution stereo pair from the shared buffer by DMA and builds the coarser levels on the DSP. A coarse occupancy grid links the stages. Surviving temporal tracks prefill it, so detection searches only cells that still need features; the new left-camera detections then seed stereo tracking, whose matches likewise occupy cells before right-camera detection. Right-camera detection also skips cells that project into the left camera’s view, as in [23]. The frontend uses two vectorization strategies (Fig. 3). Pyramid construction and detection are pixel-parallel. Neigh-boring pixels are contiguous in memory, so one vector load brings in 64 16-bit pyramid pixels or 128 8-bit detector pixels, one per lane, and each lane computes its pixel’s part of the stencil or ring test. Tracking is feature-parallel. Each feature has a KLT patch of 52 sample points spread around it, so a lane holds one feature instead. The 32 features of a batch move through the 52 points in lockstep, and at each point a gather fetches the pixels each feature needs to interpolate it. 
+
+C. Pyramid 
+
+To perform pyramidal KLT tracking [25], we build a four-level image pyramid per camera. Each level is a separable 
+
+5 × 5 binomial blur ( w = [1 , 4, 6, 4, 1] , with 16 2 = 256 
+
+normalization) followed by 2:1 subsampling. The vertical pass writes a 32-bit temporary Vℓ, since each pass can grow the range by 16 ×. Division by 256 with rounding becomes an addition of 128 and a right shift by eight. Let Vℓ[r, :] be row r of the temporary, one column per lane; the horizontal pass computes output lane n of row r as 
+
+Lℓ+1 [r, n ] = 
+
+ 2X
+
+> i=−2
+
+wi Vℓ[r, 2n + i] + 128 
+
+
+
+≫ 8. (1) The horizontal pass first deinterleaves the row of Vℓ into its even and odd columns with one vector deal, so the filter is evaluated only at the columns the 2:1 subsampling keeps, and the five terms then need only three one-lane alignments; the filter itself needs no other cross-lane traffic. One VTCM slot per camera holds all four levels at fixed offsets, with rows padded to a multiple of 128 B so every row load is aligned. Levels 1–3 are built directly in VTCM, and nothing is written back to DDR; apart from the host’s copy into the shared buffer, the level-0 DMA is the frontend’s only image-sized DDR traffic. Four workers (hardware threads) build the pyramids, two per camera, each owning a disjoint band of rows and synchronizing once between levels. 
+
+D. Detection 
+
+We detect FAST-9 corners [27]. A pixel p is a corner if nine contiguous pixels on the radius-3 Bresenham circle are all brighter than I(p) + τ or all darker than I(p) − τ ,and its score is the largest τ that satisfies this condition. Basalt keeps at most one corner per 50 × 50 cell by running thresholds ⟨40 , 20 , 10 , 5⟩ from strict to lenient and taking the highest-response candidate at the first threshold that yields one. Since the response is the largest passing threshold, that procedure returns the highest-scoring corner in the cell above the minimum threshold. We therefore make one full-image pass at the lowest threshold, τ = 5 , computing the corner test and the score over the ring, and keep the per-cell maximum after non-maximum suppression, obtaining in one vectorized sweep the same corners as Basalt. With an 8-bit working image in VTCM, 128 adjacent candidates of a row form one vector block (Fig. 3). Ring point k has a fixed offset (dx k, dy k) from its candidate with 
+
+|dy k| ≤ 3, so for all 128 candidates it is row y + dy k shifted by dx k lanes, and one vector comparison against I(p) + τ
+
+tests it for every candidate at once, yielding a lane mask m+ 
+
+> k
+
+.The comparison against I(p)−τ gives m− 
+
+> k
+
+. Nine contiguous bright points exist if nine consecutive masks are set for some start k, wrapping around the ring: 
+
+c+ =
+
+> 15
+
+_
+
+> k=0 8
+
+^
+
+> m=0
+
+m+(k+m) mod 16 , (2) 
+
+c− follows from the dark masks, a lane is a corner if c+ ∨
+
+c−, and the score is the maximum, over all arc starts, of the minimum brightness difference along the arc. An occupancy bitset over the cells, folded into one mask per cell row, lets a worker skip a whole row when all its cells are occupied, or skip a vector block with a single mask test when every cell it spans is occupied. Four workers partition cell rows and merge their private results on completion. E. Tracking 
+
+We track features with patch-based inverse-compositional KLT [24], [25]. Each feature carries an SE (2) warp T(ξ),
+
+ξ = ( tx, t y , θ ) ∈ R3, estimated by minimizing the mean-normalized SSD over a fixed 52 -point pattern Ω = {xi}
+
+centered on the feature (3), where ¯I is the mean pattern intensity, 
+
+ei(ξ) = It+1 
+
+ T(ξ) xi
+
+
+
+¯It+1 
+
+− It(xi)¯It
+
+, xi ∈ Ω. (3) Each iteration applies δ = −G e as T ← T ◦ exp( δ).A tracking call seeds each feature by reprojecting it with the predicted pose and depth. It then builds the feature’s reference once per pyramid level, comprising the samples, gradients, the Jacobian rows Ji = [ gx, gy , gy ui − gxvi ]
+
+at xi = (ui, v i), the Hessian H = P 
+
+> i
+
+J⊤ 
+
+> i
+
+Ji and the pseudoinverse G = H−1J⊤. Five coarse-to-fine Gauss-Newton iterations per level re-sample only the target and apply the precomputed G. A forward-backward check then discards tracks that do not return. The per-feature matrices are too small to benefit from HMX. Basalt samples each pattern point in a scalar loop and vectorizes only the sums that follow. We invert this, with one feature per lane, 32 per batch, the pattern index as the sequen-tial loop (Fig. 3), so sampling is vectorized across features and no reduction crosses lanes. By stacking a batch column-wise, we transform each per-feature vector into a 52 × 32 
+
+matrix, specifically the residuals E and reference samples R,while the per-feature 3 × 52 pseudoinverses are represented collectively by three such matrices G(x), G(y), G(θ). In this layout, each row is a single 32 -lane vector, allowing the update (4) to be computed as 52 rows of three multiply-adds. The Hessian is computed via six element-wise accumulations and its inverse via a pivoted LDL ⊤ with predicated swaps; the 32 inversions run without branching. Invalid features are rejected by lane predication rather than branches, and a batch exits only once all 32 lanes have failed. 
+
+∆ = −
+
+> 52
+
+X
+
+> i=1
+
+
+
+G(x)
+
+> i, :
+
+G(y)
+
+> i, :
+
+G(θ)
+
+> i, :
+
+ ⊙ Ei, : ∈ R3×32 . (4) The inner loop reads two kinds of data. The reference samples R and the three pseudoinverse rows do not change between iterations, so they are stored row by row in their 52 ×
+
+32 form, and a pattern point costs four aligned loads with no cross-lane traffic. The target samples change every iteration and are re-fetched by predicated vector gathers (Sec. III-A), two per pattern point. Each 32-bit gather retrieves two adjacent 16-bit pixels of one row, so two gathers supply the 
+
+2 × 2 bilinear neighborhood, with invalid features masked in the instruction. We measure a gather latency of about 60 cycles on this device, so we issue the gathers for point 
+
+i while interpolating point i−1 and avoid stalling on the results. Finally, the backward pass compacts survivors into dense batches and rebuilds only their reference patches, so patch build and solve run only for surviving features. IV. RESULTS We run all of our experiments on a Samsung Galaxy S23 
+
+with a Snapdragon 8 Gen 2 SoC and a Hexagon V73 DSP. The device is powered by a 15 Wh battery, and we disable cellular data and Wi-Fi to minimize background activity. The screen is dimmed to reduce power consumption further. We use the same camera calibration and configuration within each dataset family to ensure consistency across runs. For the dataset selection we choose sequences spanning different sensors, environments, and motions. We evaluate on eight sequences from four distinct datasets: EuRoC [44] (an MAV), the Monado SLAM Dataset [23] (VR headsets), TUM-VI [45] (handheld rig), and a custom dataset recorded outdoors with a pair of XREAL AIR 2 Ultra glasses (wear-able). We prefix them with E, M, T, and X respectively. Frames from these sequences and their corresponding sensor specifications are shown in the bottom of Fig. 1. The accuracy of our baseline system, Basalt, is benchmarked in [18], [23]. We implement the same algorithm and, as Table I shows, reproduce its accuracy, so we do not repeat that evaluation here. We compare the CPU baseline, the unmodified Basalt fron-tend built with -O3 for the Cortex-A715 and using OpenCV’s and Eigen’s NEON paths, against three DSP configurations, which we denote as DSP , DSP B , and DSP L. For all of them, we pin CPU threads to the mid SoC cluster, which we found to be the most energy-efficient for our workload. DSP is configured for maximum performance, with cDSP running at its TURBO DCVS (Dynamic Clock and Voltage Scaling) corner at 1401.6 MHz, using a polling FastRPC quality-of-service (QoS) policy, and a 40 μs DSP sleep-latency vote to keep the cDSP out of deep idle between calls. Under polling QoS the CPU spins until the call returns; under the adaptive policy it sleeps and is woken at the driver’s predicted completion time. DSP B is configured for maximum efficiency while maintaining the baseline’s accuracy, with the cDSP running at the SVS2 (Static Voltage Scaling) corner at 576 MHz, using an adaptive FastRPC QoS policy, and the default sleep latency. DSP L is similar to DSP B , but we allow a decrease in accuracy by raising the FAST detection threshold floor from 5 to 20 and using 6 keyframes instead of 7 for the optimization. We use Perfetto to record system traces for every run and get the timing, power, clock, and temperature numbers. Table II uses the board thermistor adjacent to the SoC (xo-therm ), while Fig. 7 reports the SoC die temperature, the hottest on-die TSENS zone. We use only passive cooling .At full throughput, both XREAL sequences in Table Ithermally throttle the device, except XWALK on the DSP .We read the datasets from disk in chunks to avoid accessing the disk every frame; using the device camera ISP (image signal processor) via DMA in a real deployment would be more efficient. We run each configuration in two regimes: 
+
+paced , where replay follows the recorded timestamps so the pipeline must keep up with the sensor rate, and unpaced ,where the next frame is fed as soon as the pipeline accepts TABLE I MAXIMUM THROUGHPUT RUNS : ACCURACY AND TIMES OF CPU BASELINE VS . H EX VIO (DSP) 
+
+ATE [cm] RTE [cm] FPS Frontend [ms] Backend [ms] End-to-end [ms] p99 [ms] Sequence CPU DSP CPU DSP CPU DSP CPU DSP CPU DSP CPU DSP CPU DSP EV102 5.40 5.41 1.12 1.12 70 .1 120 .0 7.75 ± 2.25 2.32 ± 0.29 7.15 ± 2.87 5.98 ± 2.30 15 .00 ± 3.12 8.38 ± 2.48 23 .5 14 .7
+
+EMH03 6.05 6.43 1.18 1.18 56 .2 94 .9 9.05 ± 1.81 2.47 ± 0.32 9.32 ± 4.32 7.97 ± 3.42 18 .48 ± 4.57 10 .52 ± 3.63 31 .3 19 .2
+
+TR2 7.30 7.33 0.70 0.70 105 .6 180 .1 5.79 ± 1.20 2.00 ± 0.22 3.88 ± 1.56 3.55 ± 1.48 9.59 ± 1.90 5.62 ± 1.64 15 .6 10 .3
+
+TR6 2.06 2.00 0.38 0.38 93 .7 155 .0 6.54 ± 1.61 2.18 ± 0.24 4.65 ± 1.71 4.30 ± 1.50 10 .87 ± 2.19 6.55 ± 1.64 17 .4 11 .4
+
+MOO02 23 .48 23 .43 1.54 1.54 103 .2 206 .3 6.68 ± 0.73 2.10 ± 0.13 2.80 ± 1.81 2.51 ± 1.54 9.68 ± 1.98 4.78 ± 1.62 16 .0 10 .4
+
+MOO08 2.74 2.73 1.12 1.11 97 .6 177 .1 6.83 ± 1.37 2.14 ± 0.30 3.26 ± 2.00 3.16 ± 1.77 10 .28 ± 2.45 5.47 ± 1.90 17 .8 11 .1
+
+XWALK † – – – – 70 .3 161 .5 8.48 ± 2.04 1.88 ± 0.14 5.67 ± 2.93 4.24 ± 1.67 14 .43 ± 4.22 6.30 ± 1.71 24 .7 10 .0
+
+XBIKE † – – – – 60 .7 144 .5 9.84 ± 2.53 1.95 ± 0.17 6.50 ± 2.85 4.75 ± 1.77 16 .66 ± 4.48 6.92 ± 1.86 27 .1 11 .6
+
+ATE SE (3) aligned RTE ∆ = 6 frames p99 99th percentile of end-to-end frame time ± frame time standard deviation * Numbers averaged over multiple runs † long sequences that reach thermal limit (Sec. IV) 
+
+it, so each configuration reaches its maximum frame rate. In paced runs we count a frame as late when its end-to-end latency exceeds the frame period implied by the frame rate in Fig. 1. We measure whole-device power draw from the on-device fuel gauge, with the device unplugged so that the counters record battery discharge. We report sampled current at Per-fetto’s default 250 ms interval for Table II, and integrated charge for Fig. 7, which reads higher. An external power monitor is impractical on modern phones, so recent mobile energy studies measure from the internal gauge as we do [46]. These gauges resolve power only at 100 ms-1 s, so we report no per-stage energy, and any systematic bias carries into the absolute figures. On the 40-minute MOO12 sequence, the two channels differ by 8–12 % in absolute power but agree within 2.4 % on the improvements. We state our results as improvements on the same device. 
+
+Performance. Table I reports unpaced runs for maximum throughput. HexVIO is 1.65 –2.38 × faster, most on the two thermally limited XREAL sequences. In Fig. 5, we break down the frontend times for the MOO05 sequence from MSD and show that HexVIO improves times by ∼ 70% .
+
+Fused dispatch. Fig. 6 isolates the benefits of the fused RPC dispatch: under the adaptive RPC policy, six per-stage calls cost 2.3 ms per frame more than one fused call, almost all of it round-trip overhead, while the on-DSP time falls only slightly. 
+
+Accuracy: The DSP frontend preserves the baseline’s accuracy. Across the six sequences with ground truth, ATE differs by at most 0.4 % between CPU and DSP on four Pyramid Detect L Detect R Track L Track R Match p99 (total) mean (total) RPC overhead 01000 2000 3000 Frame 0246810 Frontend time [ms] CPU baseline mean 6.6 ms 2000 3000 HexVIO (DSP) mean 2.0 ms 1000 
+
+Fig. 5. Per-stage frontend timing on MOO05, unpaced, both arms pinned to the mid cluster with four threads. Left: per-frame stage times of the CPU baseline and of HexVIO on the DSP at its maximum-performance operating point (TURBO, polling RPC), one fused dispatch per frame. Right: mean and 99th percentile per frame in ms and share of the summed stage means. RPC overhead, the round trip of the fused dispatch, exists only on the DSP side and counts in the DSP total but not in the shares. TABLE II POWER CONSUMPTION ON RUNS PACED AT SENSOR RATE                                                                                                                                                                                                                                                                                                       
+
+> Power [W] E2E [ms] ATE [cm] RTE [cm] Sequence CPU DSP DSP BDSP LCPU DSP DSP BDSP LCPU DSP DSP BDSP LCPU DSP DSP BDSP L
+> EV102 1.42 0.93 0.88 0.86 25.4 21.8 23.8 18.6 5.40 5.41 5.41 4.41 1.12 1.12 1.12 1.12
+> EMH03 1.63 1.12 1.02 0.92 28.1 24.4 27.8 25.3 6.05 6.43 6.43 6.01 1.18 1.18 1.18 1.17
+> TR2 1.00 0.82 0.72 0.66 23.5 15.1 16.7 13.5 7.30 7.33 7.33 9.54 0.70 0.70 0.70 0.80 TR6 1.07 0.86 0.77 0.66 23.6 17.8 18.9 14.2 2.06 2.00 2.00 3.30 0.38 0.38 0.38 0.44 MOO02 1.23 0.84 0.77 0.72 18.0 13.0 15.0 13.1 23.48 23.43 23.43 27.48 1.54 1.54 1.54 1.59 MOO08 1.64 1.21 0.93 0.91 17.4 11.5 14.8 12.8 2.74 2.73 2.73 2.67 1.12 1.11 1.11 1.12 XWALK 1.35 0.99 0.89 0.83 19.0 14.8 17.4 14.6 ––––––––XBIKE 1.31 0.99 0.90 0.84 18.9 14.8 17.3 14.8 ––––––––
+> Energy [J] E2E p99 [ms] / late [#] Temperature [°C] Clock [MHz] Sequence CPU DSP DSP BDSP LCPU DSP DSP BDSP LCPU DSP DSP BDSP LCPU DSP DSP BDSP L
+> EV102 121 80 75 73 41.3/ 035.4/ 037.2/ 032.4 /032.0 30.0 29.5 29.4 1732 1188 1176 1196 EMH03 220 151 138 124 47.9/12 42.7 /045.2/4 42.9/ 033.7 29.6 29.6 29.7 1932 1339 1250 1201
+> TR2 144 118 104 96 33.4/ 027.4/ 027.7/ 022.1 /033.0 29.6 29.5 29.1 1318 1090 1148 956
+> TR6 141 114 102 87 35.7/ 030.0/ 030.4/ 024.0 /032.0 29.9 29.5 29.5 1516 1112 1190 998
+> MOO02 222 151 139 130 31.9/31 27.2/6 28.3/9 25.3 /032.5 30.3 30.3 30.1 1887 989 1060 1013 MOO08 32 24 18 18 26.2/ 023.1/ 026.9/ 022.5 /034.2 31.2 28.9 28.5 1806 1257 1153 1134
+> XWALK 988 723 655 607 32.5/128 25.7/ 028.6/2 24.5 /1 34.3 31.2 31.3 31.0 1853 1211 1176 1148
+> XBIKE 1568 1183 1076 999 32.1/171 25.2/ 028.0/6 24.4 /033.5 31.7 31.4 31.7 1863 1250 1218 1176
+
+ATE SE (3) aligned RTE ∆ = 6 frames E2E p99 / late 99th percentile of frame times and late frame count * Numbers are averaged over multiple runs 
+
+of them. TR6 differs by 2.9 % in the DSP’s favor (2.06 to 2.00 cm) and EMH03 is 6 % worse (6.05 to 6.43 cm). RTE is identical to two decimals on five of the six and differs by 0.01 cm on MOO08. Frontend standard deviations shrink by a factor of five to fifteen (for example 9.84 ± 2.53 to 
+
+1.95 ± 0.17 ms on XBIKE), which matters more than the mean for a system that must meet a per-frame deadline. 
+
+Efficiency: Table II pins every configuration to the sequence’s sensor rate, so that all of them do the same work and the surplus throughput of Table I is spent on power instead of frame rate. DSP B is the same computation as DSP at a lower clock, so its accuracy is identical to DSP’s; DSP Lunfused fused unfused fused 
+
+024
+
+> Time per frame [ms]
+
+4.80 2.47 2.73 2.06 
+
+adaptive RPC QoS polling RPC QoS 
+
+DSP compute RPC overhead 
+
+Fig. 6. Effect of fusing the DSP calls on MOO05 (unpaced, TURBO, host on the mid cluster). Unfused issues six calls per frame (one stereo-pyramid build, two temporal tracks, two detections, one stereo track), fused one, under the adaptive QoS of DSP B /DSP L and the polling QoS of DSP. Bars are DSP stage time plus the RPC round trip, as in Fig. 5. Fusion saves 2.3 ms per frame under adaptive QoS and 0.7 ms under polling. reaches a lower operating point by doing less work rather than by lowering the clock further. At matched accuracy, DSP B draws 35 % less whole-device power than the CPU baseline on average, ranging from −28 % (TR2, TR6) to −43 % (MOO08); because the runs have equal duration, the energy reduction is the same. DSP L reaches −40 % on average and −45 % at best. Board temperature falls by 2–5 °C on every sequence, and the pinned mid-cluster clock drops by up to 44 %, which is consistent with the power reduction: the CPU baseline must run the mid cluster near its top clock to meet the deadline, while the DSP meets it from a far lower operating point. 
+
+Efficiency scaling: Fig. 1 shows the trade-off between power and throughput for both implementations on MOO05. Both curves start at the paced 30 fps configuration and then run unpaced, so that each configuration reaches its maximum frame rate. The DSP curve dominates the CPU curve over its whole span: at the baseline’s best throughput of 98 fps (frontend pinned to the mid cluster, 4.8 W) HexVIO needs 1.6 W, and with only two host threads it already delivers 93 fps at 1.5 W. On MOO05, at the paced sensor rate, where both implementations meet the 30 fps deadline, HexVIO draws 39 % less whole-device power. At the other end, the maximum-performance RPC policy lifts HexVIO to 180 fps at 4.5 W, a power level at which the CPU baseline delivers 97 fps whether pinned or not: left to the scheduler it spends 7.0 W for the same 97 fps, because the prime and little cores join in. Pinning the CPU side of the pipeline to the mid cluster is therefore part of the design, not a benchmark artifact. On the DSP side the polling policy buys its throughput at a steep power price (Table II), which is why DSP B and DSP L keep the driver defaults. 
+
+Real-time behavior: The clearest real-time result is in the late-frame columns of Table II (bottom). Summed over the eight sequences the CPU baseline misses 342 deadlines, DSP B misses 21, and DSP L misses one. For the XREAL sequences, the larger numbers of late frames for the CPU baseline are not a throughput deficit: on frames that arrive on schedule, the CPU baseline misses only 0.16 %. The majority of late frames follow gaps in delivery, after which the governor lowers the mid-cluster clock. On XWALK, 81 % of late frames arrive after a gap, at a mean clock of 0.8 GHz against 1.9 GHz on schedule. The DSP frontend runs at a corner set from user space, so only the backend’s end-to-end time is impacted by the host clock. 
+
+All-day tracking: We also show a long-term run of the 40-minute MOO12 sequence in Fig. 7. Over the whole run the DSP configurations hold a lower and flat power draw, a stable mid-cluster clock and an SoC die temperature of 34– 35 °C (the CPU run holds 42 °C), with at most 0.05 % late frames against 0.25 % for the CPU. The heat does not move to the accelerator: on the CPU run the hottest die sensor is in the mid cluster at 42 °C and the idle cDSP reads 38 °C, while under the DSP configurations the cDSP running the frontend stays at 33 °C and no on-die sensor exceeds 35 °C. Measured on the battery charge counter over the 72 810 frames, the four configurations draw 1.46, 0.96, 0.90 and 800 1200 1600 2000              
+
+> Mid clock [MHz]  (a)
+> 0.6 0.9 1.2 1.5
+> Power [W]
+> 0.76 0.81 0.89 1.30
+> (b)
+> 010 20 30 40 30 32 34 36 38 40 42 44
+> SoC die temp. [°C]
+> Time [min]
+> (c)
+> 010 20 30 40 10 20 30
+> E2E p99 [ms]  33.3 ms budget (d)
+> CPU DSP DSP BDSP L
+> Fig. 7. 40-minute MOO12 run under CPU, DSP, DSP Band DSP L: (a) pinned mid-cluster clock, (b) whole-device power from the sampled current and voltage (right-edge labels: run means; the charge counter quoted in the text reads 8–12 % higher), (c) SoC die temperature, the hottest on-die sensor, and (d) E2E p99 latency against the 33.3 ms frame budget.
+
+0.83 W (CPU, DSP, DSP B , DSP L) at the same accuracy (0.67–0.68 m ATE, 7.7 mm RTE). Given that this was run on a consumer smartphone with a 15 Wh battery, 0.83 W corresponds to about 18 hours of tracking, which we see as a promising step towards all-day tracking on commodity devices. V. CONCLUSIONS In this work, we ported the frontend of an open-source stereo VIO system to run on the DSP of an unmodified consumer phone, without root access and without changing the backend estimator. On a 40-minute sequence, we demon-strate that our tracking solution meets its frame deadline at 0.83 W, which corresponds to about 18 hours on a 15 Wh battery, while holding a flat mid-cluster clock and a 34– 35 °C SoC die temperature throughout, against 42 °C for the CPU. Accuracy is preserved against the CPU reference; we reimplement the same algorithm. Fusing the per-stage dispatches into a single call per frame is what makes the efficiency operating points practical: with one call per frame instead of one per stage, the frontend can keep the power-saving RPC policy and still meet the deadline. Future work can start with live sensor data. Qualcomm SoCs can stream the camera output directly into DSP L2 [47], which would remove the DDR round trip for level 0. The interface sits inside the ISP pipeline and is available only to signed vendor code, so this is an OEM integration rather than a drop-in change. The backend optimizer is a second target, since it now accounts for most of the remaining frame time. Finally, Hexagon is not confined to smartphones: it ships in robotics boards such as the RB5 kit, in VR and AR headsets (XR2, AR1), and in automotive platforms (Snapdragon Ride), so a frontend that fits inside a phone’s thermal budget carries over to the devices that spatial computing targets. REFERENCES [1] B. Zitkovich, et al. , “RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control,” in Conf. Robot Learn. (CoRL) .PMLR, Dec. 2023, pp. 2165–2183. [2] T. Zhang, et al. , “HuB: Learning Extreme Humanoid Balance,” in 
+
+Conf. Robot Learn. (CoRL) . PMLR, Oct. 2025, pp. 686–704. [3] J. Wang, M. Chen, N. Karaev, A. Vedaldi, C. Rupprecht, and D. Novotny, “VGGT: Visual Geometry Grounded Transformer,” in 
+
+IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR) , June 2025, pp. 5294–5306. [4] N. Carion, et al. , “SAM 3: Segment anything with concepts,” in Int. Conf. Learn. Represent. (ICLR) , C. Vondrick, B. Hariharan, C. Raffel, L. Pinto, D. Yang, and A. Faust, Eds., 2026, pp. 138 846–138 923. [5] A. Bochkovskiy, et al. , “Depth pro: Sharp monocular metric depth in less than a second,” in Int. Conf. Learn. Represent. (ICLR) , Y. Yue, A. Garg, N. Peng, F. Sha, and R. Yu, Eds., 2025, pp. 75 602–75 637. [6] B. Kerbl, “The Impact and Outlook of 3D Gaussian Splatting,” Article written for Frontiers of Science Award, International Congress on Basic Science, Oct. 2025, arXiv:2510.26694. [7] OpenAI, “GPT-4 Technical Report,” Mar. 2024. [8] D. Guo, et al. , “DeepSeek-R1 incentivizes reasoning in LLMs through reinforcement learning,” Nature , vol. 645, no. 8081, pp. 633–638, Sept. 2025. [9] A. Chowdhery, et al. , “PaLM: Scaling language modeling with path-ways,” J. Mach. Learn. Res. , vol. 24, no. 1, pp. 240:11 324–240:11 436, Jan. 2023. [10] S. M. LaValle, et al. , “From Virtual Reality to the Emerging Discipline of Perception Engineering,” Annu. Rev. Control Robot. Auton. Syst. ,vol. 7, pp. 409–436, 2024. [11] J. Delmerico, et al. , “Spatial Computing and Intuitive Interaction: Bringing Mixed Reality and Robotics Together,” IEEE Robot. Automat. Mag. , vol. 29, no. 1, pp. 45–57, Mar. 2022. [12] A. Krishnan, et al. , “Benchmarking Egocentric Visual-Inertial SLAM at City Scale,” in IEEE/CVF Int. Conf. Comput. Vis. (ICCV) , Oct. 2025, pp. 25 207–25 217. [13] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. M. Montiel, and J. D. Tard´ os, “ORB-SLAM3: An Accurate Open-Source Library for Visual, Visual-Inertial and Multi-Map SLAM,” IEEE Trans. Robot. , vol. 37, no. 6, pp. 1874–1890, Dec. 2021. [14] A. Kumar, J. Park, and L. Behera, “High-Speed Stereo Visual SLAM for Low-Powered Computing Devices,” IEEE Robot. Autom. Lett. ,vol. 9, no. 1, pp. 499–506, Jan. 2024. [15] A. Suleiman, Z. Zhang, L. Carlone, S. Karaman, and V. Sze, “Navion: A 2-mW Fully Integrated Real-Time Visual-Inertial Odometry Accel-erator for Autonomous Navigation of Nano Drones,” IEEE J. Solid-State Circuits , vol. 54, no. 4, pp. 1106–1119, Apr. 2019. [16] J. K¨ uhne, C. Vogt, M. Magno, and L. Benini, “LEVIO: Lightweight Embedded Visual Inertial Odometry for Resource-Constrained De-vices,” IEEE Sensors J. , vol. 26, no. 3, pp. 5026–5036, Feb. 2026. [17] L. Codrescu, et al. , “Hexagon DSP: An Architecture Optimized for Mobile Multimedia and Communications,” IEEE Micro , vol. 34, no. 2, pp. 34–43, Mar. 2014. [18] V. Usenko, N. Demmel, D. Schubert, J. St¨ uckler, and D. Cremers, “Visual-Inertial Mapping with Non-Linear Factor Recovery,” IEEE Robot. Autom. Lett. , vol. 5, no. 2, pp. 422–429, Apr. 2020. [19] T. Qin, P. Li, and S. Shen, “VINS-Mono: A Robust and Versa-tile Monocular Visual-Inertial State Estimator,” IEEE Trans. Robot. ,vol. 34, no. 4, pp. 1004–1020, Aug. 2018. [20] S. Leutenegger, S. Lynen, M. Bosse, R. Siegwart, and P. Furgale, “Keyframe-based visual–inertial odometry using nonlinear optimiza-tion,” Int. J. Robot. Res. , vol. 34, no. 3, pp. 314–334, Mar. 2015. [21] M. Bloesch, S. Omari, M. Hutter, and R. Siegwart, “Robust visual inertial odometry using a direct EKF-based approach,” in IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , Sept. 2015, pp. 298–304. [22] A. I. Mourikis and S. I. Roumeliotis, “A Multi-State Constraint Kalman Filter for Vision-aided Inertial Navigation,” in IEEE Int. Conf. Robot. Autom. (ICRA) , Apr. 2007, pp. 3565–3572. [23] M. de Mayo, D. Cremers, and T. Pire, “The Monado SLAM Dataset for Egocentric Visual-Inertial Tracking,” in IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , Oct. 2025, pp. 13 111–13 118. [24] B. D. Lucas and T. Kanade, “An iterative image registration technique with an application to stereo vision,” in Int. Joint Conf. Artif. Intell. (IJCAI) , vol. 2, Aug. 1981, pp. 674–679. [25] J.-Y. Bouguet, “Pyramidal implementation of the affine Lucas Kanade feature tracker: Description of the algorithm,” Intel Corporation, Tech. Rep., 2001. [26] S. Baker and I. Matthews, “Lucas-kanade 20 years on: A unifying framework: Part 1,” Carnegie Mellon University, Pittsburgh, PA, Tech. Rep. CMU-RI-TR-02-16, July 2002. [27] E. Rosten and T. Drummond, “Machine Learning for High-Speed Corner Detection,” in Eur. Conf. Comput. Vis. (ECCV) , 2006, pp. 430– 443. [28] J. Delmerico and D. Scaramuzza, “A Benchmark Comparison of Monocular Visual-Inertial Odometry Algorithms for Flying Robots,” in IEEE Int. Conf. Robot. Autom. (ICRA) , May 2018, pp. 2502–2509. [29] B. Nagy, P. Foehn, and D. Scaramuzza, “Faster than FAST: GPU-Accelerated Frontend for High-Speed VIO,” in IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , Oct. 2020, pp. 4361–4368. [30] K. Khabiri, P. Hosseininejad, S. Gopinath, K. Dantu, and S. Y. Ko, “FastTrack: GPU-Accelerated Tracking for Visual SLAM,” in 
+
+IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , Oct. 2025, pp. 15 165– 15 172. [31] C. A. P. de Sousa, H. Hamann, and O. Deussen, “GLidE-SLAM: GL-Accelerated Indirect-Direct Embedded SLAM,” July 2026, arXiv:2607.16897. [32] Z. Zhang, A. Suleiman, L. Carlone, V. Sze, and S. Karaman, “Visual-Inertial Odometry on Chip: An Algorithm-and-Hardware Co-design Approach,” in Robot. Sci. Syst. (RSS) , vol. 13, July 2017. [33] R. Liu, J. Yang, Y. Chen, and W. Zhao, “eSLAM: An Energy-Efficient Accelerator for Real-Time ORB-SLAM on FPGA Platform,” in ACM/IEEE Design Autom. Conf. (DAC) , June 2019, pp. 1–6. [34] C. Wang, Y. Liu, K. Zuo, J. Tong, Y. Ding, and P. Ren, “ac2SLAM: FPGA Accelerated High-Accuracy SLAM with Heapsort and Parallel Keypoint Extractor,” in Int. Conf. Field-Program. Technol. (ICFPT) ,Dec. 2021, pp. 1–9. [35] D. Honegger, L. Meier, P. Tanskanen, and M. Pollefeys, “An open source and open hardware embedded metric optical flow CMOS camera for indoor and outdoor applications,” in IEEE Int. Conf. Robot. Autom. (ICRA) , May 2013, pp. 1736–1741. [36] Z. Hao, et al. , “Scaling LLM Test-Time Compute with Mobile NPU on Smartphones,” in Eur. Conf. Comput. Syst. (EuroSys) , Apr. 2026, pp. 2157–2172. [37] Qualcomm Technologies, Inc., “Qualcomm AI engine direct SDK (QNN),” 2024. [Online]. Available: https://www.qualcomm.com/ developer/software/qualcomm-ai-engine-direct-sdk [38] J. Ragan-Kelley, C. Barnes, A. Adams, S. Paris, F. Durand, and S. Amarasinghe, “Halide: A language and compiler for optimizing par-allelism, locality, and recomputation in image processing pipelines,” in ACM SIGPLAN Conf. Program. Lang. Design Implement. (PLDI) ,June 2013, pp. 519–530. [39] L. Muffang, “SLAM hardware and software optimization for mobile platform integration,” Master’s thesis, KTH Royal Institute of Tech-nology, Stockholm, Sweden, 2021. [40] P. Geneva, K. Eckenhoff, W. Lee, Y. Yang, and G. Huang, “OpenVINS: A Research Platform for Visual-Inertial Estimation,” in IEEE Int. Conf. Robot. Autom. (ICRA) , May 2020, pp. 4666–4672. [41] G. Rouquette and Lynx Mixed Reality, “Orbslam3lib: ORB-SLAM3 with Hexagon DSP-accelerated ORB extraction,” 2025. [42] Qualcomm Innovation Center, “FastRPC: user-space library for re-mote procedure calls between the CPU and DSP,” https://github.com/ qualcomm/fastrpc, accessed Sept. 2026. [43] Qualcomm Technologies, Inc., Qualcomm Hexagon V73 HVX Pro-grammer’s Reference Manual , Jan. 2024, https://docs.qualcomm.com/ bundle/publicresource/80-N2040-54.pdf, accessed Sept. 2026. [44] M. Burri, et al. , “The EuRoC micro aerial vehicle datasets,” Int. J. Robot. Res. , vol. 35, no. 10, pp. 1157–1163, Sept. 2016. [45] D. Schubert, T. Goll, N. Demmel, V. Usenko, J. St¨ uckler, and D. Cremers, “The TUM VI Benchmark for Evaluating Visual-Inertial Odometry,” in IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , Oct. 2018, pp. 1680–1687. [46] X. Tu, et al. , “Unveiling energy efficiency in deep learning: Measure-ment, Prediction, and Scoring across Edge Devices,” in ACM/IEEE Symp. Edge Comput. (SEC) , 2023. [47] L. Codrescu, “Architecture of the Hexagon™ 680 DSP for mobile imaging and computer vision,” in IEEE Hot Chips Symp. (HCS) .IEEE, 2015.

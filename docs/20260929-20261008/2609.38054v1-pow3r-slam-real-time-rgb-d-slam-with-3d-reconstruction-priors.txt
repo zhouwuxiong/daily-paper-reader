@@ -1,0 +1,390 @@
+Title: Pow3R-SLAM: Real-Time RGB-D SLAM with 3D Reconstruction Priors
+
+URL Source: https://arxiv.org/pdf/2609.38054v1
+
+Published Time: Wed, 30 Sep 2026 02:30:19 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# Pow3R-SLAM: Real-Time RGB-D SLAM with 3D Reconstruction Priors 
+
+Christopher Kolios 1, Ishaan Mehta 1, Sasa Janjic 2, Yeganeh Bahoo 1 and Sajad Saeedi 3
+
+Abstract — We present Pow3R-SLAM, a real-time RGB-D simultaneous localization and mapping (SLAM) system that uses Pow3R for tracking and mapping. Inspired by MASt3R-SLAM, a recent work on monocular SLAM using two-view 3D reconstruction priors, we extend the work to incorporate depth as a prior on the network’s prediction, rather than as geometry to fuse. Where traditional RGB-D SLAM systems struggle with sparsity in the depth images, Pow3R utilizes the available depth to give a better-conditioned pointmap, while inferring the depths in empty regions from the two-view photometric, depth, and intrinsic data. Evaluated against MASt3R-SLAM following its protocol on 24 sequences from TUM, 7-Scenes, and Replica, Pow3R-SLAM runs 1.6 ×
+
+faster in wall time, has 15 % lower mean trajectory error, a 3.1 × lower unscaled error, and produces denser maps, with a 30 % lower Chamfer distance. We also introduce ahybrid variant that runs 2.1 × faster than MASt3R-SLAM at 25.3 frames per second (FPS), while maintaining improved tracking and mapping accuracy. Against ORB-SLAM3 in RGB-D mode, Pow3R-SLAM is more accurate on TUM, 7-Scenes, and ETH3D-SLAM, and completes every TUM sequence. While Pow3R-SLAM can struggle on a small set of self-similar scenes, its overall performance shows that adding depth as a prior for two-view 3D reconstruction SLAM can be beneficial. A project webpage is available at: 
+
+https://ChrisKolios.github.io/Pow3R-SLAM , and code will be made open-source upon acceptance. 
+
+I. I NTRODUCTION 
+
+Simultaneous localization and mapping (SLAM), the prob-lem of mapping a scene while jointly localizing the input sensor relative to the map, is crucial for autonomous robots, augmented reality systems, and self-driving cars, all of which must map and track unknown environments. However, visual SLAM, which relies solely on cameras as input, can fail on visually similar but geometrically distinct scenes, and cannot observe metric scale without a reference. RGB-D SLAM adds a depth sensor so the map and pose can be optimized against both photometric and geometric information. Classical depth-based SLAM systems such as KinectFu-sion [1] and RGB-D systems such as ElasticFusion [2] treat the depth as geometry, fusing it into the map and tracking against the fused surface. However, real-world depth images are not a perfect representation of the true scene geometry. Depth sensors leave holes on absorptive, dark or shiny  
+
+> This work has been submitted to the IEEE for possible publication. Copyright may be transferred without notice, after which this version may no longer be accessible.
+> 1Toronto Metropolitan University, Toronto, Canada.
+
+{ckolios, ishaan.mehta, bahoo }@torontomu.ca 
+
+> 2University of Windsor, Windsor, Canada.
+
+sasa.janjic@uwindsor.ca 
+
+> 3University College London, London, United Kingdom.
+
+s.saeedi@ucl.ac.uk (a) (b) (c) (d) (e) (f)  
+
+> Fig. 1. Sensor depth vs. Pow3R output . Given input frames ((a), (b)), with corresponding depth maps ((c), (d)) from the TUM fr1/desk scene [3], (e) shows the pointmap result from the back-projected depthmaps, and (f) shows the pointmap result from passing the input RGB-D into Pow3R’s network. Pow3R maintains flat surfaces, and reconstructs the controller where the Kinect sensor lacks the data to do so (fills holes and regularizes surfaces).
+
+surfaces, and are inconsistent at object boundaries (Fig. 1 (c, d)). Systems that fuse these depths as geometry inherit all of these defects, but systems that do not incorporate depth discard a key metric measurement. Two-view 3D reconstruction prior works, including DUSt3R [4], MASt3R [5], and Pow3R [6] have shown that vision transformers (ViTs) can learn the relative geometry of two images. When passing in a pair of images, these networks can output a set of pointmaps in a common frame of reference, from which the relative poses of the cameras that took those images can be recovered. In particular, Pow3R demonstrated that passing depth, camera intrinsics, and relative pose (or any subset thereof) can condition the network, offering more accurate and geometrically consistent surfaces than RGB input alone, and inferring depth where none is provided. In Fig. 1, the back-projected depth (e) cannot fill in the controller, but Pow3R’s pointmap (f) can. Pow3R-SLAM builds on MASt3R-SLAM [7], a monocu-lar system that tracks and maps with MASt3R’s pointmaps, and extends it to a full RGB-D system around Pow3R. Sensor depth enters at three separable sites: conditioning the network’s prediction, fixing the metric scale of every pointmap, and anchoring keyframe geometry inside the global optimization. The map is always the network’s output, so holes are filled and surfaces regularized as in Fig. 1(f). Pow3R-SLAM adopts MASt3R-SLAM’s projective matching and second-order backend formulation, adapted to new inputs. Since Pow3R has no matching head, loop retrieval and per-correspondence confidence are rebuilt from its encoder tokens and confidence head, and map-only keyframes densify the map. A hybrid variant tracks alternate arXiv:2609.38054v1 [cs.RO] 29 Sep 2026 Inputs          
+
+> intrinsics K
+> keyframe Ikand frame If
+> sensor depth Z
+> FRONT END every frame sensor depth optional
+> Depth-conditioned Pow3R
+> two-view pointmaps and confidences dense even where the sensor has holes
+> 1
+> Metric scale
+> from the sensor depth
+> 2
+> Tracking and keyframing
+> Sim (3) pose from projective matches new keyframe when overlap drops
+> 3
+> BACKEND every new keyframe
+> Depth-anchored backend
+> keyframe geometry held to the sensor depth all keyframe poses refined together
+> 5
+> Loop closure, relocalization
+> retrieval on Pow3R’s tokens verified by projective matching
+> 4
+> Hybrid
+> alternate frames tracked by ICP
+> Outputs
+> metric trajectory
+> estimate vs. ground truth
+> dense metric map
+> keyframes + map-only keyframes
+> new keyframe lost relocalized edges final poses
+> cond scale anchor
+
+Fig. 2. Pow3R-SLAM pipeline. Pow3R-SLAM is an RGB-D SLAM system that uses sensor depth as a prior on a two-view pointmap network. The front end (1-3) runs on every frame. (1) Pow3R predicts pointmaps and confidences for the frame and its keyframe, conditioned on sensor depth and intrinsics (Sec. III-B). (2) Each prediction is made metric against the sensor depth (Eq. 1). (3) The frame is tracked in Sim (3) and may become a keyframe (Secs. III-C–III-D). The backend (4, 5) runs on every new keyframe. (4) Loop closure on Pow3R’s encoder tokens adds edges in familiar locations, and relocalization locates frames the tracker has lost. (5) A global optimization refines every keyframe pose, with keyframe depths anchored to the sensor and confidence-calibrated edges (Sec. III-E.3, Eqs. 5–7). Blue : the sensor-depth path. Orange : optional components, including the hybrid variant, which tracks alternate frames by ICP instead of Pow3R (Sec. III-G), and map-only keyframes (Sec. III-F). ICP frames never become keyframes, so every keyframe comes from a Pow3R pass. Inputs and outputs: TUM fr1/desk .
+
+frames by iterative closest point (ICP) on the sensor depth, halving the network cost. Our main contributions are:  
+
+> •
+
+To the best of our knowledge, the first RGB-D SLAM system in which sensor depth is a prior on a two-view pointmap network, entering at three separable sites.  
+
+> •
+
+Loop retrieval and per-correspondence confidence re-built from Pow3R’s encoder and confidence head, plus map-only keyframes that densify the map, and a hybrid ICP front end mode.  
+
+> •
+
+Evaluation on four benchmarks against MASt3R-SLAM and ORB-SLAM3 on accuracy, reconstruction, runtime, per-site ablations, and sensitivity to depth quality. II. R ELATED WORK 
+
+Monocular SLAM uses RGB data from a single source as input to the system. Feature-based systems such as ORB-SLAM [8] estimate poses from sparse feature correspon-dences across views. Dense monocular SLAM algorithms such as DTAM [9] use the entire image to create a dense model of the scene. These methods are determined only up to a similarity transform, leaving metric scale unknown. 
+
+RGB-D SLAM systems add a depth sensor to the camera, or use depth alone. KinectFusion [1] fuses depth into a truncated signed distance field and tracks against it. Elas-ticFusion [2] uses both RGB and depth images to jointly minimize photometric and geometric pose errors for tracking. ORB-SLAM2 [10] extends ORB-SLAM’s pipeline to depth, and ORB-SLAM3 [11] adds inertial measurement unit (IMU) data and multi-map support. More modern systems such as DROID-SLAM [12] pair optical flow estimation with bundle adjustment to jointly optimize pose and dense per-pixel depth. Neural map representations have recently been popularized, with the map stored as a network or optimizable set of primitives. iMAP [13] and NICE-SLAM [14] optimize implicit fields against depth, and GS-SLAM [15] optimizes a scene of 3D Gaussians, at a cost in frame rate. All of these works consume depth as geometry to fuse, or use it as a supervision target. A recent class of ViTs called two-view 3D reconstruction priors takes two images and outputs dense aligned 3D point clouds. These common-frame point clouds can be used to recover camera pose (such as in DUSt3R [4]). MASt3R [5], a successor work, added per-pixel features for alignment, which improved pose recovery. Pow3R [6], a further successor, accepts any subset of depth, camera intrinsics, and relative pose, as optional inputs, which further improves the resulting point cloud. Extending this beyond pairs, feed-forward scene models take all views at once, such as VGGT [16], which predicts poses and depth for a whole set of frames. Recent SLAM with reconstruction priors uses either two-view or scene prior models to track and map. MASt3R-SLAM [7] uses MASt3R for real-time tracking and mapping by optimizing projective matches, with a Sim (3) pose graph and an aggregated selective match kernel (ASMK) [17] re-trieval, and is the system we extend in this work. Scene-prior systems include VGGT-SLAM [18], which incrementally aligns VGGT submaps, and SLAM3R [19], which fuses local reconstructions into a global scene. However, to the best of our knowledge, no reconstruction-prior-based SLAM works have investigated how depth might be used as an input. III. M ETHODS 
+
+Fig. 2 displays the method overview, highlighting how Pow3R-SLAM works, and where both depth and the ICP hybrid approach play a role in the system. 
+
+A. Preliminaries 
+
+Throughout the text, we adopt the conventions of MASt3R-SLAM [7]. Given two views i, j, Pow3R [6] defines a network F that takes an image pair Ii, I j ∈ RH×W ×3
+
+and outputs pointmaps Xii, X ji , X jj (where X ji denotes the pointmap of image I j in the coordinate system of the camera from view i) and their associated confidences Cii, C ji , C jj.Pow3R can optionally take a subset of auxiliary informa-tion Ω ⊆ { Zi, Z j, Ki, K j, Pi j }, including depthmaps Zi, Z j ∈
+
+RH×W ×1 (called D in [6]) with their validity masks Mi, M j ∈{0, 1}H×W , which accompany a depth map rather than being a prior of their own and indicate pixels with valid depth, cam-era intrinsics Ki, K j ∈ R3×3, and relative pose Pi j ∈ R4×4.We write a forward pass with priors Ω as FP(Ii, I j, Ω ),outputting (Xii, Cii), (X ji , C ji ), (X jj, C jj). As Pow3R-SLAM is an RGB-D approach, we assume that Zi, Z j are always available. Pi j is what we solve for and is never supplied, so Ω = ( Zi, Z j, K) throughout this work. Pow3R-SLAM’s calibrated mode assumes that Ki = K j for all frames (as does MASt3R-SLAM’s), and a fixed calibration is required regardless to register depth to RGB. All results use this mode. We maintain the same pose formulation as MASt3R-SLAM, with T ∈ Sim (3), and updates τ ∈ sim 3 applied by a left-plus operator. T ← τ ⊕ T ≜ Exp (τ) ◦ T, where T holds a rotation R ∈ SO (3), a translation t ∈ R3, and a scale s > 0. Pow3R-SLAM uses a known pinhole camera as its primary setting. Images with lens distortion are undistorted first. K
+
+is adjusted when the image is resized for Pow3R (long side at 512 pixels) and this resized K is used throughout the pipeline. Let RK(X)[ p] ≜ z(X[p]) K−1[u, v, 1]⊤ be the operation that keeps a pointmap’s depth z(·) at pixel p =(u, v) and returns the point to its calibrated ray. Both self-view pointmaps are passed through RK before use, so only the network’s depths reach the estimator. 
+
+B. Known Depth and Calibration 
+
+A primary focus of this work is the integration of depth data into the pipeline. Sensor depth is involved in three areas of Pow3R-SLAM (Fig. 2), denoted: cond , scale , and anchor .
+
+1) cond : (conditioning) feeds depth in as an optional input to Pow3R. Following Pow3R’s convention [6], each depth map is normalized by its mean over valid pixels, Z/¯z
+
+with ¯ z = avg M(Z), together with its validity mask M = [ Z >
+
+0]. The intrinsics are not passed as a matrix, and are instead expanded into a dense ray image, evaluating K−1[u, v, 1]⊤
+
+at every pixel (u, v). Both maps are then cut into the same 16 ×16 patch grid as the image, and embedded into one token per patch. Those tokens are injected inside the network’s first encoder block, where a learned projection of each is added to the token of the image patch it covers. Pow3R therefore receives FP(Ii, I j, Ω ) with Ω = ( Zi, Z j, K).
+
+2) scale : restores metric scale from the (metric) depth images. In each forward pass, one scalar is estimated from the self-view pointmap X = Xii against its sensor depth Z =
+
+Zi, and applied to both outputs of that pass ( Xii and X ji ,which share a single gauge, i.e. the same unknown scale and coordinate frame). Let the per-pixel depth ratio rp = Z[p] 
+
+> z(X[p])
+
+,over valid pixels p with M[p] = 1 and z(X[p]) > 0 (such that 
+
+z(x) is the depth of a point x ∈ X). Then, given median (rp) = 
+
+¯r, our scaling formula is defined as: 
+
+s(X, Z) ≜ exp (avg p(log (clip (rp, 0.1 · ¯r, 10 · ¯r)))) , (1) where clip (a, b, c) = min (max (a, b), c), applied when at least 50 pixels are valid (a floor against near-empty depth maps below which the pass is left unscaled). The geometric mean is the minimizer of the squared log-depth residuals that our solvers use (the log-depth row of Eq. 3, and Eq. 6), and the clip rejects outliers. The scale is the geometric mean of the per-pixel depth ratios, with ratios more than 10 × from their median pulled back to that bound. 
+
+3) anchor : brings the sensor into the backend. Prior to each backend solve, the depth of each keyframe pointmap is replaced along its known rays by the sensor’s depth wherever the sensor has data. The substituted depths are not clamped in the solution, acting instead as a soft constraint in the backend optimization (Sec. III-E.3). 
+
+C. Pointmap Matching and Fusion 
+
+We adopt the projective matching approach of MASt3R-SLAM. For a function ψ(x) that normalizes a point to a unit ray, the match for x ∈ X ji is, following [7], the pixel 
+
+p∗ = arg min p ∥ψ([ Xii]p) − ψ(x)∥2, solved by a per-point Levenberg–Marquardt with ten iterations. For new keyframes we initialize from an identity mapping, we employ next-frame initialization for tracking, accept a match when its ray residual converges below 10 −6, and reject outliers at > 0.1 m in 3D space. The only difference is that we do not use per-pixel features to further refine the matches, as Pow3R has no such features. After each tracked frame (Sec. III-D), we use the same criteria as MASt3R-SLAM to add new keyframes. Let ωk
+
+be the smaller of the fraction of keyframe pixels matched and the fraction of distinct keyframe pixels those matches land on. A keyframe is added when ωk < 0.333. Once pose is solved, we update the keyframe’s geometry via Xkk ←
+
+Tk f Xkf (where Xkk is the keyframe pointmap, Tk f is the relative pose between the incoming frame and the keyframe (Sec. III-D), and Xkf the keyframe’s pointmap in the incoming frame’s coordinates). While MASt3R-SLAM uses a running weighted average filter, for each pixel we instead keep the most confident prediction the keyframe has received: 
+
+( ˜Xkk[p], ˜Ckk[p]) ← (Xkk[p], Ckf [p]) if Ckf [p] > ˜Ckk[p]. (2) Since each pass has its own scalar (from Eq. 1), averaging predictions would average scale error into the keyframe. 
+
+D. Tracking 
+
+Tracking estimates the pose of each incoming frame 
+
+f relative to the current keyframe k from a single pass FP(I f , Ik, Ω ) per frame, following MASt3R-SLAM’s frame-to-keyframe scheme. For an incoming point trans-ported into the keyframe camera xm, and the keyframe’s own canonical point at the matched pixel yn, let xm =
+
+Tk f RK(X ff )m and yn = RK( ˜Xkk)n (Sec. III-A). With ΠK the projection under K, a correspondence (m, n)
+
+in the match set m f ,k gives: 
+
+rmn =
+
+ ΠK(yn) − ΠK(xm)
+
+log z(yn) − log z(xm)
+
+
+
+. (3) Following the weighting of Eq. (5) in [7], a residual with confidence q carries the covariance w(q, σ 2) = σ 2/q when 
+
+q > qmin and is discarded ( w = ∞) otherwise. ∥r∥ρ,w denotes the Huber norm (threshold 1.345) of the whitened residual 
+
+r/√w. In tracking, Pow3R provides no per-match confi-dence, so q ≡ 1, and outliers are rejected by the matching tests of Sec. III-C (the ray-residual convergence check and the 0 .1 m 3D rejection) rather than by the confidence gate. Tracking minimizes the reprojection error: 
+
+EΠ = ∑  
+
+> (m,n)∈mf,k
+
+∥ΠK(yn) − ΠK(xm)∥ρ, w(1,σ 2px ) , (4) with σpx = 1 pixel. We use Gauss–Newton for at most 50 iterations to optimize reprojection error and recover the relative pose Tk f . As in MASt3R-SLAM, a second, lightly weighted term enters the same solve (the log-depth row of Eq. 3). This prevents degeneracy under pure rotation, where reprojection leaves depth unobserved, and it alone observes the scale of Tk f ∈ Sim (3), since a similarity scaling leaves 
+
+ΠK invariant while log z shifts by log s. We use a loose 
+
+σtz = 10 (superscripts t and g denoting tracking and global solves), admitting a small percent of per-frame scale noise for the backend to reconcile. If fewer than 5% of pixels survive the matching, or the normal equations fail to factorize, the frame is deemed lost and relocalization (Sec. III-E.2) is triggered. Upon adding a new keyframe, a bidirectional edge is added to the previous keyframe. 
+
+E. Loop Closure, Relocalization, and Backend 1) Loop Closure: recognizes re-visited areas and corrects the relative keyframe poses. We use the same ASMK [17], [20] retrieval as MASt3R-SLAM, but in place of MASt3R’s encoder tokens we use an unconditioned Pow3R encoder pass over the keyframe image, computed once per keyframe. We refit the training-free ASMK head to Pow3R’s tokens, re-estimating the principal component analysis (PCA) whiten-ing and reducing the k-means codebook from 65536 to 16384 centroids. New keyframes query the top 3 candidates above a score threshold of 0.005. The candidates are each decoded by a Pow3R pass in each direction and matched projectively as in Sec. III-C, with a loop edge added when the minimum match fraction is at least ωl = 0.25 (the edge to the preceding keyframe is unconditionally added). 
+
+2) Relocalization: occurs when tracking is lost (Sec. III-D). We follow the same approach as MASt3R-SLAM here, querying the retrieval database with the same score threshold but a stricter acceptance rule. The retrieved frame is added as a keyframe only if every retrieved candidate clears a match-fraction floor of 0 .3, after which its pose is initialized from the first candidate and a backend solve is run. 
+
+3) Backend: We reuse the second-order optimization scheme of MASt3R-SLAM, bidirectionally minimizing the calibrated residual over all edges via Gauss–Newton with a sparse Cholesky solve, with the first keyframe’s pose held fixed, and at most ten iterations per new keyframe. There are two primary differences in our method. First, prior to each solve, an anchor step replaces (only for the backend solve) the depth for each keyframe pointmap with its sensor values along the rays that form the pointmap, where the sensor has data ( ˆ Xii = RK( ˜Xii) with z ← Zi on Mi). As the sensor is typically more accurate where it has data, we set σ gz = 0.1 for the log-depth residual here (against σtz =
+
+10 in tracking). For each edge (i, j) in the set of all edges E, tra-versed in both directions E±, with Ti j = T−1 
+
+> WC i
+
+TWC j , ˆ xm =
+
+Ti j RK
+
+  ˆX jj
+
+
+
+> m
+
+, and ˆ yn = RK
+
+  ˆXii
+
+
+
+> n
+
+, the backend minimizes the sum Eg 
+
+> Π
+
++ Egz of: 
+
+Eg 
+
+> Π
+
+= ∑ 
+
+> (i,j)∈E±
+
+# ∑
+
+> (m,n)∈mi j
+
+∥ΠK(ˆyn) − ΠK(ˆxm)∥ρ, w(wmn ,σ 2px ) , (5) 
+
+Egz = ∑ 
+
+> (i,j)∈E±
+
+# ∑
+
+> (m,n)∈mi j
+
+∥log z(ˆyn) − log z(ˆxm)∥ρ, w(wmn ,(σ gz )2) ,
+
+(6) with hats indicating an anchored pointmap, σpix = 1 px as in tracking, and wmn (Eq. 7) filling the role of qmn .Anchoring is disabled when scale is disabled, and the anchored copy never leaves the backend. Second, as we do not have MASt3R’s matching con-fidence, we rebuild the per-correspondence weight from Pow3R’s confidences as: 
+
+wmn = Qmn ˜Cii,m ˜C jj,n, where Qmn = φ (
+
+q
+
+Cii,mC ji,n), (7) where φ is a piecewise-linear quantile map with 1024 knots, fitted once so that its output distribution matches MASt3R-SLAM’s matching confidence over 109630 corre-spondences from eight development sequences (Sec. IV). 
+
+Qmn reproduces MASt3R-SLAM’s gate Qmn > 1.5 without threshold re-tuning or retraining. The two ˜C factors down-weight low-confidence geometry, and in practice the Qmn >
+
+1.5 gate carries most of the effect of wmn .
+
+F. Map-Only Keyframes 
+
+The keyframe rate that is ideal for pose estimation leads to maps that are too sparse, but raising it changes the estimator, so we look to decouple map density from the estimator. For this, we add map-only keyframes, which carry geometry but no estimator state. A network-tracked frame with 0 .333 ≤
+
+ωk < 0.45 is stored when at least 5 input frames have passed since the previous addition, up to 200 per sequence. For each map-only keyframe f , we store its rescaled pointmap X ff ,confidence C ff , image I f , and its pose relative to its keyframe 
+
+Tk f .At export, the world pose is recomposed against the keyframe’s final pose, TWC f = TWC k Tk f in Sim (3), so back-end corrections and loop closures propagate to them. The final exported map is the union of the keyframe and map-only pointmaps under a single confidence threshold. This densifies the map, without modifying trajectories. G. Hybrid ICP Variant 
+
+In both MASt3R- and Pow3R-SLAM, the network forward pass dominates the tracker’s cost, which greatly affects overall runtime. Inspired by MASt3R-SLAM’s success when simulating real-time performance by skipping every 2nd frame and existing depth-based approaches, our hybrid vari-ant processes every 2nd frame via point-to-plane ICP [21], [22] on the depth sensor input, replacing the network call for those frames. Let xp = Z f [p] K−1[u, v, 1]⊤ be frame f ’s sen-sor depth back-projected along its rays and qp = ΠK(Tk f xp)
+
+its projective association (nearest pixel) into the keyframe, recomputed at every ICP iteration. The sum runs over the set 
+
+P of pixels at which both the sensor depth and the keyframe pointmap carry a valid central-difference normal (excluding borders, hole neighbours, and depth steps above 5%). With 
+
+nqp the keyframe’s normal at qp, the point-to-plane error is minimized against the keyframe’s canonical pointmap [1], [21]: 
+
+Eicp = ∑
+
+> p∈P
+
+∥(n⊤
+
+> qp
+
+ Tk f xp − ˜Xkk[qp])∥ρ′ , (8) where ρ′ is a Huber kernel at 2 cm (a metric distance, unlike ρ). Our solve is coarse-to-fine over 3 levels with iteration counts (6, 4, 3) on SE (3) since the frame inherits its keyframe’s scale, gated on correspondence distance (10cm )
+
+and normal rotation (30 ◦), and falls back to network tracking whenever the pose is not finite, the finest-level cost rises by 
+
+> 5%, or < 30% of the associable pixels are inliers. ICP-tracked frames never become keyframes, reach the backend, or add points to the map. IV. R ESULTS 
+
+We evaluate localization on TUM RGB-D [3], 7-Scenes [23], Replica (synthetic) [24], and ETH3D-SLAM [25], and geometry on 7-Scenes and Replica, which have ground-truth geometry. 7-Scenes provides its Kinect colour and depth images unregistered, with only the depth camera’s intrinsics, which misplaces the edges between depth and colour pixels by 20–40 px. For every system that uses depth, we therefore resample each colour image into the depth camera through the depth image. To calibrate, we take the colour focal length and radial distortion (from COLMAP [26] self-calibration of the colour images) and the 2.7 cm baseline and principal point from depth-colour edge alignment. One calibration is shared by all scenes, and neither step uses ground truth or trajectory error. The fitting corpus of φ (Sec. III-E.3) overlaps the evaluation panel on four sequences ( fr1/teddy , room0 ,
+
+pumpkin , stairs ). As φ only preserves MASt3R-SLAM’s threshold meaning, and refitting it without the four moves them by at most 18 mm (the largest, stairs , an improvement), this is not a material leak. The retrieval codebook was fitted on five TUM fr2/fr3 and eight ETH3D-SLAM training sequences, which we exclude from evaluation. All runs use a Ryzen 5900X 3.7 GHz CPU and an NVIDIA GeForce RTX 4090. As in MASt3R-SLAM’s protocol, every                                                                                                                                                             
+
+> TABLE I
+> ATE ROOT -MEAN SQUARE ERROR (RMSE) ( M)ON TUM RGB-D
+> FR 1AND 7-S CENES .BOLD ,UNDERLINE :BEST ,SECOND BEST . †:
+> CALIBRATED MONOCULAR RESULT AS REPORTED IN [7]. F RESH :OUR RE -RUN . X: LOST TRACK ,WITH MEANS OVER COMPLETED SCENES .∗:
+> UNSCALED SE(3) ALIGNMENT .
+> ORB-SLAM3 Pow3R-SLAM scene DROID †↓Sim3 ↓SE3 *↓
+> MASt3R fresh ↓Sim3 ↓SE3 *↓
+> hyb. Sim3 ↓
+> TUM RGB-D fr1
+> 360 0.111 0.134 0.228 0.049 0.040 0.048 0.042 desk 0.018 0.018 0.018 0.016 0.019 0.035 0.017 desk2 0.042 XX0.024 0.024 0.093 0.022
+> floor 0.021 XX0.025 0.021 0.025 0.025 plant 0.016 0.022 0.026 0.020 0.019 0.020 0.016
+> room 0.049 0.073 0.084 0.061 0.042 0.044 0.046 rpy 0.026 0.035 0.040 0.027 0.019 0.023 0.017
+> teddy 0.048 XX0.041 0.049 0.066 0.032
+> xyz 0.012 0.012 0.013 0.009 0.006 0.007 0.005 mean 0.038 0.049 (6) 0.068 (6) 0.030 0.027 0.040 0.025 7-Scenes
+> chess 0.036 0.033 0.038 0.038 0.027 0.035 0.027
+> fire 0.027 0.023 0.028 0.029 0.025 0.031 0.024 heads 0.025 0.014 0.017 0.017 0.012 0.015 0.014 office 0.066 0.096 0.098 0.092 0.085 0.085 0.086 pumpkin 0.127 0.127 0.127 0.084 0.077 0.087 0.083 kitchen 0.040 0.047 0.048 0.060 0.038 0.038 0.039 stairs 0.026 0.045 0.049 0.016 0.044 0.051 0.062
+> mean 0.049 0.055 0.058 0.048 0.044 0.049 0.048
+
+2nd frame is processed. Pow3R-SLAM and MASt3R-SLAM accuracy is deterministic, and every runtime is the mean of two exclusive repeats, with the half-range reported in Table II. All results use the single-threaded mode, in which the front end waits for the backend to drain. Using either system’s non-blocking mode changes wall time by under 5%. 
+
+A. Pose Estimation 
+
+Following the convention of MASt3R-SLAM, we report the root-mean-square-error (RMSE) of the absolute trajectory error (ATE) in meters (Table I). Pose estimation results are from the Sim(3)-aligned keyframe trajectory. We re-run MASt3R-SLAM for direct comparison, which reproduces the published values of [7] to the reported precision on all 16 sequences from TUM and 7-Scenes on native images. On 7-Scenes, all tables report it on the registered images. We also re-run ORB-SLAM3 [11] in RGB-D mode with calibration, at a median of five runs unless otherwise noted (v1.0, loop closure on, stock ORB parameters). In our tables the best result is bolded , the second best underlined, and arrows give the better direction. 
+
+1) TUM RGB-D: Pow3R-SLAM has the lowest mean trajectory error on the TUM sequences (Table I), in both hybrid and regular modes. ORB-SLAM3 loses track on 3/9 sequences ( desk2 , floor , teddy ), while all other systems complete all 9. Pow3R-SLAM improves on MASt3R-SLAM on 6 /9 sequences, and on the mean (0 .027 vs. 0 .030 m), with the largest relative gains on room and, in hybrid mode, teddy .
+
+2) 7-Scenes: With colour registered to depth, Pow3R-SLAM has the lowest mean on 7-Scenes (0.044 m, against 0.048 m for MASt3R-SLAM and 0.055 m for ORB-SLAM3), better than MASt3R-SLAM on 6 /7 sequences. stairs is the exception (0.044 vs. 0.016 m), which we analyze in Sec. V and Fig. 4. The registration lowered the 7-Scenes mean absolute trajectory error (ATE) of Pow3R-SLAM from 0.065 to 0.044 m and of ORB-SLAM3 from 0.059 to 0.055 m. MASt3R-SLAM receives the same registered images, al-though it uses no depth. On native images, its 7-Scenes ATE was 0.047 m, which became 0.048 m. 
+
+3) Replica: On Replica, Pow3R-SLAM significantly out-performs MASt3R-SLAM (Table II). Mean ATE is almost half that of MASt3R-SLAM (0 .009 vs. 0 .015 m), with tighter trajectories on 5 /8 sequences. Replica’s rendered depth is complete and noise-free, which strengthens conditioning and scale. ORB-SLAM3 is the most accurate system here (mean 0.005 m), for which the classical tracking benefits from exact, hole-free depth, and richly textured renders. 
+
+4) ETH3D-SLAM: Due to ETH3D-SLAM’s fast camera motion, we use all frames, as MASt3R-SLAM does. From its 61 training sequences we evaluate a 16-sequence panel which was fixed before any runs. Table II reports the mean over completed sequences, the median, and the area under the success-versus-threshold curve (AUC) for thresholds up to 0 .5 m (max. 8 on this panel, which is not comparable to the 61-sequence AUC of [7]). While MASt3R-SLAM completes all 16, and Pow3R-SLAM does not complete 2 ( planar 3 
+
+spans 5 × the ground truth extent and repetitive does not finish), Pow3R-SLAM’s median is lower (0.0135 vs. 0.0280 m) and it wins 12 /14 sequences that both complete. Its mean over those 14 (0.059 m) is inflated by sofa 2 at 0.66 m. A sequence counts as completed, for every system, when all keyframe poses are finite and the trajectory span is within 2× the ground-truth span. In comparison, ORB-SLAM3 fails 6 scenes in ETH3D-SLAM, and of the 9 sequences all three algorithms complete its ATE lies between Pow3R-SLAM and MASt3R-SLAM (0.026 vs. 0.014 and 0.038 m, respectively). Counting all scenes, its AUC is 4.76, against 6.33 for Pow3R-SLAM and 7.36 for MASt3R-SLAM, which completes every sequence. The hybrid mode completes the same 14 scenes at a lower mean than MASt3R-SLAM (0.034 vs. 0.039 m on those 14, better on 12/14). 
+
+5) Per-frame and Unscaled Scoring: Over the 24-scene panel, the keyframe ATE is a like-for-like comparison be-tween MASt3R- and Pow3R-SLAM, which insert 537 and 525 keyframes, respectively (per-sequence counts differ by up to 8), with hybrid inserting 503. Scored on every frame under rigid SE (3) with no scale fitted, Pow3R-SLAM’s ATE is 0.037 m against MASt3R-SLAM’s 0.116 m, which is 3 .1×
+
+lower. As MASt3R-SLAM has no metric scale, this gap measures the value of the scale site rather than of the prediction prior (Table IV, L3 vs. L4). Scoring all frames flips only the hybrid’s Sim (3), where its mean rises from 0.026 to 0.035 m against MASt3R-SLAM’s 0.030 to 0.034 m. Under SE (3) the hybrid stays 2 .9× ahead, and per-frame loss is likely because ICP tracks worse with sparse depth.                                                                                          
+
+> TABLE II
+> REPLICA , ETH3D-SLAM AND RUNTIME .KEYFRAME ATE RMSE (M), S IM (3), WITH THE UNSCALED SE(3) MEAN . ETH3D-SLAM: OVER EACH SYSTEM ’S COMPLETED SEQUENCES (COUNT IN BRACKETS ). RUNTIME :WALL TIME SUMMED OVER THE 24-SCENE PANEL (TUM, 7-S CENES , R EPLICA ), AT FULL AND SUBSAMPLE -2 ( S2). M EAN OF 2
+> EXCLUSIVE REPEATS PER SYSTEM (±HALF -RANGE ), WITH
+> MAS T3R-SLAM TIMED ON NATIVE IMAGES . FPS: FRAMES PER SECOND AT S 2OF LOOP TIME EXCLUDING MODEL LOAD .
+> scene / metric MASt3R fresh Pow3R-SLAM Pow3R-SLAM hyb.
+> office0 0.013 0.009 0.008
+> office1 0.007 0.009 0.013 office2 0.022 0.007 0.007
+> office3 0.027 0.010 0.012 office4 0.021 0.009 0.011 room0 0.006 0.007 0.007 room1 0.016 0.007 0.006
+> room2 0.011 0.013 0.013
+> mean, Sim(3) ↓0.0153 0.0087 0.0096
+> mean, SE(3) ↓0.0930 0.0107 0.0116
+> ETH3D mean ↓0.0400 (16) 0.0588 (14) 0.0343 (14) ETH3D median ↓0.0280 0.0135 0.0104 ETH3D AUC ↑7.3620 6.3345 6.5190
+> Σwall s2 (s) ↓1443.3 ±14.6 902.6 ±4.7 697.6 ±1.0
+> Σwall full (s) ↓2395.4 ±0.6 1555.1 ±9.8 1146.5 ±2.0
+> FPS mean (s2) ↑14.0 18.6 25.3
+
+B. Geometry Evaluation 
+
+We evaluate the exported maps against reference clouds back-projected from every 20th ground-truth depth frame (culled at 4 m, 8 m on Replica), after Sim (3) alignment of the keyframe trajectory, with the estimate thresholded at C > 1.5 and both clouds subsampled to 200k points. We report accuracy (mean estimate-to-reference distance), completion (the reverse), Chamfer (their average), as well as Chamfer RMSE. As noted in the supplementary materials of MASt3R-SLAM [7], mean Chamfer does not significantly penalize incorrect points, and as our maps cover more of the scene thanks to the map-only keyframes (11.9 M vs. 2.7 M points before subsampling, over the 15 map-scored scenes), RMSE Chamfer provides a fairer comparison. Table III gives the results over 7-Scenes and Replica between MASt3R- and Pow3R-SLAM. Pow3R-SLAM has better quality mapping versus MASt3R-SLAM on both 7-Scenes and (especially) Replica, with Chamfer RMSEs of 0.058 against 0.085 on 7-Scenes, and 0.027 against 0.056 on Replica, and both accuracy and completion improve on both datasets. Over the 15 scenes, mean Chamfer is 3.1 against 4.3 cm (30% lower), and RMSE Chamfer 4.1 against 6.9 cm (40% lower). Providing 7-Scenes’ registered images to MASt3R-SLAM improved its 7-Scenes mean Chamfer from 6.7 cm, to 5.5 cm. Fig. 3 shows three scenes qualitatively. 
+
+C. Runtime 
+
+We also analyze runtime (bottom rows of Table II). Com-pared to MASt3R-SLAM, which on the cross-dataset panel of all 24 scenes finishes in 1443 seconds with a mean FPS of 14.0, Pow3R-SLAM in its regular mode takes 903 seconds 0510    
+
+> point-to-GT distance (cm)
+> Replica office3 7-Scenes chess ETH3D mannequin_5 (a) ground truth (b) MASt3R-SLAM (c) Pow3R-SLAM (d) top view: GT / MASt3R / Pow3R
+
+Fig. 3. Qualitative reconstruction. Rows: Replica office3 , 7-Scenes chess , ETH3D-SLAM mannequin 5 (full frame rate). Columns: (a) reference cloud from ground-truth depth, (b) MASt3R-SLAM and (c) Pow3R-SLAM maps after alignment, coloured by distance to the reference (capped at 10 cm), and (d) top view of the per-frame trajectories (ground truth (GT) black, MASt3R-SLAM orange, Pow3R-SLAM blue). 0510 cm    
+
+> (a) ground truth (b) MASt3R-SLAM (c) Pow3R-SLAM (d) GT / M / P
+
+Fig. 4. The failure case . 7-Scenes stairs , with the same columns as Fig. 3, (d) GT / M(ASt3R) / P(ow3R). MASt3R- vs. Pow3R-SLAM: 1.5 vs. 4.3 M points, keyframe ATE 0.016 vs. 0.044 m, accuracy 3.2 vs. 6.7 cm, completion 10.5 vs. 5.9 cm. Pow3R-SLAM’s map is more complete but less accurate, which we attribute to the self-similar treads (Sec. V). TABLE III 
+
+RECONSTRUCTION ON 7-S CENES AND REPLICA . ATE FOR REFERENCE . M EAN ACCURACY (A CC .), COMPLETION (C OMP .), CHAMFER (C HAM .), AND RMSE C HAMFER , IN M .                                          
+
+> dataset system ATE ↓Acc. ↓Comp. ↓Cham. ↓Ch. RMSE ↓
+> 7-Scenes MASt3R-SLAM fresh 0.048 0.051 0.058 0.055 0.085 Pow3R-SLAM 0.044 0.048 0.038 0.043 0.058
+> Pow3R-SLAM hyb. 0.048 0.050 0.038 0.044 0.058
+> Replica MASt3R-SLAM fresh 0.015 0.037 0.031 0.034 0.056 Pow3R-SLAM 0.009 0.022 0.018 0.020 0.027
+> Pow3R-SLAM hyb. 0.010 0.023 0.019 0.021 0.028
+
+(1 .6× faster), averaging 18.6 FPS, and its hybrid mode takes only 698 seconds (2 .1× faster), averaging 25.3 FPS. At the full frame rate (full) the ratios are 1 .5× and 2 .1×. The CPU-only ORB-SLAM3 (a sparse tracker with no network pass) takes 371 seconds, running at 51 FPS, for reference. On 7-Scenes, Pow3R-SLAM times include the colour registration. Pow3R has no matching head, so MASt3R-SLAM’s per-frame descriptor refinement is absent. The hybrid variant also skips the network pass on every 2nd frame, which occupies 2/3 of the tracker’s time. Pow3R also has fewer parameters than MASt3R (556 M vs. 695 M), yet its network pass takes about as long (41 vs. 44 ms per frame). 
+
+D. Ablations 
+
+To study the effects of each of Pow3R-SLAM’s compo-nents, Table IV switches them on one at a time. The single most impactful change is the introduction of priors to Pow3R, which takes the mean ATE from 0.083 m (against MASt3R-SLAM’s 0.030 m) to 0.032 m (L1 to L3). It is the depth conditioning (not intrinsics) that plays the larger role (L2 vs. L3), and removing it (L6) regresses 20/23 scenes it still completes, while fr1/rpy diverges. Scale lowers the Sim (3) ATE further (0.032 to 0.026 m) and cuts the unscaled SE (3) error from 0.364 to 0.034 m and the map Chamfer distance from 6.6 to 3.1 cm. The anchor is neutral on this panel (at most 4.9 mm of Sim (3) ATE on any scene). Map-only keyframes keep trajectories identical while improving the Chamfer distance (3.27 to 3.05 cm with 4 .4× the points). Hybrid mode gives comparable performance to the default mode, with a better median ATE, though scored per frame it is slightly worse (Sec. IV-A). We also study the sensitivity of our methods to depth quality. Scaling each valid depth pixel by max (1 + σ ε , 0.05 ),
+
+ε ∼ N (0, 1), at all three sites raises the 24-scene mean ATE (0.026 m unperturbed) monotonically, to 0.034, 0.056, 0.197 (one sequence diverging), and 0.609 m for σ = 0.05, 0.1, 0.2, and 0.4. Noisy depth beats no depth (L2) at σ = 0.1, but not at 0.2. Keeping a random 50, 10, or 3% of the depth pixels at the conditioning site instead gives 0.026, 0.028, and 0.026 m, which are within 2.2 mm of the unperturbed value. Thus, we show that the prior is robust to sparse depth, but not to dense, wrong depth. To test how depth image holes were impacting Pow3R-SLAM, we preprocessed the datasets with a depth completion network (Any2Full [27]). It regressed Replica (+9.6% mean ATE), was within noise on TUM ( −1.8%), and helped 7-Scenes ( −13 .8%), but as it added compute cost it was not adopted. Completed pixels were less view-consistent than measured ones, and Pow3R already fills holes (Fig. 1). TABLE IV 
+
+ABLATIONS . M EANS AND MEDIAN ATE OVER THE 24 SCENES ,CHAMFER (CM ) OVER THE 15 MAP SCENES , WITH stairs SEPARATE .ROWS L1–L5 ADD ONE COMPONENT AT A TIME UP TO THE SHIPPED DEFAULT (DEF .); L6 AND L7 LEAVE OUT DEPTH SITES (23 SCENES , AS FR 1/ RPY DIVERGES WITHOUT COND ). REF .: REFERENCE SYSTEMS , NOT RANKED (ORB-SLAM3 OVER ITS 21 COMPLETIONS ). KF: KEYFRAMES .                                                    
+
+> configuration Sim3 mean (24) ↓
+> Sim3 median (24) ↓
+> SE3 mean (24) ↓
+> Chamfer (15) ↓stairs ↓
+> ORB-SLAM3 (ref., 21) 0.0342 0.0178 0.0411 –0.045 MASt3R fresh (ref.) 0.0304 0.0228 0.1104 4.35 0.016 L1 Pow3R, no priors 0.0834 0.0449 0.4094 9.55 0.063 L2 + intrinsics 0.0711 0.0431 0.4058 8.70 0.052 L3 + cond 0.0319 0.0189 0.3640 6.58 0.115 L4 + scale 0.0260 0.0191 0.0337 3.07 0.044
+> L5 + anchor (def.) 0.0257 0.0191 0.0329 3.05 0.044 L6 def. −cond (23) 0.0577 0.0292 0.0658 5.56 0.066 L7 scale only (23) 0.0547 0.0370 0.0705 5.40 0.033
+> map-only KF off 0.0257 0.0191 0.0329 3.27 0.044 hybrid 0.0264 0.0173 0.0314 3.15 0.062
+
+V. L IMITATIONS 
+
+While the depth prior improves the prediction where sen-sor depth has holes, makes it metric, and improves aggregate results, it does not make the estimators more robust. Scenes for which Pow3R-SLAM is worse than MASt3R-SLAM include stairs in 7-Scenes (Fig. 4), and planar 3 , sofa 2 , and 
+
+repetitive in ETH3D-SLAM. We hypothesize that repeating, self-similar structures cause these failures, as when Pow3R predicts a complete and confident geometry, the matching can find incorrect but mutually consistent correspondences that pull the backend to a wrong solution. VI. C ONCLUSIONS 
+
+We presented Pow3R-SLAM, an RGB-D SLAM system that combines measured depth with learned two-view re-construction to produce metric trajectories and dense maps. Depth conditions network predictions, sets pointmap scale, and anchors keyframe geometry during global optimization. Across 24 sequences from TUM, 7-Scenes, and Replica, Pow3R-SLAM runs 1 .6× faster than MASt3R-SLAM, with 15% lower mean keyframe trajectory error and 3 .1× lower per-frame trajectory error without scale alignment. Its maps are denser, and achieve 30% lower Chamfer distance on 7-Scenes and Replica. The hybrid ICP variant further im-proves runtime, reaching 25.3 FPS and a 2 .1× speedup over MASt3R-SLAM. Ablations identify depth conditioning as the main source of accuracy gains and scaling as essential for metric output. Conditioning remains effective with only 3% of depth pixels supplied to the network, showing that sparse measurements can still guide dense reconstruction. Depth noise and self-similar scenes remain challenging. Future work will in-vestigate consistency-aware confidence gating, training with realistic sensor noise, and multi-view reconstruction priors. These results establish depth-conditioned pointmaps as a practical basis for real-time SLAM, combining improved tra-jectory accuracy and map completeness with lower runtime. ACKNOWLEDGMENT 
+
+We would like to thank the authors of MASt3R-SLAM for providing a strong and extensible baseline SLAM system. We would also like to thank the authors of Pow3R, for their strong work on integrating depth. We acknowledge the support of the Natural Sciences and Engineering Research Council of Canada (NSERC). AI Disclosure: Claude (Fable 5 .1, Opus 5) was used to assist in development and debugging of the code for this work, including organizing the LaTeX for all Tables and Fig. 2, and the Python code to stitch the images for Figs. 3 and 4. It was also used to help create the website and supplementary video. All output has been manually validated by the authors. REFERENCES [1] R. A. Newcombe, A. Fitzgibbon, S. Izadi, O. Hilliges, D. Molyneaux, D. Kim, A. J. Davison, P. Kohli, J. Shotton, and S. Hodges, “Kinect-Fusion: Real-time dense surface mapping and tracking,” 2011 10th IEEE International Symposium on Mixed and Augmented Reality , pp. 127–136, 2011. [2] T. Whelan, S. Leutenegger, R. F. Salas-Moreno, B. Glocker, and A. J. Davison, “ElasticFusion: Dense SLAM without a pose graph,” 
+
+Robotics: Science and Systems , 2015. [3] J. Sturm, N. Engelhard, F. Endres, W. Burgard, and D. Cremers, “A benchmark for the evaluation of RGB-D SLAM systems,” 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems ,vol. 1, pp. 573–580, 2012. [4] S. Wang, V. Leroy, Y. Cabon, B. Chidlovskii, and J. Revaud, “DUSt3R: Geometric 3D vision made easy,” 2024 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 20 697–20 709, 2024. [5] V. Leroy, Y. Cabon, and J. Revaud, “Grounding image matching in 3D with MASt3R,” European Conference on Computer Vision , pp. 71–91, 2024. [6] W. Jang, P. Weinzaepfel, V. Leroy, L. Agapito, and J. Revaud, “Pow3R: Empowering unconstrained 3D reconstruction with camera and scene priors,” 2025 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 1071–1081, 2025. [7] R. Murai, E. Dexheimer, and A. J. Davison, “MASt3R-SLAM: Real-time dense SLAM with 3D reconstruction priors,” 2025 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 16 695–16 705, 2025. [8] R. Mur-Artal, J. M. M. Montiel, and J. D. Tard´ os, “ORB-SLAM: A versatile and accurate monocular SLAM system,” IEEE Transactions on Robotics , vol. 31, no. 5, pp. 1147–1163, 2015. [9] R. A. Newcombe, S. J. Lovegrove, and A. J. Davison, “DTAM: Dense tracking and mapping in real-time,” 2011 International Conference on Computer Vision , vol. 1, pp. 2320–2327, 2011. [10] R. Mur-Artal and J. D. Tard´ os, “ORB-SLAM2: An open-source SLAM system for monocular, stereo, and RGB-D cameras,” IEEE Transactions on Robotics , vol. 33, no. 5, pp. 1255–1262, 2016. [11] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. M. Montiel, and J. D. Tard´ os, “ORB-SLAM3: An accurate open-source library for visual, visual-inertial, and multimap SLAM,” IEEE Transactions on Robotics ,vol. 37, no. 6, pp. 1874–1890, 2021. [12] Z. Teed and J. Deng, “DROID-SLAM: deep visual SLAM for monoc-ular, stereo, and RGB-D cameras,” in Advances in Neural Information Processing Systems (NeurIPS) , 2021. [13] E. Sucar, S. Liu, J. Ortiz, and A. J. Davison, “iMAP: Implicit mapping and positioning in real-time,” 2021 IEEE/CVF International Conference on Computer Vision (ICCV) , pp. 6209–6218, 2021. [14] Z. Zhu, S. Peng, V. Larsson, W. Xu, H. Bao, Z. Cui, M. R. Oswald, and M. Pollefeys, “NICE-SLAM: Neural implicit scalable encoding for SLAM,” 2022 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 12 776–12 786, 2022. [15] C. Yan, D. Qu, D. Xu, B. Zhao, Z. Wang, D. Wang, and X. Li, “GS-SLAM: Dense visual SLAM with 3D Gaussian splatting,” 2024 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 19 595–19 604, 2024. [16] J. Wang, M. Chen, N. Karaev, A. Vedaldi, C. Rupprecht, and D. Novotny, “VGGT: Visual geometry grounded transformer,” 2025 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 5294–5306, 2025. [17] G. Tolias, Y. Avrithis, and H. J´ egou, “To aggregate or not to aggregate: Selective match kernels for image search,” 2013 IEEE International Conference on Computer Vision , pp. 1401–1408, 2013. [18] D. Maggio, H. Lim, and L. Carlone, “VGGT-SLAM: Dense RGB SLAM optimized on the SL(4) manifold,” Advances in Neural Infor-mation Processing Systems , vol. 39, 2025. [19] Y. Liu, S. Dong, S. Wang, Y. Yin, Y. Yang, Q. Fan, and B. Chen, “SLAM3R: Real-time dense scene reconstruction from monocular RGB videos,” 2025 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 16 651–16 662, 2025. [20] G. Tolias, T. Jenicek, and O. Chum, “Learning and aggregating deep local descriptors for instance-level recognition,” European Conference on Computer Vision , pp. 460–477, 2020. [21] Y. Chen and G. Medioni, “Object modelling by registration of multiple range images,” Image and Vision Computing , vol. 10, no. 3, pp. 145– 155, 1992. [22] S. Rusinkiewicz and M. Levoy, “Efficient variants of the ICP algo-rithm,” in Third International Conference on 3D Digital Imaging and Modeling , 2001. [23] B. Glocker, S. Izadi, J. Shotton, and A. Criminisi, “Real-time RGB-D camera relocalization,” 2013 IEEE International Symposium on Mixed and Augmented Reality (ISMAR) , pp. 173–179, 2013. [24] J. Straub, T. Whelan, L. Ma, Y. Chen, E. Wijmans, S. Green, J. J. En-gel, R. Mur-Artal, C. Ren, S. Verma, A. Clarkson, M. Yan, B. Budge, Y. Yan, X. Pan, J. Yon, Y. Zou, K. Leon, N. Carter, J. Briales, T. Gillingham, E. Mueggler, L. Pesqueira, M. Savva, D. Batra, H. M. Strasdat, R. D. Nardi, M. Goesele, S. Lovegrove, and R. Newcombe, “The Replica dataset: A digital replica of indoor spaces,” arXiv , 2019. [25] T. Sch¨ ops, T. Sattler, and M. Pollefeys, “BAD SLAM: Bundle adjusted direct RGB-D SLAM,” 2019 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 134–144, 2019. [26] J. L. Sch¨ onberger and J.-M. Frahm, “Structure-from-Motion revisited,” 
+
+2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 4104–4113, 2016. [27] Z. Zhou, R. Liu, T. Liu, W. Zuo, S. Wang, Z. Hong, and D. Zhang, “Any to full: Prompting Depth Anything for depth completion in one stage,” arXiv , 2026.

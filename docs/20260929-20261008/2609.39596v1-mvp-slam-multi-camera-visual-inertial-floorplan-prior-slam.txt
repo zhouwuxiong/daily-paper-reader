@@ -1,0 +1,317 @@
+Title: MVP-SLAM: Multi-Camera Visual-Inertial Floorplan-Prior SLAM
+
+URL Source: https://arxiv.org/pdf/2609.39596v1
+
+Published Time: Thu, 01 Oct 2026 01:37:37 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+> PREPRINT UNDER REVIEW 1
+
+# MVP-SLAM: Multi-Camera Visual-Inertial Floorplan-Prior SLAM 
+
+Asier Bikandi-Noya 1,†, Miguel Fernandez-Cortizas 1,†, Muhammad Shaheer 1,Holger Voos 1, and Jose Luis Sanchez-Lopez 1
+
+Abstract —Indoor building construction sites are demanding environments for visual SLAM, where variable lighting and repetitive, low-textured structures make the system drift over long trajectories, though structural elements such as walls remain distinguishable despite these conditions. These buildings are constructed according to their as-planned floor plans, available from the design phase, and although the actual as-built site can differ from this design, floor plans still provide a metric reference, both to localize the system in the building and to correct drift. Existing methods often use the floor plan to correct an already-built trajectory offline, and those that instead correct it online typically rely on depth sensors. We instead present MVP-SLAM, an online visual-inertial SLAM on two opposite-facing fisheye cameras that corrects drift from cameras alone by matching walls detected in its map to the floor plan, through a drift-aware policy. A multi-stage integration then turns each matched pair incrementally into a persistent correction, so the trajectory stays corrected and localized within the floor plan as it is built. MVP-SLAM was validated on the multi-floor construction sites of the Hilti–Trimble SLAM Challenge 2026, ranking 2nd of 22 teams in the Localization task ( 0.29 m mean RMSE) and 5th of 62 teams in the SLAM task ( 0.24 m), the top-ranked one in both tasks among those that operate online, integrate the floor plan, and localize within it. 
+
+I. I NTRODUCTION 
+
+Accurate and reliable localization in indoor building con-struction environments is essential for automating construction workflows, such as tracking a site’s progress or enabling autonomous robotic inspection [1]. Visual-inertial SLAM is a practical tool for this goal, but construction site environments pose a challenge for these systems due to variable lighting, moving workers, fast motions, and repetitive, low-textured structures [2], causing the estimated trajectory to accumu-late drift. Nevertheless, construction environments present structural elements, such as walls and columns, that remain distinguishable despite these conditions. Construction sites typically have floor plans available [3], 2D representations of these structural elements produced dur-ing the design phase that can serve as a reference to correct this drift. In more advanced cases, these are Building Information                                   
+
+> 1Authors are with the Automation and Robotics Research Group, Interdisciplinary Centre for Security, Reliability, and Trust (SnT), University of Luxembourg, Luxembourg. Holger Voos is also associated with the Faculty of Science, Technology, and Medicine, University of Luxembourg, Luxembourg.
+
+{asier.bikandi, miguel.fernandez, muhammad.shaheer, holger.voos, joseluis.sanchezlopez }@uni.lu                   
+
+> †These authors contributed equally. * This work was partially funded by the Fonds National de la Recherche of Luxembourg (FNR) under the project C22/IS/17387634/DEUS and BRIDGES/2025-1/IS/19685965/BARCODE * For the purpose of Open Access, and in fulfillment of the obligations arising from the grant agreement, the authors have applied aCreative Commons Attribution 4.0 International (CC BY 4.0) license to any Author Accepted Manuscript version arising from this submission.
+
+Fig. 1: MVP-SLAM on a Hilti construction sequence, match-ing detected walls to the floor plan and correcting the estimated trajectory against ground truth. Models (BIMs), encoding this information in more detail, though they are not universally available and are costly to process [4]. Although discrepancies exist between the as-built 
+
+site and this as-planned floor plan [5], they are also used to localize in the building. Visual localization algorithms, like Z-FLoc [6], localize within such a floor plan and correct drift against it, but only after a trajectory has been generated, in a post-processing step. Onsite operation, however, needs a cam-era position estimate while the site is still being traversed, not only once it is complete, so the correction must happen online, as the trajectory is built, rather than recovered afterwards. Methods offering an online camera position estimation in construction sites integrate the floor plan directly into the SLAM back-end. These methods rely on semantic entities such as walls to establish correspondences between the as-built site and as-planned floor plan, incorporating each match into the back-end’s graph optimization [1]. However, these systems rely on active depth or range sensors, such as anchoring LiDAR point clouds to BIMs [5] or matching structural walls from RGB-D cameras [7], leaving visual-only settings largely unexplored. A particular challenge for these systems is to find reliable correspondences between detected structural elements, such as walls on the as-built site and their counterparts on the floor plan, since accumulated drift makes this association increasingly difficult as the environment grows. The Hilti–Trimble SLAM Challenge 2026 [4] benchmarks such real-world construction sites and their challenging condi-tions, recorded with a hand-held device carrying two opposite-facing (back-to-back) fisheye cameras and an IMU, without depth sensor; the cameras cover 360 ◦, sharing too little overlap to act as a stereo pair. Floor plans are also available for arXiv:2609.39596v1 [cs.RO] 30 Sep 2026 2 PREPRINT UNDER REVIEW 
+
+these sites, and one of the challenge’s two tasks, Localization ,recovers the camera trajectory within the floor-plan frame from an initial pose, while its SLAM task instead recovers it in an arbitrary frame. Both tasks are scored on trajectory accuracy alone, so neither requires online or real-time operation. To recover the trajectory in the plan’s frame while correcting drift, we present MVP-SLAM (Multi-Camera Visual-Inertial Floorplan-Prior SLAM), an online visual-inertial SLAM sys-tem that leverages the building’s floor plan to constrain its estimation, responding to the Hilti–Trimble SLAM Challenge 2026. Our contributions are: (i) an online multi-camera visual-inertial SLAM system that integrates the building’s floor plan to correct drift as the trajectory is built; (ii) a semantic wall detection and drift-aware association algorithm that estab-lishes correspondences between the as-built map and the floor plan from cameras alone; and (iii) a floor-plan integration method that, through a multi-stage strategy, turns each match incrementally into a bounded, persistent correction, so the map and trajectory are jointly optimized online under visual, inertial, and plan constraints. MVP-SLAM ranked 2nd in the Localization task of the challenge and 5th in the SLAM task, the best-placed system in both among those that also operate online, integrate the floor plan, and localize within it. II. R ELATED WORK 
+
+Multi-camera visual-inertial SLAM : Monocular visual-inertial SLAM suits hand-held capture, but its limited field of view degrades tracking during poor lighting or occlusions. Multi-camera setups widen visual coverage to maintain fea-ture continuity, but whereas MAVIS [8] relies on overlapping stereo pairs, purely visual non-overlapping setups [9] suffer from motion-dependent scale unobservability and drift in the absence of an IMU. On the Hilti–Trimble SLAM Challenge 2026 [4] rig, recent systems estimate the trajectory with feature-based visual-inertial SLAM [10], [11], while others recover the full trajectory offline through global factor-graph optimization [12]. These systems, however, leave the trajectory in an arbitrary frame, neither localizing within a floor plan nor exploiting the one available on these construction sites to correct it. 
+
+Localization with architectural priors : Several methods localize a camera within a pre-existing floor plan, aligning monocular detections or layout cues to it through seman-tic Monte-Carlo localization [3] or learned ray-based filter-ing [13], returning a global position but without using the floor plan to improve the trajectory or the map. In the challenge’s Localization task [4], Map-It Ralph [14] likewise makes no use of the floor-plan geometry, reaching the plan frame from the provided anchor pose alone. The top three teams, in contrast, do use the floor plan, aligning a completed estimate to it offline: Z-FLoc by a single global transform from a bird’s-eye reconstruction [6], OmniRecon by 2D ICP on an of-fline structure-from-motion cloud [15], and CUFE by refining completed trajectories for floor-plan consistency [16]. All of them, however, apply the floor plan only after the trajectory is complete, rather than integrating it into the estimation to correct drift as the trajectory is built. 
+
+Architectural priors inside SLAM : Architectural plans can be leveraged inside SLAM systems to localize estimates within a building structure while offering an external metric reference to correct drift. A recent system from the same challenge [17] relies entirely on the benchmark’s provided starting pose to localize within the building, whereas real-world inspection tasks normally start from an estimated position, such as that obtained by having an operator match a few detected walls to the floor plan [7]. Furthermore, it uses the floor plan only to reject false loop-closure candidates, without directly correcting the drift. Other works do integrate the floor plan into the estimation to correct drift, but sense the walls directly with a range or depth sensor. LiDAR pose-graph methods anchor scans to a BIM through multi-session alignment [5], while [1] matches an online scene graph of rooms and walls to one extracted from the floor plan, and ivS-Graphs [7] brings this to vision with a simpler, wall-only matching, from an RGB-D sensor. Such sensing is uncommon on hand-held site-capture rigs, and depth cameras reach only a few meters, short of a construction interior’s spans. A depth-free system [18] instead registers sparse map points to a digital twin, but its prior is a dense, photorealistic as-built mesh that must be acquired separately and updated as the site evolves, unlike an as-planned floor plan available from the design stage. Correcting drift online by integrating an as-planned floor plan into a camera-only visual-inertial estimation remains unexplored. III. M ETHODOLOGY 
+
+A. System Overview 
+
+MVP-SLAM corrects the drift of a visual-inertial trajectory and localizes inside the building by introducing the as-planned 
+
+floor plan into a graph-based back-end. We build it upon ORB-SLAM3 [19], a widely adopted and extensively benchmarked SLAM system of this kind. MVP-SLAM takes four inputs: the two fisheye image streams, an IMU, a floor plan of the site, and one plan-frame initialization pose Ts, needed only as a coarse estimate rather than ground truth, since later corrections absorb its error (Sec. III-D). It processes them through three modules, each supplying what the next requires (Fig. 2): a multi-camera visual-inertial SLAM (Sec. III-B) estimates a continuous, metric trajectory and reconstructs a map; a wall detection and matching module (Sec. III-C) detects walls Ws in the map and matches them to their floor-plan counterparts Wplan ; and an integration module (Sec. III-D) folds each matched wall into a multi-stage back-end optimization that jointly re-estimates the trajectory and map, aligning them with the floor plan (Fig. 1). 
+
+B. Multi-camera visual-inertial SLAM 
+
+MVP-SLAM extends monocular-inertial SLAM to the sen-sor setup of the rig. Facing opposite directions, the two fisheye cameras share too little overlap for stereo matching; each stream is tracked monocularly against a single shared map, with features from both hemispheres and the high-frequency IMU constraining one trajectory. The extension spans initial-ization, tracking, and map merging when the track is lost. PREPRINT UNDER REVIEW 3INPUT 
+
+> Fisheye C1 | C2 + IMU
+
+MVP-SLAM : THREE MODULE PIPELINE   
+
+> Semantic wall match (Sec. III-B.2)
+> Map Points Camera Poses
+> Wplan WS
+> C1 | C2
+
+Ts    
+
+> C1|C2
+> IMU
+> Floor Plan (CAD Model)
+> As-planned Reference
+> Init pose ~5s
+> (Sec. III-B) : MULTI-CAMERA VISUAL-INERTIAL SLAM
+> (Sec. III-D) : MULTI-STAGE FLOOR PLAN INTEGRATION
+> (Sec. III-C) : WALL DETECTION AND FLOOR PLAN ASSOCIATION
+> Wall Detection ( Ws )
+> Floor Plan Processing ( Wplan )
+> Drift-Aware Association
+> Step 1:
+> Local alignment mini-graph
+> Step 2:
+> Correction
+> propagation
+> Step 3:
+> Persistence in
+> optimization
+> OUTPUT
+> Fast
+> initialization
+> Multi-camera tracking and optimization
+> Inertial map merging After correction
+> IMU
+> Ts
+> CAD
+
+Ts
+
+> Camera Poses
+> Match(Ws, Wplan)
+> Ws
+> Wplan
+> Before correction
+> Opt.
+> State
+
+Fig. 2: System architecture of MVP-SLAM. Sensor and floor-plan inputs (left) feed a three-module pipeline whose optimized state is fed back into the SLAM system as persistent plan priors, producing the plan-aligned trajectory estimate (right). 
+
+Fast initialization. A first metric map anchors the rest of the trajectory. Monocular-inertial pipelines build it only once enough parallax is available [19], [20], which a sequence beginning at rest or turning in place does not provide, while stereo pipelines build it at once from a wide image overlap the rig lacks. In between, Li et al. [21] showed that, for multi-camera rigs with limited view overlap, the few features matched across cameras are enough to seed the map from a single frame. MVP-SLAM follows this idea, adapted to the rig and its IMU, trying two paths in order. (a) Cross-camera metric seeding: Front-camera features falling in the narrow peripheral band shared by both cameras are searched in the back image along known cross-camera epipolar curves over a small set of depth hypotheses, and the median depth of the surviving matches sets the scale, every remaining feature placed at that depth along its ray. Unlike the vision-only method of [21] needing an accurately triangulated seed, this coarse map suffices: the 4 cm inter-camera baseline could not provide accurate depths, but the first inertial bundle adjustment recovers them together with the scale. (b) Gyro-aided fallback: In visual odometry and outlier rejection, taking the inter-frame rotation from the gyroscope rather than estimating it has proven to make two-view ge-ometry more robust [22], [23]: it reduces the problem from five degrees of freedom to the two of the translation direction, recovered by a 2-point RANSAC [23]. MVP-SLAM applies this to initialization: when too few cross-camera matches survive, it falls back to two views with the rotation from gyro preintegration. This also removes the choice between a ho-mography and a fundamental matrix, unreliable where planar surfaces dominate and parallax is small, which improves the robustness of the initialization in these challenging scenes. 
+
+Multi-camera tracking and optimization. The back cam-era is rigidly attached to the front one, so, as in other multi-camera visual-inertial systems [24], its observations con-strain the same visual-inertial state from the opposite viewing hemisphere. For a map point seen by the back camera, its reprojection residual composes the estimated front-camera pose with the fixed inter-camera extrinsic, known from the IMU-camera calibrations, before applying the Kannala–Brandt fisheye projection. Each camera populates the map on its own, back-camera points being triangulated temporally between keyframes with the rig motion as baseline. A point is then searched only in the camera that created it while it stays in that field of view: as the two hemispheres barely overlap, searching it in both cameras would only add computational cost and cross-camera mismatches between similar structures. When it leaves, during turns or corridor reversals, it is projected into the opposite camera, which re-observes it and keeps it tracked across the hemisphere change. When both cameras end up mapping the same structure, fusion merges the duplicated points and culling removes the redundant ones. 
+
+Inertial map merging. Tracking can still be lost, on a fast turn or in front of a textureless wall [2]. When the pose cannot be recovered in the current map, multi-map systems such as ORB-SLAM3 start a new one and connect it to the previous map only if place recognition later identifies an already mapped area [19]. Because the floor plan is anchored to the first map through the initialization pose, a new map opened at its own origin stays outside the plan frame until the operator walks through an already mapped area again, which may never happen in a walkthrough without loops, and no plan correction can be applied to it meanwhile. MVP-SLAM instead keeps the interrupted map and merges it with the new one through the IMU: the last keyframe before the loss is propagated by dead reckoning over the frames the loss lasts, and comparing this prediction with the first keyframe of the new map gives the transform between the two map frames. Both maps are metric and gravity-aligned, so the transform reduces to yaw and position, the four degrees of freedom unobservable in visual-inertial estimation [20], and is applied once, leaving the internal geometry of each segment untouched. Both segments therefore remain in the anchored frame of the first map, so walls matched in either of them constrain the whole trajectory, and a structure seen on both sides of the loss refines the join itself (Sec. III-D). 
+
+C. Semantic wall detection and floor-plan association 
+
+This module supplies the back-end with wall correspon-dences in three steps: wall detection recovers the as-built walls 4 PREPRINT UNDER REVIEW 
+
+Ws, floor-plan processing extracts the plan walls Wplan , and a drift-aware association matches the two. 
+
+Wall detection. Planar surfaces are established landmarks in structured-environment SLAM [25], but fitting them directly to a feature-based map is error-prone, since its points come from many structures and non-wall planar clutter such as cabinets or panels is easily mistaken for a wall. MVP-SLAM therefore detects walls semantically, classifying the map points and fitting wall planes only to those labelled as wall [7]. These labels come from a pretrained panoptic segmenter (EoMT [26]), which assigns every pixel of both fisheye images a COCO-panoptic class, a vocabulary that already contains the 
+
+wall class, so no site-specific fine-tuning is required. Each local-map point is then assigned the semantic class of its projected pixel on a per-frame basis as observations arrive. Labels are stabilized with a saturating hysteresis counter, so a point’s label flips only under sustained contradictory evidence. Three filters then suppress spurious wall labels: a gravity filter demotes wall labels whose viewing normal is too close to vertical (floor/ceiling bleed-through), a depth band rejects unreliable projections, and newly created map points are withheld until their labels stabilize. At every keyframe, these wall-labelled points are fitted into wall planes with a sequential RANSAC in a gravity-aligned frame. Verticality removes one rotational degree of freedom, so a wall is parameterized by azimuth and distance only and fitted from a minimal sample of two points; hypotheses are scored by a robust RANSAC objective (MSAC) and accepted only if their inliers form a single contiguous wall segment. A freshly fitted plane is tentative until confirmed by consistent re-fitting across several keyframes, after which it becomes a detected wall Ws eligible for matching with the floor plan. 
+
+Floor-plan processing. Since the wall detection module recovers only the larger, clearly-observed walls, not every thin partition or facade detail drawn in the CAD, the floor plan is reduced to a comparable, canonical set of wall faces the detected walls can be matched against. MVP-SLAM converts the CAD wall layers into 2D wall faces, registers them to the plan raster by a grid search maximizing wall-pixel overlap, and canonicalizes them by merging collinear spans, removing duplicate or ambiguous faces, assigning consistent outward normals, and completing missing opposite faces. Exterior/in-terior labels are inherited from the CAD layers, with exterior taking precedence when a face combines both. 
+
+Drift-aware association. Each accepted match becomes a persistent constraint on the trajectory, so the association commits conservatively to avoid corrupting the rest of the estimate. The initialization pose Ts places the floor plan in the as-built frame, so this step can find the correct associations between each detected wall Ws and its floor-plan counterpart 
+
+Wplan . A wall constrains the estimate only along its normal, so the integration stage (Sec. III-D) applies each correction anisotropically, and how much a candidate Wplan can be trusted then depends on how far the estimate has drifted along that direction. In principle, the estimator’s pose covariance could measure this, but a keyframe-windowed bundle adjust-ment holds out-of-window poses fixed [27], so this covariance reflects only the local window and not this accumulated drift. We therefore estimate this drift from the trajectory instead. It grows the longer the trajectory runs without a correction in that direction, so for each detected wall we track it through ℓ,the length traveled since the last accepted exterior association with a parallel wall normal ( |n⊤ 
+
+> i
+
+nj | ≥ 0.9); only exterior wall matches, being the more reliable, reset ℓ. A small ℓ means the perpendicular distance ∆d to a plan face is still reliable; a large ℓ means the trajectory may have drifted farther from the correct Wplan . We use ℓ in two ways. First, it widens a hard distance gate: a candidate Wplan is admitted only if 
+
+∆d ≤ min( d0 + αℓ ℓ, c ) , (1) so the tolerated perpendicular offset starts at d0, grows with drift at rate αℓ, and is capped at a wall class dependent value 
+
+c that limits how far the gate can open (Table II). This cap is tighter for interior walls than exterior ones ( cint < c ext ), because interior partitions are densely packed with near-parallel neighbours, where a looser gate risks matching the wrong twin, and are detected less reliably from shorter range, whereas well-separated facades can absorb more drift before a match becomes ambiguous. Second, it saturates the distance that enters the score, yielding the effective distance f∆d,
+
+f∆d = (1 − σ) ∆ d + σ min(∆ d, d sat ), (2) which equals the true distance ∆d when drift is small ( σ=0 )and caps it at dsat when drift is large ( σ=1 ). The blend factor σ rises linearly from 0 to 1 as ℓ grows from ℓmin 
+
+to ℓmax (Table II), holding at 0 below ℓmin and 1 above 
+
+ℓmax . With large drift the distance therefore stops dominating, leaving the angle and overlap terms to decide among the remaining candidates. After this drift-aware distance handling, each surviving plan face is scored with 
+
+s = wa ∆θ + wd f∆d + wf (1 − f ), (3) where s is the match cost, so the face minimizing s wins; ∆θ
+
+is the azimuth difference between the Ws and Wplan normals, taken with sign so that a face whose normal points the opposite way is penalized rather than counted as aligned; f ∈ [0 , 1] is the fraction of the detected extent contained in the face; and the weights wa, w d, w f (Table II) bring the radian, metre, and unitless terms to a common scale. The angle term is weighted most strongly because small orientation errors make a wall match unreliable even when its centroid is close. The final match of a detected wall Ws to its plan face Wplan 
+
+is committed only if it is unambiguous, which a rejection cascade enforces before the pair is handed to the integration stage. The lowest-cost candidate is discarded if its score exceeds a class-dependent ceiling, if it does not beat the runner-up by a sufficient margin (Table II), or if a same-class competitor lies at a comparable perpendicular distance. 
+
+D. Multi-stage floor-plan integration 
+
+Each matched pair (Ws, W plan ) provides a plan corre-spondence, but it reduces drift only once integrated into the SLAM graph as factors that optimize the trajectory and map. Introducing every accepted correspondence into one joint plan-constrained optimization makes that problem grow with the PREPRINT UNDER REVIEW 5
+
+Fig. 3: Incremental multi-stage integration of a matched wall, preserving earlier corrections. trajectory and accumulated associations [28]. MVP-SLAM in-stead incorporates each correspondence incrementally through a multi-stage optimization run whenever a new association is committed. Because this re-estimation happens at every match, MVP-SLAM continually realigns and localizes within the floor plan, so errors such as an imperfect initial pose 
+
+Ts are progressively absorbed. It runs in three steps: a local alignment over a bounded window (Step 1), a pose propagation of that correction (Step 2), and its persistence as a prior in later optimizations (Step 3), illustrated in Fig. 3. 
+
+1) Step 1: Local alignment mini-graph: The first stage builds a local 4-DoF mini-graph for the newly matched pair 
+
+(Ws, W plan ), optimizing only yaw and translation because the wall constraints are vertical and roll/pitch are fixed by gravity. In it, the plan wall Wplan is a fixed vertex and the detected wall Ws an optimizable one, joined by a high-information alignment edge; every keyframe observing Ws is a pose vertex, tied to Ws by a plane-projection edge and to its covisibility neighbours by relative 4-DoF edges. Aligning Ws with Wplan 
+
+therefore shifts the observing keyframes and removes their accumulated drift. Besides these observers, only the keyframes in the temporal gap between them and their covisibility neighbours are free to correct. If a wall was observed over a long span, this set is capped at a maximum window size (Table II), keeping the most recent keyframes. Each match is corrected on its own window, keeping the update incremental and per-association. While physical walls are finite surfaces represented by Ws and Wplan , their supporting infinite planes, 
+
+πs and πplan , are used in this mini-graph formulation. The local alignment minimizes the joint cost: 
+
+min  
+
+> {Tk}, π s
+
+∥πs ⊖ πplan ∥2 
+
+> ΛB
+
++ X
+
+> k∈O
+
+∥eπk ∥2 
+
+> Λπ
+
++ X
+
+> (i,j )∈E loc
+
+∥eij ∥2 
+
+> Λij
+
+,
+
+(4) whose three terms weight these edges: the alignment edge ( ⊖
+
+the difference between infinite plane parameters [25]) pulls the detected wall πs onto the fixed plan face πplan , penalizing their azimuth and signed-distance mismatch; plane-projection residuals eπk tie each observing keyframe k ∈ O to the wall measurement stored when it observed the wall, so consistency is enforced against the local observation, not a global drifted pose; and relative 4-DoF covisibility edges Eloc preserve the local trajectory shape while yaw and translation adapt to the wall. The first keyframe is a gauge when no earlier plan correction exists. Rather than modifying SLAM poses directly, the mini-graph outputs corrected keyframe targets storing their associated wall normals to guide subsequent directional priors 
+
+2) Step 2: Correction propagation to the system: Applied on their own, the mini-graph targets would end at the window boundary, leaving a discontinuity against the rest of the trajectory. A second 4-DoF pose graph therefore propagates them to the surrounding keyframes. Its adaptive window is built around the newly corrected keyframes and an anchor, chosen when possible as the latest previous correction whose stored wall normal is parallel to the current one. The window bridges from this anchor to the newly corrected span and extends backward from it, farther if too few same-axis old priors fall inside, so the previous correction supports the update over multiple keyframes rather than a single fixed anchor. The graph combines relative edges (covisibility and temporal-chain) with unary priors (fresh targets from Step 1 and previous corrections) by minimizing the joint cost: 
+
+min  
+
+> {Tk}
+
+X
+
+> (i,j )∈E
+
+∥eij ∥2 
+
+> Λij
+
++ X
+
+> k∈P
+
+∥ek∥2 
+
+> Λk
+
+, (5) where E contains relative 4-DoF edges, P is the set of keyframes carrying targets from Step 1, eij is the relative residual, and ek is the unary prior residual pulling keyframe 
+
+k toward its target pose, weighted by the block-diagonal information matrix Λk (Fig. 3, Step 2 inset): 
+
+Λk =
+
+Λt 00 λr I3
+
+
+
+∈ R6×6,
+
+Λt = τ I3 + s X
+
+> n∈N k
+
+nn ⊤ ∈ R3×3,
+
+(6) The translation block Λt builds an anisotropic constraint based on environment geometry. For each observed wall normal n ∈Nk, the outer-product term s nn ⊤ injects high information s
+
+perpendicular to the wall, while τ I3 provides a small isotropic information floor in every direction. The prior therefore pins the keyframe stiffly across each wall it observed while leaving it free to slide along the wall surface and vertically. Keyframes matched to multiple non-parallel walls are naturally pinned along all their respective normals. The rotation block λr I3
+
+provides an isotropic constraint on heading (yaw). Because roll and pitch remain fixed by gravity alignment in this 4-DoF formulation, yaw is the only rotational degree of freedom optimized, making a single scalar weight λr sufficient. After propagation, the optimized poses are written back to the SLAM state. Map points move rigidly with their most recent corrected observer, velocities rotate with their keyframes, and the IMU preintegration terms are re-evaluated at the new states. Without this patch, the next inertial local BA would see inconsistent inertial residuals and pull the trajectory back toward the pre-correction state. 6 PREPRINT UNDER REVIEW 
+
+TABLE I: Absolute Pose Error (APE) RMSE ( cm ) on Hilti–Trimble SLAM Challenge 2026 sequences, as reported on the official challenge leaderboard on the day of the challenge. Bold and underline denote best and second-best results per column per task; dashes (–) mark unavailable entries for Localization.                                                                                                                                                                                                                                                                                                                                                   
+
+> Floors and Sequences Ground Floors Upper Floors Underground Levels Floor 1 Floor 2 Floor EG Floor 3 Floor 4 Floor 5 Floor 6 Floor 7 Floor UG1 Floor UG2
+> 07-07 12-02 12-02 12-03 10-16 12-02a 12-02b 05-19 12-02 05-19 12-02 12-02 06-18 07-07 12-02a 12-02b 12-02a 12-02b 12-03 05-19 06-18 12-02a 12-02b 12-03 12-02
+> Average Duration ( sec .)133.7 276.3 143.7 149.9 242.9 126.4 162.5 115.5 132.7 91.9 193.4 160.5 69.3 73.0 170.7 124.6 117.9 155.1 198.3 205.5 165.8 254.8 219.7 134.4 223.1 161.7
+> Length ( m)157.8 321.8 154.8 138.8 240.4 114.9 158.6 128.2 148.8 97.8 214.1 174.9 79.4 72.2 210.6 145.8 145.4 197.1 152.6 262.5 222.6 351.7 322.5 119.1 292.1 185.0
+> Localization  Map-It Ralph [14] 71.92 39.68 577.06 233.11 41.86 87.98 320.64 103.89 182.71 38.67 49.77 82.38 49.74 41.31 50.59 109.38 301.10 105.34 69.70 95.13 147.77 264.79 88.25 127.67 –136.69 CUFE [16] 66.98 41.20 60.07 42.64 25.54 30.83 18.22 84.93 106.07 75.80 45.97 65.83 20.80 28.94 41.87 78.11 63.01 88.80 76.51 38.88 66.50 48.09 83.49 142.69 –60.07 OmniRecon [15] 38.05 30.51 38.79 45.59 33.32 19.88 41.99 40.12 64.74 44.20 17.58 53.57 30.20 40.37 52.20 27.42 14.26 74.43 27.60 46.85 55.00 58.41 53.50 58.08 –41.94
+> Z-FLoc [6] 28.87 17.78 32.55 29.98 15.07 12.48 18.37 17.54 36.45 24.22 12.60 14.31 27.69 33.57 16.10 19.08 13.30 21.04 22.61 32.17 33.56 24.25 42.62 23.77 –23.75 Ours (MVP-SLAM) 17.69 25.48 33.57 18.54 22.10 13.48 37.79 13.65 31.77 17.37 21.30 31.65 21.56 18.85 34.09 18.58 26.07 31.57 21.30 27.35 79.10 46.90 62.10 31.19 –29.29 Ours (w/o plan) 131.48 251.39 151.83 95.04 243.66 26.28 100.84 55.17 50.33 100.81 244.43 54.88 58.60 51.21 75.51 35.91 163.64 113.40 98.81 220.39 206.57 350.86 483.25 109.04 –144.72
+> SLAM
+> ACDC-VSLAM [10] 10.07 9.82 7.69 11.03 7.84 5.53 6.70 12.60 6.50 8.01 7.12 5.47 6.36 5.82 6.02 5.37 5.95 5.82 10.27 15.36 19.88 11.99 13.17 6.24 12.86 8.94 √VINS [12] 14.65 10.60 13.54 18.83 9.87 7.70 6.67 9.07 8.66 7.83 9.18 8.37 5.88 6.93 8.83 8.82 8.89 7.49 11.34 13.18 18.97 16.16 16.43 10.93 13.67 10.90 Undisclosed 17.59 11.76 36.04 12.55 9.46 8.99 12.75 12.86 36.01 12.97 6.74 5.43 16.71 14.72 5.41 7.25 8.92 7.46 16.32 27.20 33.24 49.54 50.03 6.13 40.83 18.68 QQ [11] 29.42 28.59 23.23 15.14 10.97 20.88 20.48 12.29 38.15 6.78 16.40 12.61 5.32 9.14 12.36 9.03 13.18 19.41 23.93 24.08 39.23 28.89 39.67 16.66 28.34 20.17
+> Ours (MVP-SLAM) 18.35 17.93 19.19 15.88 18.15 8.93 20.20 11.95 25.05 13.92 15.72 33.58 17.05 10.32 29.84 10.50 18.31 11.49 12.35 30.98 56.87 56.47 83.06 20.52 29.17 24.23 Ours (w/o plan) 104.96 128.91 50.79 78.35 116.47 10.40 22.32 35.78 93.05 55.04 100.69 21.00 29.62 14.69 49.29 18.78 37.41 46.37 32.66 155.01 68.01 177.93 187.25 74.11 121.42 73.21
+
+Full challenge leaderboard: https://hilti-trimble-challenge.com/leaderboard-2026 
+
+3) Step 3: Persistence in subsequent optimization: A cor-rection is useful only if it persists in the optimizations that follow. We thus store each corrected target with its wall-normal set Nk and reintroduce it as a unary anisotropic prior whenever the affected keyframe appears in a later optimization. In the local inertial BA that follows each correction, the priors keep the continuous SLAM estimate coherent with them, using the same anisotropic form but a softer information ratio (Table II) so that reprojection and inertial terms still refine the map along the wall while the floor plan prevents drift back across its normal. Each local BA jointly optimizes map points, keyframe poses, velocities, and IMU biases under these plan priors, so the final map and trajectory jointly satisfy visual, inertial, and structural constraints. To enforce global alignment without noise, floor-plan priors enter the essential-graph optimization [19] at loop closures and map merges. These constraints are applied only to keyframes associated with exterior walls, more reliable than interior ones. IV. E XPERIMENTAL RESULTS 
+
+A. Validation Methodology 
+
+Datasets. We evaluate on the Hilti–Trimble SLAM Chal-lenge 2026 dataset [4], recorded in active construction sites with a hand-held rig carrying two back-to-back ∼200 ◦ fisheye TABLE II: Key parameters of MVP-SLAM. 
+
+Parameter Symbol Value Description 
+
+Drift-aware association (Sec. III-C) 
+
+score weights wa,d,f 6 rad −1, 1 m−1, 1 angle, dist., overlap gate ramp d0, α ℓ 1 m, 0.1 offset, drift growth gate cap cext /int 5, 2.5 m ext./int. distance cap dist. saturation dsat 1 m score distance cap saturation range ℓmin / max 15 , 40 m score ramp runner-up margin – 1.6× match uniqueness 
+
+Floor-plan integration (Sec. III-D) 
+
+mini-graph window – 200 KF max. KFs in Step1 along-normal info s 10 4 stiffness across wall tangent floor τ 1 / 50 propagation / local BA rotation info λr 10 3 / 10 4 propagation / local BA 
+
+cameras operating at 30 Hz and a 1 kHz IMU. We address both official tasks with the same system. Localization is scored in the floor-plan frame and SLAM is scored after rigid alignment to the reference. Localization contains 24 scored sequences, excluding Floor UG2 because no floor plan is released. We group the sequences into ground floors, upper floors, and underground levels. Across all of them, the site is under construction and can differ from the floor-plan. The ground floors range from open spaces to the more built-out entrance level EG; the upper floors include interior areas and one outdoor terrace run; and the underground levels are large, sparsely-walled spaces dominated by structural columns. 
+
+Baselines. We compare MVP-SLAM against the other top-five competitors of each task (Table I), with per-sequence results taken from the official challenge release [4]. 
+
+Implementation Details. MVP-SLAM runs on a worksta-tion equipped with an Intel Core i9-11950H CPU and an NVIDIA T600 GPU ( 4 GB), 32 GB RAM. Key parameters are listed in Table II. 
+
+Trajectory estimation Performance. The challenge pro-vides a LiDAR-inertial reference trajectory, used only for eval-uation. Both tasks report per-sequence RMSE of the Absolute Pose Error (APE) against it: 2D in the floor-plan plane for Localization, 3D after rigid alignment for SLAM. A trajectory must cover at least 99% of the reference poses to be scored. To isolate the impact of map priors, we also evaluate an ablated variant, Ours (w/o plan) . It uses the same visual-inertial SLAM setup but disables wall associations and floor-plan integration. 
+
+SLAM initialization and robustness ablation. We assess the fast metric initialization and the map preservation across tracking losses of the multi-camera front-end (Sec. III-B) with an ablation. The reduced configuration disables them, so it initializes and recovers as a standard visual-inertial SLAM would, while the full configuration keeps them enabled. We measure initialization success, time to metric scale, trajectory coverage, and whether the run satisfies the challenge coverage requirement on six sequences, two per environment type. 
+
+Wall detection and matching Performance. We evaluate wall detection and wall-to-plan matching on the same six PREPRINT UNDER REVIEW 7  
+
+> (a) Floor EG (10-16) (b) Floor 4 (12-02) (c) Floor UG1 (12-02a)
+
+Fig. 4: Trajectory comparison in the Localization task, in the floor-plan frame, on three representative sequences. sequences, using precision, recall, and F1. The reference set is hand-labeled from the floor plan, camera images, and reconstructed map, and contains only walls that are visible to the cameras and supported by reconstructed map points. Unbuilt planned walls and transient clutter are ignored. For detection, a true positive is a detected plane on the same physical wall as a reference wall; a false positive is a plane fitted to non-wall structure, clutter, or empty space; and a false negative a reference wall not recovered. For matching, we manually label each detected wall’s correct plan face; a match is correct only when the committed association links to it. 
+
+B. Results and Discussion 1) Trajectory Estimation Performance : Table I reports the APE RMSE for both official challenge tasks. In the Local-ization task, MVP-SLAM achieves a mean APE of 0.29 mand ranks second among the 22 Localization teams, close to the winning Z-FLoc submission ( 0.24 m). MVP-SLAM is best or second-best on most sequences, showing that the plan constraints keep the trajectory well aligned with the building frame across floors and environment types. Without plan integration, Ours (w/o plan) reaches 1.45 m mean APE; while tracking remains stable, accumulated drift is no longer bounded. Adding the plan integration reduces the Localization error by 4.9×, from 1.45 m to 0.29 m. Fig. 4 illustrates this effect on representative ground-floor, upper-floor, and underground sequences. In the SLAM task, MVP-SLAM obtains 0.24 m mean APE and ranks fifth among 62 teams. As this metric only accounts for the trajectory shape (Sec. IV-A), the top-ranked sys-tems, led by ACDC-VSLAM [10] ( 0.09 m) and √VINS [12] (0.11 m), reach lower APE through mechanisms such as en-hanced loop closure, effective since the challenge sequences often revisit previously seen areas, and richer visual features. MVP-SLAM instead uses the floor plan to both localize the trajectory and correct drift, reaching the top five and demon-strating that the floor-plan integration reduces the aligned error 
+
+3.0× from 0.73 m (Ours w/o plan) to 0.24 m. As established in Sec. II, the other Localization teams apply the floor plan offline, once the trajectory is built [6], [15], [16]; MVP-SLAM is instead the only one to integrate it online, folding each match into the estimation as it is detected. The same distinction holds in the SLAM task, where MVP-SLAM is again the top-ranked team among those that integrate the floor plan online, and the only one to also localize within it, showing the building’s floor plan is a promising, distinct prior for improving a SLAM system. 
+
+2) SLAM Initialization and Robustness Ablation : Ta-ble III shows that both configurations initialize reliably and reach metric scale in ∼2.5s on upper floors, and diverge only in underground environments. Here, the reduced configuration takes up to 3× longer to reach metric scale ( 6.6–8.1s) and fails the 99% coverage threshold on Floor UG1 (06-18). This degradation occurs when a hard initialization briefly drops tracking, creating a second map frame. Without map preservation, the two maps remain unmerged. As a result, abandoned keyframes drop out of the trajectory, causing task failures and misaligning the floor plan reference. By main-taining continuity across tracking losses, map preservation merges these segments, recovering full coverage and reducing Floor UG1 (06-18) Localization error from 28 m to 2.07 m. 
+
+3) Wall Detection and Matching Performance : Table IV reports wall detection and wall-to-plan matching on six rep-resentative sequences. Detection is conservative by design: it reaches high precision ( 96 .9% ) but moderate recall ( 38 .4% ). This choice follows from the integration design (Sec. III-D), where each accepted wall becomes a persistent plan prior; a wrong wall is therefore more harmful than a missed one. Most missed walls are visible in the images but have too few or too noisy reconstructed map points to support a stable plane fit, especially in cluttered or texture-scarce areas. Once a wall is detected, association is highly reliable: TABLE III: Initialization and robustness ablation for Ours (w/o plan): 3 repeats per sequence, both configurations initial-ized every run. tmetric : median time to metric scale (s); Cov.: mean coverage (%); APE: median Localization error (m).                                                 
+
+> Reduced Full Floor Sequence tmetric Cov. APE tmetric Cov. APE
+> Ground Floor 1 (07-07) 3.1100 1.38 2.5100 1.31
+> Floor EG (10-16) 2.5100 3.02 2.2100 2.44
+> Upper Floor 3 (05-19) 2.8100 0.58 2.5100 0.55
+> Floor 6 (12-02a) 2.5100 1.01 2.5100 0.76
+> Under Floor UG1 (06-18) 6.696 .728 .02.5100 2.07
+> Floor UG1 (12-02a) 8.1100 5.10 2.4100 3.51 8PREPRINT UNDER REVIEW
+
+TABLE IV: Wall-detection and wall-matching performance (precision P, recall R, F1, in percent). Overall pools counts. 
+
+Detection Matching Floor Sequence P R F1 P R F1 
+
+Ground Floor 1 (07-07) 94.4 50.0 65.4 100.0 94.1 97.0 Floor EG (10-16) 100.0 28.6 44.4 100.0 100.0 100.0 
+
+Upper Floor 3 (05-19) 100.0 57.9 73.3 100.0 100.0 100.0 Floor 6 (12-02a) 84.6 35.5 50.0 90.9 100.0 95.2 
+
+Under Floor UG1 (06-18) 100.0 37.8 54.9 100.0 100.0 100.0 Floor UG1 (12-02a) 100.0 40.4 57.6 100.0 100.0 100.0 
+
+Overall 96.9 38.4 55.0 98.9 98.9 98.9 
+
+matching precision, recall, and F1 are all 98 .9% pooled. The detected wall candidates are usually close to their true plan faces and separated from alternatives, so the score (Eq. 3) and rejection cascade resolve most matches cleanly. The single wrong match occurs on Floor 6, where two nearly collinear plan faces fall within the gate, and the single missed match is a detected wall that receives no association. Thus, in these sequences, the plan prior is limited mainly by which walls can be detected from the sparse map, not by the association step. This is sufficient for localization when the accepted walls are distributed: Floor EG, for example, attains a 22 cm Localization APE despite only 28 .6% wall-detection recall. 
+
+Limitations. MVP-SLAM corrects drift only where it de-tects a wall and matches it to the floor plan. Its wall module fits planar walls, so in open areas with few walls, notably large underground spaces dominated by structural columns, few matches are available and the trajectory drifts uncorrected. V. C ONCLUSIONS AND FUTURE WORK 
+
+We presented MVP-SLAM, a multi-camera visual-inertial SLAM system that uses an as-planned floor plan as a reference to reduce drift accumulated on construction sites. It tracks its position on two opposite-facing fisheye cameras and an IMU, and corrects the drift online by mapping walls, matching them to the floor plan, and integrating it into the SLAM back-end through each match as the trajectory is built. On the Hilti–Trimble SLAM Challenge 2026 it ranked second 
+
+in Localization ( 0.29 m mean RMSE) and fifth in SLAM (0.24 m). It is the top team in both tasks among those that also operate online, integrate the floor plan, and localize within it. Future work will explore lightweight map densification to make the detection of walls and additional structural primitives such as columns easier, integrating them into the optimization for drift correction. It will also target the SLAM’s internal consistency directly, strengthening loop closure and adopting the richer-feature mechanisms of higher-ranked SLAM teams. REFERENCES [1] M. Shaheer, J. A. Millan-Romera, H. Bavle, J. L. Sanchez-Lopez, J. Civera, and H. Voos, “Graph-based global robot localization informing situational graphs with architectural graphs,” in 2023 IEEE/RSJ Int. Conf. Intelligent Robots and Systems (IROS), 2023, pp. 9155–9162. [2] M. Helmberger, K. Morin, B. Berner, N. Kumar, G. Cioffi, and D. Scara-muzza, “The Hilti SLAM challenge dataset,” IEEE Robot. Autom. Lett., vol. 7, no. 3, pp. 7518–7525, 2022. [3] O. Mendez, S. Hadfield, N. Pugeault, and R. Bowden, “SeDAR: Se-mantic detection and ranging — humans can localise without LiDAR, can robots?” in 2018 IEEE Int. Conf. Robotics and Automation (ICRA), 2018, pp. 6053–6060. [4] S. Centanni, Y. Zhang, Y. Tao, J. Kindle, F. Neuhaus, T. Koß, A. Patel, M. Helmberger, E. Szyma´ nska, T. Gr¨ aber et al., “Hilti-trimble-oxford dataset: 360 visual-inertial benchmark with floor plan priors for slam and localization,” arXiv preprint arXiv:2607.06464, 2026. [5] M. A. V. Torres, A. Braun, and A. Borrmann, “BIM-SLAM: Integrating BIM models in multi-session SLAM for lifelong mapping using 3D LiDAR,” in Proc. Int. Symp. Automation and Robotics in Construction (ISARC), vol. 40. IAARC Publications, 2023, pp. 521–528. [6] A. Umemura, T. Kuwahara, M. Pollefeys, and D. Barath, “Z-FLoc: Zero-shot floorplan localization via geometric primitives,” arXiv preprint arXiv:2606.04788, 2026. [7] A. Bikandi-Noya, M. Fernandez-Cortizas, M. Shaheer, A. Tourani, H. Voos, and J. L. Sanchez-Lopez, “BIM-informed visual SLAM for construction monitoring,” arXiv preprint arXiv:2509.13972, 2025. [8] Y. Wang, Y. Ng, I. Sa, ´ A. Parra, C. Rodriguez-Opazo, T. Lin, and H. Li, “MAVIS: Multi-camera augmented visual-inertial SLAM using SE2(3)-based exact IMU pre-integration,” in 2024 IEEE Int. Conf. Robotics and Automation (ICRA), 2024, pp. 1694–1700. [9] M. J. Tribou, A. Harmat, D. W. L. Wang, I. Sharf, and S. L. Waslander, “Multi-camera parallel tracking and mapping with non-overlapping fields of view,” Int. J. Robotics Research, vol. 34, no. 12, pp. 1480– 1500, 2015. [10] J. Jeon, D.-U. Seo, J. Choi, S. Lee, J. Nam, H. Lim, and H. Myung, “ACDC-VSLAM: Adaptive constraints for dual-fisheye-camera-based visual-inertial SLAM with point and line features,” Hilti–Trimble SLAM Challenge 2026, SLAM track report, 2026. [11] J. Jiang, “Technical report for the Hilti × Trimble SLAM challenge 2026,” Hilti–Trimble SLAM Challenge 2026, SLAM track report, 2026. [12] J. Lee, H. Kim, J. Choi, J. Jeong, and Y. Cho, “ √VINS with factor graph optimization-based visual-inertial SLAM in the Hilti–Trimble SLAM challenge 2026,” Hilti–Trimble SLAM Challenge 2026, SLAM track report, 2026. [13] C. Chen, R. Wang, C. Vogel, and M. Pollefeys, “F3Loc: Fusion and filtering for floorplan localization,” in Proc. IEEE/CVF Conf. Computer Vision and Pattern Recognition (CVPR), 2024, pp. 18 029–18 038. [14] A. C. Demirtas ¸, B. S ¸ ekeroglu, and A. Topaloglu, “Two-stage visual-inertial SLAM with sliding-window filtering and global bundle adjust-ment for the Hilti × Trimble SLAM challenge 2026,” Hilti–Trimble SLAM Challenge 2026, Localization track report, 2026. [15] G. Tanner, G. Evangelou, J. Lechner, Z. Pataki, X. Jiang, P.-E. Sarlin, and S. Liu, “Establishing the gold standard for 360 ◦ visual-inertial re-construction,” Hilti–Trimble SLAM Challenge 2026, Localization track report, 2026. [16] CUFE Team, Cairo University, “A fully automated multi-stage local-ization pipeline for indoor floorplan-constrained trajectory estimation,” Hilti–Trimble SLAM Challenge 2026, Localization track report, 2026. [17] Y. Zang, “Non-overlapping dual-fisheye visual-inertial SLAM based on ORB-SLAM3,” Hilti–Trimble SLAM Challenge 2026, organizer baseline, 2026. [18] R. Merat, G. Cioffi, L. Bauersfeld, and D. Scaramuzza, “Drift-free visual slam using digital twins,” IEEE Robot. Autom. Lett., vol. 10, no. 2, pp. 1633–1640, 2025. [19] C. Campos, R. Elvira, J. J. G. Rodr´ ıguez, J. M. M. Montiel, and J. D. Tard´ os, “ORB-SLAM3: An accurate open-source library for visual, visual–inertial, and multimap SLAM,” IEEE Trans. Robotics, vol. 37, no. 6, pp. 1874–1890, 2021. [20] T. Qin, P. Li, and S. Shen, “VINS-Mono: A robust and versatile monocular visual-inertial state estimator,” IEEE Trans. Robotics, vol. 34, no. 4, pp. 1004–1020, 2018. [21] A. Li, D. Zou, and W. Yu, “Robust initialization of multi-camera SLAM with limited view overlaps and inaccurate extrinsic calibration,” in 2021 IEEE/RSJ Int. Conf. Intelligent Robots and Systems (IROS), 2021, pp. 3361–3367. [22] L. Kneip, M. Chli, and R. Siegwart, “Robust real-time visual odometry with a single camera and an IMU,” in Proc. British Machine Vision Conf. (BMVC). British Machine Vision Association, 2011. [23] C. Troiani, A. Martinelli, C. Laugier, and D. Scaramuzza, “2-point-based outlier rejection for camera-IMU systems with applications to micro aerial vehicles,” in 2014 IEEE Int. Conf. Robotics and Automation (ICRA), 2014, pp. 5530–5536. [24] Y. He, H. Yu, W. Yang, and S. Scherer, “Towards robust visual-inertial odometry with multiple non-overlapping monocular cameras,” in 2022 PREPRINT UNDER REVIEW 9
+
+IEEE/RSJ Int. Conf. Intelligent Robots and Systems (IROS), 2022, pp. 9452–9458. [25] M. Kaess, “Simultaneous localization and mapping with infinite planes,” in 2015 IEEE Int. Conf. Robotics and Automation (ICRA), 2015. [26] T. Kerssies, N. Cavagnero, A. Hermans, N. Norouzi, G. Averta, B. Leibe, G. Dubbelman, and D. De Geus, “Your ViT is secretly an image segmentation model,” in Proc. Computer Vision and Pattern Recognition Conf. (CVPR), 2025, pp. 25 303–25 313. [27] R. Mur-Artal and J. D. Tard´ os, “Visual-inertial monocular slam with map reuse,” IEEE Robot. Autom. Lett., vol. 2, no. 2, pp. 796–803, 2017. [28] M. Kaess, H. Johannsson, R. Roberts, V. Ila, J. J. Leonard, and F. Dellaert, “isam2: Incremental smoothing and mapping using the bayes tree,” Int. J. Robotics Research, vol. 31, no. 2, pp. 216–235, 2012.

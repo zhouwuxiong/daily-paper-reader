@@ -1,0 +1,796 @@
+Title: Real-time Event-camera Stereo Visual Odometry via Keytime Gaussian Process Regression
+
+URL Source: https://arxiv.org/pdf/2610.02601v1
+
+Published Time: Mon, 05 Oct 2026 00:24:34 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Real-time Event-camera Stereo Visual Odometry via Keytime Gaussian Process Regression 
+
+Nikan Nobari 1 and Jonathan D. Gammell 1
+
+Abstract — Event cameras have microsecond-level temporal resolution and high dynamic range which make them more resilient to motion blur and poor illumination than standard frame-based cameras. Event-camera visual odometry (VO) pipelines maximize these benefits when they process the asynchronous event stream at the native temporal resolution. Continuous-time Gaussian process (GP) regression and a white-noise-on-acceleration (WNOA) prior can handle asynchronous measurements but result in a prohibitively large estimation state when applied naively. This paper presents a continuous-time event-camera stereo VO pipeline that maintains the native measurement times of asynchronous events while also running in real time. It reduces the estimation states to keytimes while maintaining full temporal resolution by interpolating measurements to their exact timestamps with a physically founded WNOA prior. This decouples the state size from the dense number of measurements without discarding their asynchronous nature. The real-time continuous-time VO pipeline is evaluated on the MVSEC and DSEC datasets. It provides estimates in real time that are more accurate than ES-PTAM, a state-of-the-art discrete estimator, in all but one of the tested sequences. The pipeline respectively provides estimates at 22 Hz and 6 Hz on MVSEC and DSEC and RMS relative errors of 46 · 10 −2 cm and 3.8 · 10 −2 degrees across all valid sequences, which were 
+
+11 and 15 times better than ES-PTAM, respectively. 
+
+I. I NTRODUCTION 
+
+Frame-based cameras capture visual information as discrete images. Visual odometry (VO) and simultaneous localization and mapping (SLAM) pipelines built on these cameras have achieved remarkable success [1]–[3] but they struggle in the presence of motion blur or poor image contrast which degrade feature tracking and cause inaccurate estimates. This often occurs with highly dynamic camera motions and in environments with poor illumination. Event cameras use a fundamentally different sensing paradigm that can avoid these problems. They report pixel intensity changes with microsecond-level temporal resolution and possess a higher dynamic range than traditional frame-based sensors. This combination reduces the limitations of standard cameras and promises VO pipelines that are more resilient to motion blur and poor lighting [4]. Event-camera VO pipelines must account for the asyn-chronous nature of event data to achieve the full potential of event cameras. Some discrete event-camera VO pipelines maintain the asynchronous measurement times by using motion-compensated event frames [5]–[10] or extracting event-based features [7], [11] in their front end but then group events during state estimation and reduce temporal resolution.  
+
+> 1Estimation, Search, and Planning (ESP) Research Group, Queen’s University, Kingston ON, Canada. {nobari.n, gammell }@queensu.ca. ˚tn ˚tn+1 x(t)
+
+Cluster 1 Cluster 2 yj,t ktk          
+
+> Fig. 1. An illustration of continuous-time state estimation using keytimes. Measurement states (grey triangles) are defined at unique, asynchronous times,
+> tk, from an appropriate feature detector. Keytimes states (white triangles,
+> ˚tn) can be selected arbitrarily and do not need to coincide with measurement times. The residual for each measurement, is evaluated at its unique time by interpolating between the keytime states, x(˚ tn)and x(˚ tn+1 ), that bound the measurement time, ˚tn≤tk<˚tn+1 , using a physically founded WNOA prior.
+
+Continuous-time estimation methods alternatively provide tools to handle the asynchronous measurement times during estimation [12]. Some Gaussian process (GP) continuous-time VO pipelines (e.g., GPCT [13]) use a white-noise-on-acceleration (WNOA) motion prior [14] to maintain the individual measurement times but naive application of the estimator requires a state for each event feature and does not run in real time. This paper presents a real-time continuous-time event-camera VO pipeline that uses keytime interpolation [14]–[17] to reduce the size of the estimation state. The pipeline considers event features at individual timestamps to reject outliers with motion-compensated RANSAC (MC-RANSAC) [18]. It then defines a smaller estimation state at a selected set of sparse keytimes but still evaluates each measurement at its individual measurement time by interpolating between the keytimes with a WNOA prior (Fig. 1). This ensures that the pipeline runs in real-time while maintaining the temporal resolution of the event camera. The presented pipeline is evaluated on the multi-vehicle stereo event camera (MVSEC) [19] and driving scenarios for event cameras (DSEC) [20] datasets. The experimental results show that the keytime approach maintains similar estimation accuracy as the not-real-time GPCT pipeline [13] while signifi-cantly reducing state size in all tested sequences (Sec. IV-C). It also achieves better estimation accuracy than event stereo par-allel tracking and mapping (ES-PTAM) [21], a state-of-the-art discrete stereo pipeline, in all but one of the tested sequences (Sec. IV-D). It does this with an estimation frequency of 22 Hz on MVSEC and 6 Hz on DSEC by using keytimes and a arXiv:2610.02601v1 [cs.RO] 1 Oct 2026 producer-consumer architecture analogous to keyframing [5]. The remainder of the paper is structured as follows. Section II provides a brief review of event-camera VO pipelines. Section III details the real-time continuous-time pipeline. Section IV presents experimental results of the pipeline across two datasets and comparisons against GPCT and ES-PTAM on the MVSEC and DSEC datasets. Finally, Section V summarizes our findings and concludes the paper. II. R ELATED WORK 
+
+Event-camera VO pipelines can generally be categorized by how they process the asynchronous event stream. Discrete-time approaches accumulate events into representations that lose the native temporal resolution of the sensor (Sec. II-A). Continuous-time approaches accommodate the asynchronous nature of event cameras and maintain their full temporal fidelity (Sec. II-B). 
+
+A. Discrete-time Approaches 
+
+An intuitive approach for processing event streams is to accumulate events into discrete frames or equivalent spatial representations. These formulations leverage the extensive lit-erature on direct or indirect methods for frame-based cameras. Early event-camera VO works estimate rotation-only 
+
+SO (3) poses [22] or SE (3) trajectories by incorporating RGB-D sensors [23]. Kim et al. [24] presents an event-only pipeline with three decoupled filters that additionally provides depth and intensity estimates but requires a GPU to achieve real-time performance. Monocular event cameras are frequently paired with inertial measurement units (IMUs) in visual-inertial odometry (VIO) pipelines. Many of these systems fully discretize the event data [25], [26] but some of them address the asynchronous events with a combination of motion-compensated event frames and frame-based cameras [5], [6], [8]–[10], [27]. These improve feature tracking by creating more stable features but do not preserve the individual event timestamps during estimation. Zuo et al. [28] demonstrates the tracking capabilities of a monocular event camera under challenging conditions but requires a prior semidense 3D map. Chamorro et al. [29] uses line-based features and achieves real-time updates with an error-state Kalman filter but the success of the pipeline is dependent on a sufficient number of straight-line features. Shiba et al. [30] utilizes contrast maximization to jointly estimate optical flow, depth, and egomotion but the linear motion assumption of optical flow can break with longer sequences and the pipeline does not run in real time. Event visual odometry (EVO) [31] is a direct parallel tracking and mapping (PTAM) [3] approach. ESVO [32], El Moudni et al. [33], and ES-PTAM [21] follow a PTAM approach for stereo vision. These pipelines do not address asynchronous events in the back end and lose the temporal resolution of event cameras. Hadviger et al. [11] presents an indirect stereo VO pipeline that uses only event cameras. It extracts features from the event stream using Arc* [34], which maintains individual event times, but this temporal fidelity is discarded by assuming all features in a frame occur at the same time during outlier rejection and state estimation. ESVIO [7] is an indirect stereo VIO pipeline that uses a modified version of Arc* on motion-compensated time surfaces, both of which address the asynchronous events in the front end but the back end does not use this temporal resolution. Liu et al. [35] and ESVO2 [36] extend ESVO with an IMU, which helps create a smoother trajectory, but also do not preserve the individual timing of events in the back end. All of these discrete time approaches are ultimately limited by grouping the continuous stream of events into fixed inter-vals, which approximates the native temporal resolution to discrete times. This reduction in temporal resolution can rein-troduce motion blur and cause inaccuracies in state estimation. 
+
+B. Continuous-time Approaches 
+
+Continuous-time formulations are a natural framework for processing asynchronous measurements from event cameras. These methodologies were initially popularized for scanning LiDARs [14] and rolling shutter cameras [37]. A review of continuous-time trajectory estimation is available in [38]. Mueggler et al. [12] presents a continuous-time monocular event-camera VO that models the SE (3) trajectory with cubic B-splines but it requires an a priori map for localization. This work was extended into a VIO pipeline [39] that removes the need for an a priori map, but the usage of numerical Jacobians instead of analytical Jacobians hinders real-time performance. Liu et al. [40] presents a monocular VO pipeline where the continuous trajectory is modeled as a GP with a WNOA prior and a sparser set of states, similar to our formulation. The estimation state is updated with each new event, which couples state estimation with outlier rejection and may introduce different sources of errors than the standard VO approach of rejecting outliers before estimation. The evaluations are also limited to five-second sequences. Wang et al. [41] uses cubic B-splines for trajectory represen-tation and present a batch volumetric contrast-maximization approach. They map scenes in 3D but restrict the estimated egomotion to planar motion. Liu et al. [42] also uses cubic B-splines to model the trajectory and achieves real-time VIO but requires frame-based cameras for feature initialization. Lu et al. [43] introduces a direct stereo visual-inertial ve-locimeter using cubic B-splines. The incremental velocity up-dates lack a bundle adjustment which makes it more suscepti-ble to drift compared to batch or sliding-window VO pipelines. IDOL [44] is a batch, line-based VIO pipeline. It uses Gaussian preintegrated measurements and associates events with them to handle their asynchronous nature but the batch structure of the pipeline and the time-consuming line-feature extraction reduces real-time performance. Wang et al. [45] introduces an event-camera monocular VIO pipeline with local GPs on SO (3) and R3 and white-noise-on-jerk (WNOJ) priors [46]. It does not achieve real-time performance and separate optimization of SO (3) and 
+
+R3 is generally less accurate. GPCT [13] is a stereo pipeline that represents the trajectory as a GP with a WNOA prior. It addresses asynchronous events by using MC-RANSAC [18] for outlier rejection and placing a state at each measurement time, but this causes large state sizes that limit real-time performance. Elms et al. [47] present a continuous-time SLAM pipeline designed for rapidly spinning objects that parameterizes the trajectory with an orbital motion model rather than B-splines or GPs. Guo et al. [48] is a rotational SLAM pipeline driven by contrast maximization that can use both linear and cubic splines. Subsequent work focuses solely on the bundle adjustment back end and replaces the contrast maximization with a photometric approach using linear splines [49]. All these pipelines are only presented on SO (3) .This paper presents a stereo event-camera-only VO pipeline that achieves real-time estimation rates while maintaining the asynchronous nature of event cameras. In contrast to discrete-time methods, it uses the individual measurement times of each event feature, which maintains the advantages of event cameras. In contrast to existing continuous-time methods that use B-splines, it uses a GP representation with a WNOA prior which provides a more physically founded model. In contrast to other GP methods, it both uses MC-RANSAC to isolate out-lier rejection from state estimation, and uses keytime interpo-lation to decouple the state size from the number of measure-ments. It reduces optimization times significantly and achieves real-time performance with a producer-consumer architecture. III. M ETHODOLOGY 
+
+This paper presents a continuous-time event-camera stereo VO pipeline that preserves the asynchronous event data’s temporal resolution while also achieving real-time estimation rates. This is accomplished by estimating a sparser set of pose and velocity states at designated keytimes and implementing a producer-consumer structure. The continuous-time formula-tion allows the pipeline to evaluate reprojection residuals at the individual measurement times via GP interpolation while enforcing trajectory smoothness via a WNOA motion prior. The pipeline takes asynchronous event-features with in-dividual timestamps from any event feature extractor e.g., [13], [34], [50]. It uses motion compensated RANSAC (MC-RANSAC) to separate outlier features using a constant-velocity model. It then selects keytimes to represent the continuous trajectory as a GP. This trajectory is estimated by minimizing the reprojection residuals of each measurement at its individual time by interpolating between keytimes using a WNOA prior. The estimated continuous camera trajectory can be queried via interpolation at any time both a posteriori 
+
+and online [14]–[17]. 
+
+A. Notation 
+
+The notation used in this paper mostly follows [51] which contains the full details of the operators. The matrix exponential relates the coordinate vector space R6 to the Special Euclidean group, SE (3) ,
+
+T10 = exp( ξ∧
+
+> 10
+
+),
+
+where (·)∧ : R6 → se (3) is the lifting operator mapping the minimal vector, ξ10 , to the Lie algebra. The pose, T10 := 
+
+T(t1) ∈ SE (3) , is the SE (3) transform from the privileged frame to the frame at time t1. The matrix logarithm maps the Lie group back to the R6 vector space, 
+
+ξ10 = ln ( T10 )∨ ,
+
+where (·)∨ : se (3) → R6 is the inverse lifting operator. A homogeneous point pj, 00 ∈ R4×1 captures the position of the jth landmark relative to privileged frame. The projection matrix, Pproj , maps homogeneous coordinates to 3D Euclidean space. The operator (·)⊙ maps R4×1 homogeneous coordi-nates to R4×6. The sensor model, s(·), maps these spatial coor-dinates to the measurement space (e.g., a stereo measurement). The operator, T (·), maps the SE (3) Lie group to its adjoint, Ad (SE (3)) . The operator (·)⋏ : R6 → R6×6 maps the R6 vector to the adjoint algebra, ad (se (3)) .The generalized body-centric velocity is defined as ϖ =vT ωT T ∈ R6, where v, ω ∈ R3 are the linear and angular velocity components, respectively. It is related to the time derivative of the minimal state vector, ˙ξ, via the inverse left Jacobian of SE (3) , J (·)−1,
+
+˙ξ = J (ξ)−1ϖ.
+
+A constant body-centric velocity, ϖ1 := ϖ(t1), applied over a time interval, ∆t21 = t2 − t1, yields the SE (3) 
+
+transform from the frame at t1 to the frame at t2,
+
+T21 = exp (∆ t21 ϖ∧ 
+
+> 1
+
+).
+
+B. Outlier Rejection 
+
+Frame-based VO pipelines use Random Sample Consensus (RANSAC) [52] to remove outlier measurements. RANSAC estimates a discrete transform between two frames by assum-ing that the measurements in each frame occur simultaneously. This assumption does not hold for asynchronous event cam-eras since every feature observation has a unique timestamp. MC-RANSAC [18] instead estimates a constant velocity considering the individual timestamps of each measurement. The closed-form variant of MC-RANSAC defines the residual in Euclidean space instead of nonlinear measurement space. This variant is approximate but faster to compute than the exact, iterative method using the measurement space residual [18]. 
+
+1) Fast Model Calculation: The velocity is calculated from a cluster of stereo landmarks each observed at two times, 
+
+Mclst , by minimizing the squared residual in Euclidean space, 
+
+Jfast ,k (ϖ) = 12
+
+> Mset
+
+X
+
+> j=1
+
+eT
+
+> fast ,j,k
+
+efast ,j,k , (1) where Mset ⊆ Mclst is a randomly selected subset of the current cluster. The motion-model residual, 
+
+efast ,j,k = Pproj 
+
+
+
+pj,k k − exp (∆ tk,k −1ϖ∧)pj,k −1
+
+> k−1
+
+
+
+,
+
+evaluates the difference between the jth landmark observed at time tk and its previous observation at time tk−1 transformed by the velocity, ϖ, and the elapsed time, ∆tk,k −1.The motion-model residual can be linearized when the trans-form is small, which often occurs over short time durations, using the first-order Taylor expansion of the exponential map, 
+
+exp (∆ tk,k −1ϖ∧) ≈ 1 + ∆ tk,k −1ϖ∧,
+
+where 1 ∈ R4×4 is the identity matrix. The resulting linearized residual, 
+
+efast ,j,k ≈ dj,k − ∆tk,k −1Dj,k ϖ,
+
+where dj,k = Pproj (pj,k k −pj,k −1 
+
+> k−1
+
+), and Dj,k = Pproj (pj,k −1 
+
+> k−1
+
+)⊙,can be substituted into (1) to yield the quadratic approximation of the cost function. Differentiating it with respect to the velocity, ϖ, and setting the result to zero provides a closed-form solution for the velocity that best describes the selected subset of landmark measurements, 
+
+ϖ∗ =
+
+
+
+> Mset
+
+X
+
+> j=1
+
+∆t2
+
+> j,k
+
+DTj,k Dj,k 
+
+
+
+> −1
+
+
+
+> Mset
+
+X
+
+> j=1
+
+∆tj,k DTj,k dj,k 
+
+ . (2) 
+
+2) Inlier and Outlier Classification: A small number of landmark measurements is randomly sampled and used to calculate an initial velocity, ϖ∗, via (2). A normalized version of the nonlinear reprojection residual is calculated for each measurement pair in the cluster, (yj,t k , yj,t k−1 ) ∈ Mclst ,
+
+enorm ,j,k (ϖ∗) = 
+
+yj,t k −s exp  ∆tk,k −1ϖ∗∧ pj,k −1
+
+> k−1
+
+
+
+∥yj,t k −yj,t k−1∥ ,
+
+where yj,t k is the stereo observation of the jth landmark at time tk. All measurements with a residual less than a user-specified threshold, αthresh , are classified as inliers, 
+
+Minlier (ϖ∗) = {(yj,t k , yj,t k−1 ) ∈ Mclst | enorm ,j,k (ϖ∗) < α thresh }.
+
+3) Inlier Refinement: Local refinement can reduce the total number of iterations necessary to find the largest inlier set [53]. When the initial inlier set is promising, the model calculation and inlier classification steps are repeated using the entire inlier set, Minlier (ϖ∗), to further refine the velocity and the inlier set. The steps of randomly selecting measurements to calculate inlier sets are repeated for a user-selected number of iterations. The largest inlier set, Mbest , and corresponding velocity, ϖ∗
+
+> best
+
+, are used by the continuous-time estimator as the measurements and initial conditions for the velocity estimates, respectively. 
+
+C. Continous-time Trajectory Optimization via Keytime In-terpolation 
+
+The continuous-time trajectory is defined using a GP on local variables to maintain a linear, time-invariant stochastic differential equation (SDE) [14]. The trajectory is represented by a sparse set of keytimes, ˚tn, which may be selected independently or from the high-frequency measurement times. A pose at any intermediate time, T(τ ), is related to the bounding keytime pose, Tn0, via the matrix exponential, 
+
+T(τ ) = exp( ξn(τ )∧)Tn0,
+
+where ˚tn ≤ τ < ˚tn+1 . The local continuous-time state is the local pose perturbation and its time derivative, 
+
+γn(τ ) = ξn(τ )T ˙ξn(τ )T T . The WNOA motion results in the linear SDE, 
+
+˙γn(τ ) = 
+
+0 10 0
+
+
+
+γn(τ ) + 
+
+01
+
+
+
+w(τ ),
+
+where the local acceleration, w(τ ) = ¨ξn(τ ), is driven by a zero-mean, white-noise Gaussian process, 
+
+w(τ ) ∼ GP (0, QC δ(τ − τ ′)) ,
+
+where QC ∈ R6×6 is a diagonal power spectral density matrix and δ(·) is the Dirac delta function. The local states, γn(τ ), are related to the pose, T, and velocity, ϖ, global states, 
+
+γn(τ ) = 
+
+ξn(τ )˙ξn(τ )
+
+
+
+=
+
+ ln  Tn0(τ )T−1
+
+> n0
+
+∨
+
+J
+
+
+
+ln  Tn0(τ )T−1
+
+> n0
+
+∨−1
+
+ϖ(τ )
+
+ . (3) 
+
+1) Problem Definition: The continuous-time state estimation problem is defined over M unique landmarks observed at K asynchronous measurement times and at N
+
+keytimes, ( ˚t0,˚t1, . . . , ˚tN ), such that N ≪ M < K ,
+
+x = [ x1,x2, ..., xn, ..., xN , p1,00 ,p2,00 , ..., pj, 00 , ..., pM, 00 ]T ,
+
+where xn = {Tn0, ϖn} are the keytime states and pj, 00 ∈ R4
+
+are the homogeneous landmark states. The keytime states are estimated by minimizing the joint cost function, 
+
+x∗ = arg min 
+
+> x
+
+{Jjoint (x)} = arg min 
+
+> x
+
+{Jmeas (x)+ Jprior (x)}, (4) where Jprior (x) penalizes deviation from the WNOA kine-matics, and Jmeas (x) penalizes deviation from the observed measurements. The prior cost function consists of WNOA prior residuals, 
+
+Jprior (x) = 12 
+
+> N−1
+
+X
+
+> n=1
+
+eT
+
+> prior ,n +1 ,n
+
+Q−1 
+
+> n
+
+(˚ tn+1 )eprior ,n +1 ,n ,
+
+where 
+
+eprior ,n +1 ,n =
+
+ ln  Tn+1 ,0T−1
+
+> n0
+
+∨ − ˚tn+1 −˚tn
+
+ ϖn
+
+J
+
+
+
+ln  Tn+1 ,0T−1
+
+> n0
+
+∨−1
+
+ϖn+1 −ϖn
+
+ , (5) 
+
+Q−1 
+
+> n
+
+(τ ) = 
+
+ 12∆ t−3
+
+> τ,n
+
+Q−1 
+
+> C
+
+−6∆ t−2
+
+> τ,n
+
+Q−1
+
+> C
+
+−6∆ t−2
+
+> τ,n
+
+Q−1 
+
+> C
+
+4∆ t−1
+
+> τ,n
+
+Q−1
+
+> C
+
+
+
+, (6) and ∆tτ,n := τ − ˚tn.The measurement cost function comprises of landmark reprojection residuals, 
+
+Jmeas (x) = 12
+
+X
+
+> j,k
+
+eT 
+
+> meas ,j,t k
+
+R−1 
+
+> j,t k
+
+emeas ,j,t k , (7) where, 
+
+emeas ,j,t k = yj,t k − s
+
+
+
+z
+
+
+
+T(tk), pj, 00
+
+ 
+
+, (8) is the measurement residual for the jth landmark at time tk,
+
+Rj,t k ∈ R3×3 is the measurement covariance matrix, z(·) is the nonlinear landmark transformation model, and T(tk) is the interpolated pose at the measurement time. 2) Keytime Interpolation: The reprojection residual in (8) is calculated for each measurement by interpolating the measurement pose, T(tk), from the closest keytime states, 
+
+xn and xn+1 , given that ˚tn ≤ tk < ˚tn+1 (Fig. 1), 
+
+T(tk) = exp 
+
+ Λ1(tk)γn(˚ tn)+ Ψ1(tk)γn(˚ tn+1 )∧
+
+Tn0, (9) where the local states are given by (3) and are a function of global states, 
+
+γn(˚ tn) = 
+
+ 0
+
+ϖn
+
+
+
+,
+
+γn(˚ tn+1 ) = 
+
+ ln  Tn+1 ,0T−1
+
+> n0
+
+∨
+
+J
+
+
+
+ln  Tn+1 ,0T−1
+
+> n0
+
+∨−1
+
+ϖn+1 
+
+ .
+
+The terms Λ1(tk) and Ψ1(tk) are the 6 × 12 top-row blocks of the 12 × 12 interpolation matrices, 
+
+Ψ(tk) = Qn(tk)Φ(˚ tn+1 , t k)T Q−1 
+
+> n
+
+(˚ tn+1 ),
+
+Λ(tk) = Φ(tk,˚tn) − Ψ(tk)Φ(˚ tn+1 ,˚tn),
+
+where the state transition matrix is defined as 
+
+Φ(t, t ′) = 
+
+16×6 (t − t′)10 16×6
+
+
+
+, t ≥ t′,
+
+the WNOA covariance matrix is defined as 
+
+Qn(τ ) = 
+
+ 13 ∆t3
+
+> τ,n
+
+QC 12 ∆t2
+
+> τ,n
+
+QC 
+
+> 12
+
+∆t2
+
+> τ,n
+
+QC ∆tτ,n QC
+
+
+
+,
+
+the inverse WNOA covariance matrix, Q−1 
+
+> n
+
+(τ ), is calculated using (6), and ∆tτ,n := τ − ˚tn.
+
+3) Optimization and Keytime Jacobians: The optimal camera trajectory is obtained by approximating the joint cost function in (4) using analytical Jacobians calculated at the individual measurements and minimizing it using iterative numerical optimization, e.g., Gauss-Newton. The state is decomposed into nominal operating points, ¯x = { ¯T, ¯ϖ, ¯p},and perturbations, δx = {δξ, δ ϖ, δ ζ}, yielding the quadratic approximation, 
+
+Jjoint (x) ≈ Jjoint (¯ x) − bT δx + 12 δxT Aδx, (10) where the approximate Hessian, A, and gradient vector, b, are 
+
+A = X
+
+> j,n
+
+PTj,n,n +1 GTj,n,n +1 R−1 
+
+> j,t k
+
+Gj,n,n +1 Pj,n,n +1 
+
++ X
+
+> n
+
+PTn ETn Q−1 
+
+> n
+
+(˚ tn+1 )EnPn,
+
+b = X
+
+> j,n
+
+PTj,n,n +1 GTj,n,n +1 R−1 
+
+> j,t k
+
+emeas ,j,t k
+
++ X
+
+> n
+
+PTn ETn Q−1 
+
+> n
+
+(˚ tn+1 )eprior ,n +1 ,n ,
+
+with Pj,n,n +1 and Pn as selection matrices for the specific perturbations. The Jacobian of the measurement residual in (8) is, 
+
+Gj,n,n +1 = ∂s
+
+∂z z(¯ x)
+
+Zj,n Zj,n +1 Zj,k, 2
+
+ ,
+
+where, 
+
+Zj,n = Zj,t k ,1
+
+h ∂δ ξ(tk ) 
+
+> ∂δ ξn
+> ∂δ ξ(tk)
+> ∂δ ϖn
+
+i
+
+, (11) 
+
+Zj,n +1 = Zj,t k ,1
+
+h ∂δ ξ(tk ) 
+
+> ∂δ ξn+1
+> ∂δ ξ(tk)
+> ∂δ ϖn+1
+
+i
+
+, (12) 
+
+Zj,t k ,1 = ( T(tk)¯ pj, 00 )⊙, (13) 
+
+Zj,t k ,2 = T(tk)PT
+
+> proj
+
+, (14) such that (11) and (12) relate small changes in keytime states, δxn = {δξn, δ ϖn} and δxn+1 = {δξn+1 , δ ϖn+1 },to changes in the landmark transformation model via the chain rule, and (13) and (14) are the pose and landmark part of the standard measurement Jacobians, respectively. The chain rule accounts for the effect of the keytime interpolation Jacobians [16], 
+
+∂δ ξ(tk)
+
+∂δ ξn
+
+= T   ¯ξk,n 
+
+ − J   ¯ξk,n 
+
+   Ψ11 (tk)+ Ψ12 (tk)HJ −1   ¯ξn+1 ,n 
+
+ T   ¯ξn+1 ,n 
+
+ ,∂δ ξ(tk)
+
+∂δ ϖn
+
+= J   ¯ξk,n 
+
+ Λ12 (tk),∂δ ξ(tk)
+
+∂δ ξn+1 
+
+= J   ¯ξk,n 
+
+   Ψ11 (tk) + Ψ12 (tk)HJ −1   ¯ξn+1 ,n 
+
+ ,∂δ ξ(tk)
+
+∂δ ϖn+1 
+
+= J   ¯ξk,n 
+
+ Ψ12 (tk)J −1   ¯ξn+1 ,n 
+
+ ,
+
+where ¯ξk,n = ln  T(tk) ¯T−1
+
+> n0
+
+∨, ¯ξn+1 ,n = ln   ¯Tn+1 ,0 ¯T−1
+
+> n0
+
+∨,and ¯(·) denotes nominal values. The inverse Jacobian of 
+
+SE (3) , J −1( ¯ξn+1 ,n ), is approximated by a second-order Taylor series expansion, 
+
+H = −B1 ¯ϖ⋏ 
+
+> n+1
+
++ B2
+
+2 ¯ξ⋏ 
+
+> n+1 ,n
+
+¯ϖ⋏ 
+
+> n+1
+
++ B2
+
+2
+
+  ¯ξ⋏ 
+
+> n+1 ,n
+
+¯ϖn+1 
+
+⋏ ,
+
+where B1 = − 12 , B 2 = 16 are the Bernoulli numbers. The Jacobian of the motion prior residual function in (5) is 
+
+En =
+
+E11 ∆tn+1 ,n 1 E13 0E21 1 E23 E24 
+
+
+
+,
+
+where 
+
+E11 = J −1( ¯ξn+1 ,n )T ( ¯ξn+1 ,n ),
+
+E13 = E24 = −J −1( ¯ξn+1 ,n ),
+
+E21 = −HJ −1( ¯ξn+1 ,n )T ( ¯ξn+1 ,n ),
+
+E23 = HJ −1( ¯ξn+1 ,n ).
+
+Taking the derivative of (10) with respect to the perturbation, δx, setting the result equal to zero, and solving the resulting linear system, Aδx = b, gives the perturbation, 
+
+δx∗, that minimizes the quadratic approximation. The estimation states are updated, 
+
+¯Tn0 ← exp( δξ∗
+
+> n
+
+) ¯Tn0,
+
+¯ϖn ← ¯ϖn + δϖ∗
+
+> n
+
+,
+
+¯pj, 00 ← ¯pj, 00 + PT
+
+> proj
+
+δζ∗,
+
+and the process is iterated until convergence, yielding the final continuous-time trajectory defined by the optimized keytime states and 3D landmark positions. Note that the measurement Jacobians now span two adja-cent block columns rather than a single block which maintains an approximate Hessian matrix structure suitable for sparse linear solvers. This maintains the sparsity of the continuous-time GP formulation while significantly reducing the state size compared to maintaining a state for every measurement. IV. E XPERIMENTS 
+
+The real-time pipeline is evaluated on the MVSEC [19] and DSEC [20] datasets, which have sensor resolutions of 
+
+346 × 260 and 640 × 480 , respectively. The first experiment compares the keytime estimator to the baseline continuous-time approach, GPCT [13]. This evaluates the effect of adding keytimes on the accuracy of the trajectory estimated using a continuous-time GP formulation. The second experiment com-pares the keytime estimator to the publicly available results of the discrete event-based ES-PTAM [21] which reports real-time performance on MVSEC. This evaluates the accuracy of the keytime estimator as a real-time estimation pipeline. All experiments were conducted on a computer with an Intel ®
+
+Core ™i7-9750H CPU at 2.60 GHz and 16 GB of RAM. 
+
+A. Implementation Details and Parameters 
+
+The pipeline is implemented in C++ using the GTSAM optimization library [54]. Custom factor types were developed to implement the WNOA motion prior and the keytime-interpolated measurement models. The pipeline utilizes an incremental batch optimization approach via iSAM2 [55]. The baseline GPCT method is also implemented in C++ using GTSAM, sharing the WNOA factor implementation but utilizing discrete stereo measurement factors. The pipeline is demonstrated using appearance-based features on accumulated event clusters [13], but is capable of processing asynchronous measurements from any feature extractor, e.g., [34], [50]. Event clusters are generated by accumulating 10 , 500 events per cluster for MVSEC and 
+
+150 , 000 events per cluster for the higher-resolution DSEC. Asynchronous measurements were accumulated sequen-tially until a new keytime was created and then processed. A new keytime state was created at the last event in each cluster. The new keytime state was initialized by extrapolating the previous keytime state using the local constant-velocity model. Features are independently matched between the current cluster and the preceding five clusters in a frame-by-frame basis using LIBVISO2 [56]. Feature extraction is performed across both full-resolution and half-resolution clusters. An initial half-resolution downsampling is applied to accelerate feature extraction on DSEC. Outlier rejection is performed using MC-RANSAC with an inlier threshold of αthresh = 0 .1, a target confidence of 
+
+0.99 and a maximum iteration limit of 5, 000 . A dynamic early stopping condition based on target confidence (i.e., success probability) is used. The iteration limit is reduced as inliers are found using the RANSAC formula and the current best inlier set as an estimate of the true inlier ratio [57]. This allows MC-RANSAC to stop iterating sooner when the found inlier ratio suggests a high probability of success. The                            
+
+> TABLE I GLOBAL AND RELATIVE SE (3) ERRORS FOR GPCT AND THE KEYTIME PIPELINE ON MVSEC. T HE FINAL ERROR IS PRESENTED AS A PERCENT OF TOTAL PATH LENGTH AND THE RELATIVE ERROR AS A RMS.
+> GPCT Keytime Sequence Final (%) RMS Final (%) RMS
+> mvsec indoor 1 6.6 4.7×10 −34.84.1×10 −3
+> mvsec indoor 3 5.53.8×10 −36.9 3.7×10 −3
+
+short trajectory between two frames is approximated using 8 discrete poses to speed up the loop, as suggested in [18]. The continuous-time estimator utilizes a motion prior covariance of QC = 1 and a measurement covariance of 
+
+Rj,t k = diag (1 , 1, 2) . All measurement factors utilize the robust Geman-McClure loss function in GTSAM. 
+
+B. Temporal Alignment and Evaluation Metrics 
+
+The estimates are compared by individually aligning them temporarily to the ground truth. In experiment 1, both trajecto-ries are queried at the high-frequency ground-truth timestamps since both pipelines are continuous-time estimators. In experiment 2, both the estimated continuous-time trajectory and the ground-truth trajectory are evaluated at the discrete timestamps reported by ES-PTAM, tkEP , except for 
+
+mvsec indoor 3 where the estimated trajectory was evaluated at the ground-truth timestamps. The estimated trajectory is queried as per (9) and the ground truth is queried via a pose-only interpolation, 
+
+TkEP 0GT = exp 
+
+ tkEP − tmGT 
+
+tm+1 GT − tmGT 
+
+
+
+ξ∧
+
+> m+1 GT ,m GT
+
+
+
+TmGT 0GT ,
+
+where ξm+1 GT ,m GT = ln  Tm+1 GT ,0GT T−1
+
+> mGT 0GT
+
+∨, and tmGT ≤
+
+tkEP < t m+1 GT . The ground truth for DSEC is provided by a LiDAR and IMU odometry pipeline via ES-PTAM. Estimator performance is evaluated using global and relative pose errors. Global error quantifies the accuracy relative to the initial pose, and relative error quantifies the drift between sequential estimates. All trajectories are spatially aligned to a common origin prior to evaluation by applying the inverse of their initial pose to all subsequent poses within the sequence. This ensures that all trajectories are aligned with respect to the camera frame and are spatially comparable. 
+
+C. Experiment 1: Estimation Accuracy vs. GPCT 
+
+The effect on estimation accuracy of using keytimes and interpolation to reduce the state size is evaluated by comparing the keytime estimator against GPCT. Both pipelines were run on the indoor1 and indoor3 sequences of MVSEC. The experimental results show that the keytime estimator has similar estimation accuracy (Table I). The two estimators have insignificant differences in both global and relative error even though the keytime estimator has a smaller estimation state than GPCT, which requires one state for each measurement time. This smaller state size means that the keytime estimator can be used in a real-time pipelines and the equivalent accuracy means that it will perform similarly rela-tive to other continuous-time estimators that are not real time. TABLE II GLOBAL TRANSLATION AND ROTATION ERRORS FOR ES-PTAM AND THE KEYTIME PIPELINE ON MVSEC AND DSEC WITH KEYTIME ESTIMATION RATES . T HE MAXIMUM AND FINAL GLOBAL ERRORS ARE PRESENTED AS BOTH ABSOLUTE VALUES AND THE PERCENTAGE OF THE TOTAL PATH LENGTH .
+
+ES-PTAM Ours Sequence Type Max Final Max [%] Final [%] Max Final Max [%] Final [%] Est. Freq. [Hz] 
+
+mvsec indoor 1 Tran. [cm] 61.5 40.2 5.7 3.8 57.1 34.2 5.3 3.2 22.6 Rot. [deg] 29.3 29.3 4.8 4.8 10.1 8.4 1.7 1.4 
+
+mvsec indoor 3 Tran. [cm] — — — — 33.7 28.1 5.7 4.7 21.6 Rot. [deg] — — — — 10.1 10.1 3.0 3.0 
+
+dsec city 4a Tran. [cm] 671.2 671.2 2.9 2.9 651.4 651.4 2.8 2.8 5.9 Rot. [deg] 6.9 6.9 0.052 0.052 5.3 4.9 0.04 0.037 
+
+dsec city 4b Tran. [cm] 104.9 33.5 1.8 0.6 156.7 156.7 2.6 2.6 6.8 Rot. [deg] 2.1 1.8 0.062 0.052 5.3 5.3 0.15 0.15 
+
+dsec city 4c Tran. [cm] 7727.8 7727.8 14.7 14.7 2608.0 2608.0 5.0 5.0 6.3 Rot. [deg] 22.5 22.5 0.075 0.075 4.7 4.4 0.015 0.015 
+
+dsec city 4d Tran. [cm] 8051.7 8051.7 14.9 14.9 7727.1 7727.1 14.3 14.3 5.1 Rot. [deg] 26.1 24.9 0.084 0.08 13.1 12.5 0.042 0.04 
+
+dsec city 4e Tran. [cm] 433.5 433.5 3.5 3.5 281.8 281.8 2.3 2.3 7.0 Rot. [deg] 5.9 5.9 0.083 0.083 3.9 3.6 0.055 0.051 
+
+dsec city 4f Tran. [cm] 4002.4 3759.9 10.3 9.7 2891.4 2891.4 7.4 7.4 7.0 Rot. [deg] 175.1 135.9 0.79 0.61 7.4 7.4 0.033 0.033 
+
+TABLE III RELATIVE TRANSLATION AND ROTATION ERRORS FOR ES-PTAM AND THE KEYTIME PIPELINE ON MVSEC AND DSEC. T HE MAXIMUM , RMS, 
+
+> AND STANDARD DEVIATION OF THE RELATIVE ERROR IS REPORTED IN CM
+
+(TRANSLATION ) AND DEGREES (ROTATION ).                                                                                                                          
+
+> ES-PTAM Ours Seq. *Type Max RMS Std. Max RMS Std.
+> mv 1 Tran. 17.7 1.4 1.1 3.30.50.4
+> Rot. 2.30.30 0.23 0.92 0.15 0.097
+> mv 3 Tran. ———2.40.30.2
+> Rot. ———0.51 0.11 0.063
+> ds 4a Tran. 21.3 0.8 0.7 1.10.20.1
+> Rot. 0.40.023 0.016 0.074 0.011 7.3·10 −3
+> ds 4b Tran. 26.4 2.7 2.3 4.20.80.6
+> Rot. 0.35 0.055 0.039 0.39 0.047 0.038
+> ds 4c Tran. 167.0 4.3 4.1 1.90.50.3
+> Rot. 4.10.10.093 0.095 0.015 9.1·10 −3
+> ds 4d Tran. 128.5 4.2 3.9 3.50.60.3
+> Rot. 1.80.076 0.066 0.085 0.018 0.01
+> ds 4e Tran. 15.0 1.3 1.0 0.60.20.082
+> Rot. 0.61 0.034 0.024 0.044 0.011 5.4·10 −3
+> ds 4f Tran. 852.6 22.3 22.1 1.70.40.3
+> Rot. 170 3.53.50.12 0.015 8.9·10 −3
+> *
+
+mv and ds denote mvsec indoor and dsec city , respectively. 
+
+D. Experiment 2: Real-Time Performance vs. ES-PTAM 
+
+The second experiment evaluates the accuracy of the keytime pipeline in real time. A producer-consumer architec-ture was implemented to allow the back end to skip event clusters when necessary, an approach conceptually analogous to keyframing [3]. The real-time keytime estimator is evaluated on sequences from DSEC and MVSEC. Its global errors were better than ES-PTAM for all but one of the tested sequences while running at an average estimation frequency of 22 Hz on MVSEC and 6 Hz on DSEC (Table II). The WNOA prior ensures physically founded trajectories that have better relative errors in all tested sequences (Table III). ES-PTAM reports real-time performance on the lower-resolution MVSEC but not on the higher-resolution DSEC, but it also a provides a semidense map. V. C ONCLUSION 
+
+This paper presents a real-time, continuous-time stereo VO pipeline designed specifically for event cameras. The pipeline uses a GP and a WNOA prior to represent the trajectory at sparse keytimes to decouple state size from the number of measurements and reduce computational burden. The estimator preserves the native temporal fidelity of the sensor by evaluating reprojection errors at unique measurement timestamps by interpolating with a WNOA motion prior. The efficiency and accuracy of the pipeline is evaluated on the MVSEC and DSEC datasets. The keytime formulation reduces state size relative to GPCT without compromising estimation accuracy. It outperforms ES-PTAM in both global and relative error on all but one of the tested sequences. It achieves real-time performance on both datasets by using a producer-consumer architecture while ES-PTAM only reports real-time performance on the smaller resolution MVSEC dataset. Future work will focus on comparing different event representations and features in the pipeline. ACKNOWLEDGMENT 
+
+We would like to thank Sven Lilge and Connor Holmes for discussions about GTSAM. This work was supported by the Natural Sciences and Engineering Research Council of Canada (NSERC) [RGPIN-2024-06637]. REFERENCES [1] D. Nister, O. Naroditsky, and J. Bergen, “Visual odometry,” in IEEE CVPR , vol. 1, 2004. [2] Y. Cheng, M. Maimone, and L. Matthies, “Visual odometry on the Mars Exploration Rovers,” in IEEE SMC , vol. 1, 2005, pp. 903–910. [3] G. Klein and D. Murray, “Parallel Tracking and Mapping for Small AR Workspaces,” in ISMAR , 2007, pp. 225–234. [4] G. Gallego et al. , “Event-Based Vision: A Survey,” IEEE TPAMI ,vol. 44, pp. 154–180, 2022. [5] H. Rebecq, T. Horstschaefer, and D. Scaramuzza, “Real-time Visual-Inertial Odometry for Event Cameras using Keyframe-based Nonlinear Optimization,” in BMVC , 2017. [6] A. Zihao Zhu, N. Atanasov, and K. Daniilidis, “Event-based visual inertial odometry,” in IEEE/CVF CVPR , 2017. [7] P. Chen, W. Guan, and P. Lu, “ESVIO: Event-Based Stereo Visual Inertial Odometry,” IEEE RA-L , vol. 8, pp. 3661–3668, 2023. [8] B. Choi, H. Lee, and C. Gook Park, “Event-Frame-Inertial Odometry Using Point and Line Features Based on Coarse-to-Fine Motion Compensation,” IEEE RA-L , vol. 10, pp. 2622–2629, 2025. [9] W. Guan, P. Chen, Y. Xie, and P. Lu, “PL-EVIO: Robust Monocular Event-Based Visual Inertial Odometry With Point and Line Features,” 
+
+IEEE T-ASE , vol. 21, pp. 6277–6293, 2024. [10] A. R. Vidal, H. Rebecq, T. Horstschaefer, and D. Scaramuzza, “Ultimate SLAM? Combining Events, Images, and IMU for Robust Visual SLAM in HDR and High Speed Scenarios,” in IEEE RA-L , 2018. [11] A. Hadviger, I. Cviˇ si´ c, I. Markovi´ c, S. Vraˇ zi´ c, and I. Petrovi´ c, “Feature-based Event Stereo Visual Odometry,” in ECMR , 2021, pp. 1–6. [12] E. Mueggler, G. Gallego, and D. Scaramuzza, “Continuous-Time Trajectory Estimation for Event-based Vision Sensors,” RSS , 2015. [13] J. Wang and J. D. Gammell, “Event-Based Stereo Visual Odometry With Native Temporal Resolution via Continuous-Time Gaussian Process Regression,” IEEE RA-L , vol. 8, pp. 6707–6714, 2023. [14] S. Anderson and T. D. Barfoot, “Full STEAM ahead: Exactly sparse gaussian process regression for batch continuous-time trajectory estimation on SE(3),” in IEEE/RSJ IROS , 2015, pp. 157–164. [15] C. H. Tong, P. T. Furgale, and T. D. Barfoot, “Gaussian Process Gauss–Newton for non-parametric simultaneous localization and mapping,” IJRR , vol. 32, pp. 507–525, 2013. [16] S. W. Anderson, “Batch continuous-time trajectory estimation,” Ph.D. dissertation, University of Toronto, 2017. [17] X. Yan, V. Indelman, and B. Boots, “Incremental sparse GP regression for continuous-time trajectory estimation and mapping,” Robotics Auton. Syst. , vol. 87, pp. 120–132, 2017. [18] S. Anderson and T. D. Barfoot, “RANSAC for motion-distorted 3D visual sensors,” in IEEE/RSJ IROS , 2013, pp. 2093–2099. [19] A. Z. Zhu, D. Thakur, T. ¨Ozaslan, B. Pfrommer, V. Kumar, and K. Daniilidis, “The Multivehicle Stereo Event Camera Dataset: An Event Camera Dataset for 3D Perception,” IEEE RA-L , vol. 3, pp. 2032–2039, 2018. [20] M. Gehrig, W. Aarents, D. Gehrig, and D. Scaramuzza, “DSEC: A Stereo Event Camera Dataset for Driving Scenarios,” IEEE RA-L , 2021. [21] S. Ghosh, V. Cavinato, and G. Gallego, “ES-PTAM: Event-Based Stereo Parallel Tracking and Mapping,” in ECCV Workshops , 2025, pp. 70–87. [22] M. Cook, L. Gugelmann, F. Jug, C. Krautz, and A. Steger, “Interacting maps for fast visual interpretation,” in IJCNN , 2011, pp. 770–776. [23] D. Weikersdorfer, D. B. Adrian, D. Cremers, and J. Conradt, “Event-based 3D SLAM with a depth-augmented dynamic vision sensor,” in 
+
+IEEE ICRA , 2014, pp. 359–364. [24] H. Kim, S. Leutenegger, and A. J. Davison, “Real-Time 3D Recon-struction and 6-DoF Tracking with an Event Camera,” in ECCV , 2016. [25] K. Tang, X. Lang, Y. Ma, Y. Huang, L. Li, Y. Liu, and J. Lv, “Monocular Event-Inertial Odometry with Adaptive decay-based Time Surface and Polarity-aware Tracking,” in IEEE/RSJ IROS , 2024, pp. 12 544–12 551. [26] Y. Zhang, Z. Wang, H. Shi, Z. Yi, H. Huang, Y. Ye, and K. Wang, “RBD-EVIO: optimized event-based visual-inertial odometry for a large field of view with a rotated binary DART descriptor,” Appl. Opt. , vol. 63, pp. 8869–8877, 2024. [27] W. Guan, P. Chen, H. Zhao, Y. Wang, and P. Lu, “EVI-SAM: Robust, Real-Time, Tightly-Coupled Event–Visual–Inertial State Estimation and 3D Dense Mapping,” Adv. Intell. Syst. , vol. 6, p. 2400243, 2024. [28] Y.-F. Zuo, W. Xu, X. Wang, Y. Wang, and L. Kneip, “Cross-Modal Semidense 6-DOF Tracking of an Event Camera in Challenging Conditions,” IEEE T-RO , vol. 40, pp. 1600–1616, 2024. [29] W. Chamorro, J. Sol` a, and J. Andrade-Cetto, “Event-IMU fusion strategies for faster-than-IMU estimation throughput,” in IEEE/CVF CVPRW , 2023, pp. 3976–3983. [30] S. Shiba, Y. Klose, Y. Aoki, and G. Gallego, “Secrets of event-based optical flow, depth, and ego-motion by contrast maximization,” IEEE Trans. Pattern Anal. Mach. Intell. , pp. 1–18, 2024. [31] H. Rebecq, T. Horstschaefer, G. Gallego, and D. Scaramuzza, “EVO: A Geometric Approach to Event-Based 6-DOF Parallel Tracking and Mapping in Real Time,” IEEE RA-L , vol. 2, pp. 593–600, 2017. [32] Y. Zhou, G. Gallego, and S. Shen, “Event-Based Stereo Visual Odometry,” IEEE T-RO , vol. 37, pp. 1433–1450, 2021. [33] A. E. Moudni, F. Morbidi, S. Kramm, and R. Boutteau, “An Event-based Stereo 3D Mapping and Tracking Pipeline for Autonomous Vehicles,” in IEEE ITSC , 2023, pp. 5962–5968. [34] I. Alzugaray and M. Chli, “Asynchronous Corner Detection and Tracking for Event Cameras in Real Time,” IEEE RA-L , vol. 3, pp. 3177–3184, 2018. [35] Z. Liu, D. Shi, R. Li, and S. Yang, “ESVIO: Event-Based Stereo Visual-Inertial Odometry,” Sensors , vol. 23, 2023. [36] J. Niu, S. Zhong, X. Lu, S. Shen, G. Gallego, and Y. Zhou, “ESVO2: Direct Visual-Inertial Odometry With Stereo Event Cameras,” IEEE T-RO , vol. 41, pp. 2164–2183, 2025. [37] P. Furgale, C. H. Tong, T. D. Barfoot, and G. Sibley, “Continuous-time batch trajectory estimation using temporal basis functions,” IJRR ,vol. 34, pp. 1688–1710, 2015. [38] W. Talbot et al. , “Continuous-Time State Estimation Methods in Robotics: A Survey,” IEEE T-RO , vol. 41, pp. 4975–4999, 2025. [39] E. Mueggler, G. Gallego, H. Rebecq, and D. Scaramuzza, “Continuous-Time Visual-Inertial Odometry for Event Cameras,” IEEE T-RO , vol. 34, pp. 1425–1440, 2018. [40] D. Liu, A. Parra, Y. Latif, B. Chen, T.-J. Chin, and I. Reid, “Asyn-chronous Optimisation for Event-based Visual Odometry,” in IEEE ICRA , 2022, pp. 9432–9438. [41] Y. Wang, J. Yang, X. Peng, P. Wu, L. Gao, K. Huang, J. Chen, and L. Kneip, “Visual odometry with an event camera using continuous ray warping and volumetric contrast maximization,” Sensors , vol. 22, 2022. [42] X. Liu, H. Xue, X. Gao, H. Liu, B. Chen, and S. S. Ge, “Cubic B-Spline-Based Feature Tracking for Visual–Inertial Odometry With Event Camera,” IEEE TIM , vol. 72, 2023. [43] X. Lu, Y. Zhou, J. Mai, K. Dai, Y. Xu, and S. Shen, “Event-Based Visual-Inertial State Estimation for High-Speed Maneuvers,” IEEE T-RO , vol. 41, pp. 4439–4458, 2025. [44] C. Le Gentil, F. Tschopp, I. Alzugaray, T. Vidal-Calleja, R. Siegwart, and J. Nieto, “IDOL: A Framework for IMU-DVS Odometry using Lines,” in IEEE/RSJ IROS , 2020, pp. 5863–5870. [45] Z. Wang, X. Li, Y. Zhang, F. Zhang, and P. Huang, “Continuous Gaussian Process Pre-Optimization for Asynchronous Event-Inertial Odometry,” IEEE RA-L , vol. 11, pp. 282–289, 2026. [46] T. Y. Tang, D. J. Yoon, and T. D. Barfoot, “A White-Noise-on-Jerk Motion Prior for Continuous-Time Trajectory Estimation on SE(3),” 
+
+IEEE RA-L , vol. 4, pp. 594–601, 2019. [47] E. Elms, Y. Latif, and T.-J. Chin, “Event-Based Spinning Object SLAM,” in IEEE/CVF ICCVW , 2025, pp. 4714–4723. [48] S. Guo and G. Gallego, “CMax-SLAM: Event-Based Rotational-Motion Bundle Adjustment and SLAM System Using Contrast Maximization,” 
+
+IEEE T-RO , vol. 40, pp. 2442–2461, 2024. [49] ——, “Event-based photometric bundle adjustment,” IEEE Trans. Pattern Anal. Mach. Intell. , vol. 47, pp. 9280–9297, 2025. [50] M. Ikura, C. L. Gentil, M. G. M¨ uller, F. Schuler, A. Yamashita, and W. St¨ urzl, “Rate: Real-time asynchronous feature tracking with event cameras,” in IEEE/RSJ IROS , 2024, pp. 11 662–11 669. [51] T. D. Barfoot, State Estimation for Robotics , 2nd ed. Cambridge University Press, 2024. [52] M. A. Fischler and R. C. Bolles, “Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography,” Commun. ACM , vol. 24, pp. 381–395, 1981. [53] O. Chum, J. Matas, and ˇ S. Obdrˇ z´ alek, “Locally optimized RANSAC,” in DAGM , 2003, pp. 236–243. [54] F. Dellaert and G. Contributors, “borglab/gtsam,” 2022. [55] M. Kaess, H. Johannsson, R. Roberts, V. Ila, J. J. Leonard, and F. Dellaert, “iSAM2: Incremental Smoothing and Mapping Using the Bayes Tree,” IJRR , vol. 31, pp. 216–235, 2012. [56] A. Geiger, J. Ziegler, and C. Stiller, “StereoScan: Dense 3d reconstruc-tion in real-time,” in IEEE IV , 2011, pp. 963–968. [57] R. Hartley and A. Zisserman, Multiple View Geometry in Computer Vision , 2nd ed. Cambridge University Press, 2003.

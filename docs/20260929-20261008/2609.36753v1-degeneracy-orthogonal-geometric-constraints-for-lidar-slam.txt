@@ -1,0 +1,275 @@
+Title: Degeneracy-Orthogonal Geometric Constraints for LiDAR SLAM
+
+URL Source: https://arxiv.org/pdf/2609.36753v1
+
+Published Time: Wed, 30 Sep 2026 01:15:40 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Degeneracy-Orthogonal Geometric Constraints for LiDAR SLAM 
+
+Minseo Kim ∗, Yina Kim ∗, Jinhwa Hwang, and Alex Junho Lee †
+
+Abstract — Autonomous robot navigation relies on simultane-ous localization and mapping (SLAM) to estimate motion and maintain an accurate pose within an environment. However, in axially uniform corridors such as long tunnels and pipelines, LiDAR odometry is fundamentally limited by unconstrained drift along the feature-weak travel direction. This structural degeneracy cannot be resolved by local scan matching alone. To address this challenge, we propose the Degeneracy-orthogonal Contour Offset Descriptor (DeCOD), a structure-orthogonal geometric descriptor for cross-sectional landmarks. Cross-sectional boundaries, such as pipe joints and structural rings, provide metric constraints along this degenerate axis, but distinguishing individual landmarks requires capturing subtle surface variations across nearly identical profiles. The descriptor parameterizes signed normal deviation from estimated boundary contours, and matching explicitly resolves heading ambiguity and compensates for first-order contour errors. Matched landmarks yield geometric factors that enforce agreement in cross-section position and corridor axis alignment during pose-graph optimiza-tion, correcting longitudinal drift while leaving rotation about the common axis unconstrained. On a public benchmark and in field experiments, DeCOD achieves robust landmark retrieval over standard 3D descriptors and successfully stabilizes trajectories across different odometry frontends, reliably constraining longitudinal drift under geometric degeneracy. 
+
+I. I NTRODUCTION 
+
+Subterranean environments, such as sewer pipes, subway tunnels, and mines, require autonomous robotic inspection due to hazardous and confined conditions. In these inspection tasks, maintaining an accurate estimate of a robot’s position is essential to pinpoint structural defects, such as cracks or leaks, in GPS-denied passages. While LiDAR-based simultaneous localization and mapping (SLAM) estimates motion by regis-tering successive observations [1], [2], geometric degeneracy can lead to erroneous motion estimates. In long corridors such as tunnels, surfaces are repeated along their longitudinal axis. Translation along this degenerate direction is weakly constrained, allowing significant position errors to accumulate despite locally consistent surface alignment [3], [4]. Degeneracy-aware estimators mitigate divergence by re-stricting unreliable updates [3], [4], but recovering from accu-mulated drift fundamentally requires additional measurements. While external infrastructure (e.g., ultra-wideband anchors) can provide position constraints [5], fully autonomous opera-tion requires re-identifying previously visited structures upon revisits. However, standard place recognition methods [6], [7] struggle in these environments due to severe structural ambiguity caused by repetitive geometric layouts. 
+
+> ∗Minseo Kim and Yina Kim contributed equally to this work. All authors are with the Department of Mechanical Systems Engineering, Sookmyung Women’s University, 100 Cheongpa-ro 47-gil, Yongsan-gu, Seoul 04310, Republic of Korea.
+> †Corresponding author: Alex Junho Lee (alexjunholee@gmail.com).
+
+With Suggested Correction With Suggested Correction  
+
+> Fig. 1. Overview of DeCOD under geometric degeneracy. In raw LiDAR odometry (top), uniform walls cause severe longitudinal drift (a) along the degenerate corridor axis (b). To constrain this drift, DeCOD extracts cross-sectional boundaries, shown as colored rings (middle), and unwraps them into 2D descriptors (bottom) to supply metric weak-direction constraints.
+
+For localization under geometric degeneracy, an associ-ation must provide constraints sensitive to motion along the weak direction. While axially uniform walls reliably constrain lateral motion, their lack of longitudinal variation leaves the feature-weak travel axis unconstrained. Meanwhile, cross-sectional boundaries (e.g., pipe joints, segment seams, structural rings), modeled as transverse planes, provide displacement constraints along this degenerate axis (Figure 1). Directly tracking their fine surface variations within real-time odometry is computationally demanding and prone to local minima given structural repetition. This motivates a decoupled formulation that re-identifies cross-sectional landmarks using distinctive surface descriptors and uses the resulting geometric constraints to correct the accumulated longitudinal drift. In this paper, we propose the Degeneracy-orthogonal Contour Offset Descriptor (DeCOD) to support state esti-mation in geometrically degenerate environments. DeCOD identifies landmark boundary contours orthogonal to the degenerate direction and encodes signed normal deviations of the surrounding surface. The proposed method handles contour estimation errors and sensor artifacts while remaining consistent under reverse traversals. The main contributions of this paper are summarized below.  
+
+> •
+
+A degeneracy-orthogonal geometry descriptor that en-codes normalized structural deviations around cross-sectional boundary surfaces.  
+
+> •
+
+A robust association formulation that handles contour es-timation errors, partial occlusion, and reversed traversals, with geometric verification to improve precision.  
+
+> •
+
+Experimental validation on a public benchmark and in field pipe experiments, demonstrating reliable landmark association and reduced drift under severe geometric degeneracy. arXiv:2609.36753v1 [cs.RO] 29 Sep 2026 Fig. 2. Field robotic inspection in underground pipes and odometry failure. Top: field setup showing (from left to right) the pipe interior, underground manhole chamber, surface setup with the manhole cover (cyan box), and the wheeled inspection robot (green box). Bottom: reconstructed point cloud exhibiting severe map compression and trajectory distortion caused by unconstrained longitudinal drift in raw LiDAR odometry. 
+
+II. R ELATED WORK 
+
+A. Place Recognition under Degeneracy 
+
+LiDAR place recognition establishes correspondences across observations by summarizing geometry into viewpoint-invariant descriptors. Scan Context [8] bins egocentric surface heights in a polar grid and resolves heading changes through circular shifts. Subsequent structural methods aggregate geometric primitives, such as triangles formed from 3D keypoints in STD [7] or elevation-sliced bird’s-eye-view contours in Contour Context [9]. These formulations rely on salient geometric variations throughout the surrounding environment. In corridors and tunnel-like passages, the cross-sectional profile remains uni-form along the travel axis over long distances. Consequently, global descriptors produce near-identical signatures across distinct locations, inducing severe perceptual aliasing and false loop closures [10], [11]. Under 1D geometric degeneracy, resolving longitudinal position effectively reduces place recognition to associating discrete structural landmarks along the passage. Where individual transverse structures, such as seams, boundary edges, and geometric transitions, can be extracted, landmark association provides localized spatial references that resolve longitudinal position directly from local geometry. 
+
+B. Degeneracy in LiDAR Odometry 
+
+LiDAR and LiDAR-inertial odometry estimate ego-motion by registering successive surface measurements [1], [12]. In straight corridors and tunnels, wall surfaces run parallel to the direction of motion, so geometric registration along the travel axis becomes unconstrained [13], [3]. Additional surface information can help constrain weakly constrained directions, such as return intensity in COIN-LIO [14] or subtle bump geometry in BIEVR-LIO [15]. In extended and nominally uniform passages, however, such surface variations can remain sparse or repetitive, leaving residual uncertainty along the travel axis. Without sufficient longitudinal constraints, pose estimation can accumulate severe longitudinal drift, leading to map distortion [3], [4], [10], [16] (Figure 2). To prevent the estimator from diverging, degeneracy-aware methods analyze the linearized system Hessian to suppress or constrain unreliable state updates [3], [4], [16], or construct partially constrained loop-closure factors in pose graphs [17]. External beacons such as ultra-wideband anchors [5] can supply absolute position constraints, but require pre-installed infrastructure that is impractical in extended or unexplored tunnels. While restricting updates to observable directions maintains estimator stability, it does not provide additional geometric information along unobservable directions [3], [17]. When longitudinal constraints remain insufficient, odometry alone cannot reliably correct accumulated drift. Bounding this error in autonomous exploration requires loop closures that supply metric constraints specifically along the travel axis upon a revisit. Underground pipes and conduits present a representative setting for such degeneracy, where prior work leverages domain-specific models or structural elements. Cylindrical models [18] enforce radial surface constraints, but these constraints alone do not determine axial position. Other approaches localize against surveyed facility maps in highway tunnels [19] or pipe joints in sewers [20]. However, the joint-counting approach in [20] assumes uniform pipe lengths and uses known manhole locations to correct errors from missed or false joint detections. Recognizing the physical cross-section of individual structural landmarks provides metric position constraints directly from local geometry, avoiding heuristic counting and external infrastructure. 
+
+C. Degeneracy-Aware Landmarks and Matching 
+
+Representing and matching closed contour geometry has well-established foundations in shape analysis and biometrics. Shape Context [21] models relative point distributions for contour correspondence, while Daugman [22] unwrapped annular iris patterns into normalized coordinates to resolve rotational alignment via cyclic shifts and mask occlusions. LiDAR Iris [23] adapted this unwrapping principle to point clouds, generating binary signatures from surface height distributions for place retrieval. These formulations establish that coordinate unwrapping simplifies rotational alignment. However, directly applying existing annular representations to physical landmarks in pipes and tunnels exposes practical limitations. Coarse binary codes and spatial histograms discard the subtle surface variations needed to distinguish nominally identical structures. In addition, robotic inspection introduces severe physical perturbations, including partial visibility, contour estimation errors, and reversed traversal directions. Reliable landmark association under 1D degener-acy requires resolving these challenges through continuous surface description and error-tolerant matching (Section III). III. D RIFT CORRECTION UNDER DEGENERACY 
+
+In environments such as tunnels and pipelines, LiDAR odometry experiences geometric degeneracy. While surround-ing wall surfaces constrain lateral motion and orientation depending on the cross-sectional geometry, their axial unifor-mity leaves translation along the corridor axis unconstrained. Along this geometrically degenerate axis, local scan matching Preprocessing Local scan accumulation Degeneracy-axis estimation Orthogonal-section extraction Contour coordinates Scan alignment correction Descriptor extraction Boundary neighborhood 2D descriptor 
+
+Matching & optimization Matching and verification Database             
+
+> Query
+> Accepted boundary pairs Axial drift correction Pose-graph optimization Field normalization Unroll Local patches
+> Detected boundary Fig. 3. Overview of the DeCOD pipeline in degenerate corridors. Preprocessing (left) estimates the corridor axis a, detects structural boundaries, and fits reference contours c(p). In the axis estimation, xℓare input points, ¯xtheir mean, and ua unit direction. Descriptor extraction (middle) unrolls each boundary neighborhood into a 2D descriptor on the (z, p )grid, where each observed cell stores the offset s. The matching and optimization stage (right) compensates for contour estimation errors, matches local patches, and applies geometric verification. It selects a unique Top-1 boundary candidate and accepts it only if the verification criterion is satisfied. Accepted boundary pairs supply position and axis alignment constraints for pose-graph optimization.
+
+cannot measure longitudinal displacement, causing pose drift to accumulate. To bound this longitudinal drift, DeCOD associates discrete cross-sectional boundaries from axial surface profile varia-tions, which are geometrically parameterized as transverse landmark planes defined by the detected boundary origins and the corridor axis. To detect, describe, and associate these landmarks for drift correction, DeCOD proceeds in three stages, summarized in Figure 3. First, Section III-A extracts structural boundaries and encodes continuous signed normal offsets into degeneracy-orthogonal descriptors. Second, Section III-B compensates for contour estimation errors and matches descriptors across different viewpoints. Third, Section III-C verifies candidate associations and supplies position and axis alignment con-straints for pose-graph optimization. 
+
+A. Descriptor Extraction 
+
+We construct submaps by accumulating consecutive LiDAR scans over short intervals using local odometry. For each ac-cumulated point cloud P ⊂ R3, we estimate the longitudinal corridor axis a ∈ S2 and fit a reference contour c(p) to observed projections onto the transverse plane orthogonal to a [24]. Structural boundaries introduce local geometric variations along the otherwise uniform corridor. The number of degenerate degrees of freedom (DoF) depends on the geometry of the passage. In semi-circular or horseshoe tunnels, only the translational DoF along the longitudinal axis a is degenerate. In contrast, circular cylin-drical pipelines exhibit two degenerate DoFs corresponding to longitudinal translation along a and axial rotation about a.To parameterize the contour without a rotational search, we define an orthonormal basis (e1, e2) in the transverse plane. Let g denote the gravity direction obtained from inertial measurement unit (IMU) measurements or an axis of the sensor coordinate frame. We construct the basis as follows: 
+
+e1 = (I − aa ⊤)g
+
+∥(I − aa ⊤)g∥ , e2 = a × e1. (1) The basis fixes the circumferential origin at p = 0 , provid-ing a consistent contour parameterization across revisits. To detect candidate landmarks from axial surface variations, we apply a Difference of Gaussians (DoG) filter and spatial non-maximum suppression to select distinct landmarks and their origins o.Inspired by annular unwrapping in iris recognition [22] and shape analysis [21], we unroll the local point cloud P
+
+around the fitted contour into a 2D offset chart. For each point x ∈ P , the axial coordinate is z = a⊤(x − o), where 
+
+o denotes the landmark origin, while p ∈ [0 , 1) indexes normalized circumferential arclength along c(p). The signed offset 
+
+s = ˆ n(p)⊤[x − c(p)] 
+
+measures inward and outward surface variations along the outward unit normal ˆn(p). The transverse normal components are n1(p) = ˆ n(p)⊤e1 and n2(p) = ˆ n(p)⊤e2.We define the descriptor matrix D ∈ RNz ×Np by discretiz-ing the (z, p ) chart into Nz axial bins and Np circumferential bins. Each observed cell stores the mean signed normal offset of its contributing points. Recording these offsets around each landmark preserves fine surface variations that distinguish boundaries with similar cross-sectional profiles. 
+
+B. Invariant Matching 
+
+Once descriptors are extracted, the key challenge is associating query observations i with previously visited landmarks j. In degenerate corridors where accumulated longitudinal drift precludes spatial search windows, candidate retrieval relies on descriptor similarity. However, directly comparing raw descriptor matrices Di and Dj is unreliable because of opposite travel directions, partial surface coverage, and minor boundary misalignment. Therefore, we define a distance measure that compares surface geometry over mutually observed regions. First, when a robot revisits a passage in the opposite direction, its heading along the corridor axis reverses by 180 ◦.The reversal negates the axial coordinate z and reverses the circumferential traversal order. Because surface geometry is unaffected by vehicle heading, the signed offset s remains invariant. Candidate correspondences are therefore evaluated under both relative headings h ∈ { 0◦, 180 ◦}.Second, physical occlusions and the limited sensor field of view often prevent capturing a complete contour around the passage circumference. To ensure that unobserved regions do not corrupt matching, each descriptor tracks its validly ob-served cells, while considering both directions of observation. Pairs with insufficient overlap are discarded to avoid false associations on noisy fragments. Third, sensor viewpoint differences and measurement noise can perturb the estimated reference contour. Because surface offsets are measured along outward normals to this contour, errors in the contour parameter introduce systematic distortions to the descriptor. Relative scan misalignment is corrected before descriptor aggregation. We normalize the descriptor field by fitting and subtracting these variations over observed cells: 
+
+f (z, p ) = α(p) + γ(z) + z β1n1(p) + β2n2(p), (2) where α(p) and γ(z) denote circumferential and axial biases, and β1, β 2 are tilt coefficients for n1(p), n 2(p), respectively. These parameters are estimated via least squares, allowing fine structural variations to be compared after removing the fitted distortions. After normalizing the field around keypoints, we apply a Gaussian kernel with standard deviations σz and σp to calculate the weighted difference of local patches. The resulting mutual nearest-neighbor matches undergo geometric verification in the following section. 
+
+C. Verification and Optimization 
+
+Mutual nearest-neighbor patch matching provides tentative correspondences for candidate boundaries. To filter out false positives before incorporating loop closures into the factor graph, a local geometric verification step confirms rigid spatial consensus among surface patches around the detected boundary. The geometric verification is performed for each candidate pair, yielding the consensus score S(i, j ) = 2Kij /(Ni + Nj ), where Kij is the number of geometric inliers and Ni, N j are the numbers of extracted keypoints. Candidates are ranked by consensus score, and the unique highest-scoring candidate is accepted only if Kij ≥ Kthresh ,where Kthresh is the minimum inlier count. The gravity reference used for contour alignment can also determine rotation about the corridor axis. However, errors in this reference can introduce inaccurate rotational 
+
+Algorithm 1 DeCOD: Landmark-Based Trajectory Correction                                                                          
+
+> Input: Local submaps {P k}at frame k, odometry trajectory Xodom
+> Output: Corrected trajectory X∗
+> 1: Initialize loop set L ← ∅
+> 2: Estimate axes and reference contours from {P k}
+> 3: Detect boundaries and construct normalized surface fields
+> 4: for each query boundary ido
+> 5: for each eligible previous boundary jdo
+> 6: Evaluate both relative headings and extract local patches
+> 7: Compute patch distances
+> 8: Find the unique mutual nearest-neighbor matches
+> 9: Count inliers Kij via geometric verification
+> 10: Compute S(i, j ) = 2 Kij /(Ni+Nj)
+> Ni, N j: numbers of extracted keypoints
+> 11: end for
+> 12: if a unique highest-scoring candidate j∗exists then
+> 13: if Kij ∗≥Kthresh then
+> 14: Add (i, j ∗)to Lusing residual Equation (3)
+> 15: end if
+> 16: end if
+> 17: end for
+> 18: Obtain X∗by optimization in Section III-C (keep X∗=Xodom if L=∅)
+> 19: return Corrected trajectory X∗
+
+constraints. We therefore use a 5-DoF geometric factor that constrains cross-section positions and corridor axes while leaving rotation about the degenerate axis unconstrained. For each verified landmark pair (i, j ), let ki, k j denote the corresponding submap indices. Let ¯ci, ¯cj denote the vectors from the respective submap origins to the observed contour centroids, and ai, aj the corresponding unit corridor axes. These vectors are expressed in frame ki under the current relative pose. With tij denoting the translation of T −1 
+
+> ki
+
+Tkj ,the position and axis alignment errors are 
+
+rij = tij − (¯ ci − ¯cj ) ,δij = 1 − (a⊤ 
+
+> i
+
+aj )2. (3) Given the initial odometry X odom = {T odom  
+
+> k
+
+}, we com-pute the relative odometry as ˆT odom  
+
+> k,k +1
+
+=  T odom 
+
+> k
+
+−1 T odom  
+
+> k+1
+
+.We then optimize the trajectory X = {Tk} by 
+
+X ∗ = arg min 
+
+> X
+
+X
+
+> k
+
+|| T −1 
+
+> k
+
+Tk+1 − ˆT odom 
+
+> k,k +1
+
+|| 
+
++ X
+
+> (i,j )∈L
+
+ρ(∥rij ∥ + |δij |) , (4) where L contains the verified landmark pairs, and ρ(·)
+
+is a robust Huber loss. The first term preserves relative motion derived from the initial odometry trajectory. The second term enforces agreement between the observed cross-section positions and corresponding corridor axes, leaving rotation about the common axis unconstrained. Algorithm 1 summarizes the complete DeCOD pipeline, from landmark detection and invariant patch matching to factor graph trajectory optimization. IV. E XPERIMENTS AND RESULTS 
+
+We evaluated DeCOD on the public GEODE bench-mark [10] and a custom underground pipe dataset across 0 20 40 60 80 100 Recall (%) 020 40 60 80 100 Precision (%)   
+
+> DeCOD w/o verification DeCOD (inliers ≥ 9 )DeCOD (inliers ≥ 15 )STD BTC HOTFLoc++ Random DB (1.69%)
+
+(a) 0 100 200 300 400  
+
+> Time (s)
+> 10 −2
+> 10 −1
+> 10 0
+> 10 1
+> 10 2
+> Position error (m)
+> BIEVR-LIO BIEVR-LIO + DeCOD COIN-LIO COIN-LIO + DeCOD
+
+(b)      
+
+> Fig. 4. Evaluation on GEODE. (a) Precision–recall curves on Shield at 2.4 m axial tolerance. (b) Position error on Shield S10-Beta on a logarithmic scale: BIEVR-LIO (red) and COIN-LIO (blue), before (dotted) and after (solid) DeCOD correction. To illustrate the pose drift over time, the trajectory origins were matched to ground truth at the start of the return traversal. Only rotation was fitted by least squares for visual comparison.
+
+multiple LiDAR-inertial frontends. We compared DeCOD with STD [7], BTC [25], and HOTFLoc++ [26] on the same local point clouds. Our experiments analyzed (i) landmark retrieval and axial localization under structural repetition, (ii) longitudinal drift correction across frontends, and (iii) component contributions alongside computational efficiency. 
+
+A. Evaluation Setup 
+
+Subterranean inspection typically operates without external positioning, making return traversals a primary opportunity for loop closure. We built a landmark database during the outbound traversal and queried it during the return traversal. Verified boundary associations introduce position and axis alignment constraints that connect the two traversals and reduce accumulated longitudinal drift through joint optimization with odometry factors. 
+
+1) Datasets: GEODE provides subterranean tunnel se-quences spanning hundreds of meters, collected using Velo-dyne, Ouster, and Livox Avia LiDARs on devices Alpha , Beta ,and Gamma , respectively, together with synchronized IMUs. We used ten Shield sequences and seven Tunneling recordings under diverse surface and moisture conditions. The custom pipe dataset contains seven inspection sequences spanning tens of meters inside underground polyethylene and concrete pipes with diameters from 400 to 800 mm, collected by a wheeled robot equipped with a Livox LiDAR and an IMU. 
+
+2) Descriptor Extraction: We constructed the point cloud 
+
+P at 8 s intervals by accumulating 20 consecutive LiDAR scans with motion compensation from LiDAR–inertial odom-etry and then voxelized it at 5.5 cm resolution. In this process, scan-wise correction was applied to reduce residual distortion across accumulated scans before descriptor construction. The corridor axis a was then estimated from each local submap via principal component analysis (PCA). Along this corridor axis, structural boundary candidates were detected using an axial DoG filter with standard deviations of 2.5 cm and 10 cm, followed by 0.8 m nonmaximum suppression. Before descriptor extraction, candidate landmarks were validated by requiring a ratio λ1/λ 2 ≥ 2.0 between the two largest singular values to confirm an elongated corridor and accepting only contours where at least 90% of the projected points lay within 0.18 m of the reference contour c(p). Around each validated landmark, the descriptor was formed on a 16 × 256 
+
+grid spanning ±2.4 m axially with 0.30 m cell resolution and 256 normalized arclength bins along the contour. In our setup, the descriptor was rotationally aligned with gravity from the IMU, and the bottom ±30 ◦ sector was masked to suppress ground returns. 
+
+3) Matching and Optimization: For each query landmark, we matched 9 × 33 descriptor patches against database candi-dates. Unique mutual nearest-neighbor patch correspondences underwent geometric verification in the frame aligned with gravity and the corridor axis, yielding geometric consensus scores S(i, j ) (Algorithm 1). For each query, we accepted the unique candidate with the highest geometric consensus score only if its inlier count met the threshold; otherwise, the query was rejected. We evaluated thresholds of K ≥ 9 and 
+
+K ≥ 15 . For trajectory correction, verified geometric factors combining position and axis alignment errors (Equation (3)) were integrated with relative odometry factors from BIEVR-LIO [15] or COIN-LIO [14] under a Huber loss with a threshold of 1.345. 
+
+4) Evaluation Protocol and Metrics: All methods used identical local point clouds, partitioned into an outbound database and return queries. Submaps lacking ground-truth support were removed before candidate selection. Eligi-ble query–database pairs were separated by at least 30 s and shared no scans. Registration baselines (STD [7] and BTC [25]) processed inputs at 0.10 m and 0.25 m voxel reso-lutions, respectively, while HOTFLoc++ [26] was evaluated zero-shot. Metric axial localization was evaluated at tolerances of 0.3 m and 2.4 m, representing fine and coarse accuracy, respectively. Because the ground truth provides continuous trajectories without loop correspondence labels, loop accuracy was assessed against these trajectories. This assessment used the absolute boundary plane residual for DeCOD and the magnitude of the 3D translation error projected onto the query corridor axis for registration baselines. An accepted association is classified as a true positive if its axial error is within tolerance τ , and as a false positive otherwise. Recall@1 is the number of true positive Top-1 associations divided by the total number of common queries, whereas Precision@1 is the same number of true positives divided by the total number of accepted queries. Finally, full trajectory estimation was evaluated via position root mean square error (RMSE) against continuous ground truth on GEODE (Table III) and endpoint error on the custom pipe dataset (Table IV), while position error over time during the return traversal illustrates drift reduction (Figure 4(b)). 
+
+B. Place Recognition Performance in GEODE 
+
+Tables I and II and Figure 4(a) report landmark retrieval and axial localization performance on Shield and Tunneling . To assess the contribution of geometric verification, we evaluated DeCOD with and without this stage. Without geometric verification, the best candidate from patch similarity was selected, and with verification, candidates were reranked by geometric consensus, and the top-ranked candidate was accepted only if its inlier count met the threshold. Verification therefore affects both candidate selection and acceptance, allowing recall to improve by reranking. Tables I and II report verified DeCOD results for both 
+
+K ≥ 9 and K ≥ 15 . The results presented below use K ≥ 15 
+
+for geometric verification. The Shield sequences traverse tunnels assembled from repeated concrete rings, forming hundreds of meters of repetitive cylindrical passages. In this setting, DeCOD unrolls local surface geometry around detected boundaries into descriptors for local patch matching. On Shield , verification raised precision from 11.7% to 95.6% at 2.4 m tolerance, whereas registration baselines achieved at most 5.8% precision (Table I). Unlike the smooth concrete rings of Shield , the Tunneling 
+
+sequences contain irregular excavated rock walls and support structures (Table II). The forward-facing Livox LiDAR on 
+
+Gamma has a limited field of view. Even under this partial coverage, verification raised precision from 52.2% to 91.7% at 2.4 m while reducing accepted queries from 23 to 12, substantially reducing false associations. Precision at 0.3 m was 75.0%. High precision is important for SLAM pose-graph opti-mization, where false-positive constraints can corrupt the trajectory. 
+
+C. Trajectory Correction Performance in GEODE 
+
+We evaluated trajectory correction on ten Shield recordings and all three sensor recordings of Tunneling 5 . BIEVR-LIO [15] served as base odometry for all evaluated recordings, and COIN-LIO [14] was additionally evaluated on Shield S10-Beta where BIEVR-LIO exhibited severe open-loop drift. Relative transformations estimated by BTC [25] and HOTFLoc++ [26] were incorporated as full relative pose factors, whereas DeCOD contributed verified position and axis alignment constraints (Equation (3)) with at least nine inliers ( K ≥ 9) in this trajectory evaluation. STD [7] was excluded from the trajectory comparison because of its near-zero axial localization performance in Tables I and II. Graphs were optimized following Equation (4) using Levenberg– Marquardt. DeCOD substantially reduced position RMSE on Shield S8-Beta and S10-Beta (Table III). On S8-Beta , position RMSE dropped from 61.597 m to 0.768 m. On S10-Beta , it dropped from 132.817 m to 4.206 m. Figure 4(b) further illustrates the reduction in position error on Shield S10-Beta for BIEVR-LIO and COIN-LIO, showing that applying the verified geometric constraints reduced longitudinal drift across both frontends. DeCOD preserved the odometry accuracy across Tunnel-ing 5 despite sensor variations across omnidirectional LiDARs (Alpha , Beta ) and a LiDAR with a limited forward field of view ( Gamma ), by effectively rejecting the false candidates. In cases where none of the proposed matches met the verification threshold (shaded gray in Table III), no loops were accepted.                                                                                                                                                                
+
+> TABLE I PLACE RECOGNITION PERFORMANCE ON GEODE S HIELD 1–10. RECALL @1 IS EVALUATED OVER ALL COMMON QUERIES ,
+> WHEREAS PRECISION @1 IS EVALUATED OVER ACCEPTED QUERIES .RECALL @1 AND PRECISION @1 ARE REPORTED AS PERCENTAGES ,AND ACCEPTED QUERIES AS COUNTS . T HE HIGHEST RECALL AND PRECISION IN EACH COLUMN ARE IN BOLD .Method Recall@1 Precision@1 Accepted Queries 0.3 m 2.4 m 0.3 m 2.4 m DeCOD (w/o verification) 5.8 11.5 5.9 11.7 205 DeCOD (inliers ≥9)20.7 41.8 36.8 74.4 117 DeCOD (inliers ≥15 )17.3 31.3 52.9 95.6 68 STD [7] 0.0 0.0 0.0 0.0 8BTC [25] 0.0 1.0 0.0 1.2 170 HOTFLoc++ [26] 1.9 5.8 1.9 5.8 208 TABLE II PLACE RECOGNITION PERFORMANCE ON GEODE T UNNELING 1–5 GAMMA . R ECALL @1 IS EVALUATED OVER ALL COMMON QUERIES ,
+> WHEREAS PRECISION @1 IS EVALUATED OVER ACCEPTED QUERIES .RECALL @1 AND PRECISION @1 ARE REPORTED AS PERCENTAGES ,AND ACCEPTED QUERIES AS COUNTS . T HE HIGHEST RECALL AND PRECISION IN EACH COLUMN ARE IN BOLD .Method Recall@1 Precision@1 Accepted Queries 0.3 m 2.4 m 0.3 m 2.4 m DeCOD (w/o verification) 39.1 52.2 39.1 52.2 23 DeCOD (inliers ≥9)39.1 56.5 64.3 92.9 14 DeCOD (inliers ≥15 )39.1 47.8 75.0 91.7 12 STD [7] 0.0 0.0 0.0 0.0 7BTC [25] 4.3 21.7 8.3 41.7 12 HOTFLoc++ [26] 0.0 0.0 0.0 0.0 23 TABLE III TRAJECTORY POSITION RMSE [ M]ON THE GEODE BENCHMARK WITH
+> BIEVR-LIO BASE ODOMETRY .Recording No loop BTC HOTFLoc++ DeCOD S1-Gamma 0.868 101.785 ∗103.340 0.308
+> S2-Gamma 0.493 89.405 94.418 0.474
+> S3-Gamma 1.276 70.046 75.233 1.121
+> S4-Gamma 2.497 ∗65.317 ∗73.851 2.142
+> S5-Gamma 2.061 2.061 33.817 2.061
+> S6-Gamma 0.519 31.251 ∗30.477 0.522 S7-Beta 45.227 ∗87.340 83.621 4.527
+> S8-Beta 61.597 104.057 101.951 0.768
+> S9-Beta 94.902 77.349 ∗76.803 24.819
+> S10-Beta 132.817 ∗94.812 95.377 4.206
+> T5-Alpha 0.164 2.894 21.749 0.164
+> T5-Beta 0.126 15.973 14.537 0.126
+> T5-Gamma 0.097 10.961 21.243 0.095
+> ∗Asterisks denote reaching the maximum optimization iterations. Gray shading indicates outputs unchanged due to zero accepted factors. Bold denotes the lowest error.
+
+This conservative acceptance policy, however, limits correc-tion when severe odometric drift coincides with insufficient reliable landmarks. On Shield S9 , RMSE decreased from 94.902 m to 24.819 m, leaving substantial trajectory error even after optimization due to the small number of loop closures. This indicates that there still exists a margin for trade-off between rejecting unreliable associations and retaining sufficient constraints for drift correction. 
+
+D. Experiment on Custom Dataset 
+
+We evaluated DeCOD on a wheeled inspection robot inside underground drainage conduits, examining precast concrete (hume ) and ribbed polyethylene ( pe ) pipes. Because pipe conduits with diameters from 400 to 800 mm are an order of magnitude smaller than subterranean tunnels, we scaled the spatial point sampling size down by a factor of ten while maintaining the descriptor grid dimension at 16 × 256 . Along these uniform cylindrical conduits, our detector captured the annular joint seams between pipe segments. In each trial, the robot performed an outbound and return traversal. For evaluation, the endpoint error was computed as the Euclidean distance between the estimated trajectory endpoint and the measured endpoint, both expressed in the launch manhole coordinate frame. Table IV reports endpoint errors across the pipe recordings. Base odometry was BIEVR-LIO [15] on hume pipes and FAST-LIO2 [12] on pe pipes. Incorporating verified geometric                         
+
+> TABLE IV ENDPOINT ERROR BEFORE AND AFTER CORRECTION ON PIPE SEQUENCES .Sequence Odometry [m] Corrected [m] Reduction [%]
+> hume 01 13.342 0.013 99.9
+> hume 02 0.189 0.028 85.4
+> hume 03 1.738 1.217 30.0
+> hume 04 0.544 0.022 95.9
+> pe 01 3.103 0.720 76.8
+> pe 02 15.730 0.409 97.4
+> pe 03 3.320 0.187 94.4
+
+(a) (b)    
+
+> Fig. 5. Point-cloud maps of hume 04 reconstructed using (a) odometry and (b) odometry with DeCOD. Cyan and orange show outbound and return scans. The boxed regions are magnified below, showing that odometry places the same pipe wall at two different positions due to pose drift, producing separate cyan and orange outlines. After our suggested correction based on loop closures, the outlines largely overlap and form a better reconstruction.
+
+constraints at pipe joints substantially reduced endpoint errors across all sequences. On hume pipes, DeCOD brought endpoint errors down to sub-meter levels in three of the four trials, reaching 0.022 m on hume 04 , with a reduction of up to 99.9% on hume 01 . Figure 5 shows reduced wall thickness on hume 04 as the outbound and return scans align more closely after correction. On pe pipes, consistent endpoint error reductions were achieved across all runs, reaching 94.4% on pe 03 . Although LiDAR odometry suffered from severe drift without paramter tuning in these narrow pe pipes, the results show that modeling degeneracy, detecting features orthogonal to the degenerate direction, and incorporating them as constraints can still correct the fraction of this drift. 
+
+E. Design and Performance Analysis 
+
+To understand how DeCOD addresses structural degeneracy, we examined descriptor construction, geometric verification, and the choice of 5-DoF constraints, followed by runtime performance on GEODE. We evaluated descriptor variants using Recall@1 on 80 
+
+Shield queries with ground-truth matches at 0.75 m axial tolerance. We evaluated descriptor normalization separately from local patch normalization, using a five-variable model to compensate for contour centering and sensor tilt errors. Replacing it with a scale-only correction reduced Recall@1 from 16.3% to 12.5%. In a separate comparison, keeping only the sign of each offset reduced Recall@1 to 10.0%, showing that offset magnitudes also contribute to performance. At the association stage, the Shield results in Table I show the effect of geometric verification at 2.4 m axial tolerance. With K ≥ 9, precision increased from 11.7% to 74.4% and Recall@1 from 11.5% to 41.8%, while accepted queries decreased from 205 to 117. Verification thus improves candidate selection through geometric consensus among local patches while rejecting proposals with insufficient inliers. For trajectory correction, we compared the proposed 5-DoF constraints with full 6-DoF relative pose (Pose3) factors, keeping matching, position constraints, weights, and evaluation settings unchanged. Although Pose3 factors using odometry-derived rotations yielded similar RMSE on most sequences, RMSE increased from 0.768 to 6.403 m on S8-Beta 
+
+and from 4.206 to 9.708 m on S10-Beta . These results support the 5-DoF formulation, which avoids imposing a potentially errornous rotation estimate about the corridor axis. Finally, we measured the runtime of descriptor extraction, matching, and verification on an NVIDIA RTX 4070 Ti SUPER GPU. Across 987 candidate pairs, these stages took an average of 2.15 ms per pair. For a query against a database of 20 candidates, the latency was 69.7 ms, compared with 321.6 ms for HOTFLoc++. This sub-100 ms query latency supports periodic background evaluation on accumulated submaps. V. C ONCLUSION 
+
+We presented DeCOD, a geometric approach for place recognition and drift correction in degenerate subterranean corridors. By extracting cross-sectional boundaries along the travel path, DeCOD introduces geometric factors that constrain cross-section position and corridor axis alignment to reduce accumulated longitudinal drift, while leaving rotation about the common axis unconstrained. Across tunnel benchmarks and field pipe inspections, combining normal-offset descriptors with local patch matching and geometric verification reduces false associations and trajectory error. Without external positioning references, subterranean SLAM relies on relative loop constraints only. Re-identifying structural boundaries upon a revisit bounds accumulated drift, at least preserving segments where odometry remains locally accurate. As our current formulation considers a single dominant weak axis along uniform passages, extending these directional constraints to degeneracy in multiple degrees of freedom remains for future work. REFERENCES [1] J. Zhang and S. Singh, “LOAM: LiDAR odometry and mapping in real-time,” in Proc. Robot.: Sci. Syst. (RSS) , 2014. [2] T. Shan, B. Englot, D. Meyers, W. Wang, C. Ratti, and D. Rus, “LIO-SAM: Tightly-coupled LiDAR inertial odometry via smoothing and mapping,” in Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) ,2020, pp. 5135–5142. [3] J. Zhang, M. Kaess, and S. Singh, “On degeneracy of optimization-based state estimation problems,” in Proc. IEEE Int. Conf. Robot. Autom. (ICRA) , 2016, pp. 809–816. [4] T. Tuna, J. Nubert, Y. Nava, S. Khattak, and M. Hutter, “X-ICP: Localizability-aware LiDAR registration for robust localization in extreme environments,” IEEE Trans. Robot. , vol. 40, pp. 452–471, 2024. [5] W. Zhen and S. Scherer, “Estimating the localizability in tunnel-like environments using LiDAR and UWB,” in Proc. IEEE Int. Conf. Robot. Autom. (ICRA) , 2019, pp. 4903–4908. [6] G. Kim, S. Choi, and A. Kim, “Scan Context++: Structural place recog-nition robust to rotation and lateral variations in urban environments,” 
+
+IEEE Trans. Robot. , vol. 38, no. 3, pp. 1856–1874, 2022. [7] C. Yuan, J. Lin, Z. Zou, X. Hong, and F. Zhang, “STD: Stable triangle descriptor for 3D place recognition,” in Proc. IEEE Int. Conf. Robot. Autom. (ICRA) , 2023, pp. 1897–1903. [8] G. Kim and A. Kim, “Scan Context: Egocentric spatial descriptor for place recognition within 3D point cloud map,” in Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , 2018, pp. 4802–4809. [9] B. Jiang and S. Shen, “Contour Context: Abstract structural distribution for 3D LiDAR loop detection and metric pose estimation,” in Proc. IEEE Int. Conf. Robot. Autom. (ICRA) , 2023, pp. 8386–8392. [10] Z. Chen, Y. Qi, D. Feng, X. Zhuang, H. Chen, X. Hu, J. Wu, K. Peng, and P. Lu, “Heterogeneous LiDAR dataset for benchmarking robust localization in diverse degenerate scenarios,” Int. J. Robot. Res. , vol. 45, no. 1, pp. 6–22, 2026. [11] J. Kim, S. Choi, W. Kang, and T.-W. Kim, “Query-calibrated segmental admission for descriptor-agnostic LiDAR loop closure in repetitive environments,” arXiv preprint arXiv:2512.09447 , 2025. [12] W. Xu, Y. Cai, D. He, J. Lin, and F. Zhang, “FAST-LIO2: Fast direct LiDAR-inertial odometry,” IEEE Trans. Robot. , vol. 38, no. 4, pp. 2053–2073, 2022. [13] N. Gelfand, L. Ikemoto, S. Rusinkiewicz, and M. Levoy, “Geometrically stable sampling for the ICP algorithm,” in Proc. Int. Conf. 3-D Digit. Imaging Model. (3DIM) , 2003, pp. 260–267. [14] P. Pfreundschuh, H. Oleynikova, C. Cadena, R. Siegwart, and O. An-dersson, “COIN-LIO: Complementary intensity-augmented LiDAR inertial odometry,” in IEEE International Conference on Robotics and Automation (ICRA) , 2024, pp. 1730–1737. [15] P. Pfreundschuh, T. Tuna, C. L. Gentil, R. Siegwart, C. Cadena, and H. Oleynikova, “BIEVR-LIO: Robust LiDAR-inertial odometry through bump-image-enhanced voxel maps,” in Proc. Robot.: Sci. Syst. (RSS) ,2026. [16] J. Hatleskog and K. Alexis, “Probabilistic degeneracy detection for point-to-plane error minimization,” IEEE Robot. Autom. Lett. , vol. 9, no. 12, pp. 11 234–11 241, 2024. [17] A. Hinduja, B.-J. Ho, and M. Kaess, “Degeneracy-aware factors with applications to underwater SLAM,” in Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , 2019, pp. 1293–1299. [18] R. Zhang, M. H. Evans, R. Worley, S. R. Anderson, and L. Mihaylova, “Improving SLAM in pipe networks by leveraging cylindrical regularity,” in Proc. Towards Auton. Robot. Syst. (TAROS) , 2021, pp. 56–65. [19] K. Kim, J. Im, and G. Jee, “Tunnel facility-based vehicle localization in highway tunnel using 3D LiDAR,” IEEE Trans. Intell. Transp. Syst. ,vol. 23, no. 10, pp. 17 575–17 583, 2022. [20] S. Edwards, R. Zhang, R. Worley, L. Mihaylova, J. Aitken, and S. R. Anderson, “A robust method for approximate visual robot localization in feature-sparse sewer pipes,” Front. Robot. AI , vol. 10, 2023, art. no. 1150508. [21] S. Belongie, J. Malik, and J. Puzicha, “Shape matching and object recognition using shape contexts,” IEEE Trans. Pattern Anal. Mach. Intell. , vol. 24, no. 4, pp. 509–522, 2002. [22] J. Daugman, “How iris recognition works,” IEEE Trans. Circuits Syst. Video Technol. , vol. 14, no. 1, pp. 21–30, 2004. [23] Y. Wang, Z. Sun, C.-Z. Xu, S. E. Sarma, J. Yang, and H. Kong, “LiDAR-Iris for loop-closure detection,” in Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , 2020, pp. 5769–5775. [24] M. Kaess, “Simultaneous localization and mapping with infinite planes,” in Proc. IEEE Int. Conf. Robot. Autom. (ICRA) , 2015, pp. 4605–4611. [25] C. Yuan, J. Lin, Z. Liu, H. Wei, X. Hong, and F. Zhang, “BTC: A binary and triangle combined descriptor for 3D place recognition,” 
+
+IEEE Trans. Robot. , vol. 40, pp. 1580–1599, 2024. [26] E. Griffiths, M. Haghighat, S. Denman, C. Fookes, and M. Ramezani, “HOTFLoc++: End-to-end hierarchical LiDAR place recognition, re-ranking, and 6-DoF metric localisation in forests,” IEEE Robot. Autom. Lett. , vol. 11, no. 7, pp. 7860–7867, 2026.

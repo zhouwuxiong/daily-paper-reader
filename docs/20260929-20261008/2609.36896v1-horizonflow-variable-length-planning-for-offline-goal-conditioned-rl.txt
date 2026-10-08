@@ -1,0 +1,2471 @@
+Title: HorizonFlow: Variable-Length Planning for Offline Goal-Conditioned RL
+
+URL Source: https://arxiv.org/pdf/2609.36896v1
+
+Published Time: Wed, 30 Sep 2026 01:09:56 GMT
+
+Number of Pages: 42
+
+Markdown Content:
+# HORIZON FLOW : VARIABLE -L ENGTH PLANNING FOR 
+
+# OFFLINE GOAL -C ONDITIONED RL 
+
+JunHyeok Oh 1 Zian Jang 1 Byung-Jun Lee 1,2,†
+
+the2ndlaw@korea.ac.kr jangzian@korea.ac.kr byungjunlee@korea.ac.kr 
+
+## ABSTRACT 
+
+Recent advances in generative planning have made trajectory inpainting a promis-ing approach to offline goal-conditioned reinforcement learning. However, these methods typically specify the planning horizon before generating plan content, even though the appropriate horizon depends on the route itself. A horizon that is too short can force infeasible transitions, whereas one that is too long can in-troduce redundant motion. We introduce HorizonFlow, a hierarchical planner that treats plan length as an output of generation rather than a prescribed input. Its subgoal route planner guides its action-prefix controller through a sequence of latent subgoals. Both components combine insertion-based generation with flow matching to jointly generate continuous plan content and length, using the par-tially generated plan to guide token insertion. HorizonFlow reuses the resulting length information to select candidates and steer generation toward shorter plans without a separate learned value model. Across Maze2D, Multi2D, and OGBench navigation and visual manipulation benchmarks, HorizonFlow achieves the high-est average performance among the compared methods. 
+
+Project Page: https://jh2525.github.io/HorizonFlow/ (a) Horizon too short  
+
+> Infeasible jump
+> Start Goal
+
+(b) Horizon too long  (c) HorizonFlow     
+
+> n = 20
+> Detour plan n = 12
+> Desirable plan Generated plan Selected plan Candidate plan
+
+Figure 1: Schematic of horizon mismatch and count-based selection. (a, b) Prescribed horizons that are too short or too long yield an infeasible jump or detour, respectively. (c) HorizonFlow generates variable-length candidates and selects the one with the fewest tokens. 
+
+## 1 INTRODUCTION 
+
+Offline goal-conditioned reinforcement learning (GCRL) aims to reach specified goals using only a fixed dataset, without additional environment interaction. Generative trajectory planning is a natural approach because it models distributions over trajectories from logged experience and can repre-sent alternative ways of reaching a goal as explicit candidates. A common formulation is trajectory inpainting, which fixes the current state and a goal or subgoal as endpoints and generates the tra-jectory between them (Janner et al., 2022; Li et al., 2023; Chen et al., 2024b; Liu et al., 2025). In these methods, the planning horizon—the length of the generated plan—is typically specified be-fore generation. Because both endpoints are fixed, this horizon is not a lookahead but an assumed travel time, and it can be wrong in either direction. A horizon that is too short may compress a long trajectory into dynamically infeasible transitions, whereas one that is too long may stretch a short trajectory through waiting, redundant motion, or unnecessary detours. Figure 1 (a, b) illustrates this two-sided horizon mismatch, also noted by Liu et al. (2025). Many generative planners support configurable horizons but require them to be selected exter-nally (Janner et al., 2022; Chen et al., 2024a; Luo et al., 2025). Because the appropriate horizon 
+
+> 1
+
+Korea University. 2Gauss Labs Inc., Seoul, Republic of Korea. †Corresponding author. 
+
+1arXiv:2609.36896v1 [cs.AI] 29 Sep 2026 varies across state–goal pairs, no single value fits both nearby and distant goals. VH-Diffuser (Liu et al., 2025) addresses this with a learned length predictor that assigns each start–goal pair a horizon before generation begins. This still requires choosing a useful horizon before the candidate route is available; a poorly matched horizon can constrain the generated plan to be too short or unnecessarily long. We instead generate plan content and length jointly by combining insertion-based generation with flow matching (Lipman et al., 2023; Nguyen et al., 2025). Conditioned on the partially generated plan, the insertion model predicts gapwise missing-token counts to determine how many tokens to add, while flow matching refines their continuous content. Length decisions thus depend on each candidate’s evolving content rather than on a horizon prescribed before generation. At a fixed temporal resolution, the generated token count reflects the duration a plan represents, which lets us compare candidates without a separate learned value model. During generation, we combine the current count with the predicted missing count into a count-based steering score that favors shorter candidates; after generation, the realized count selects among completed plans. Building on this joint content–length generation, we introduce HorizonFlow, a hierarchical plan-ner for offline GCRL. Applying the formulation directly to an entire route at action-level resolution would require long sequences, which makes generation challenging. HorizonFlow therefore applies it at two levels. Given the current state and final goal, the subgoal route planner generates a variable-length latent subgoal route. Given the current state and the next subgoal, the action-prefix controller generates a variable-length action prefix. Both models use the same insertion–flow matching for-mulation and are trained entirely on offline data. HorizonFlow selects candidates by their generated counts at each level and operates in a receding-horizon manner, executing an initial portion of the selected action prefix and replanning as the state evolves. Our contributions are threefold. First, we extend insertion-based generation with flow matching to continuous-valued plans, jointly generating plan content and length for control. Second, we introduce HorizonFlow, a hierarchical planner that applies this formulation to subgoal routes and action prefixes, with length-aware sampling that uses generated counts for candidate selection and count-based scores for steering during generation. Third, HorizonFlow achieves the highest average performance among the compared methods on Maze2D, Multi2D, and OGBench navigation and vi-sual manipulation benchmarks; horizon diagnostics and ablations further analyze horizon mismatch, length signals, and the planner’s sampling and hierarchy choices. 
+
+## 2 RELATED WORK 
+
+Offline Goal-Conditioned RL. Value-based offline GCRL uses contrastive objectives, quasimet-ric representations, or expectile regression (Eysenbach et al., 2022; Wang et al., 2023; Park et al., 2025). HIQL uses latent-subgoal hierarchies (Park et al., 2023), SAW learns a flat policy through subgoal-conditioned bootstrapping (Zhou & Kao, 2025), and CTA composes task-relevant latent analogies with new contexts (Kim et al., 2026). HorizonFlow instead generates variable-length plans and selects by generated count without learning a value function. 
+
+Generative Planning for Control. Diffuser and Decision Diffuser generate trajectories (Janner et al., 2022; Ajay et al., 2023); hierarchical diffusion/flow planners generate subgoals and local plans (Li et al., 2023; Chen et al., 2024b; Nandiraju et al., 2026). SSD conditions sub-trajectories on goals and learned values (Kim et al., 2024). Horizons are specified before content generation through configurable lookahead in Diffusion Forcing (Chen et al., 2024a), fixed-length chunks in CompDiffuser (Luo et al., 2025), or prediction in VH-Diffuser (Liu et al., 2025). HorizonFlow jointly generates each candidate’s content and length. 
+
+Variable-Length Generative Models. Beyond fixed-length flows (Lipman et al., 2023; Gat et al., 2024), jump diffusion and Edit Flows model variable-dimensional and variable-length outputs, re-spectively (Campbell et al., 2023; Havasi et al., 2025). OneFlow combines insertion and flow match-ing for continuous image latents within discrete text (Nguyen et al., 2025); the Insertion Process plans discrete maze and graph paths over a discrete vocabulary (Zhang et al., 2026). HorizonFlow instead jointly generates continuous plan tokens, including their order coordinates, and token counts, reusing length information for selection and steering. 2Offline data 
+
+(a) Training — learn content and plan length from offline trajectories          
+
+> Clean plans Corruption 4. Predict and optimize
+> PC: g (frozen)
+> RP: all states Steps
+> 2 → 3 goal z
+> all z Sample a segment
+> including its start and goal RP (subgoal routes, stride )
+> …
+> PC (action prefixes, unit stride)
+> …
+> or
+> σ ∼ U(0, 2)
+> Example 1: σ = 0.5 …
+> deleted
+> Example 2: σ = 1.5 …
+> Encoder
+> Count heads
+> Transformer
+> +Velocity head ⋮
+> Teal dashed: RP training only
+> Total
+> loss Noise
+> level high Clean plan: low
+
+(b) Sampling — joint insertion and flow generation (from anchors to plan)        
+
+> Count -based selection Refine order and content (σ ≥ 1)
+> σ = 2.0 σ = 1.5
+> Initialize anchors
+> σ = 0
+> Insert + refine (σ < 1)
+> σ = 0.9 σ = 0.2 K sampled plans
+> Add tokens and refine
+> order and content After the insertion cutoff,
+> plan length stays fixed.
+> Insertion cutoff Clean plan
+> σ = 2
+> Select by minimum generated count
+> Optional FK steering (during generation)
+> Start and goal only
+> No interior tokens
+> Anchors only
+> σ = 0 σ = 1
+
+(c) Hierarchical control — receding-horizon execution with flexible replanning  Execute in environment Initial state and goal  Subgoal route planner         
+
+> Sample routes Sample action pre fixes conditioned on the first subgoal
+> Action-prefix controller
+> ... ...
+> Select by minimum generated count Select by minimum generated count
+
+Figure 2: HorizonFlow overview. (a) Training predicts missing-token counts and denoising veloci-ties from deleted and noised offline plans. (b) Sampling inserts and refines tokens before σ = 1 , then only refines; optional Feynman–Kac (FK) steering guides generation, followed by minimum-count selection. (c) The route planner (RP) selects a route; the prefix controller (PC) selects an action prefix toward its first subgoal, with receding-horizon execution. 
+
+## 3 PRELIMINARIES 
+
+Offline Goal-Conditioned RL. We consider a reward-free Markov decision process M =(S, A, f, ρ 0) with state space S, action space A, deterministic dynamics sh+1 = f (sh, a h), and initial-state distribution ρ0. Extending HorizonFlow to stochastic dynamics is left for future work. A goal g ∈ G specifies successful states through a goal map ϕ : S → G ; success occurs when 
+
+ϕ(sh) ∈ Bϵ(g), the ϵ-ball around g. In offline GCRL, the learner receives only a static dataset of trajectories D = {τ (i)}Ntraj  
+
+> i=1
+
+, where τ = ( s0, a 0, s 1, a 1, . . . ), and must reach arbitrary goals without additional environment interaction (Park et al., 2025). 
+
+Flow Matching. Flow Matching (FM) learns to transform noise into a continuous data sam-ple (Lipman et al., 2023). In our planner, it generates the content of subgoal or action tokens, where a token is one element of a plan. For a noise sample x0 ∼ p0, a clean target x1 ∼ q,and refinement time t ∼ Unif[0 , 1] , we form the interpolation xt = (1 − t)x0 + tx 1. The model learns the direction x1 − x0 that moves this noisy sample toward its target, minimizing 
+
+LFM = Et,x 0,x 1
+
+∥vθ (xt, t ) − (x1 − x0)∥22
+
+. Samples are obtained by integrating ˙xt = vθ (xt, t )
+
+from t = 0 to 1. Standard FM operates on a fixed-dimensional space. Representing a sequence as 
+
+xt ∈ RL×d therefore fixes its element count L; FM generates element content but does not by itself generate sequence length. 
+
+Insertion-based generation. An insertion process constructs a variable-length sequence by re-peatedly adding elements between existing neighbors. Each such location is called a gap , and a learned insertion rate controls how likely an addition is to occur there; equivalently, the model can predict how many elements each gap still lacks. The sequence length is therefore determined by the insertions made during generation rather than specified in advance. Edit Flows provides this con-struction as an insertion-only restriction of its general sequence-editing framework (Havasi et al., 2025). Insertion can be combined with flow matching so that insertion grows the sequence while flow matching refines the continuous content of its elements (Nguyen et al., 2025). 34 HORIZON FLOW 
+
+HorizonFlow combines a subgoal route planner (RP), which generates routes to the final goal, with an action-prefix controller (PC), which generates local actions toward the next subgoal. Both gen-erate variable-length candidates and select by minimum generated count, with local execution and replanning as the state changes (Figure 2). Appendix D gives implementation details and pseu-docode. 4.1 HIERARCHICAL PLANS AND TOKEN REPRESENTATION 
+
+Plans as token sets. Both levels represent a plan as a variable number of continuous tokens be-tween two fixed conditioning anchors (current state and goal). Each token xk = ( rk, c k) consists of a scalar coordinate rk ∈ R and content ck ∈ Rd—a latent subgoal for the route planner and an action for the prefix controller. A plan is thus a variable-size set x ∈ X = SNn=0 (R1+ d)n, with N
+
+the token capacity; |x| denotes its token count, which we also write n. The anchors are not counted, remain fixed during generation, and are excluded from the flow-matching loss. 
+
+Order coordinates. To order a growing token set, each token carries a continuous order coordinate 
+
+rk, which is refined by flow matching together with the content ck. The anchors sit at r = −1 and 
+
+r = +1 , and sorting by rk orders the interior tokens between them. The coordinate specifies order along a plan, not elapsed environment time or flow-matching time. Token content and temporal resolution depend on the planning level, as described below. 
+
+Subgoal route planner. Given the current state and final goal, the route planner generates an ordered sequence of latent subgoals—states mapped by a learned encoder Eϕ : S → Rdz (Sec-tion 4.2) to intermediate points along a route. Its anchors carry the current and goal states encoded by the same encoder, and its generated interior tokens are x = {(rk, z k)}nk=1 with latent subgoals 
+
+zk ∈ Rdz . Its training targets are states sampled at a fixed stride ∆RP in environment steps (Chen et al., 2024b). The stride sets the temporal resolution, not the number of subgoals: different routes can contain different numbers of intermediate points. The first subgoal of the selected route becomes the prefix controller’s target. 
+
+Action-prefix controller. Conditioned on the current state and the selected latent subgoal, carried by its start and goal anchors, the prefix controller generates ordered action tokens x = {(rk, a k)}nk=1 
+
+with ak ∈ Rda , where n is the generated action-prefix length. After sorting by rk, the action tokens form a sequence at unit environment-step resolution. This sequence is a local action prefix toward the subgoal, not necessarily a complete trajectory to it. The route planner determines where to go; the prefix controller models how to begin moving toward that target. Unlike a one-step inverse dynamics model conditioned on adjacent states, it generates an action sequence conditioned on a potentially more distant subgoal. 4.2 TRAINING 
+
+From corrupted offline-trajectory segments, HorizonFlow learns to predict missing-token counts and denoise surviving tokens. Encoder regularization and local-prefix training support hierarchical control. 
+
+Learning routes from offline trajectories. We first sample a clean token count m, including anchors, log-uniformly between a minimum count and N + 2 ; this emphasizes shorter plans while retaining longer examples. We then take a segment of (m − 1)∆ RP environment steps within one episode, use its endpoints as the (start, goal) anchors, and subsample its interior every ∆RP steps to obtain the clean RP token set x1.
+
+Corruption and generation times. We use σ ∈ [0 , 2] for the global clock that advances plan generation. Each token has its own FM refinement time tk ∈ [0 , 1] . For training corruption, each non-anchor token k is assigned an independent reveal offset uk ∼ Unif[0 , 1] . We set 
+
+tk = clip [0 ,1] (σ − uk) and hide tokens for which σ < u k. Thus, for σ < 1 some clean tokens 4may be hidden; for σ ≥ 1 all are present and only refinement remains. Neither clock is the order coordinate rk. The vector t collects these local times. We write xσ (equivalently xt) for the par-tially noised plan at clock σ, both in the training losses and for a candidate at a steering checkpoint. Appendix D.2 gives the full corruption procedure. 
+
+Learning insertion and continuous content. At sampled σ, hidden clean tokens define each gap’s missing count cg , while surviving tokens are noised to their local times. A shared Transformer pre-dicts continuous velocities vθ , positive-count parameters λθ , and gap-completion probabilities πθ
+
+from the noisy plan xσ . We suppress this conditioning in πθ (g) and λθ (g) unless needed. For a present non-anchor token k with clean target x1,k = ( rk, c k) and noise ϵk, the FM loss is schemati-cally 
+
+LFM = E
+
+h
+
+∥vθ (xt, t)k − (x1,k − ϵk)∥22
+
+i
+
+. (1) Time weighting, coordinate normalization, and loss reduction are detailed in Appendix D.2. The insertion heads model gap completion ( cg = 0 ) with a Bernoulli probability πθ (g) and positive missing counts with a zero-truncated Poisson (ZTP) parameter λθ (g), giving 
+
+Lins = Eg
+
+h
+
+BCE( πθ (g), 1[cg = 0]) + 1[cg > 0]  λθ (g) − cg log λθ (g) + log(1 − e−λθ (g))i
+
+. (2) The normalizer log(1 − e−λ) makes the positive-count branch a proper distribution over cg ≥ 1;the parameter-independent term log cg ! is omitted. This normalization matters because, besides supervising insertions, the same distribution provides the expected remaining count used by the optional steering step in Section 4.3. Appendix E.2 relates the objective to OneFlow’s zero/nonzero count decomposition. 
+
+Stabilizing the subgoal encoder. The encoder Eϕ is trained jointly with the route planner at this stage and frozen thereafter. Its outputs must retain distinctions between states to serve as useful subgoals, but the FM loss alone rewards collapsing them: a less distinct latent makes the velocity target easier to fit. We therefore block FM gradients at the encoder and train it through the insertion loss and temporal contrastive regularization. The InfoNCE term encourages nearby-in-time states to have similar representations relative to in-batch negatives (van den Oord et al., 2018); it supports the representation rather than providing a separate ranking score. With α = 0 .1 in all environments, the RP objective is 
+
+LRP = LFM + Lins + α LNCE . (3) 
+
+Keeping local generation short. The prefix controller is trained with LPC = LFM + Lins on action tokens, using the frozen encoder Eϕ for goal conditioning and no contrastive loss. A subgoal can lie farther away than the controller’s token capacity, especially at unit stride in long-horizon environments, so the controller should not have to generate every action up to it. We therefore pair a training prefix of n = m − 2 actions, with m sampled log-uniformly, with a hindsight goal Kdiv n
+
+steps ahead: with Kdiv = 1 the prefix reaches the goal frame, whereas with Kdiv > 1 it covers only the first 1/K div of the way. The controller thus learns to make progress toward a distant subgoal without modeling the entire remaining route in action space. Appendix D.2 gives, for both planners, the exact prefix construction, token budgets, corruption schedule, masking, and loss weighting. 4.3 SAMPLING VARIABLE -L ENGTH PLANS 
+
+Figure 2(b) illustrates sampling in two phases. Each candidate starts with fixed start and goal an-chors and no interior tokens. During the insertion phase ( σ < 1), the model predicts a flow velocity for every active token and the gapwise completion probability πθ and count parameter λθ for ev-ery gap. Gapwise birth decisions drawn from these determine how many new tokens are added; each is initialized from Gaussian noise at local time tk = 0 , while flow matching refines the order coordinates and content of existing tokens. Births stop at σ = 1 , fixing n; refinement continues to σ = 2 , giving even a token born just before the cutoff a full refinement interval. The same sampler generates RP subgoals and PC actions, with counts used for selection (Section 4.4). Appendix D.3 gives the sampling rule and pseudocode; Figure 3 illustrates generation on Maze2D-Large. 5n=6         
+
+> N * = 118
+> σ= 0.3
+> n=9
+> σ= 0.6
+> n=12
+> σ= 0.9
+> n=12
+> σ= 1.5
+> n=12
+> σ= 2.0
+> n=9
+> N * = 382
+> n=28 n=39 n=40 n=40
+
+Figure 3: Route-planner samples on Maze2D-Large. Rows show start–goal pairs; columns show generation time σ and generated count n. Latent subgoals are mapped to maze coordinates, con-nected and colored by order coordinate rk. White circles/orange stars mark starts/goals. Beyond the dashed cutoff at σ = 1 , counts remain fixed while refinement continues. These are generated plans, not executed trajectories. 
+
+Optional Feynman–Kac steering. We reuse the insertion heads to steer generation toward shorter plans through Feynman–Kac resampling (Singhal et al., 2025). For a partial candidate xσ , the count-based steering score (Appendix C) is 
+
+ˆn(xσ ) = |xσ |
+
+|{z} 
+
+> tokens present
+
++ P 
+
+> g∈G(xσ)
+
+ 1 − πθ (g | xσ ) λθ (g|xσ )1−e−λθ (g|xσ )
+
+| {z }
+
+> predicted missing tokens
+
+, (4) where G(xσ ) is the set of gaps. At a few checkpoints during the insertion phase, we resample can-didates with weights wj ∝ exp[ −β ˆn(x(j) 
+
+> σ
+
+)] , favoring lower scores without an auxiliary trajectory-value model. FK can be applied at either level; by default we apply it to the route planner and the prefix controller. Implementation details are in Appendix D.3. 4.4 SELECTING AND EXECUTING PLANS 
+
+Count-based selection. The route planner samples KRP routes conditioned on the current state and final goal; the first subgoal of the selected route then conditions the prefix controller, which samples KPC action prefixes from the current state. At either level, we select among candidates 
+
+x(1) , . . . , x (K) by 
+
+x⋆ = x(j⋆), j⋆ = arg min  
+
+> j≤K
+
+|x(j)|, (5) counting latent subgoal tokens for RP and action tokens for PC, with ties broken uniformly at ran-dom. At a fixed temporal resolution, token count is a proxy for the temporal extent represented by a plan. We use it to favor compact plans under the learned distribution without a separate trajectory-value model, not to certify feasibility or optimality. For PC, training pairs n actions with a goal 
+
+Kdiv n steps ahead, so target count is proportional to the goal offset at fixed Kdiv . We use this learned relation to rank action prefixes before executing the first action and replanning. Unlike pre-scribing a short horizon, it compares lengths after the candidates are generated, allowing each route to determine its own length. 
+
+Receding-horizon execution. The first subgoal of the selected route serves as the prefix con-troller’s target, and the route is refreshed every HRP environment steps, the RP update period. Conditioned on this target, the controller executes an initial portion of its selected action prefix be-fore replanning from the updated state. By default, the route update period is approximately half the RP training stride, and only the first action is executed per replan. The route update period and the executed prefix fraction control how often global routes and local actions are revised; we study both in Figure 5(c, d). Execution details are given in Appendix D.4. 6Table 1: Benchmark performance. Values are mean ± standard deviation; highlighted entries mark row-wise highest means. HorizonFlow uses 5, 8, and 4 training seeds for Maze2D/Multi2D, OGBench navigation, and visual manipulation, respectively, with 100 episodes per environment and protocol for Maze2D/Multi2D and 50 per task for OGBench. 
+
+(a) Maze2D / Multi2D: D4RL normalized score 
+
+Environment Task Diffuser VHD HDMI HD DF SSD Ours 
+
+Maze2D 
+
+U-Maze 113.9 ±3.1 118.5 ±6.7 120.1 ±5.6 128.4 ±36.0 116.7 ±2.0 144.6 ±7.6 137.5 ±0.8 
+
+Medium 121.5 ±2.7 130.5 ±3.6 121.8 ±3.6 135.6 ±30.0 149.4 ±7.5 134.4 ±13.6 154.8 ±1.5 
+
+Large 123.0 ±6.4 142.9 ±7.1 128.6 ±6.5 155.8 ±25.0 159.0 ±2.7 183.5 ±19.2 205.2 ±2.4 
+
+Single-task Average 119.5 130.6 123.5 139.9 141.7 154.2 165.8 
+
+Multi2D 
+
+U-Maze 128.9 ±1.8 137.6 ±3.9 131.3 ±4.0 144.1 ±12.0 119.1 ±4.0 158.2 ±10.1 145.1 ±1.2 
+
+Medium 127.2 ±3.4 146.3 ±2.0 131.6 ±4.2 140.2 ±16.0 152.3 ±9.9 155.2 ±17.7 170.5 ±1.0 
+
+Large 132.1 ±5.8 169.4 ±3.6 135.4 ±5.6 165.5 ±6.0 167.1 ±2.7 192.9 ±19.0 216.5 ±1.0 
+
+Multi-task Average 129.4 151.1 132.8 149.9 146.2 168.8 177.4 
+
+(b) OGBench navigation: success rate (%) 
+
+Environment Task Value-based Planning-based 
+
+QRL CRL HIQL SAW CTA Diffuser HD DF Ours 
+
+Pointmaze 
+
+Medium 82 ±5 29 ±7 79 ±5 97 ±2 87 ±4 95 ±3 95 ±2 82 ±8 100.0 ±0.0 
+
+Large 86 ±9 39 ±7 58 ±5 85 ±10 71 ±12 99 ±0 98 ±1 60 ±3 99.8 ±0.2 
+
+Giant 68 ±7 27 ±10 46 ±9 68 ±8 30 ±14 92 ±4 96 ±3 52 ±12 97.1 ±3.0 
+
+Antmaze 
+
+Medium 88 ±3 95 ±1 96 ±1 97 ±1 96 ±1 77 ±2 46 ±7 32 ±4 97.3 ±1.2 
+
+Large 75 ±6 83 ±4 91 ±2 90 ±3 85 ±3 61 ±3 19 ±8 4 ±3 93.3 ±1.1 
+
+Giant 14 ±3 16 ±3 65 ±5 73 ±4 54 ±4 5 ±3 1 ±1 0 ±0 86.5 ±2.9 
+
+Humanoidmaze 
+
+Medium 21 ±8 60 ±4 89 ±2 88 ±3 90 ±2 39 ±3 67 ±2 25 ±3 98.6 ±0.4 
+
+Large 5 ±1 24 ±4 49 ±4 46 ±4 60 ±3 6 ±2 18 ±2 3 ±2 80.2 ±1.5 
+
+Giant 1 ±0 3 ±2 12 ±4 35 ±4 5 ±1 1 ±0 7 ±3 0 ±0 95.5 ±1.3 
+
+Average 48.9 41.8 65.0 75.4 64.3 52.6 49.8 28.6 94.2 
+
+(c) OGBench visual manipulation: success rate (%) 
+
+Environment GCIVL GCIQL QRL CRL HIQL SAW CTA Ours 
+
+visual-cube-single 60 ±5 30 ±5 41 ±15 31 ±15 89 ±0 88 ±3 89 ±2 93.2 ±1.1 
+
+visual-cube-double 10 ±2 1 ±1 5 ±0 2 ±1 39 ±2 40 ±3 8 ±2 46.8 ±11.3 
+
+visual-cube-triple 14 ±2 15 ±1 16 ±1 17 ±2 21 ±0 20 ±1 4 ±3 14.4 ±2.4 
+
+visual-scene 25 ±3 12 ±2 10 ±1 11 ±2 49 ±4 47 ±6 59 ±11 65.6 ±0.6 
+
+Average 27.3 14.5 18.0 15.3 49.5 48.8 40.1 55.0 
+
+## 5 EXPERIMENTS 
+
+We evaluate HorizonFlow as a complete planning system on Maze2D, Multi2D, and OGBench, then examine horizon sensitivity and the effects of candidate counts, steering, replanning, inference cost, and the RP–PC hierarchy. 
+
+Benchmark comparisons. Table 1(a–c) compares HorizonFlow with prior methods on Maze2D/Multi2D, OGBench navigation, and visual manipulation. Maze2D uses a fixed goal (single-task), whereas Multi2D resamples it each episode (multi-task). For Maze2D/Multi2D, base-lines include Diffuser (Janner et al., 2022), HDMI (Li et al., 2023), Hierarchical Diffuser (HD) (Chen et al., 2024b), Diffusion Forcing (DF) (Chen et al., 2024a), SSD (Kim et al., 2024), and VH-Diffuser (VHD) (Liu et al., 2025). For OGBench, we compare with the value-based methods QRL (Wang et al., 2023), CRL (Eysenbach et al., 2022), HIQL (Park et al., 2023), SAW (Zhou & Kao, 2025), and CTA (Kim et al., 2026), adding GCIVL and GCIQL (Park et al., 2025) for visual manipulation, and with the planning-based methods Diffuser, HD, and DF for navigation. HorizonFlow uses one training and inference recipe whose stride, update period, and controller capacity scale with each 764 128 256 384 64 128 256 384                                                                                                    
+
+> planning horizon  H
+> 274 209 37 7259 248 44 7230 215 199 11 193 182 164 148
+> (a) score
+> 64 128 256 384
+> 100 79 17 5100 99 20 5100 100 99 7100 100 100 97
+> (b) reach rate (%)
+> 64 128 256 384
+> 62 83 168 239 106 126 175 239 233 253 256 273 379 375 382 386
+> (c) steps to goal
+> 64 128 256 384
+> nominal steps N*
+> 116 64 256
+> candidate count  K
+> 242 207 150 103 273 251 199 151 275 254 204 156 276 257 208 162
+> (d) score
+> 64 128 256 384
+> nominal steps N*
+> 100 99 99 100 100 100 100 100 100 100 100 100 100 100 100 100
+> (e) reach rate (%)
+> 64 128 256 384
+> nominal steps N*
+> 90 202 364 492 66 115 258 387 62 113 244 373 60 106 233 360
+> (f) steps to goal
+> fixed  HHorizonFlow
+
+Figure 4: Planning-horizon and candidate-count diagnostics on Maze2D-Large. Both models generate XY routes tracked by a shared proportional–derivative (PD) controller. (a–c) Fixed-length (no-insertion) model with prescribed horizon H; outlines mark H = N ∗. (d–f) Joint content–length model with FK steering and minimum-count selection over K candidates. Panels show normalized score, reach rate, and median steps to goal among successful rollouts; columns are nominal-step bins N ∗ (100 pairs each). Darker is better; colors are normalized per column across both models. environment’s episode limit (Appendix D). HorizonFlow attains the highest average in all three groups, with the largest margins in long-horizon environments. 
+
+Sensitivity to the planning horizon. We compare the joint content–length model with a separately trained fixed-length (no-insertion) model, both generating routes in XY space with a shared Trans-former backbone, offline data, training budget, and proportional–derivative (PD) waypoint con-troller. We group start–goal pairs by nominal steps N ∗(s, g ) = dgeo (s, g )/v , where dgeo is obstacle-avoiding geodesic distance and v is a nominal speed based on dataset motion (Appendix A.1). Fixed horizons trade off reachability and execution efficiency (Figure 4(a–c)): short horizons struggle with distant goals, whereas long horizons delay arrival at nearby goals. Joint generation maintains high reach rates across nominal-step bins even with one candidate, without prescribing a horizon for each start–goal pair (Figure 4(d–f)). Although a single candidate arrives later than the fixed horizon matched to the privileged N ∗, selecting among K ≥ 64 candidates exceeds that horizon’s score in every bin. 
+
+Candidate counts. On OGBench navigation, increasing KRP raises average success from 56.2% to 94.3% at the default KRP = 16 , after which gains level off (Figure 5(a)). Since K = 1 is a single unranked draw, equivalent in distribution to uniform selection among independent candidates (Appendix D.3), the unsteered gain over K = 1 is attributable to minimum-count selection. FK steering is most useful at small KRP , matching unsteered success with two to four times fewer candidates. Increasing KPC yields smaller gains (92.3% to 94.6%; Figure 5(b)). 
+
+Selection risk. Minimum-count selection can favor a short but infeasible candidate. In the XY diagnostic, this rarely happens (Appendix A). The risk is not negligible everywhere: excessively large candidate counts reduce success in some environments (e.g., visual-cube-triple; Appendix F), possibly because larger pools are more likely to contain a short infeasible outlier, consistent with prior observations in planning (Ki et al., 2025). Still, this risk differs in kind from that of an insuffi-cient prescribed horizon. A horizon must be matched to each start–goal pair before generation, and no single value suits both nearby and distant goals (Figure 4(a–c)). The candidate count, in contrast, is a single global setting: average success varies by about one point for KRP between 8 and 64. 
+
+Replanning frequency. Between route updates, the controller holds the first subgoal of the se-lected route as its target (Appendix D.4). On OGBench navigation, success is nearly unchanged for 860 80 100 
+
+> success rate (%)
+
+(a) candidate count  
+
+> 56.2 78.8 70.4 90.3 83.0 93.7 89.3 94.3 92.1 94.7 93.8 94.3
+> RP FK: on RP FK: off 90 92 94 96 98
+
+(b)  
+
+> 92.3 93.6 93.5 94.3 94.3 94.1 94.6
+> PC FK: on PC FK: off 90 92 94 96 98
+
+(c) replanning interval   
+
+> 94.7 94.3 94.3 91.8
+> 60 80 100
+> 1 step
+
+(d)     
+
+> 94.3 87.8 68.8 59.7 57.2
+> 1416 64
+> KRP
+> 0.5 12510 20 50
+> inference (ms/step)
+
+(e)        
+
+> Diffuser HD DF
+> 5.8 6.1 6.6 7.4 8.5 11 17 16
+> 124816
+> KPC
+> 0.5 12510 20
+
+(f)             
+
+> 6.8 7.6 8.5 9.6 13 7.1 8.0 8.9 12
+> 1/8 1/4 1/2 1
+> HRP / Δ RP
+> 0.5 12510 20 50
+
+(g)       
+
+> 20 12 8.5 6.6
+> 25 50 75 100
+> executed prefix (%)
+> 0.5 12510 20
+
+(h)    
+
+> 8.5 5.3 4.6 4.4 4.4
+
+Figure 5: Sampling, replanning, and inference cost on OGBench navigation. Columns vary RP candidate count (a, e), PC candidate count (b, f), RP update period relative to training stride (c, g), and executed prefix fraction (d, h), with one-step execution shown separately; other settings stay at their defaults (stars). Rows report mean success (a–d) and estimated amortized model-inference time (e–h; ms/step, log scale), averaged equally over the nine navigation environments on a matched evaluation subset. Solid/dashed curves denote FK steering on/off; horizontal lines in (e–h) mark baseline timing references. Error bars combine per-environment standard deviations across seeds (details in Appendix F). RP update periods from one-eighth to half of the training stride but drops at the full stride (94.3% to 91.8%; Figure 5(c)), possibly because the subgoal is reached before the next update. Conversely, longer periods slightly help in some visual manipulation tasks, possibly because frequent updates shift the target under short strides (Appendix F). Executing more of each action prefix before replan-ning reduces success more sharply, from 94.3% to 57.2% (Figure 5(d)), mainly in HumanoidMaze and AntMaze-Giant, where open-loop errors likely compound quickly. 
+
+Inference cost. Figure 5(e–h) estimates amortized model-inference time per environment step on OGBench navigation. More candidates increase cost; longer RP update periods reduce it. At the RP level, FK adds modest fixed-K overhead but can match unsteered success with fewer candidates and lower estimated cost (Figure 5(a, e)). Diffuser and HD’s lower per-step costs partly reflect predom-inantly one-shot timing, whereas HorizonFlow’s default controller replans local actions every step. At the default settings, HorizonFlow averages about 8.5 ms of model computation per environment step, making frequent replanning practical in terms of average model-compute cost on the evaluated hardware. HorizonFlow has higher controller-only cost but lower planning-update latency estimates (Appendix F.2). Measurement details and training times are in Appendices D.8 and F. 
+
+Architecture ablations. Replacing the prefix controller with a behavior-cloning policy reduces average navigation success from 94.2% to 67.8%, and removing the hierarchy reduces it to 42.9% (Appendix F.1). 
+
+## 6 CONCLUSION 
+
+We presented HorizonFlow, a hierarchical planner that treats plan length as an output of genera-tion rather than a prescribed input. Insertion-based generation and flow matching jointly generate continuous content and length for both latent subgoal routes and action prefixes. Generated counts support candidate selection without a separate learned value model, while count-based scores steer generation toward shorter plans. HorizonFlow achieves the highest average performance among the compared methods on Maze2D, Multi2D, and OGBench navigation and visual manipulation. Diag-nostics show that joint generation reaches both nearby and distant goals without a per-pair horizon and that generated counts closely track goal distance, while ablations confirm the role of both hierar-chy levels. Our evaluation focuses on deterministic environments; the effectiveness of count-based selection and steering under stochastic dynamics remains to be established. 9REFERENCES 
+
+Anurag Ajay, Yilun Du, Abhi Gupta, Joshua B. Tenenbaum, Tommi Jaakkola, and Pulkit Agrawal. Is conditional generative modeling all you need for decision-making? In International Conference on Learning Representations , 2023. Andrew Campbell, William Harvey, Christian Weilbach, Valentin De Bortoli, Tom Rainforth, and Arnaud Doucet. Trans-dimensional generative modeling via jump diffusion models. In Advances in Neural Information Processing Systems , 2023. Boyuan Chen, Diego Marti Monso, Yilun Du, Max Simchowitz, Russ Tedrake, and Vincent Sitz-mann. Diffusion forcing: Next-token prediction meets full-sequence diffusion. In Advances in Neural Information Processing Systems , 2024a. Chang Chen, Fei Deng, Kenji Kawaguchi, Caglar Gulcehre, and Sungjin Ahn. Simple hierarchical planning with diffusion. In The Twelfth International Conference on Learning Representations ,2024b. URL https://openreview.net/forum?id=kXHEBK9uAY .Patrick Esser, Sumith Kulal, Andreas Blattmann, Rahim Entezari, Jonas M¨ uller, Harry Saini, Yam Levi, Dominik Lorenz, Axel Sauer, Frederic Boesel, Dustin Podell, Tim Dockhorn, Zion English, and Robin Rombach. Scaling rectified flow transformers for high-resolution image synthesis. In 
+
+International Conference on Machine Learning , volume 235 of Proceedings of Machine Learning Research , pp. 12606–12633, 2024. Benjamin Eysenbach, Tianjun Zhang, Ruslan Salakhutdinov, and Sergey Levine. Contrastive learn-ing as goal-conditioned reinforcement learning. In Advances in Neural Information Processing Systems , 2022. Itai Gat, Tal Remez, Neta Shaul, Felix Kreuk, Ricky T. Q. Chen, Gabriel Synnaeve, Yossi Adi, and Yaron Lipman. Discrete flow matching. In Advances in Neural Information Processing Systems ,2024. Marton Havasi, Brian Karrer, Itai Gat, and Ricky T. Q. Chen. Edit flows: Flow matching with edit operations. arXiv preprint arXiv:2506.09018 , 2025. Michael Janner, Yilun Du, Joshua B. Tenenbaum, and Sergey Levine. Planning with diffusion for flexible behavior synthesis. In International Conference on Machine Learning , 2022. Donghyeon Ki, JunHyeok Oh, Seong-Woong Shim, and Byung-Jun Lee. Prior-guided diffusion planning for offline reinforcement learning. In Advances in Neural Information Processing Sys-tems , 2025. Junseok Kim, Dohyeong Kim, Mineui Hong, and Songhwai Oh. Compositional transduction with latent analogies for offline goal-conditioned reinforcement learning. In International Conference on Machine Learning , 2026. Sungyoon Kim, Yunseon Choi, Daiki E. Matsunaga, and Kee-Eung Kim. Stitching sub-trajectories with conditional diffusion model for goal-conditioned offline RL. In Proceedings of the AAAI Conference on Artificial Intelligence , 2024. Wenhao Li, Xiangfeng Wang, Bo Jin, and Hongyuan Zha. Hierarchical diffusion for offline deci-sion making. In International Conference on Machine Learning , volume 202 of Proceedings of Machine Learning Research , pp. 20035–20064, 2023. Yaron Lipman, Ricky T. Q. Chen, Heli Ben-Hamu, Maximilian Nickel, and Matt Le. Flow matching for generative modeling. In International Conference on Learning Representations , 2023. Ruijia Liu, Ancheng Hou, Shaoyuan Li, and Xiang Yin. VH-Diffuser: Variable horizon diffusion planner for time-aware goal-conditioned trajectory planning. arXiv preprint arXiv:2509.11930 ,2025. Yunhao Luo, Utkarsh A. Mishra, Yilun Du, and Danfei Xu. Generative trajectory stitching through diffusion composition. arXiv preprint arXiv:2503.05153 , 2025. 10 Gireesh Nandiraju, Yuanliang Ju, Chaoyi Xu, Weiheng Liu, Yuxuan Wan, and He Wang. HDFlow: Hierarchical diffusion-flow planning for long-horizon tasks. arXiv preprint arXiv:2605.04525 ,2026. John Nguyen, Marton Havasi, Tariq Berrada, Luke Zettlemoyer, and Ricky T. Q. Chen. One-Flow: Concurrent mixed-modal and interleaved generation with edit flows. arXiv preprint arXiv:2510.03506 , 2025. Seohong Park, Dibya Ghosh, Benjamin Eysenbach, and Sergey Levine. HIQL: Offline goal-conditioned RL with latent states as actions. In Advances in Neural Information Processing Systems , 2023. Seohong Park, Kevin Frans, Benjamin Eysenbach, and Sergey Levine. OGBench: Benchmarking offline goal-conditioned RL. In International Conference on Learning Representations , 2025. Raghav Singhal, Zachary Horvitz, Ryan Teehan, Mengye Ren, Zhou Yu, Kathleen McKeown, and Rajesh Ranganath. A general framework for inference-time scaling and steering of diffusion mod-els. In International Conference on Machine Learning , volume 267 of Proceedings of Machine Learning Research , pp. 55810–55827, 2025. Aaron van den Oord, Yazhe Li, and Oriol Vinyals. Representation learning with contrastive predic-tive coding. arXiv preprint arXiv:1807.03748 , 2018. Tongzhou Wang, Antonio Torralba, Phillip Isola, and Amy Zhang. Optimal goal-reaching rein-forcement learning via quasimetric learning. In International Conference on Machine Learning ,2023. Yangtian Zhang, Zhe Wang, Arthur Gretton, Rex Ying, David van Dijk, Michalis K. Titsias, and Jiaxin Shi. Variational learning for insertion-based generation. In Proceedings of the 43rd In-ternational Conference on Machine Learning , volume 306 of Proceedings of Machine Learning Research , 2026. John L. Zhou and Jonathan C. Kao. Flattening hierarchies with policy bootstrapping. In Advances in Neural Information Processing Systems , 2025. 
+
+## A HORIZON DIAGNOSTIC : P ROTOCOL 
+
+We report three complementary diagnostics on Maze2D-Large. Figure 4 compares prescribed-length and joint content–length XY generation under shared execution conditions. Figure 6 reports a Dif-fuser horizon sweep and a separate horizon-assignment and candidate-selection study. Figure 9 compares learned length signals. The models, evaluation populations, and sampling settings are specified separately below. These diagnostics complement the full-system benchmark evaluation by examining specific aspects of horizon assignment and count-based planning. A.1 NOMINAL STEPS 
+
+For a start–goal pair, we define nominal steps as 
+
+N ∗ = dgeo (s, g )
+
+v , (6) where dgeo is an obstacle-avoiding shortest-path distance on a discretized free-space map and v is a nominal speed constant chosen with reference to the dataset. This is a distance scale, not a measured minimum number of environment steps. A controller can arrive in fewer steps by moving faster than 
+
+v or by entering the goal radius before reaching the goal point. For Maze2D-Large, positions are in cell units; cell (i, j ) is the unit square centered at (i, j ). We use the 4-connected breadth-first distance between start and goal cells on the 9 × 12 wall map and v = 0 .0385 cells per step. The measured dataset displacement is 0.0345 cells per step on average, with median 0.0356 and 90th percentile 0.048. 11 A.2 XY H ORIZON AND CANDIDATE -C OUNT DIAGNOSTIC 
+
+Diagnostic design. This diagnostic examines the consequences of prescribing plan length before generation versus generating length jointly with content. We generate routes directly in XY space and execute both variants with the same PD waypoint controller, using the same backbone archi-tecture, training budget, and evaluation protocol. This design removes learned-representation and learned-controller differences from the comparison, allowing us to examine how the two generation strategies affect executed route quality under common execution conditions. In HorizonFlow’s full hierarchy, the state encoder is optimized jointly with the route planner. Re-placing the generation objective and retraining the encoder can therefore change both the generator and the representation in which it operates. Freezing a shared encoder would instead evaluate gener-ation under a fixed representation, rather than the original joint-learning procedure; using an encoder learned by either variant could also favor that variant. Direct XY generation avoids this dependence by providing a common, explicit representation that is not learned by either model. We likewise omit the learned prefix controller from this diagnostic. Its role in the full system is to translate intermediate subgoals into local action prefixes for feedback control, whereas the question here concerns route generation and horizon assignment. Including separately learned controllers would introduce differences in how generated routes are executed. A common PD controller re-moves this source of variation while retaining execution-based evaluation. The benchmark experi-ments evaluate the complete planning system, and the architectural ablations assess its hierarchical and controller design choices; this diagnostic instead provides a focused comparison of prescribed-length and joint content–length generation. 
+
+Models and training. For Figure 4, we train two route-generation models directly on XY coordi-nates from the Maze2D-Large offline dataset. Each token contains an order coordinate and a two-dimensional position; no learned encoder, contrastive objective, or prefix controller is used. The models share the Transformer backbone, data normalization, training stride ∆RP = 13 , batch size 1,024, and 100,000-update training budget. Training samples variable anchor-inclusive counts us-ing the same log-uniform sampler and storage buckets {8, 16 , 32 , 64 }. The insertion model uses the insertion and flow-matching objectives. The separately trained no-insertion model uses all-present flow-matching corruption without insertion heads: all tokens for the sampled count are present from the start. Thus fixed length refers to the count prescribed at inference, not training at a single length. The fixed-length condition therefore uses a separately trained no-insertion generator, rather than disabling insertion only at inference in the trained insertion model. 
+
+Prescribed-length generation. For Figure 4(a–c), we initialize the no-insertion model with an anchor-inclusive count 
+
+m = round( H/ ∆RP ) + 1 , (7) and refine the non-anchor tokens without births, keeping the start and goal anchors fixed. Each generated route is linearly interpolated at stride ∆RP to form the waypoint reference. Its time span is ∆RP (m − 1) , so the displayed requests H ∈ { 64 , 128 , 256 , 384 } yield spans of 65, 130, 260, and 390 environment steps, respectively. We draw one candidate per pair and horizon. Both models use 20 global generation steps. 
+
+Adaptive generation and selection. For Figure 4(d–f), the insertion model generates the count jointly with the route content. The K = 1 condition uses the first candidate from an unsteered pool. Each displayed multi-candidate condition K ∈ { 16 , 64 , 256 } uses its own FK-steered pool, with resampling at generation steps 3 and 7, strength β = 0 .5, and the hurdle–ZTP count-based steering score. We then select the minimum generated non-anchor count. These rows evaluate FK steering together with final count-based selection, not an isolated selection-only intervention. 
+
+Execution and aggregation. The two models use the same start–goal pairs, nominal-step bins, 800-step execution cap, and PD waypoint controller defined in Appendix A.3. Each reference route is generated once; there is no hierarchical replanning. The figure displays 100 pairs in each of four bins from the shared six-bin set. Ties in minimum count receive equal weight within each pair. Scores and reach rates average these pairwise expectations over the 100 pairs; steps to goal is the weighted median among successful tied candidates, using the same weights and excluding failures. 12 Table 2: Within-pair execution diagnostics for count-based selection. Success is the expectation un-der uniform minimum-count tie-breaking; available counts pools containing a successful candidate, and miss reports expected selection failure conditional on that availability. Median ρ summarizes within-pool Spearman correlations between count and steps to goal among successful candidates. 
+
+∆ steps compares minimum-count selection with the mean steps to goal of successful candidates in the same pool; negative values denote earlier arrival. Pool Success (%) Available Miss (%) Median 
+
+ρ ∆
+
+steps FK-off, K = 16 99.86 600/600 0.14 0.82 −104 
+
+FK-on, K = 16 100.00 600/600 0.00 0.87 −42 
+
+FK-on, K = 64 99.94 600/600 0.06 0.84 −54 
+
+FK-on, K = 128 100.00 600/600 0.00 0.83 −58 
+
+FK-on, K = 256 99.92 600/600 0.08 0.82 −63 
+
+The single-candidate rows reduce to ordinary means and successful-rollout medians. Each variant is a single trained model. 
+
+Display and scope. For each metric and nominal-step column, colors are min–max normalized jointly over the displayed fixed-length and adaptive rows; steps to goal is negated so that darker means fewer steps. This normalization also applies to reach rate; printed percentages remain on their original scale. Outlines indicate equality between the requested H and bin center, before stride rounding. The comparison removes encoder and learned-controller differences, but the two gen-erators have different corruption processes and objectives. It therefore examines prescribed versus jointly generated length in this XY setting. The N ∗ condition supplies privileged geometric length information. 
+
+Within-pair count ranking. To distinguish ranking candidates for the same problem from rank-ing different start–goal pairs by difficulty, we execute the candidates within each generated pool and compare their counts with their outcomes. Table 2 reports 600 pools per configuration. For each pool, minimum-count selection chooses uniformly among all candidates tied for the smallest generated count. Its expected success is therefore the fraction of successful candidates in this tied set, averaged across pools, rather than the outcome of one sampled tie-break. The missed-success rate averages the corresponding failure probability over pools containing at least one successful candidate. These metrics retain failed candidates in the selection evaluation. 
+
+Selection reliability and execution efficiency. Every evaluated pool contains a successful can-didate, and minimum-count selection retains high expected success while rarely choosing a failing candidate over a successful alternative. Among successful candidates for the same pair, larger counts are associated with more steps to goal, and the reported step differences favor minimum-count se-lection over the successful-candidate mean. The unsteered condition exhibits the same positive association, so this within-pair evidence is not restricted to FK-steered pools. Unlike the across-pair comparison in Appendix A.5, this diagnostic directly relates count to alternative executed plans for a fixed start and goal. The correlation and step comparison are conditional on successful execution; the success and missed-success columns separately expose selection failures rather than dropping them from the evaluation. These results support count as a useful ranking signal in this diagnostic, not a guarantee that the shortest generated candidate is feasible or optimal. A.3 DIFFUSER HORIZON GRID ON MAZE 2D-L ARGE 
+
+Figure 6(a–c) reports the Diffuser horizon sweep. Its start–goal pairs and execution controller are also used for the XY diagnostic in Appendix A.2. 13 64 128 256 384                                                              
+
+> nominal steps N*
+> 64 128 256 384
+> planning horizon  H
+> 251 196 35 7255 234 69 7226 215 195 127 194 183 159 157
+> (a) score
+> 64 128 256 384
+> nominal steps N*
+> 92 75 16 599 93 31 598 99 95 65 99 100 99 99
+> (b) reach rate (%)
+> 64 128 256 384
+> nominal steps N*
+> 63 91 173 239 111 119 179 253 237 239 242 269 364 367 368 370
+> (c) steps to goal
+> single value exec
+> plan selection
+> 384 LP
+> N*
+> 136 140 156 155 165 195 168 172 211
+> (d) score
+> Diffuser
+
+Figure 6: Diffuser diagnostics on Maze2D-Large. (a–c) Normalized score, reach rate, and median steps to goal among successful rollouts across planning horizon H and nominal steps N ∗. Outlines mark H = N ∗. (d) Normalized score under different horizon-assignment and selection protocols: LP denotes learned length prediction; single, value, and exec denote single-candidate, value-based, and execution-based selection. Darker is better; colors are normalized within columns in (a–c) and across all cells in (d). 
+
+Start–goal pairs. We form six bins centered at c ∈ { 64 , 128 , 192 , 256 , 320 , 384 } nominal steps, each with half-width 32 steps. A cell pair belongs to bin c when 
+
+(c − 32) v ≤ dgeo (s, g ) < (c + 32) v. (8) The bins contain 246, 464, 366, 470, 222, and 158 candidate pairs, respectively. From each bin we sample 100 pairs uniformly without replacement using a fixed random-generator seed, giving 600 pairs. Start and goal states use cell-center positions and zero velocity. The column labels report bin centers, not the exact N ∗ of every pair in a column. 
+
+Planner and horizon settings. We use Diffuser (Janner et al., 2022) with its public Maze2D-Large weights, trained with horizon 384 and sampled with 256 diffusion steps. We vary the prescribed planning horizon H ∈ { 64 , 128 , 192 , 256 , 320 , 384 } by changing the sequence length, without re-training the fully convolutional U-Net. In this diagnostic, H counts predicted state slots, including the endpoints, rather than the number of transitions between those slots. Sampling uses DDPM with 
+
+x0 clipped to [−1, 1] and the start and goal states inpainted at the first and last positions after every denoising step. We draw one plan per pair and horizon, yielding 6 × 6 × 100 = 3 ,600 plans. The execution procedure uses the predicted positions and finite-difference reference velocities. 
+
+Execution and score (a). We use h to index environment steps. Each plan is tracked for 800 environment steps in maze2d-large-v1 without replanning. The waypoint sequence is fixed, but the tracking controller uses feedback from the observed position and velocity. We use the Diffuser waypoint controller with the PD gains used in Diffusion Forcing (Chen et al., 2024a): 
+
+ah = clip [−1,1] (12 .5 ( wh+1 − ph) + 1 .2 ( ˙ wh+1 − ˙ph)) , (9) where wh+1 is the next waypoint, ˙w its finite-difference velocity, and ph, ˙ph the observed position and velocity. After exhausting the plan, the controller holds the last waypoint with zero target velocity. Within the goal radius of 0.5, it switches to the goal-holding rule ah = 10( g − ph) − ˙ph.The sparse reward gives one point per environment step inside this radius. Panel (a) reports the D4RL-normalized return 
+
+100 R − 6.7273 .99 − 6.7 , (10) averaged over the 100 pairs in each horizon–distance cell. 
+
+Reach rate (b). For each plan, we record the first rollout index at which the agent is within distance 0.5 of the goal after an environment step. A plan is counted as reached if this occurs during the 800-step rollout. Panel (b) reports the percentage of the 100 plans in each cell that reach the goal. This is an execution-based measure; no waypoint or line-segment wall test filters these rollouts. 14 Steps to goal (c). Panel (c) reports the median number of executed environment actions until first arrival among successful rollouts in each cell. Failed rollouts are excluded; every displayed cell contains at least one successful rollout. 
+
+Interpreting the decomposition. The panels distinguish failure to reach from delayed arrival among successful rollouts; they do not measure wall-crossing frequency. Steps to goal can fall below a column’s N ∗ because each bin spans a range of distances, the controller can exceed the nominal pace, and reaching uses a goal radius. The figure displays four of the six measured horizon settings and distance bins without pooling the omitted bins. Its outlines mark equality with a bin center, not an oracle-optimal horizon for each pair. A.4 DIFFUSER HORIZON ASSIGNMENT AND CANDIDATE SELECTION 
+
+Figure 6(d) is a separate experiment using five reproduced Diffuser training seeds, with the LP row using the corresponding VHD models. These models are not the public checkpoint used in panels (a–c). Rows compare a fixed-horizon baseline with H = 384 , a learned length-prediction variant based on VHD (LP), and a variant using nominal steps N ∗. The LP condition follows VHD’s length-prediction mechanism and associated training changes; it should not be interpreted as simply attaching a predictor to an otherwise identical Diffuser model. Columns use a single sample, value-based selection using an XY HIQL model among four candidates, or an execution-based selection oracle among 128 candidates. The execution-based selection oracle chooses the earliest successful arrival after executing all candidates from the same initial state, falling back to the first candidate if none reaches the goal. It is an execution-based reference, not an offline selection rule. For the N ∗–execution cell, the oracle additionally searches the horizon ladder {0.75 , 0.875 , 1, 1.125 , 1.25 }N ∗.Each condition uses five training seeds and 100 evaluation episodes per seed for each of the single-goal and multi-goal settings. The two settings are averaged within each seed and then across seeds; scores are D4RL-normalized. Panel (d) uses a single color scale across its cells and displays means without error bars. Panel (d) follows the VHD evaluation protocol and is intended as a within-panel comparison of horizon-assignment and selection strategies, not as a continuation of the horizon grid in panels (a–c). Its nominal-step estimate uses an 8-connected geodesic calculation on a 0.2-unit grid with nominal speed 0.025 units per environment step. For the ordinary N ∗ condition, the resulting hori-zon is rounded up to a multiple of 32 and clipped to [32 , 384] . The N ∗–execution ladder applies its multipliers to this clipped base, rounds each candidate horizon to the nearest multiple of 4, and clips it to [4 , 384] . Multiple ladder settings can therefore coincide at the cap. Its waypoint tracker uses unit gains on position and velocity errors, instead of the gains 12.5 and 1.2 used in panels (a–c). For the LP condition, the single-sample and value-based variants replan after exhausting a plan without reaching the goal. On replanning, the new horizon is at least twice the previous plan length, capped by the maximum horizon and rounded to a multiple of 32. Its execution-based variant dis-ables replanning so that each candidate is evaluated as one complete reference plan. 
+
+Qualitative plan samples. Figures 7 and 8 visualize Diffuser and HorizonFlow XY reference plans for the same endpoints under different length settings. Short horizons can produce paths through walls for distant pairs, whereas long horizons can introduce excursions beyond a nearby goal. Each panel overlays five generated samples to show variation across plans; this visualization is separate from the one-plan-per-pair-and-horizon measurement protocol used in Figure 6(a–c). The XY examples also show variation in route shape and token count under adaptive generation. These illustrative samples are not executed trajectories or a quantitative comparison of success rates. A.5 COMPARING LENGTH SIGNALS 
+
+We compare three signals on the same start–goal pairs: a value-derived length, an explicit length prediction, and a generated plan count. This diagnostic evaluates distance ranking without executing plans. 
+
+HIQL value-derived length. We use the official OGBench HIQL implementation with discount 
+
+γ = 0 .995 , expectile 0.7, subgoal representation dimension 10, batch size 1024, one million gradient 15 Diffuser, maze2d-large                        
+
+> N * = 64
+> (a) H= 64 (b) H= 128 (c) H= 256 (d) H= 384
+> N * = 192
+> (e) (f) (g) (h)
+> N * = 320
+> (i) (j) (k) (l)
+> sample 1 sample 2 sample 3 sample 4 sample 5 start goal
+
+Figure 7: Diffuser plan samples on Maze2D-Large. Rows show start–goal pairs labeled by nominal steps N ∗ ∈ { 64 , 192 , 320 }; columns vary the planning horizon H ∈ { 64 , 128 , 256 , 384 }. Each panel overlays five generated position sequences with the same endpoints. Circles mark starts, stars mark goals, and gray regions are walls. These are generated reference plans, not executed trajectories. steps, and seed 0. Inputs are raw states (x, y, ˙x, ˙y), and goals are drawn from the training stream using OGBench’s hierarchical goal-conditioned sampler. The target-network EMA, optimizer, and batch sampling follow the official update procedure. We convert the value to a length using 
+
+ˆnHIQL = log(1 + (1 − γ)V (s, g )) log γ . (11) The conversion is strictly decreasing on its valid domain, so ˆnHIQL and −V induce the same ranking. 
+
+VHD length prediction. We use the scalar horizon ˆL produced by our reproduced VHD length predictor for each state–goal pair. 16 HorizonFlow, maze2d-large                            
+
+> N * = 64
+> (a) H= 64 (b) H= 128 (c) H= 256 (d) H= 384 (e) variable
+> N * = 192
+> (f) (g) (h) (i) (j)
+> N * = 320
+> (k) (l) (m) (n) (o)
+> sample 1 sample 2 sample 3 sample 4 sample 5 start goal
+
+Figure 8: HorizonFlow XY plan samples on Maze2D-Large. Rows use the same start–goal pairs as Figure 7; columns compare prescribed planning horizons with adaptive generation (variable). Colors distinguish generated reference plans, dots mark tokens, circles mark starts, stars mark goals, and gray regions are walls. Count labels in this figure include both anchors; ranges give the minimum and maximum counts among the displayed samples. 
+
+HorizonFlow count. We use the minimum non-anchor count among KRP = 64 generated RP plans with FK steering. 
+
+Evaluation. For each threshold x, we compute the Spearman correlation between each signal and 
+
+N ∗ over pairs satisfying N ∗ ≥ x. Increasing x restricts the comparison to more distant goals, testing whether the signals retain useful distance rankings at long range. This measures agreement with nominal steps, not accuracy against an optimal control horizon. 
+
+Results. Figure 9 reports 2,400 matched pairs, with 300 pairs in each of eight nonempty 50-step bands of N ∗. Each method uses one trained model. VHD uses its unquantized prediction, and the HorizonFlow count excludes the two fixed anchors in the stored plans. HorizonFlow’s generated count has the highest rank correlation with nominal steps among the three signals in this diagnostic: ρ = 0 .954 , compared with 0.924 for HIQL and 0.653 for VHD. The ordering persists on the 600 pairs with N ∗ ≥ 300 , where the correlations are 0.617 , 0.371 , and 
+
+0.070 , respectively. Restricting the comparison changes both the target range and the pair distri-bution. These cross-pair correlations assess distance ranking; within-pair selection is evaluated in Appendix A.2. 17 0 100 200 300 400                          
+
+> Nominal steps N*
+> 0100 200 300 400 500
+> Value-derived length  ρ= 0.924
+> (a) HIQL value-derived length
+> 0100 200 300 400
+> Nominal steps N*
+> 0100 200 300 400
+> Predicted length
+> ρ= 0.653
+> (b) VHD length prediction
+> 0100 200 300 400
+> Nominal steps N*
+> 010 20 30
+> Generated count (non-anchor)
+> ρ= 0.954
+> (c) HorizonFlow generated count
+> 0100 200 300
+> Minimum nominal steps x(N*≥x)
+> 0.00 0.25 0.50 0.75 1.00
+> Spearman correlation  ρ
+> (d) Correlation for distant goals
+> HIQL VHD HorizonFlow
+
+Figure 9: Length signals on matched Maze2D-Large start–goal pairs. (a–c) HIQL value-derived length, VHD predicted length, and HorizonFlow generated non-anchor count versus nominal steps 
+
+N ∗; ρ denotes Spearman correlation. (d) Correlation recomputed on pairs with N ∗ ≥ x as the minimum nominal-step threshold x increases. 
+
+## B MATCHED FULL -S YSTEM AND SAMPLER DIAGNOSTICS 
+
+The diagnostics in Appendix A isolate geometric length signals in Maze2D. Here we complement them with matched full-system controls on AntMaze-Giant and HumanoidMaze-Giant, followed by implementation checks and an integration-resolution sensitivity study. These experiments separate three questions: whether route-planner (RP) performance survives an externally predicted length, how action-prefix controller (PC) performance changes when its length is fixed to the full horizon or the controller is replaced, and whether the practical sampler is sensitive to its numerical resolution. Success rate is always measured from environment rollouts; the non-rollout checks are identified explicitly. B.1 ROUTE -P LANNER LENGTH ASSIGNMENT 
+
+Matched setup. For the learned-length and externally assigned-length RPs in Figure 10, we match the Transformer size ( 640 hidden units, 10 layers, and 8 attention heads), dataset, stride, length buckets ( 8/16 /32 /64 ), segment-length distribution, 100 k updates, batch size 1024 , learning-rate schedule, and training seed. The externally assigned-length model loads the encoder from the cor-responding HorizonFlow RP checkpoint and freezes it from the start of training. Thus, both models use the same latent representation and can be paired with the same pretrained HorizonFlow PC. The only training-objective change is that the control RP contains all m segment tokens from the outset: its two endpoint anchors remain clean, the m − 2 interior tokens share one flow time, and the model is trained only on the velocity target, without birth or completion targets. Training lengths are still 18 min count FK on min count FK off single     
+
+> K=1 max count FK off VHD LP
+> K=1 025 50 75 100
+> success rate (%)  86.9 82.7 41.9 10.1 15.7
+> antmaze-giant (a)
+> min count FK on min count FK off single
+> K=1 max count FK off VHD LP
+> K=1 94.7 91.5 54.4 9.9 2.7
+> humanoidmaze-giant (b)
+> route-planner length decision and selection ( KRP =16 unless noted)
+
+Figure 10: Full-system route-planner length controls. Success rates on AntMaze-Giant (left) and HumanoidMaze-Giant (right). The bars compare minimum-count RP selection with FK en-abled or disabled, a single joint RP sample, maximum-count selection without FK, and a VHD-style predicted-length control with one content sample. The RP uses 16 candidates unless K = 1 is in-dicated. Error bars are standard deviations over three training seeds, with 125 evaluation problems per seed. The pretrained encoder and PC are shared by the matched controls. sampled from the matched RP length distribution; the length is fixed externally only at generation time. The external length is provided by a VHD-style predictor trained with the same architecture and losses as our VHD reproduction. It maps random Fourier features of (s, g ) through a three-layer, width-512 MLP to f (s, g ) ∈ [0 , 1] , representing predicted steps divided by Tmax = 63∆ RP . Its targets combine same-episode anchor regression, bootstrapped dynamic-programming targets, con-sistency and triangle constraints, and the boundary conditions f (g, g ) = 0 and f ≤ 1. For this RP control, anchor offsets are ∆RP × { 1, 2, 4, 8, 16 , 32 , 63 }, the batch size is 256 , and the predictor is trained for 20 k updates with learning rate 3 × 10 −4.
+
+Length conversion. We report the exact conversion used by the control: 
+
+L = f (s, g )Tmax + 1 , m = clip 
+
+
+
+round 
+
+ L
+
+∆RP 
+
+
+
++ 1 , 2, N RP 
+
+
+
+. (12) Here round is Python’s rounding rule and the final +1 includes an anchor. We call this a VHD-style learned-length control rather than an oracle shortest-path assignment. 
+
+Results and scope. Minimum-count selection with FK reaches 86 .9% on AntMaze-Giant and 
+
+94 .7% on HumanoidMaze-Giant; disabling FK changes these values to 82 .7% and 91 .5% . With selection removed, a single joint RP sample reaches 41 .9% and 54 .4% , whereas the VHD-style predicted-length control with one content sample reaches 15 .7% and 2.7% . Selecting the maximum-count candidate without FK reaches 10 .1% and 9.9% .The K = 1 comparison removes both best-of-K selection and FK from the contrast between joint generation and external length assignment. The control plugs an external length module into the same system: the encoder, prefix controller, data, length distribution, and training budget are shared, and only the way the horizon is set differs. The comparison therefore isolates horizon assignment within this system rather than benchmarking a separate method. Conversely, the gap between one sample and minimum-count selection shows that candidate generation and selection remain impor-tant parts of the full RP recipe. B.2 ACTION -P REFIX CONTROLLER VARIANTS 
+
+Setup. We next hold the default RP fixed and change only the PC. Each result in Figure 11 aggre-gates 125 problems for each of seeds 43 –45 , or 375 rollouts per domain. The default PC generates four FK-guided candidates and executes the minimum-count candidate. The single control removes 19 min count FK on single      
+
+> K=1 fixed max count FK off BC policy 025 50 75 100
+> success rate (%)  86.9 83.2 13.9 67.5 68.8
+> antmaze-giant (a)
+> min count FK on single
+> K=1 fixed max count FK off BC policy 94.7 93.1 45.3 91.2 9.9
+> humanoidmaze-giant (b)
+> action-prefix controller variant ( KPC =4 unless noted)
+
+Figure 11: Action-prefix controller controls with the route planner fixed. Success rates on AntMaze-Giant (left) and HumanoidMaze-Giant (right) for the default minimum-count PC, a sin-gle generated candidate, a full-horizon fixed-length Transformer, maximum-count selection without FK, and a behavior-cloning policy. Each domain uses 125 problems for each of seeds 43 –45 .candidate selection. The fixed control is a full-horizon fixed-length PC: it uses the same Transformer architecture and training distribution, is trained without insertion, and always generates the full PC capacity NPC (Table 4). The maximum-count control selects the longest of four candidates with FK disabled. Finally, the BC control replaces the generative PC with a behavior-cloning policy while retaining the same RP. 
+
+Results and interpretation. The default PC reaches 86 .9% and 94 .7% on AntMaze-Giant and HumanoidMaze-Giant, respectively. One candidate already reaches 83 .2% and 93 .1% , so the com-bined gain from four-candidate generation, FK, and minimum-count selection is 3.7 and 1.6 percent-age points. In contrast, the full-horizon fixed-length Transformer reaches 13 .9% and 45 .3% . This full-horizon control keeps the architecture and training distribution fixed and removes only inser-tion. Maximum-count selection without FK reaches 67 .5% and 91 .2% , while the BC policy reaches 
+
+68 .8% and 9.9% .The maximum-count condition reverses the count-guided inference rule (ordering and FK together) and reduces success by 19 .4 and 3.5 points. The single-candidate result shows that the gain over the fixed-length and BC controllers comes primarily from joint content–length generation itself, with count-guided selection adding a further margin. HorizonFlow executes only the first action of each generated prefix and then replans, so the rollout success rate measures the accumulated consequence of those repeated first-action decisions. B.3 SAMPLER CHECKS AND INTEGRATION RESOLUTION 
+
+Protocol. Figure 12 uses one trained checkpoint (seed 43 ) per domain; its top row contains no environment rollouts. Panels (a) and (b) use 20 k corruptions drawn from the training-data pipeline. Panel (a) checks gap-target identities and total-count conservation. Panel (b) compares the head’s predicted missing count with the realized missing count across noise levels. Panel (c) runs KRP =16 chains with FK disabled and measures Spearman correlation between the intermediate FK score and each chain’s final count at σ ∈ { 0.3, 0.7}.The bottom row evaluates 250 problems per domain (five tasks for each of evaluation seeds 0–49 ), with budgets of 1000 environment steps for AntMaze-Giant and 4000 for HumanoidMaze-Giant. We vary the RP integration steps over M ∈ { 20 , 40 , 80 }. FK checkpoints scale proportionally: 
+
+{3, 7}, {6, 14 }, and {12 , 28 }. All conditions use KRP = 16 and minimum-count selection. The PC remains fixed at M = 20 , KPC = 4 , with FK enabled. 
+
+Non-rollout checks. The gap-target test records zero identity mismatches and zero total-count violations over the 20 k sampled corruptions. The nonzero bars in panel (a) report the fraction of slots 20 0.25 0.50 0.75 1.00  
+
+> present fraction m/n
+> 0510 15
+> slots off the neighbour rule (%)  identity mismatches: 0 sum violations: 0
+
+(a)    
+
+> 0510 15
+> true missing count
+> 0510 15
+> predicted Σ(1 −  π)μ
+
+(b)    
+
+> 20 40 80
+> integration steps M
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Spearman  ρ
+> σ=0.7
+> σ=0.3
+
+(c)    
+
+> 20 40 80
+> integration steps M
+> 60 70 80 90 100
+> success rate (%)
+
+(d)    
+
+> 20 40 80
+> integration steps M
+> 15 20 25 30 35 40
+> mean generated count
+
+(e)    
+
+> 20 40 80
+> integration steps M
+> 0510 15
+> candidates at capacity (%)
+
+(f)    
+
+> FK on FK off antmaze-giant humanoidmaze-giant
+
+Figure 12: Sampler implementation checks and resolution sensitivity. Top: gap-target assign-ment and conservation checks, missing-count head calibration, and rank correlation between inter-mediate FK scores and final generated counts. Bottom: rollout success, average generated non-anchor count, and fraction of RP candidates at the length capacity as the RP integration resolution varies. Solid blue curves enable FK and dashed gray curves disable it; circles denote AntMaze-Giant and triangles denote HumanoidMaze-Giant. outside the displayed neighbour-rule case; the identity and sum checks are the annotated zero-valued diagnostics. The missing-count predictions track the diagonal across noise levels, with aggregate signed biases of +0 .01 on AntMaze-Giant and +0 .04 on HumanoidMaze-Giant. This validates the count head on the sampled training distribution; it is not a calibration claim for every output of the denoiser. At σ = 0 .3, intermediate-score rank correlations are approximately 0.3–0.5; at σ = 0 .7,they rise to about 0.8. Accordingly, FK uses this quantity for within-call ranking, not as a calibrated estimate of the eventual count. 
+
+Resolution sensitivity. With FK enabled, AntMaze-Giant success changes from approximately 
+
+86% to 85% and 83% as M increases, while HumanoidMaze-Giant changes from approximately 
+
+98% to 90% and 96% . The intermediate HumanoidMaze-Giant dip therefore does not continue at M = 80 . Average generated counts move by only one to two tokens, and fewer than 1% of candidates reach the length capacity. Without FK, generated plans become longer as M increases; on AntMaze-Giant the average count grows from about 33 to 38 , and the capacity fraction grows from 2.6% to 13 .4% . The corresponding HumanoidMaze-Giant capacity fraction grows from 0.5% 
+
+to 6.3% . This drift without steering is one reason FK is part of the default recipe. 
+
+## C COUNT -B ASED STEERING SCORE FROM THE HURDLE –ZTP H EAD 
+
+At a steering checkpoint, let G(xσ ) be the gaps between the tokens currently present in particle 
+
+xσ . For each gap g, let Kg denote the gapwise missing-count random variable represented by the hurdle–ZTP head at that checkpoint. Its distribution is 
+
+Pr( Kg = 0 | xσ ) = πθ (g | xσ ) (13) 21 and, for k ≥ 1,
+
+Pr( Kg = k | Kg > 0, x σ ) = e−λθ (g|xσ )λθ (g | xσ )k
+
+k!  1 − e−λθ (g|xσ ) . (14) The conditional mean of a zero-truncated Poisson variable is 
+
+E[Kg | Kg > 0, x σ ] = λθ (g | xσ )1 − e−λθ (g|xσ ) . (15) Applying the law of total expectation to the hurdle event gives 
+
+E[Kg | xσ ] =  1 − πθ (g | xσ ) λθ (g | xσ )1 − e−λθ (g|xσ ) . (16) Excluding the fixed start and goal anchors, we construct the count-based steering score by adding the current token count to the expected missing counts under the predictive heads: 
+
+ˆn(xσ ) := |xσ | + X 
+
+> g∈G(xσ)
+
+Eθ [Kg | xσ ]= |xσ | + X 
+
+> g∈G(xσ)
+
+ 1 − πθ (g | xσ ) λθ (g | xσ )1 − e−λθ (g|xσ ) .
+
+(17) This gives Equation 4. The expectations are taken under the gapwise hurdle–ZTP predictive heads; their sum does not require the Kg to be independent. We use the resulting score as a steering potential, rather than identifying it with the conditional expected final count of the practical sampler. No rollout reward or separately learned value enters its construction. 
+
+## D METHOD DETAILS AND PSEUDOCODE 
+
+We detail the token representation, training procedure, sampler, and control loop used for the OG-Bench navigation experiments. Appendix D.6 specifies the shared recipe and its Maze2D and visual-manipulation settings. Algorithms 1–5 summarize the procedures; Table 3 records the default recipe. We retain the main-text notation: r is the order coordinate, σ is the global generation clock, ti is a token’s local refinement time, and h indexes environment steps. D.1 TOKENS , S TORAGE , AND ARCHITECTURE 
+
+Generated tokens and conditioning anchors. Each generated token is xi = ( ri, c i), with con-tinuous content ci. RP generates tokens (r, z ) with z ∈ R16 ; PC generates (r, a ), with one action per interior token. PC storage also contains conditioning fields for state information, but these fields are not read from or predicted for interior tokens. The start anchor carries the current proprioceptive state; the goal anchor carries the frozen RP encoder’s latent of the goal frame, padded into the con-ditioning field. Their action fields are zero. Thus the storage layout does not make PC a state–action trajectory generator. Both planners have two fixed anchors at r = −1 and r = +1 , excluded from the tokenwise FM loss and generated count. We write k for the active token count including these anchors and n = k − 2
+
+for the generated count. A clean sequence has coordinates ri = 2( i − 1) /(m − 1) − 1, where m
+
+includes anchors. Gaussian noise and intermediate flow states need not have coordinates in [−1, 1] ;the anchor values remain fixed and the other tokens are ordered by their current r coordinates. 
+
+Padded storage and gaps. Token sets are stored in fixed-capacity arrays with padding masks: 
+
+NRP = 64 and NPC = 32 , including anchors. We denote a generic storage capacity by Cstore =
+
+N + 2 , where N is the non-anchor token capacity in the main-text plan space; Cstore equals NRP 
+
+or NPC at the respective level. Uppercase X denotes anchor-inclusive storage, whereas lowercase x
+
+denotes the generated non-anchor plan. Thus |x| = n = k − 2. Only the k active rows are processed as plan tokens; padding does not count toward plan length. A learned beginning-of-sequence (BOS) token is prepended to the network input, without a local-time embedding. It is distinct from the two conditioning anchors and is not counted in k or the generated count. The count and completion heads produce outputs at the BOS and active-token positions, giving k + 1 gap outputs, including the slots before and after the active tokens. Boundary gaps are included in the insertion supervision, even though clean sequences have no missing targets outside the endpoint anchors. 22 Transformer and output heads. Both planners use pre-layer-normalized Transformer blocks with eight attention heads and additive sinusoidal embeddings of each token’s local refinement time. The network operates on the noisy plan xσ defined in Section 4.2. The RP model has width 640 and ten blocks (51.3M parameters), with a linear input projection for (r, z ). The PC model has width 512 and four blocks (14.0M parameters). Its state-free input uses separate projections for interior (r, a )
+
+tokens and anchor conditioning, plus a type embedding. Its velocity output covers only (r, a ), never intermediate states. The three heads predict token velocities vθ , positive-count parameters λθ through softplus, and gap-completion probabilities πθ through sigmoid. The parameter λ is the base Poisson parameter of the positive-count distribution; its conditional mean is λ/ (1 − e−λ), not λ.D.2 TRAINING 
+
+Segments and variable lengths. Training examples are sampled from individual dataset episodes. The clean count m, including anchors, is sampled log-uniformly from [2 , 64] for RP and [3 , 32] for PC. Examples are bucketed at capacities {8, 16 , 32 , 64 } and {8, 16 , 32 }, respectively, with bucket allocations proportional to the corresponding probability mass, up to integer batch-size rounding. Specifically, sampling a uniform real value on [log mmin , log( mmax + 1)) and exponentiating and flooring it gives p(m) = log(( m+1) /m )/ log(( mmax +1) /m min ). Each bucket samples its disjoint count interval under this law; rounded example allocations are adjusted in the largest bucket to preserve the total batch size. RP interiors are sampled at stride ∆RP , whereas PC interiors use unit-stride actions. For PC, the action-prefix length is n = m − 2; these interior tokens represent 
+
+ah, . . . , a h+n−1 from a segment starting at environment step h. Interior token q ∈ { 1, . . . , n } carries 
+
+ah+q−1, the logged action leading into frame sh+q . These frame indices specify the training-data correspondence; PC generates actions, not interior states. Anchor action fields are set to zero. 
+
+Local-prefix targets. For a sampled action prefix of n environment steps, the hindsight goal is taken at offset 
+
+ℓgoal = Kdiv n. (18) The goal anchor contains the frozen RP encoder’s latent of that frame. With Kdiv = 1 , the last interior token and goal anchor correspond to the same frame sh+n: the former carries the final action leading into that frame, while the latter provides goal conditioning. Larger divisors pair the same action prefix with a more distant goal frame. At fixed Kdiv > 0, the target count n and goal offset 
+
+Kdiv n have the same ordering. This training relation motivates using generated count as a temporal proxy when ranking prefixes, including when Kdiv > 1. The default controller executes the selected prefix’s first action and replans; it does not commit to executing the whole prefix or treat its count as a verified arrival time. In particular, PC training lengths are sampled rather than fixed at ∆RP /K div .The default divisor is one for PointMaze and AntMaze, two for HumanoidMaze-Medium/Large, and four for HumanoidMaze-Giant. It is distinct from the candidate count K.
+
+Interleaved corruption. We sample σ ∼ U (0 , 2) and independent offsets ui ∼ U (0 , 1) . A non-anchor token is present when σ − ui ≥ 0 and has local time ti = clip [0 ,1] (σ − ui); anchors are always present and clean at ti = 1 . Deleted tokens supply the gapwise missing-count targets. After interpolation, the model receives tokens sorted by their noised order coordinates. Algorithm 1 summarizes this corruption. For σ < 1, insertions and refinement coexist; for σ ≥ 1, all clean tokens are present and refinement continues, mirroring the sampler’s two-phase clock schedule. 
+
+Flow-matching and insertion losses. Let S contain all present non-anchor tokens in one device-local bucket batch, and let D denote the number of supervised coordinates: 1 + dz for RP and 1 + da
+
+for PC. The velocity loss is 
+
+LFM = E
+
+"
+
+1
+
+D|S| 
+
+X
+
+> i∈S
+
+ω(ti) ∥vθ (Xt, t)i − v⋆i ∥22
+
+#
+
+, (19) 23 Algorithm 1 CORRUPT : interleaved corruption of a clean plan 
+
+Require: Clean tokens X1 = ( x1,i )mi=1 in route order; anchor mask A 
+
+> 1:
+
+Sample σ ∼ U (0 , 2) and ui ∼ U (0 , 1) independently  
+
+> 2:
+
+Form present-token mask P , local times t, and gap counts {cg } as defined above  
+
+> 3:
+
+k ← P 
+
+> i
+
+Pi ▷ Number of present tokens; k + 1 gaps include boundaries  
+
+> 4:
+
+Draw noise ϵ using the noise distribution  
+
+> 5:
+
+xt,i ← (1 − ti)ϵi + tix1,i for present tokens  
+
+> 6:
+
+v⋆i ← x1,i − ϵi on supervised, non-anchor coordinates  
+
+> 7:
+
+Sort present tokens by noised r, carrying times, targets, and masks  
+
+> 8:
+
+return Corrupted plan, local times, velocity targets, anchor mask, and {cg }
+
+with zero token loss when S is empty. Anchors and padding are masked. The logit-normal impor-tance weight is proportional to 
+
+ω(t) ∝
+
+exp 
+
+
+
+− 12
+
+
+
+log t
+
+> 1−t
+
+2
+
+t(1 − t) , 0 < t < 1, (20) evaluated after clipping t to [10 −3, 1−10 −3] and normalized to mean one over S (Esser et al., 2024). Thus the reduction pools supervised tokens within a bucket batch; it is not an unweighted average of per-plan velocity losses. For cg missing clean tokens in gap g, the insertion objective is 
+
+Lins = E
+
+ 1
+
+|G|
+
+X
+
+> g∈G
+
+ℓg
+
+ ,ℓg = BCE( πθ (g), 1[cg = 0]) + 1[cg > 0] 
+
+
+
+λθ (g) − cg log λθ (g) + log(1 − e−λθ (g))
+
+
+
+.
+
+(21) Here |G| = k + 1 , including the boundary gap outputs. The parameter-independent factorial term is omitted. Each example first averages over its valid gaps, and these insertion losses are then averaged over the examples in the bucket batch. Across buckets, RP weights the full loss by the fraction of examples in each bucket. PC weights the FM term by the fraction of supervised tokens in each bucket and the insertion term by the fraction of examples. Gradients are averaged across devices before the optimizer update. 
+
+Route planner’s latent encoder and gradient routing. The encoder is a two-layer MLP with a 64-unit hidden layer, 
+
+z = Eϕ(s) = tanh( W2 SiLU( W1s)) ∈ R16 . (22) It is trained jointly with the route planner, but receives gradients only from insertion supervision and temporal contrastive regularization. FM gradients are blocked at the encoder so that its representa-tions cannot shrink merely to simplify the velocity target. For temporally nearby positive states and in-batch negatives, we use 
+
+LNCE = E
+
+"
+
+− log exp(¯ z⊤ 
+
+> j
+
+¯zj+∆ /κ )
+
+P 
+
+> j′
+
+exp(¯ z⊤ 
+
+> j
+
+¯zj′+∆ ′ /κ )
+
+#
+
+, (23) where ¯z is ℓ2-normalized, ∆ ∼ U{ 1, . . . , 4}, and κ = 0 .2. The offset is measured in subsampled RP frame slots, corresponding to ∆∆ RP environment steps before clipping at the episode boundary. For a bucket of capacity C, the first slot is sampled from {0, . . . , C − 5} and the positive is ∆ slots later. These pairs are sampled from the full frame buffer, including frames beyond the example’s sampled clean count; they are not restricted to tokens present after corruption. Negatives are the positive frames of other examples in the same device-local bucket batch. This encourages temporal structure and separation from negatives; it does not guarantee an injective representation. RP uses 
+
+LFM +Lins +0 .1LNCE . PC uses only LFM +Lins , with the RP encoder frozen for goal conditioning. At test time, the same encoder forms both RP anchors, and generated subgoal latents are passed to PC directly. 24 Algorithm 2 One training step 
+
+Require: Component (RP or PC), dataset, parameters θ, and RP encoder Eϕ 
+
+> 1:
+
+Sample a bucketed batch of episode segments and construct clean tokens  
+
+> 2:
+
+For RP, encode subgoal states; for PC, encode goal frames with frozen Eϕ 
+
+> 3:
+
+Apply C ORRUPT to each example (Algorithm 1)  
+
+> 4:
+
+Evaluate the velocity, positive-count, and completion heads with padding masks  
+
+> 5:
+
+L ← L FM + Lins  
+
+> 6:
+
+if RP training then  
+
+> 7:
+
+L ← L + 0 .1LNCE  
+
+> 8:
+
+gϕ ← ∇ ϕ(Lins + 0 .1LNCE ) 
+
+> 9:
+
+end if  
+
+> 10:
+
+gθ ← ∇ θ L 
+
+> 11:
+
+Clip gradient norm to 1.0 and update trainable parameters with AdamW  
+
+> 12:
+
+Apply the cosine learning-rate schedule and update parameter EMA (0.999) D.3 SAMPLING AND CANDIDATE SELECTION 
+
+Two-phase rollout. At each step, the model evaluates the partial plan, refines existing tokens, determines how many new tokens to initialize, and sorts the updated token set. Algorithm 3 summa-rizes this update; the finite-step implementation is specified below. Sampling advances σ from zero to two in M = 20 Euler steps of size δ = 2 /M = 0 .1. Each token has its own refinement time ti,and both anchors start at ti = 1 . Insertions are enabled only for σ < 1. After that cutoff the token count is fixed, while the remaining steps finish transporting the last-born tokens. The sampler uses σ
+
+to determine the time-dependent birth probabilities, the effective birth-step size min( δ, 1−σ) before the cutoff, the insertion cutoff, and the FK checkpoint times. The sampler uses EMA parameters. 
+
+Insertion probability. For a gap predicted at the current state, let μg = λg /(1 − e−λg ) be the expected missing count conditional on the gap being incomplete. Motivated by the uniform reveal-time schedule used in training, we use the model-based insertion intensity (1 − πg )μg /(1 − σ) for 
+
+σ < 1 and the finite-step rule 
+
+pbirth  
+
+> g
+
+(σ) = 
+
+
+
+(1 − πg ) clip [0 ,1] 
+
+ min( δ, 1 − σ)μg
+
+1 − σ
+
+
+
+, σ < 1,
+
+0, σ ≥ 1.
+
+(24) The same hurdle–ZTP mean enters both the insertion intensity and the count-based steering score in Equation 4. For numerical stability, μg can be evaluated using − expm1( −λg ) in the denominator and its limit μg → 1 as λg → 0.
+
+Finite-step implementation. We implement Equation 24 with two independent uniform tests dur-ing the insertion phase. A birth is proposed only if both tests pass: the first with probability 1 − πg
+
+and the second with the clipped time-scaled conditional mean in Equation 24. Thus the completion gate 1 − πg multiplies the clipped factor. Each gap proposes at most one birth per step; the proposals are pooled, and their total is capped by the remaining storage capacity. Newborn tokens, including their order coordinates, are initialized from standard Gaussian noise at local time zero, as in training corruption; subsequent flow refinement of r places them along the plan. 
+
+Best-of-K. Without FK, candidates use independent random draws from the same anchors. We select the minimum generated count as in Equation 5; including the two anchors would give the same ranking because every candidate contains both. In particular, K = 1 uses a single unranked sample. The rule favors compact generated plans, not a certified shortest feasible trajectory. Its usefulness is evaluated through the distance-correlation and executed-control experiments rather than inferred solely from the training objective. For K = 1 , final selection is trivial and the normalized FK weight is one, so resampling returns the sole candidate; FK on and off therefore give the same single-candidate sampling distribution. Without steering, let X1, . . . , X K be independent samples from the same conditional generator and let J be an independent uniform index. Then XJ has the same conditional distribution as X1, making the single-candidate baseline a random-selection reference 25 Algorithm 3 ADVANCE : one insertion–flow sampling step 
+
+Require: Active tokens X, local times t, anchor mask A, clock σ, step δ, storage capacity Cstore  
+
+> 1:
+
+(v, λ, π ) ← fθ (Xσ ) ▷ X σ = ( X, t, A ), the noisy plan at clock σ 
+
+> 2:
+
+∆ti ← min( δ, 1 − ti) for non-anchors; zero for anchors  
+
+> 3:
+
+xi ← xi + vi∆ti on generated coordinates; ti ← ti + ∆ ti 
+
+> 4:
+
+if σ < 1 then  
+
+> 5:
+
+Determine the number of new tokens from (λ, π ) using Equation 24 and the available ca-pacity  
+
+> 6:
+
+Initialize and append these tokens with local time zero (Appendix D.3)  
+
+> 7:
+
+end if  
+
+> 8:
+
+Sort active tokens by r, carrying local times and anchor identities  
+
+> 9:
+
+return Updated X, t, and A
+
+Algorithm 4 PLAN : FK steering and minimum-count selection at either level 
+
+Require: Conditioning anchors (RP or PC), K, storage capacity Cstore , steps M , checkpoints C,strength β 
+
+> 1:
+
+Initialize K two-anchor chains with local times one and independent random keys  
+
+> 2:
+
+δ ← 2/M  
+
+> 3:
+
+for q = 0 , . . . , M − 1 do  
+
+> 4:
+
+Advance each chain using A DVANCE at σ = qδ  
+
+> 5:
+
+if q + 1 ∈ C then  
+
+> 6:
+
+Evaluate each updated chain and compute the steering score ˆnj from Equation 4  
+
+> 7:
+
+Normalize wj ∝ exp[ −β(ˆ nj − min j′ ˆnj′ )]  
+
+> 8:
+
+Resample K full chain states with replacement from Cat( w) 
+
+> 9:
+
+Assign independent future random keys to duplicated chains  
+
+> 10:
+
+end if  
+
+> 11:
+
+end for  
+
+> 12:
+
+return Non-anchor tokens of the chain with minimum generated count in expectation. This equivalence does not generally apply to a multi-candidate pool modified by FK. In a per-level sweep, the other level retains its specified configuration. 
+
+Feynman–Kac steering. The default control recipe uses FK at both levels, with checkpoints after Euler steps C = {3, 7} and β = 0 .5. At each checkpoint, we evaluate the count-based steering score in Equation 4, derived in Appendix C. This score combines the current generated count with the predictive heads’ expected missing counts; it is used to favor lower-count candidates, not as an exact conditional expectation of the practical sampler’s final count. For candidate j, write ˆnj = ˆ n(x(j) 
+
+> σ
+
+).We stabilize the resampling weights numerically as 
+
+wj ∝ exp 
+
+
+
+−β
+
+
+
+ˆnj − min  
+
+> j′
+
+ˆnj′
+
+ 
+
+. (25) Subtracting the minimum changes neither the normalized weights nor the resampling distribution. Duplicated chains receive independent random keys for subsequent stochastic operations, not addi-tional perturbations to already generated tokens. The final decision remains minimum-count selec-tion. Figure 5(a, b) compares FK-on and FK-off variants at the swept level while retaining FK at the other level. D.4 HIERARCHICAL CONTROL 
+
+The default controller holds the first generated RP subgoal for HRP = ∆ RP /2 environment steps. It does not advance a pointer along the route or switch targets on proximity. If RP generates no interior token, the target is the final-goal latent. PC replans at every environment step and executes only its first generated action from the selected candidate, clipped to [−1, 1] ; an empty PC plan yields a zero action. Figure 5(c, d) varies the RP holding period and the fraction of a PC prefix executed per update. 26 Algorithm 5 HorizonFlow at test time: default OGBench control loop 
+
+Require: Goal state g, period HRP , KRP = 16 , KPC = 4 
+
+1: Observe s0 and set zg ← Eϕ(g)
+
+2: for h = 0 , . . . , T − 1 do 
+
+3: if h mod HRP = 0 then 
+
+4: W ← PLAN (( −1, E ϕ(sh)) , (+1 , z g ), K RP , N RP , M, C, β )
+
+5: ztgt ← first latent in W , or zg if W is empty 
+
+6: end if 
+
+7: Construct PC anchors from (−1, s h) and (+1 , z tgt ), with zero action fields 
+
+8: P ← PLAN from these anchors using KPC , NPC , M , C, and β
+
+9: ah ← first action in P , or 0 if P is empty 
+
+10: Execute clip [−1,1] (ah) and observe sh+1 
+
+11: end for 
+
+Table 3: Default OGBench architecture, training, and inference settings. 
+
+Setting Route planner (RP) Prefix controller (PC) Generated token (r, z ), dz = 16 (r, a ); state-free interiors Capacity (anchors in-cluded) 64 32 Clean count distribution Log-uniform [2 , 64] Log-uniform [3 , 32] 
+
+Bucket capacities 8, 16, 32, 64 8, 16, 32 Transformer width /blocks 640 / 10 512 / 4 Attention heads 8 8Parameters 51.3M 14.0M Encoder 64-unit hidden layer; 16-D output Frozen RP encoder for goal condition-ing Loss FM + insertion + 0.1 NCE FM on (r, a ) + insertion Optimizer AdamW AdamW Learning rate 6 × 10 −4 8 × 10 −4
+
+Schedule / weight decay Cosine / 0.01 Cosine / 0.01 Gradient clipping / EMA 1.0 / 0.999 1.0 / 0.999 Batch size / updates 1024 / 100k 1024 / 1M Sampler 20 Euler steps on [0 , 2] 20 Euler steps on [0 , 2] 
+
+Candidate count KRP = 16 KPC = 4 
+
+FK steering Steps 3, 7; β = 0 .5 Steps 3, 7; β = 0 .5
+
+Control First subgoal, updated every ∆RP /2
+
+steps Replan each step; execute first action Environment group ∆RP HRP Kdiv 
+
+PointMaze / AntMaze 16 8 1HumanoidMaze-Medium / Large 32 16 2HumanoidMaze-Giant 64 32 4
+
+D.5 DEFAULT OGB ENCH RECIPE 
+
+The recipe below applies to the nine OGBench navigation environments. The stride, corresponding RP update period, and PC target divisor vary by environment group; the architecture and optimiza-tion settings are shared. These defaults do not override explicitly swept ablations or the KRP = 64 
+
+horizon-estimator diagnostic. Both learning-rate schedules warm up linearly from zero for 2,000 up-dates, then decay with a cosine schedule to 2% of the peak learning rate. Weight decay is decoupled through AdamW. 27 Table 4: Environment-dependent settings of the common recipe. T is the episode limit, ∆RP the training stride, HRP the RP update period, and NPC the PC capacity including anchors. Batch size applies to both stages.                                                                   
+
+> Environment T∆RP HRP Kdiv NPC Batch Maze2D-UMaze 300 52110 1024 Maze2D-Medium 600 10 5120 1024 Maze2D-Large 800 13 6126 1024 PointMaze / AntMaze 1000 16 8132 1024 HumanoidMaze-Medium / Large 2000 32 16 232 1024 HumanoidMaze-Giant 4000 64 32 432 1024 Visual Cube-Single 200 4218256 Visual Cube-Double 500 84116 256 Visual Cube-Triple 1000 16 8132 256 Visual Scene 750 12 6124 256
+
+D.6 COMMON RECIPE ACROSS BENCHMARK DOMAINS 
+
+Shared architecture and optimization. The architecture, losses, and optimization schedule in Table 3 also apply to Maze2D and visual manipulation. RP’s contrastive loss uses temperature 0.2 and positive offsets of one to four subsampled frames. The temporal spacing, observation encoding, and batch size vary as described below. 
+
+Episode-length rule. Let T be the environment’s maximum episode length in steps. With RP storage capacity NRP = 64 , including anchors, we set 
+
+∆RP =
+
+ TNRP − 1
+
+
+
+, HRP = max 
+
+
+
+1,
+
+ ∆RP 
+
+2
+
+ 
+
+, Kdiv = max 
+
+
+
+1,
+
+ ∆RP 
+
+16 
+
+ 
+
+. (26) The denominator counts intervals between the 64 stored positions. The corresponding PC capacity is NPC = min(32 , ⌊2∆ RP /K div ⌋). These are storage and training limits; they do not prescribe the number of non-anchor tokens generated in an individual plan. Table 4 lists the resulting settings. Maze2D and Multi2D use the same trained models and recipe; their evaluation goal protocols differ. 
+
+Observation encoding and batching. Maze2D and navigation use the state encoder described above. For visual manipulation, RP instead uses an IMPALA-style image encoder with a 16-dimensional tanh output. PC encodes the current image with its own trainable image encoder into 128 features for the start anchor; its goal anchor uses the frozen RP latent. PC interiors still contain only order coordinates and actions. Thus the proprioceptive start-anchor description above applies to state-input tasks, and the visual models have additional image-encoder parameters. The visual batch size is 256, compared with 1024 for state-input tasks. Clean counts follow the same log-uniform law, with bounds [2 , 64] for RP and [3 , N PC ] for PC. State-input RP uses buckets {8, 16 , 32 , 64 }; visual RP uses a single padded capacity of 64. State-input PC uses the members of {8, 16 , 32 } strictly below its capacity, followed by the capacity itself. Visual PC follows the same rule starting from {4, 8, 16 , 32 }, giving buckets {4, 8}, {4, 8, 16 }, {4, 8, 16 , 32 },and {4, 8, 16 , 24 } for Cube-Single, Cube-Double, Cube-Triple, and Scene, respectively. 
+
+Benchmark reporting. The visual manipulation results use the *-play-v0 datasets; the base-lines in this group use four training seeds. HorizonFlow uses the same configuration for Maze2D and Multi2D. Its uncertainties are standard deviations across training-seed means. For HD in Ta-ble 1(a), we convert the reported standard errors over 100 planning seeds (Chen et al., 2024b) to standard deviations using SD = SE √100 . These values are approximate because the published standard errors are rounded, and reflect planning-seed rather than training-seed variability. HDMI and SSD uncertainties in panel (a) likewise correspond to reported standard errors converted using 
+
+SD = SE √5 (Li et al., 2023; Kim et al., 2024). VHD results in panel (a) are from our reproduction and report standard deviations. DF uncertainties in panel (a) are standard deviations, as specified in the published paper’s statistical-significance checklist (Chen et al., 2024a). 28 SAW results in panels (b,c) are taken from Table 1 of Zhou & Kao (2025), which reports means and standard deviations over eight training seeds for navigation and four for visual manipulation. 
+
+Sources of published results. In Table 1(a), Diffuser and DF results are taken from Table 1 of Chen et al. (2024a); HDMI and SSD results are taken from Table 1 of Kim et al. (2024); and HD results are taken from Tables 1 and 7 of Chen et al. (2024b). VHD is reproduced by us, rather than copied from a published table. In panels (b,c), QRL, CRL, HIQL, GCIVL, and GCIQL results, wherever reported, are taken from the full benchmark table (Table 2) of Park et al. (2025). SAW uses the published results described above. CTA results for AntMaze and HumanoidMaze are taken from Table 6 of Kim et al. (2026), and its visual Cube-Single, Cube-Double, and Scene results from their Table 7. CTA results for all three PointMaze environments and visual Cube-Triple are our reproductions. Diffuser, HD, and DF results in panel (b) are also our reproductions. Thus, HD’s planning-seed uncertainty convention applies only to panel (a); its panel (b) uncertainties are standard deviations across four training seeds. 
+
+Shared HorizonFlow execution settings. HorizonFlow’s main benchmark evaluations use EMA parameters, 20 Euler steps per generation, KRP = 16 , and KPC = 4 . Both levels use FK steering after Euler steps 3 and 7 with β = 0 .5, followed by minimum-count selection. RP is updated every HRP environment steps, while PC replans every step and executes the first generated action. Evaluation uses each environment’s episode limit T . Explicit ablations override their swept settings; the diagnostic protocols described elsewhere are separate from this recipe. D.7 BASELINE IMPLEMENTATIONS AND REPRODUCTION PROTOCOLS 
+
+OGBench planning implementations. We adapt the public implementations of Diffuser, HD, and DF to the OGBench navigation datasets (Janner et al., 2022; Chen et al., 2024b;a). Diffuser is ported from the maze2d branch of jannerm/diffuser , HD from the maze 2d branch of changchencc/Simple-Hierarchical-Planning-with-Diffusion , and DF from 
+
+buoyancy99/diffusion-forcing . The JAX ports are checked against the reference imple-mentations using forward, loss, gradient, and sampling comparisons under matched inputs. These checks concern the ported numerical operations; the OGBench observation and execution adapta-tions are described separately below. 
+
+Planning space and execution. All three reproduced planners generate plans in the full obser-vation space. Diffuser generates state sequences with endpoint inpainting. HD uses endpoint in-painting at both levels, with a high-level stride of 15 and 16-token low-level segments. Its low-level model predicts actions and observations, but execution follows the generated observation waypoints through the shared controller described below. DF generates observation sequences with reconstruc-tion guidance on the position coordinates; we retain its original guidance mechanism rather than use the separately tested goal-inpainting variant. DF uses frame stacking of 10, pyramid scheduling, 50 DDIM steps, guidance scale 2, and a replanning interval of 50 environment steps. 
+
+Training the planning models. Diffuser and HD use temporal U-Nets with base width 64, Adam with learning rate 2 × 10 −4, effective batch size 64, and two million optimizer updates. They predict clean tokens and use limits normalization and EMA with decay 0.995. Diffuser uses 256 diffusion steps; HD uses 256 and 128 at its high and low levels, respectively, with low-level action-loss weight 10. DF uses a 12-layer transformer of width 128, four attention heads, feed-forward width 512, and 1,000 diffusion steps. It is trained for 200,005 updates with batch size 1,024, AdamW learning rate 
+
+5 × 10 −4, weight decay 10 −4, and 10,000 warmup steps, without EMA. Final evaluations use four independently trained planning models with seeds 43–46. 
+
+Choice of low-level controller. The original Maze2D waypoint controllers assume position– velocity observations and planar control, which do not transfer directly to OGBench’s observation and action interfaces. In our controller comparisons, full-observation plans with a flow-matching controller tracked more reliably than position-only or inverse-dynamics alternatives, particularly on HumanoidMaze. We use this same controller across the reproduced planners to hold their low-level execution module fixed. 29 Table 5: Selected training horizon parameters for reproduced OGBench planning baselines, in envi-ronment steps. HD uses a high-level span parameter; DF uses a training window length. Environment Diffuser HD DF PointMaze Medium 256 500 250 PointMaze Large 500 500 500 PointMaze Giant 500 1000 500 AntMaze Medium 500 500 500 AntMaze Large 500 500 1000 AntMaze Giant 500 500 250 HumanoidMaze Medium 1000 1000 500 HumanoidMaze Large 1000 1000 500 HumanoidMaze Giant 1000 2000 1000 
+
+Shared low-level controller. The three planning baselines share one separately trained goal-conditioned flow-matching controller per environment, with the same controller checkpoint used across planning-model seeds. It is conditioned on the current observation and a full-observation waypoint, not on HorizonFlow’s learned latent representation. The controller uses a three-layer MLP with 512 hidden units per layer and SiLU activations. Training uses one million updates, batch size 1,024, learning rate 8 × 10 −4, and seed 43; hindsight goal offsets are sampled uniformly from 1 to 32 steps. Execution uses 20 Euler steps. Reported baseline standard deviations therefore mea-sure variation across planning-model training seeds conditional on this shared controller, rather than variation from independently retraining the controller for every seed. 
+
+Horizon search. We explore training horizons around one quarter, one half, and the full envi-ronment episode limit using tuning seed 99, with architecture-compatible lengths for the temporal U-Nets. The initial Diffuser and HD screening runs use 500,000 updates; DF screening uses its full training budget. The initial horizon screen uses evaluation episode indices 40–49 across the five tasks. The final evaluation later uses indices 0–49, so these initial screening indices are not disjoint from the final evaluation indices, although the tuning-model seed is separate; this overlap can only favor the tuned baselines. The final selected horizon parameters are listed in Table 5; for HD the pa-rameter specifies the high-level temporal span, and its token count is the ceiling of this span divided by 15. DF’s parameter is its training window length, not its replanning interval. The full-length DF candidate for HumanoidMaze Giant was excluded because it exceeded GPU memory. 
+
+Inference-setting search and evaluation. Subsequent inference sweeps examine replanning in-tervals, inference horizon caps, waypoint advancement and lookahead, EMA use, controller inte-gration steps, and DF guidance scales. Candidates are screened with seed 99 on 100 episodes, then compared with the default setting using seeds 43–46 on episode indices 50–74 of each task (500 episodes in total). This confirmation set is disjoint from the final evaluation indices 0–49. The recorded selection rule retains changes with a two-proportion z statistic of at least 2. The selected changes are replanning every 500 steps for Diffuser on PointMaze Giant and HumanoidMaze Giant, every 400 steps for Diffuser on AntMaze Large, and every 500 steps for HD on PointMaze Large. Other Diffuser and HD settings retain one-shot planning; DF retains its 50-step update interval. Each final planning model is evaluated on 50 episodes per task, or 250 per environment. We report the mean and sample standard deviation of the four seed-level success rates. Aggregate means are calculated before rounding the displayed per-environment values. 
+
+CTA implementation and configuration search. For the four reproduced CTA settings, we use the authors’ public implementation, rllab-snu/CTA , at commit e9f348f0 , with operational changes for logging, checkpoint handling, and external evaluation rather than a reimplementation of its learning algorithm. On pilot seed 99, we sweep subgoal intervals {10 , 25 , 50 } for PointMaze. The selected intervals are 10, 25, and 50 for Medium, Large, and Giant, respectively. For visual Cube-Triple, we compare the default interval of 30 with two variants that allow policy gradients into the learned representation, using intervals 30 and 10. The selected setting retains the default interval of 30 and stops those gradients. 30 CTA training and evaluation. Selected configurations are trained with eight seeds (43–50) for PointMaze and four seeds (43–46) for visual Cube-Triple. State-input runs use one million updates and visual runs use 500,000 updates. Both use batch size 256, Adam learning rate 3 × 10 −4, and transduction latent dimension 8. The discount is 0.99 except for PointMaze Giant, where it is 0.995. Visual observations use the IMPALA-small encoder with image augmentation probability 0.5. We evaluate the final checkpoints on 50 episodes for each of five tasks, yielding 250 episodes per envi-ronment and training seed. The reported mean and sample standard deviation are computed across seed-level success rates. 
+
+VH-Diffuser implementation and training. For Maze2D/Multi2D, we independently implement VH-Diffuser (Liu et al., 2025) in JAX and use the standard D4RL maze2d-*-sparse-v1 
+
+datasets with trajectory-boundary-aware sampling. The diffusion model predicts normalized action– state trajectories with six channels, endpoint conditioning, and a clean-sample prediction objective. Its Diffuser-style temporal U-Net is trained for two million updates with batch size 32, Adam learn-ing rate 2×10 −4, gradient clipping at 1, EMA decay 0.995, and a 256-step cosine diffusion schedule. Variable-length training crops use 32-step buckets up to maximum horizons of 128, 256, and 384 for U-Maze, Medium, and Large. 
+
+VH-Diffuser length-predictor search. Our length-predictor implementation uses 64 random Fourier features and three 512-unit LayerNorm/ReLU hidden layers with a positive scalar output. It is trained with the method’s TD-style length learning formulation, Adam learning rate 3 × 10 −4,gradient clipping at 1, and target EMA decay 0.995. We retain the 20,000-update predictor for U-Maze and train the Medium and Large predictors for 500,000 updates while keeping their diffusion models fixed. The selected anchor-step grids are {1, 2, 4, 8, 16 , 32 , 64 , 128 , 256 } for Medium and 
+
+{1, 2, 4, 8, 16 , 32 } for U-Maze and Large. Predictor-training and inference variants were explored initially on seed 0 and then expanded to five training seeds; this development procedure did not use a separately recorded held-out tuning split, which can only favor the reproduced baseline. 
+
+VH-Diffuser inference adaptations. Predicted horizons are rounded up to a multiple of 32 and clipped to the range from 32 to the environment-specific maximum. We additionally use two reproduction-side adaptations, rather than attribute them to the original algorithm. Horizon search doubles the horizon and regenerates a plan when the 90th percentile of consecutive waypoint dis-placements exceeds 0.06 in unnormalized position coordinates, subject to the maximum horizon and at most three expansions. Exhaustion-triggered replanning predicts a new horizon from the current state if the goal has not been reached; its backoff imposes a lower bound of twice the ex-hausted plan’s length, capped by the maximum horizon. U-Maze uses this replanning rule only for the single-goal protocol. Medium and Large use horizon search for both protocols and exhaustion-triggered replanning only for the single-goal protocol. Each generation call uses a single candidate, without value-based or execution-based candidate selection. Plans are followed by the position– velocity waypoint controller, with actions clipped to [−1, 1] . Evaluation uses episode limits of 300, 600, and 800 steps for U-Maze, Medium, and Large, and 100 episodes per training seed and pro-tocol across five seeds. The table reports normalized-score means and sample standard deviations across the seed-level means. The horizon and selection diagnostics use separate protocols described in Appendix A. 31 D.8 TRAINING TIME AND HARDWARE 
+
+Table 6 reports wall-clock time for one training run per seed on each dataset. HorizonFlow tim-ings include both the route planner and prefix controller, with the two stages reported separately. Navigation and Maze2D runs use an RTX 5090; visual manipulation runs use an H200. Table 6: Wall-clock training time per seed in hours. HorizonFlow entries report total time (RP + PC). Dashes indicate unreported measurements. Dataset GPU HorizonFlow Diffuser HD DF PointMaze-Medium RTX 5090 12.1 (4.8 + 7.2) 4.9 4.2 0.8 PointMaze-Large RTX 5090 12.1 (4.8 + 7.2) 6.8 4.1 1.4 PointMaze-Giant RTX 5090 12.2 (4.8 + 7.3) 6.8 4.4 1.4 AntMaze-Medium RTX 5090 12.1 (4.8 + 7.2) 6.8 4.1 1.5 AntMaze-Large RTX 5090 12.1 (4.8 + 7.2) 6.8 4.1 3.6 AntMaze-Giant RTX 5090 12.1 (4.8 + 7.2) 6.9 4.1 0.8 HumanoidMaze-Medium RTX 5090 12.1 (4.8 + 7.2) 13.0 4.5 1.5 HumanoidMaze-Large RTX 5090 12.1 (4.8 + 7.2) 13.0 4.5 1.5 HumanoidMaze-Giant RTX 5090 12.1 (4.8 + 7.2) 13.0 5.1 3.7 Maze2D-U-Maze RTX 5090 8.8 (4.8 + 4.0) – – –Maze2D-Medium RTX 5090 10.1 (4.8 + 5.3) – – –Maze2D-Large RTX 5090 10.9 (4.8 + 6.0) – – –Visual Cube-Single H200 11.6 (9.5 + 2.1) – – –Visual Cube-Double H200 12.1 (9.5 + 2.6) – – –Visual Cube-Triple H200 12.9 (9.4 + 3.4) – – –Visual Scene H200 12.8 (9.5 + 3.3) – – –
+
+H200 training hardware. Visual-manipulation training uses one NVIDIA H200 with 141 GB HBM3e memory (143,771 MiB reported) and a 700 W power limit. The host uses Intel Xeon Plat-inum 8480+ processors, with 224 logical CPUs visible to the container and approximately 3 TB RAM (3,023 GiB reported by the OS). The software environment is Ubuntu 24.04.4 LTS, NVIDIA driver 580.159.03 (driver-reported CUDA 13.0), Python 3.12.3, JAX/jaxlib 0.11.2, Flax 0.12.9, Op-tax 0.2.8, and NumPy 2.5.3. 32 E BACKGROUND ON JOINT INSERTION AND FLOW GENERATION 
+
+This appendix records the formal background behind the two operations introduced in Section 3. The edit-rate formulation explains how sequence length can change during generation; the OneFlow details identify the inherited count decomposition and local-time construction. The control hierarchy and selection rule are described independently in Section 4. E.1 EDIT FLOWS : V ARIABLE -L ENGTH STRUCTURE 
+
+Edit Flows generalizes discrete flow matching to the sequence space X = SNn=0 Vn, where V is a discrete token vocabulary, Vn is the set of sequences of length n, and N is the maximum allowed length. Thus, X contains sequences of every length from zero (the empty sequence) to N . Edit Flows defines a CTMC whose jumps are insertions, deletions, or substitutions (Havasi et al., 2025). Restricting the admissible edit set to insertions yields an insertion-only process. Let E(x) denote the admissible edits from x, and let e(x) be the sequence after applying edit e. The model assigns each edit a nonnegative rate rθ (e | x, t ), with infinitesimal transition probability 
+
+Pr[ Xt+d t = e(x) | Xt = x] = rθ (e | x, t ) d t + o(d t). (27) The probability of no edit is 1 − P 
+
+> e
+
+rθ (e | x, t )d t + o(d t). Consequently, under an insertion-only process the final sequence length is its initial length plus the number of insertions realized before 
+
+t = 1 , rather than a fixed tensor dimension. Training uses an auxiliary alignment between a source and target sequence to construct tractable conditional target rates ¯rt(e | xt, x 1). Up to terms independent of θ, the rate-matching Bregman objective is 
+
+Lrate = E
+
+ X
+
+> e∈E (xt)
+
+rθ (e | xt, t ) − X
+
+> e∈E (xt)
+
+¯rt(e | xt, x 1) log rθ (e | xt, t )
+
+ . (28) Its population optimum is the marginal rate r∗(e | xt, t ) = E[¯ rt(e | xt, x 1) | xt]. Because insertions are defined relative to the current sequence, the model can grow a sequence at any gap without prescribing its final length. Our implementation uses padded storage with a variable active count, as described in Appendix D.1. E.2 ONE FLOW : J OINT STRUCTURE AND CONTENT 
+
+OneFlow combines insertion for discrete text with FM for continuous image latents in a shared sequence model (Nguyen et al., 2025). For each gap, it factorizes the insertion rate into a missing-count parameter and a distribution over discrete token identities. To handle the concentration of zero-count targets, it separates gap completion from the count on nonempty gaps: a Bernoulli head predicts whether the gap is complete, and the original Poisson regression loss is applied only when the target count is nonzero. Suppressing the token-identity loss and parameter-independent terms, the resulting count objective for a gap g is 
+
+LOneFlow count = Eg [BCE( π(g), 1[kg = 0]) + 1[kg > 0] ( λnz (g) − kg log λnz (g))] . (29) OneFlow also assigns separate FM times to continuous blocks introduced at different stages. An image inserted partway through generation is initialized from noise and therefore cannot share the refinement time of older images. With insertion scheduler η, OneFlow samples u ∼ Unif(0 , 1) and assigns an inserted image the local time 
+
+σimg = σtext − η−1(u), timg = clip [0 ,1] (σimg ), (30) treating σimg < 0 as not yet inserted. Thus each continuous image block follows its own FM clock while text insertions continue. HorizonFlow retains this local-time construction and zero/nonzero count decomposition, modeling positive missing counts with a normalized zero-truncated Poisson distribution (Equation 2). The resulting head mean is used in both the insertion rule and the count-based steering score. 33 F ADDITIONAL ABLATIONS AND INFERENCE COSTS 
+
+This appendix gives environment-wise sampling, replanning, and inference-cost results for Fig-ure 5, followed by architecture ablations. The corresponding panels and legends are identified in Figure 14–19. 
+
+Evaluation counts and aggregation. Navigation sweeps use eight training seeds and 125 evalua-tion problems per environment and seed, comprising 25 problems for each of five tasks. All settings, including the default points, use this matched subset rather than the larger main-benchmark evalu-ation set. Visual manipulation sweeps use four training seeds and 250 problems per environment and seed, with 50 problems per task. Maze2D sweeps use five training seeds and 100 single-goal episodes per environment and seed, reporting D4RL-normalized scores. Each environment-wise curve reports the mean across training seeds with error bars of one standard error. For the aggregate success-rate curves in Figure 5, we first average within each environment across seeds, then give equal weight to all nine OGBench navigation environments. Visual manip-ulation and Maze2D are excluded from this average. If se is the sample standard deviation across seeds for environment e, the aggregate error-bar magnitude is 
+
+qP9 
+
+> e=1
+
+s2
+
+> e
+
+/9. This propagates the seed standard deviations; it is not a standard error of the aggregate mean. 
+
+Inference-time hardware. We estimate amortized model-inference time from batch-one, device-only median planner and controller call times, excluding compilation, environment simulation, and host–device transfers. Call times are weighted by the corresponding evaluation call counts and divided by the number of executed environment steps for each environment and setting. The main-figure aggregate then equally averages the nine navigation environments. These are average model-compute estimates, not end-to-end or worst-case control latencies. For visual PC-execution sweeps, call counts come from a separate timing probe with five episodes per task and training seed; the success-rate curves use the full evaluation described above. The baseline timing configurations use one-shot planning for HD and for Diffuser except on HumanoidMaze-Giant, where Diffuser replans every 500 steps. DF replans every 25 steps on HumanoidMaze-Medium/Large and every 50 steps elsewhere. These timing configurations differ from the benchmark configurations in Appendix D.7 for Diffuser on PointMaze-Giant and AntMaze-Large, and HD on PointMaze-Large; these timing configurations replan less often, which lowers the baselines’ measured cost. All reported inference-time measurements, including the visual-manipulation and Maze2D pan-els, use an NVIDIA GeForce RTX 5090 with 32 GB GDDR7 memory (32,607 MiB reported) at the default 600 W power limit. Reported maximum SM and memory clocks are 3,105 MHz and 14,001 MHz, respectively. The host has one AMD Ryzen 9 9950X CPU (16 cores, 32 threads) and 128 GB RAM (122 GiB reported by the OS). The software environment is Ubuntu 24.04.4 LTS with Linux 6.8.0, NVIDIA driver 595.71.05 (driver-reported CUDA 13.2), Python 3.12.3, JAX/jaxlib 0.11.2, and Flax 0.12.9. 
+
+Sweep conventions. The RP candidate counts are {1, 2, 4, 8, 16 , 32 , 64 } and the PC counts are {1, 2, 4, 8, 16 }. The PC sweep holds KRP = 16 , and the RP sweep holds KPC = 4.The one-candidate point is shared between the two steering curves. The RP update ratios are 
+
+{1/8, 1/4, 1/2, 1}. These ratios are nominal: the stride multiplied by the ratio is rounded to the nearest integer and clamped to at least one step. For Maze2D U-Maze/Medium/Large, the RP strides are 5/10/13 and the default update periods are 2/5/6 steps. For U-Maze, the 1/8 and 1/4 set-tings both map to a one-step period and reuse that evaluation. Visual cube-single/cube-double/cube-triple/scene use strides 4/8/16/12 and default periods 2/4/8/6. Fractional PC execution uses max(1 , ⌈f n ⌉) requested actions for fraction f and generated non-anchor count n, subject to the available prefix and subsequent RP updates. The fractions are 25%, 50%, 75%, and 100%. The separately labeled one-step point executes one action before replanning; its horizontal plotting position does not denote a fixed fraction of every generated prefix. 34 HorizonFlow BC for PC flat 025 50 75 100 
+
+> success rate (%)  94.2 67.8 42.9
+
+Figure 13: Architecture ablations on OGBench navigation. HorizonFlow is compared with replac-ing the prefix controller by a behavior-cloning policy (BC for PC) and removing the hierarchy (flat). Bars report mean success across navigation environments and training seeds; error bars show stan-dard deviations across seed-level averages. F.1 ARCHITECTURE ABLATIONS 
+
+Why both a route planner and a prefix controller? Figure 13 compares HorizonFlow with two architectural ablations. Replacing the prefix controller with a behavior-cloning (BC) policy while retaining the route planner substantially reduces average success. Removing the hierarchy yields a larger reduction: the flat planner generates actions directly toward the final goal, without an inter-mediate subgoal route. These comparisons support the combined RP–PC design in the evaluated navigation environments. 
+
+Configurations and evaluation. Figure 13 compares three configurations on the nine OGBench navigation environments. The BC replacement retains the RP and replaces PC with a conditional flow-matching MLP that generates one action from the current state and RP subgoal latent. It is trained by behavior cloning without advantage weighting, using hindsight goal offsets sampled uni-formly from one to twice the RP training stride. The flat planner removes the intermediate RP and generates actions conditioned directly on the final goal, replanning every step. HorizonFlow uses 
+
+KRP = 16 and KPC = 4 ; the BC replacement retains the same RP candidate count. The flat config-uration uses 16 candidates. All three configurations use steering checkpoints 3 and 7 with β = 0 .5
+
+for their generative planning components. HorizonFlow and BC each use eight training seeds; the flat planner uses three. All three configu-rations are evaluated on 250 episodes per environment and training seed. For each seed, we first average the success rates equally across all nine environments. Bars report the mean of these seed-level averages, and error bars report their sample standard deviations. 35 F.2 STEP -L EVEL INFERENCE LATENCY 
+
+Table 7 distinguishes controller-only steps from steps that also invoke the planner on OGBench nav-igation. Measurements use the batch-one, device-only setup in Appendix F. After three warm-up calls, we time 50 calls per planning unit and HorizonFlow controller, and 200 calls per baseline tracking controller, synchronizing device completion. The lower endpoint is the smallest timed controller-only call. The upper endpoint adds the largest timed planner and controller calls, mea-sured separately; for DF, we take the largest planner time across the tested remaining-horizon set-tings. HD’s planning unit already includes its two planning levels. These are component-based esti-mates, not extrema of jointly measured environment-step latencies or guaranteed worst-case bounds. Table 7: Step-level device-inference latency estimates on OGBench navigation, in milliseconds. Each entry gives the controller-only minimum and the constructed planning-update upper estimate. The reference control period is included for comparison.                                                  
+
+> Environment Control period Diffuser HD DF HorizonFlow PointMaze-Medium 100 0.27–236.57 0.26–285.88 0.26–217.11 4.54–41.54 PointMaze-Large 100 0.27–248.96 0.27–285.73 0.28–293.53 4.76–42.13 PointMaze-Giant 100 0.27–249.04 0.27–297.68 0.27–296.08 4.65–42.14 AntMaze-Medium 100 0.27–250.56 0.27–289.47 0.28–290.66 4.81–42.75 AntMaze-Large 100 0.26–250.26 0.28–287.69 0.28–422.73 4.76–42.71 AntMaze-Giant 100 0.28–249.87 0.27–289.06 0.28–217.24 4.61–42.58 HumanoidMaze-Medium 25 0.31–265.95 0.31–304.24 0.31–254.75 4.68–43.21 HumanoidMaze-Large 25 0.31–266.14 0.32–303.75 0.31–217.53 4.66–43.19 HumanoidMaze-Giant 25 0.32–265.95 0.32–358.25 0.32–445.83 4.79–42.58
+
+HorizonFlow’s step-level timing uses the default RP update period, one-step PC execution, and the candidate counts and FK settings in Table 3. The step-level comparison shows why amortized cost alone does not characterize the computation required at a planning update. The baseline tracking controllers are inexpensive between updates, but their planning calls dominate the upper estimates. HorizonFlow spends more on local action generation at each step while requiring less computation when updating the route. For one-shot configurations, the planning cost occurs at initialization rather than throughout execution; the update frequency therefore matters alongside its cost. HorizonFlow’s planning-update estimates fall below the PointMaze and AntMaze reference peri-ods. On HumanoidMaze, all planners’ planning-update estimates exceed the 25 ms reference period, with HorizonFlow’s (about 43 ms) the lowest; controller-only estimates remain below the reference period in all three domains. Compilation, environment simulation, and host–device transfers are excluded, so end-to-end deadline compliance requires separate measurement. 36 60 80 100 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 55.6 85.5 66.9 97.2 83.9 99.9 92.9 100 97.9 100 100
+
+RP FK: on RP FK: off 
+
+98 100 
+
+(b)     
+
+> 99.9 100 100 100 100
+
+PC FK: on PC FK: off 
+
+98 100 
+
+(c) replanning interval    
+
+> 100 100 100 100
+
+98 100 
+
+1 step 
+
+(d)     
+
+> 100 100 100 100 100
+
+1 4 16 64 
+
+KRP 
+
+1310 30 
+
+> inference (ms/step)
+
+(e) 
+
+Diffuser HD DF 
+
+5.8 6.4 6.9 7.9 9.2 13 20 12 18 
+
+1 2 4 8 16 
+
+KPC 
+
+1310 30 
+
+(f) 
+
+7.5 8.4 9.2 10 14 8.7 9.6 12 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+1310 30 
+
+(g) 
+
+23 14 9.2 6.9 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+12510 20 
+
+(h) 
+
+9.2 6.4 5.6 5.4 5.3 
+
+pointmaze-medium 
+
+40 60 80 100 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 46.6 81.0 64.6 95.2 86.3 99.6 93.9 99.8 98.6 99.699.8
+
+RP FK: on RP FK: off 96 98 100 
+
+(b)    
+
+> 98.5 99.6 99.8 100 99.7
+
+PC FK: on PC FK: off 
+
+98 100 
+
+(c) replanning interval    
+
+> 100 99.6 99.8 99.7
+
+98 100 
+
+1 step 
+
+(d)    
+
+> 99.8 99.8 99.8 99.8 99.7
+
+1 4 16 64 
+
+KRP 
+
+1310 30 
+
+> inference (ms/step)
+
+(e) 
+
+Diffuser HD DF 
+
+6.1 6.6 7.1 8.3 9.5 13 20 18 
+
+1 2 4 8 16 
+
+KPC 
+
+1310 30 
+
+(f) 
+
+7.7 8.6 9.5 10 14 9.8 13 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+1310 30 
+
+(g) 
+
+23 14 9.5 7.2 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+12510 20 
+
+(h) 
+
+9.5 6.4 5.6 5.4 5.3 
+
+pointmaze-large 
+
+050 100 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 14.5 58.4 41.9 90.8 78.5 97.0 91.2 97.2 96.8 97.9 94.5 98.2
+
+RP FK: on RP FK: off 
+
+90 95 100 
+
+(b)   
+
+> 90.7 97.2 97.2 98.2 97.8 98.1 97.4
+
+PC FK: on PC FK: off 94 96 98 100 
+
+(c) replanning interval    
+
+> 97.5 97.2 97.2 97.9
+
+94 96 98 100 
+
+1 step 
+
+(d)    
+
+> 97.2 98.0 97.7 97.8 97.7
+
+1 4 16 64 
+
+KRP 
+
+1310 30 
+
+> inference (ms/step)
+
+(e) 
+
+Diffuser HD DF 
+
+6.0 6.3 7.1 8.0 9.3 13 20 18 
+
+1 2 4 8 16 
+
+KPC 
+
+1310 30 
+
+(f) 
+
+7.7 8.6 9.3 10 14 8.8 9.8 13 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+1310 30 
+
+(g) 
+
+23 14 9.3 7.0 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+1310 30 
+
+(h) 
+
+9.3 6.4 5.7 5.4 5.4 
+
+pointmaze-giant Figure 14: Sampling, replanning, and inference cost on PointMaze. Blocks show Medium, Large, and Giant, top to bottom. Each block reports success rate (%) (a–d) and estimated inference time (e–h, ms/step, logarithmic scale) for RP and PC candidate counts, RP update ratio, and executed prefix fraction, respectively. Solid/dashed curves indicate FK steering on/off; stars mark defaults. 37 80 90 100 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 80.9 93.6 90.9 95.7 94.0 97.2 96.4 97.6 95.1 96.4 96.3 97.7
+
+RP FK: on RP FK: off 
+
+94 96 98 100 
+
+(b)  
+
+> 96.1 95.9 97.6 96.7 97.5 97.2 96.5
+
+PC FK: on PC FK: off 94 96 98 100 
+
+(c) replanning interval   
+
+> 96.2 97.2 97.6 97.2
+
+92 94 96 98 100 
+
+1 step 
+
+(d)   
+
+> 97.6 96.8 95.5 95.5 94.7
+
+1 4 16 64 
+
+KRP 
+
+1310 30 
+
+> inference (ms/step)
+
+(e) 
+
+Diffuser HD DF 
+
+6.1 6.6 7.2 8.2 9.6 13 20 19 
+
+1 2 4 8 16 
+
+KPC 
+
+1310 30 
+
+(f) 
+
+7.7 8.6 9.6 11 14 9.0 13 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+1310 30 
+
+(g) 
+
+24 14 9.6 7.2 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+1310 30 
+
+(h) 
+
+9.6 6.3 5.6 5.4 5.4 
+
+antmaze-medium 
+
+80 85 90 95 100 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 83.2 89.5 88.0 93.9 91.3 94.7 91.6 93.0 92.3 93.8 94.6 93.9
+
+RP FK: on RP FK: off 90 92 94 96 98 
+
+(b) 
+
+> 91.7 92.4 92.7 93.0 94.4 94.1 95.0 93.7 93.9
+
+PC FK: on PC FK: off 90 92 94 96 
+
+(c) replanning interval    
+
+> 92.7 93.1 93.0 93.2
+
+85 90 95 
+
+1 step 
+
+(d)   
+
+> 93.0 92.6 86.6 87.4 86.1
+
+1 4 16 64 
+
+KRP 
+
+1310 30 
+
+> inference (ms/step)
+
+(e) 
+
+Diffuser HD DF 
+
+6.1 6.6 7.1 8.1 9.5 13 20 18 
+
+1 2 4 8 16 
+
+KPC 
+
+1310 30 
+
+(f) 
+
+7.7 8.4 9.5 11 14 9.0 10.0 13 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+1310 30 
+
+(g) 
+
+24 14 9.5 7.2 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+1310 30 
+
+(h) 
+
+9.5 6.2 5.5 5.4 5.3 
+
+antmaze-large 
+
+40 60 80 100 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 41.3 63.1 56.6 77.4 67.6 83.9 78.3 86.6 81.0 90.6 85.2 89.6 87.1
+
+RP FK: on RP FK: off 80 85 90 
+
+(b) 
+
+> 82.6 84.0 82.6 86.6 83.0 85.9 84.8 86.0 87.7
+
+PC FK: on PC FK: off 70 80 90 
+
+(c) replanning interval   
+
+> 88.0 87.5 86.6 72.2
+
+20 40 60 80 100 
+
+1 step 
+
+(d)  
+
+> 86.6 66.5 35.5 29.2 30.7
+
+1 4 16 64 
+
+KRP 
+
+1310 30 
+
+> inference (ms/step)
+
+(e) 
+
+Diffuser HD DF 
+
+5.9 6.4 7.0 8.0 9.4 13 20 18 
+
+1 2 4 8 16 
+
+KPC 
+
+1310 30 
+
+(f) 
+
+7.7 8.5 9.4 10 14 8.8 13 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+1310 30 
+
+(g) 
+
+23 14 9.4 7.0 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+1310 30 
+
+(h) 
+
+9.4 6.2 5.5 5.3 5.3 
+
+antmaze-giant Figure 15: Sampling, replanning, and inference cost on AntMaze. Blocks show Medium, Large, and Giant, top to bottom. Each block reports success rate (%) (a–d) and estimated inference time (e–h, ms/step, logarithmic scale) for RP and PC candidate counts, RP update ratio, and executed prefix fraction, respectively. Solid/dashed curves indicate FK steering on/off; stars mark defaults. 38 70 80 90 100 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 72.2 89.8 85.0 96.1 91.7 98.3 95.2 99.2 98.0 99.3 98.2 99.4 98.2
+
+RP FK: on RP FK: off 96 98 100 
+
+(b) 
+
+> 97.7 98.8 97.7 99.2 98.6 98.2 97.9 99.6
+
+PC FK: on PC FK: off 96 98 100 
+
+(c) replanning interval 
+
+> 99.0 98.1 99.2 98.4
+
+050 100 
+
+1 step 
+
+(d)  
+
+> 99.2 96.8 70.6 21.8 5.6
+
+1 4 16 64 
+
+KRP 
+
+1310 30 
+
+> inference (ms/step)
+
+(e) 
+
+Diffuser HD DF 
+
+5.3 5.6 5.9 6.4 7.1 8.7 12 
+
+1 2 4 8 16 
+
+KPC 
+
+1310 30 
+
+(f) 
+
+5.4 6.2 7.1 8.4 12 5.7 6.6 7.7 11 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+1310 30 
+
+(g) 
+
+14 9.5 7.1 5.9 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+1310 30 (h) 
+
+7.1 3.8 3.2 2.9 2.8 
+
+humanoidmaze-medium 
+
+50 60 70 80 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 55.4 68.9 65.9 78.2 69.9 78.4 75.6 79.7 77.9 80.6 77.9 78.2
+
+RP FK: on RP FK: off 75 80 85 
+
+(b) 
+
+> 79.9 79.1 81.5 79.7 81.1 79.3 78.6 80.4 79.9
+
+PC FK: on PC FK: off 
+
+75 80 85 
+
+(c) replanning interval 
+
+> 82.6 81.5 79.7 75.9
+
+050 
+
+1 step 
+
+(d)  
+
+> 79.7 55.1 6.0 0.0 0.0
+
+1 4 16 64 
+
+KRP 
+
+1310 30 
+
+> inference (ms/step)
+
+(e) 
+
+Diffuser HD DF 
+
+5.3 5.6 5.9 6.4 7.0 8.7 12 
+
+1 2 4 8 16 
+
+KPC 
+
+1310 30 
+
+(f) 
+
+5.4 6.0 7.0 8.1 12 5.5 6.5 7.5 10 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+1310 30 
+
+(g) 
+
+14 9.4 7.0 5.9 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+1310 30 (h) 
+
+7.0 3.7 3.1 2.9 2.8 
+
+humanoidmaze-large 
+
+60 80 100 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 56.4 79.4 73.9 87.9 83.9 94.1 88.6 95.3 90.5 95.2 96.7 95.0
+
+RP FK: on RP FK: off 92 94 96 98 
+
+(b)  
+
+> 93.8 95.6 94.4 95.3 96.3 96.2 95.7 96.5
+
+PC FK: on PC FK: off 90 95 
+
+(c) replanning interval   
+
+> 95.9 94.9 95.3 91.9
+
+050 100 
+
+1 step 
+
+(d)   
+
+> 95.3 84.5 27.4 5.5 0.3
+
+1 4 16 64 
+
+KRP 
+
+0.3 1310 30 
+
+> inference (ms/step)
+
+(e) 
+
+Diffuser HD DF 
+
+5.1 5.3 5.4 5.6 6.0 6.8 8.5 
+
+1 2 4 8 16 
+
+KPC 
+
+0.3 1310 30 
+
+(f) 
+
+4.1 5.0 6.0 7.1 9.4 4.5 5.4 6.4 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+0.3 1310 30 
+
+(g) 
+
+9.5 7.1 6.0 5.4 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+0.3 1310 30 (h) 
+
+6.0 2.6 1.9 1.7 1.6 
+
+humanoidmaze-giant Figure 16: Sampling, replanning, and inference cost on HumanoidMaze. Blocks show Medium, Large, and Giant, top to bottom. Each block reports success rate (%) (a–d) and estimated inference time (e–h, ms/step, logarithmic scale) for RP and PC candidate counts, RP update ratio, and executed prefix fraction, respectively. Solid/dashed curves indicate FK steering on/off; stars mark defaults. 39 050 100 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 5.8 63.5 46.1 91.1 88.7 91.1 93.2 91.9 92.1 88.3 92.1
+
+RP FK: on RP FK: off 88 90 92 94 96 
+
+(b)   
+
+> 92.6 92.9 92.2 93.2 92.7 92.3 93.1 90.9 92.6
+
+PC FK: on PC FK: off 90 92 94 96 
+
+(c) replanning interval   
+
+> 92.3 92.3 93.2 92.9
+
+90 92 94 96 
+
+1 step 
+
+(d)   
+
+> 93.2 93.5 92.4 92.4 91.7
+
+1 4 16 64 
+
+KRP 
+
+10 20 50 100 
+
+> inference (ms/step)
+
+(e) 
+
+8.7 11 13 17 22 35 63 10 12 16 20 33 58 
+
+1 2 4 8 16 
+
+KPC 
+
+20 50 
+
+(f) 
+
+21 22 22 23 23 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+10 20 50 100 
+
+(g) 
+
+40 40 22 13 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+20 50 
+
+(h) 
+
+22 21 21 20 20 
+
+visual-cube-single 
+
+20 40 60 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 19.1 28.8 25.5 38.0 31.0 42.9 35.6 46.8 38.3 45.5 39.7 48.1 42.3
+
+RP FK: on RP FK: off 30 40 50 60 
+
+(b) 
+
+> 41.9 45.4 42.8 46.8 45.0 48.0 48.5 46.8 47.5
+
+PC FK: on PC FK: off 30 40 50 60 
+
+(c) replanning interval   
+
+> 41.5 42.2 46.8 47.9
+
+35 40 45 50 55 
+
+1 step 
+
+(d)   
+
+> 46.8 47.4 45.5 45.5 48.1
+
+1 4 16 64 
+
+KRP 
+
+510 20 50 100 
+
+> inference (ms/step)
+
+(e) 
+
+6.5 7.5 8.7 10 13 20 34 12 18 31 
+
+1 2 4 8 16 
+
+KPC 
+
+10 20 50 
+
+(f) 
+
+12 13 13 14 15 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+10 20 50 100 
+
+(g) 
+
+40 22 13 8.5 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+10 20 50 (h) 
+
+13 12 11 11 11 
+
+visual-cube-double 
+
+10 15 20 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 12.1 14.2 12.7 14.8 14.6 13.9 15.5 14.4 15.3 13.4 14.6 12.9 13.9
+
+RP FK: on RP FK: off 10 15 20 
+
+(b)  
+
+> 15.9 15.1 14.7 14.4 13.1 14.1 14.3 13.3
+
+PC FK: on PC FK: off 10 12 14 16 18 
+
+(c) replanning interval   
+
+> 13.4 13.7 14.4 15.3
+
+10 15 
+
+1 step 
+
+(d)  
+
+> 14.4 13.0 12.2 13.1 10.6
+
+1 4 16 64 
+
+KRP 
+
+510 20 50 
+
+> inference (ms/step)
+
+(e) 
+
+6.2 6.7 7.2 8.2 9.6 13 20 18 
+
+1 2 4 8 16 
+
+KPC 
+
+510 20 50 
+
+(f) 
+
+7.9 8.8 9.6 11 14 9.0 10 13 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+510 20 50 
+
+(g) 
+
+24 14 9.6 7.3 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+510 20 
+
+(h) 
+
+9.6 7.5 6.8 6.3 6.3 
+
+visual-cube-triple Figure 17: Sampling, replanning, and inference cost on visual cube manipulation. Blocks show Cube-Single, Cube-Double, and Cube-Triple, top to bottom. Each block reports success rate (%) (a– d) and estimated inference time (e–h, ms/step, logarithmic scale) for RP and PC candidate counts, RP update ratio, and executed prefix fraction, respectively. Solid/dashed curves indicate FK steering on/off; stars mark defaults. 40 40 50 60 70 80 
+
+> success rate (%)
+
+(a) candidate count 
+
+> 43.6 55.0 50.8 58.7 54.9 66.2 59.8 65.6 60.2 69.0 67.2 72.1 65.3
+
+RP FK: on RP FK: off 60 65 70 75 
+
+(b) 
+
+> 66.6 66.5 67.8 65.6 67.6 66.7 69.3 68.5 68.8
+
+PC FK: on PC FK: off 
+
+60 65 70 
+
+(c) replanning interval  
+
+> 62.9 63.7 65.6 67.3
+
+60 65 70 75 
+
+1 step 
+
+(d) 
+
+> 65.6 68.7 69.8 68.5 69.4
+
+1 4 16 64 
+
+KRP 
+
+510 20 50 
+
+> inference (ms/step)
+
+(e) 
+
+6.2 6.9 7.6 8.9 11 15 24 14 23 
+
+1 2 4 8 16 
+
+KPC 
+
+10 20 50 
+
+(f) 
+
+9.3 10 11 12 14 11 13 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+510 20 50 
+
+(g) 
+
+23 17 11 7.7 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+510 20 
+
+(h) 
+
+11 8.9 8.2 7.8 7.7 
+
+visual-scene Figure 18: Sampling, replanning, and inference cost on visual Scene. Panels (a–d) report success rate (%), and (e–h) report estimated inference time (ms/step, logarithmic scale), for RP and PC candidate counts, RP update ratio, and executed prefix fraction, respectively. Solid/dashed curves indicate FK steering on/off; stars mark defaults. 41 80 100 120 140 
+
+> normalized score
+
+(a) candidate count 
+
+> 94 121 115 128 134 132 137 134 139 137 141 138
+
+RP FK: on RP FK: off 110 120 130 140 
+
+(b)     
+
+> 119 133 134 137 138 139
+
+PC FK: on PC FK: off 
+
+134 136 138 140 
+
+(c) replanning interval   
+
+> 135 135 137 138
+
+134 136 138 140 
+
+1 step 
+
+(d)     
+
+> 137 138 138 138 138
+
+1 4 16 64 
+
+KRP 
+
+10 20 50 100 
+
+> inference (ms/step)
+
+(e) 
+
+8.3 11 13 17 23 35 63 10 12 16 21 33 58 
+
+1 2 4 8 16 
+
+KPC 
+
+20 50 
+
+(f) 
+
+22 22 23 23 24 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+10 20 50 100 
+
+(g) 
+
+41 41 23 11 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+20 50 
+
+(h) 
+
+23 22 21 21 21 
+
+maze2d-umaze 
+
+130 140 150 160 
+
+> normalized score
+
+(a) candidate count 
+
+> 135 147 140 151 147 154 149 155 151 156 154 157 156
+
+RP FK: on RP FK: off 130 140 150 160 
+
+(b)    
+
+> 137 150 152 155 155 156 157
+
+PC FK: on PC FK: off 
+
+152 154 156 158 
+
+(c) replanning interval   
+
+> 154 155 155 154
+
+152 154 156 158 160 
+
+1 step 
+
+(d)    
+
+> 155 156 156 157 157
+
+1 4 16 64 
+
+KRP 
+
+510 20 50 100 
+
+> inference (ms/step)
+
+(e) 
+
+6.0 6.7 7.6 9.3 11 17 28 11 15 26 
+
+1 2 4 8 16 
+
+KPC 
+
+10 20 50 
+
+(f) 
+
+10 11 11 12 14 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+510 20 50 100 
+
+(g) 
+
+41 22 11 7.6 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+10 20 
+
+(h) 
+
+11 11 10 10 10 
+
+maze2d-medium 
+
+160 180 200 220 
+
+> normalized score
+
+(a) candidate count 
+
+> 166 194 183 201 198 204 200 205 203 206 205 207
+
+RP FK: on RP FK: off 180 190 200 210 
+
+(b)   
+
+> 183 199 200 205 208 207 209
+
+PC FK: on PC FK: off 
+
+202 204 206 208 
+
+(c) replanning interval   
+
+> 206 205 205 204
+
+202 204 206 208 210 
+
+1 step 
+
+(d)    
+
+> 205 205 206 207 206
+
+1 4 16 64 
+
+KRP 
+
+510 20 50 
+
+> inference (ms/step)
+
+(e) 
+
+5.9 6.6 7.4 8.6 10 15 24 14 22 
+
+1 2 4 8 16 
+
+KPC 
+
+10 20 50 
+
+(f) 
+
+9.1 9.8 10 12 14 13 
+
+1/8 1/4 1/2 1
+
+HRP / Δ RP 
+
+510 20 50 
+
+(g) 
+
+23 17 10 7.1 
+
+25 50 75 100 
+
+executed prefix (%) 
+
+10 20 
+
+(h) 
+
+10 9.5 9.2 9.2 9.2 
+
+maze2d-large Figure 19: Sampling, replanning, and inference cost on Maze2D. Blocks show U-Maze, Medium, and Large, top to bottom. Each block reports D4RL normalized score (a–d) and estimated inference time (e–h, ms/step, logarithmic scale) for RP and PC candidate counts, RP update ratio, and executed prefix fraction, respectively. Solid/dashed curves indicate FK steering on/off; stars mark defaults. 42

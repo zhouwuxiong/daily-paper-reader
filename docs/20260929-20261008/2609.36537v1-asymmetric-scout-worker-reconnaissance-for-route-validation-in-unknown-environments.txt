@@ -1,0 +1,432 @@
+Title: Asymmetric Scout-Worker Reconnaissance for Route Validation in Unknown Environments
+
+URL Source: https://arxiv.org/pdf/2609.36537v1
+
+Published Time: Wed, 30 Sep 2026 00:44:25 GMT
+
+Number of Pages: 16
+
+Markdown Content:
+# Asymmetric Scout–Worker Reconnaissance for Route Validation in Unknown Environments 
+
+Kashif Khurshid Noori 1, Jaskrit Singh 1, Athanasios Ch. Kapoutsis 2, Jing Xiao 1,and Constantinos Chamzas 1 
+
+> 1
+
+Robotics Engineering Department, Worcester Polytechnic Institute, Worcester, MA, USA 
+
+{kknoori,jsingh,jxiao2,chamzas }@wpi.edu  
+
+> 2
+
+Department of Electrical and Computer Engineering, Democritus University of Thrace, Xanthi, Greece 
+
+akapouts@ee.duth.gr 
+
+Abstract. This paper studies asymmetric scout–worker reconnaissance in unknown environments, where a small, agile autonomous scout explores routes for a larger worker robot that must visit an ordered sequence of goal locations. Because the scout has a smaller footprint and greater mobility, a scout-traversable route may be infeasible for the worker; worker feasi-bility must therefore be inferred from scout observations. This setting is not explicitly addressed by existing exploration and replanning methods, which typically assume a single traversability model and seek optimal paths for the same robot performing the exploration. We introduce a sym-biotic scout-based framework that exploits the scout’s superior mobility to explore only the portions of the unknown environment needed to identify worker-feasible path segments connecting the ordered goals. Evaluations in simulated and real-world settings demonstrate that the proposed ap-proach validates feasible routes, repairs blocked segments with validated worker-feasible detours, and substantially reduces scout travel compared to baseline exploration and planning methods. A real-world indoor de-ployment further demonstrates the scout navigating narrow corridors to identify a worker-feasible route. 
+
+Keywords: exploration planners, heterogeneous robots, next-best-view, traversability, route validation 
+
+## 1 Introduction 
+
+Autonomous robots are increasingly being deployed beyond structured roads, where large worker vehicles must traverse a terrain that is only partially known, difficult to inspect, or unsafe to enter without prior reconnaissance. In such missions, ranging from planetary and disaster-response operations to forestry and mining, reconnaissance may be performed by a smaller robot whose mobility, 
+
+We acknowledge the technical and financial support of the Automotive Research Center (ARC) in accordance with Cooperative Agreement W56HZV-24-2-0001 U.S. Army DEVCOM Ground Vehicle Systems Center (GVSC) Warren, MI. DISTRIBUTION STATEMENT A. Approved for public release; distribution is unlimited. OPSEC11103. arXiv:2609.36537v1 [cs.RO] 29 Sep 2026 2 Noori et al. Scout Path Not Traversable Scout Alternative Multi-Goal Mission Replanned Path Explored Regions 
+
+> Fig. 1: A scout robot explores worker-inaccessible terrain to identify feasible paths for a larger robot visiting an ordered multi-goal mission.
+
+sensing, footprint, and operational role differ from those of the worker vehicle. This asymmetry creates both an opportunity and a challenge: a scout can quickly reach viewpoints that may be inaccessible to the worker, but a route that is safe for the scout is not necessarily traversable by the worker, as shown in Fig. 1. This raises the central question: how should a scout exploit its greater mobility to move and sense so as to discover a worker-feasible path through a prescribed sequence of goal locations? 
+
+Prior work does not directly address this asymmetric reconnaissance problem. Frontier and next-best-view planners [2, 4, 20, 21], task-aware exploration, and informative path planning [3, 14, 15, 18] generally assume that sensing, planning, and execution share a single traversability model. Heterogeneous robot teams relax the single-platform assumption, but existing methods typically map first and plan later, let each robot reason only about its own feasibility, or repeatedly replan a follower path [1, 13, 16, 17]. Incremental search methods repair paths as information arrives, but are usually single-robot, single-start–goal, and shared-collision-model formulations [7, 10–12]. Thus, existing methods do not directly answer how a scout should gather the observations needed to identify a worker-feasible path through ordered goals. We propose a scout-based ordered-goal route-validation framework in which exploration is guided by the worker’s mobility requirements while the scout remains free to exploit its own traversability. The scout maintains a graph of observed scout-traversable space and selects reachable viewpoints based on their utility for establishing worker-feasible connectivity between consecutive goals. The method first biases exploration toward a provisional worker route through the goals, then projects the scout graph onto a worker-feasible graph. If the goal-containing components remain disconnected, a second phase directs the scout toward observations that may reveal worker-feasible detours. At termination, the framework returns a worker-feasible ordered-goal path if one is found; otherwise, it reports unresolved goal connections. This paper makes the following contributions: 
+
+– A formal definition of asymmetric scout–worker route validation, where a scout with its own traversability constraints gathers information to discover routes for a larger worker with stricter mobility and feasibility constraints. 
+
+– A two-phase scout-exploration framework for validating and repairing ordered-goal worker routes, preserving validated worker-traversable segments, insert-ing observed worker-feasible detours when needed, and reporting unresolved portions under the worker’s footprint and traversability model. Asymmetric Scout–Worker Reconnaissance 3
+
+– Evaluations in SimpleSim and CARLA demonstrating the method’s effec-tiveness and substantially reduced scout travel relative to baselines. 
+
+– A real-world indoor deployment on the 2 nd floor of WPI’s Robotics Dept., where the scout navigates narrow corridors to identify a worker-feasible route. 
+
+## 2 Related Work 
+
+We organize related work into three areas: single-robot exploration, single-robot navigation in unknown environments, and heterogeneous scout–worker teams. 
+
+2.1 Single Robot: Environment Exploration 
+
+Single robot environment exploration methods focus on planning how a robot should move in an environment to gather data about it. Early work [21] uses the concept of frontiers, the border between known and unknown cells, to guide exploration. Later, this idea was expanded through Next-Best-Views (NBVs) [2], which are possible future views for the robot. The idea is to score these NBVs based on how much information they provide, such as how many frontiers they reveal, and to choose a nearby, high-scoring view as the robot’s next sub-goal. Recent graph-based methods [4, 20] reduce repeated NBV-query cost by main-taining reusable graph or hypergraph structures over the explored space. Other refinements introduce task priors into the gain function [3, 15] or formulate ex-ploration as constrained information-cost optimization [14, 18]. Across existing environment exploration planners, sensing, planning, and execution share a single robot and a single collision model, with the gain function rewarding the explorer’s own progress through the environment. This differs from our setting, where a scout searches for a path for a worker with restricted mobility. 
+
+2.2 Single Robot: Navigating to a Goal in an Unknown Environment 
+
+A related line of work studies goal-directed navigation in unknown environments. Dynamic replanning methods [11, 12] repair A∗-style cost estimates when edge costs change, reusing prior search effort rather than restarting. The heuristic itself remains fixed. PHA* [7] extends the setting to graphs whose topology is initially unknown, with a physical agent traversing to reveal edges and a cost metric that accumulates travel rather than node expansions. CIA* [10] updates the heuristic at runtime based on the revealed topology. However, none of these methods consider the worker-scout formulation in this paper. Exploration and mapping assume a single robot. 
+
+2.3 Multi-Robot: Heterogeneous Scout–Worker Teams 
+
+Heterogeneous exploration systems separate sensing from execution using dif-ferent sensors on one platform [1] or physically distinct robots. Some use an aerial robot to build a map for a ground robot [16], while subterranean teams 4 Noori et al. 
+
+coordinate heterogeneous robots under shared coverage objectives with per-robot feasibility checks [13]. Closest to our setting, Rockenbauer et al. [17] define an aerial scout’s utility relative to a ground follower’s optimistic path and recompute that path online. Existing methods therefore either map first and plan later, op-timize each robot’s own feasibility, or repeatedly replan the follower path. They do not directly address scout-guided validation of a prescribed ordered route for a worker with stricter traversability constraints. 
+
+## 3 Problem Formulation 
+
+We consider a bounded workspace Ω ⊂ R2 with a known outer boundary. A robot configuration is 
+
+q = ( x, y, θ ) ∈ X , X = Ω × S1. (1) Configurations outside X are infeasible. The system consists of a scout robot and a worker robot. We assume the worker has no greater mobility than the scout: due to its larger footprint or stricter motion constraints, the worker’s traversable set is contained in the scout’s. The two robots therefore induce different traversability maps. At online iteration k, let 
+
+T kj : X → { free , obstructed , unknown }, j ∈ { s, w }, (2) denote the traversability map for robot j, where s denotes the scout and w denotes the worker. For the observed portion of the workspace, this asymmetry implies 
+
+T kw(q) = free ⇒ T ks (q) = free , T ks (q) = obstructed ⇒ T kw(q) = obstructed .
+
+(3) Thus, the worker map is at least as restrictive as the scout map: a configuration may be free for the scout but obstructed for the worker, but not the reverse. This nested model is appropriate when feasibility differences are dominated by foot-print or clearance; strongly platform-dependent terrain interactions may require non-nested traversability models, which we leave for future work. The scout and worker have given safe initial configurations qs
+
+> init
+
+, q w 
+
+> init
+
+∈ X ,which need not coincide. The worker remains at qw 
+
+> init
+
+while the scout explores from 
+
+qs
+
+> init
+
+. The scout only knows what it senses at qs
+
+> init
+
+; subsequent map information is obtained only from measurements at visited scout configurations, and all unob-served configurations are labeled unknown. We assume a static environment and correct classification of observed configurations under each robot’s traversability model. The scout is equipped with a limited-range sensor characterized by a range 
+
+r > 0 and an angular field of view ϕ ∈ (0 , 2π]. From a configuration q ∈ X , the sensor returns measurements over the visible set Vis( q; r, ϕ ) ⊆ X , which contains the configurations within distance r of q, within the angular sector of width ϕ
+
+centered on the scout’s heading, and whose line of sight from q is not blocked by an obstructed configuration. Observations outside this set are not available at q.Asymmetric Scout–Worker Reconnaissance 5
+
+The worker task is specified only over positions. Starting from g0 = pos( qw
+
+> init
+
+), pos( x, y, θ ) = ( x, y ), the worker must reach the ordered subgoal list in the pre-scribed order: 
+
+G = ( g1, . . . , g m), gi ∈ Ω, (4) 
+
+Scout motion and map updates 
+
+At iteration k, the scout chooses its next configuration as per an online policy, 
+
+qsk+1 = πk(Ik) = ( xsk+1 , y sk+1 , θ sk+1 ) ∈ X , with Ik = ( qsk, T ks , T kw, G) (5) so the decision uses only information available before the next measurement. The continuous scout motion segment executed from qsk to qsk+1 is denoted by 
+
+ξk : [0 , 1] → X , ξk(0) = qsk, ξk(1) = qsk+1 (6) The scout may move only through known scout-traversable configurations: 
+
+T ks (ξk(α)) = free , ∀α ∈ [0 , 1] . (7) At qsk+1 , the scout acquires a measurement zk+1 over the observation set 
+
+Ok+1 = Vis( qsk+1 ; r, ϕ ) ⊆ X . (8) The measurement updates both traversability maps: (T k+1  
+
+> s
+
+, T k+1  
+
+> w
+
+) = Update( T ks , T kw, Ok+1 , z k+1 ), (9) where observed configurations are classified according to the corresponding robot’s traversability model and unobserved configurations retain their previ-ous labels: T k+1  
+
+> j
+
+(q) = T kj (q), ∀q / ∈ O k+1 , j ∈ { s, w }.
+
+Worker-route extraction 
+
+At iteration k, a worker-feasible ordered-goal path has been found if there exists a continuous path τ : [0 , 1] → X and parameters 0 = t0 ≤ t1 ≤ · · · ≤ tm = 1 such that 
+
+τ (0) = qw
+
+> init
+
+, pos( τ (ti)) = gi, i = 1 , . . . , m, T kw(τ (t)) = free , ∀t ∈ [0 , 1] .
+
+(10) Thus, the worker may traverse a route through configurations already labeled free in the worker traversability map. Let Pk(qw
+
+> init
+
+, G) be the set of paths satisfying (10). If this set is nonempty, the returned worker path is the minimum-cost ordered-goal path 
+
+τ ⋆k ∈ arg min    
+
+> τ∈P k(qw
+> init ,G)
+
+cw(τ ), (11) where cw(τ ) denotes worker travel distance or cost. If Pk(qw
+
+> init
+
+, G) = ∅, a worker-feasible ordered-goal route has not yet been validated at iteration k.6 Noori et al. 
+
+Online Exploration Planning Problem 
+
+For a finite online scout motion sequence qs = ( qs
+
+> 0
+
+, q s
+
+> 1
+
+, . . . , q sK ) generated by (5), the exploration cost is PK−1 
+
+> k=0
+
+cs(ξk), where cs(ξk) is the travel cost. The online exploration planning problem is to find the lowest-cost scout motion sequence that discovers a worker-feasible path through the ordered goals: min 
+
+> qs
+> K−1
+
+X
+
+> k=0
+
+cs(ξk)s.t. qs 
+
+> 0
+
+= qs
+
+> init
+
+,
+
+(6) and (7) hold , k = 0 , . . . , K − 1,
+
+PK (qw
+
+> init
+
+, G)̸ = ∅.
+
+(12) Here, K is the terminal index of the finite scout motion sequence. The constraint 
+
+PK (qw
+
+> init
+
+, G)̸ = ∅ requires that the information gathered by the scout reveals at least one worker-feasible path through all ordered goals. The problem is online because each scout configuration in qs is selected according to (5) before the next measurement becomes available. 
+
+## 4 Method 
+
+The method first constructs a preferred worker route σ through the ordered goals. Phase 1 attempts to validate the preferred route by exploring its swept worker corridor. The observed scout graph is then projected to a worker-feasible graph GW . If the ordered goals are connected within a single component, the algorithm extracts a worker-feasible route; otherwise, Phase 2 directs the scout toward observations that may reveal detours between distinct goal-containing components. Here, a connected component refers to a maximal connected sub-graph of GW . Alg. 1 summarizes this procedure, while Fig. 3, Fig. 4, and Fig. 6 illustrate the three stages. 
+
+4.1 Preferred Worker Route 
+
+Given the ordered goals G, straight-line local connections between each pair (gi−1, g i) produce nominal segments σi, whose concatenation defines the preferred route: σ = σ1 ⊕ · · · ⊕ σm. This route is only a validation scaffold. Phase 1 targets its swept worker corridor Rσ = Smi=1 Sweep w(σi), whose cells must be observed to determine whether the route is worker-feasible. 
+
+4.2 Shared Graph-Based Viewpoint Selection 
+
+Both phases use the same graph-based viewpoint-selection model, but instantiate it with different targets. The scout incrementally maintains a graph of observed, scout-traversable free space and scores candidate viewpoints according to the information they could provide for the current phase. Asymmetric Scout–Worker Reconnaissance 7
+
+Algorithm 1: Overview of the scout–worker route-validation algorithm                         
+
+> Input: Ordered goals G, map, scout and worker traversability models Construct preferred worker route σ;
+> while route-corridor coverage is below the threshold and ∃NBV do
+> Select and execute a route-biased NBV; Update the map and scout graph GS;Construct worker graph GWfrom GSand repair connectivity;
+> if all ordered goals are connected in GWthen
+> Extract a worker-feasible route and terminate;
+> while goal-containing worker components remain disconnected and ∃NBV do
+> Select and execute a cluster-biased NBV; Update GSand GW;Extract a worker-feasible route or report unresolved connectivity;
+
+This graph-based abstraction follows the spirit of Next-Best-View (NBV) exploration planners [2], and specifically the graph-based variant APN [20]. The viewpoint-selection rule is inspired by CIA* [10]: candidate viewpoints are eval-uated by trading off their expected task progress against the cost of reaching them through the current scout graph. Unlike generic coverage-based exploration, however, our gains are task-aware. In Phase 1 , they prioritize observations useful for validating the preferred worker route; in Phase 2 , they prioritize observations that may reveal worker-feasible connections between disconnected components. 
+
+Scout Graph: We represent the scout’s observed free space as a graph: 
+
+GS = ( VS , E S ), v = ( qv , ι v , ψ v ), qv ∈ X , (13) where each node v ∈ VS is a candidate or previously visited viewpoint with configuration qv , visitation flag ιv , and current task-aware gain value ψv . The current set of next-best-view candidates is N = {v ∈ VS : ιv = 0 , ψ v > 0}.Nodes that are visited or have zero gain are kept in GS because they preserve reachability through the scout’s observed free space. An edge euv enters ES only if its local motion ξuv satisfies the scout-safety condition in (7). Each node also stores the frontier cells [21] it can observe, ΓF (v), and the target cells it can observe, ΓR(v). These sets provide the geometric quantities used by the phase-dependent gain functions below. After each scout measurement (Eq. 8–Eq. 9), the graph is updated only in regions whose occupancy changed. New NBVs are sampled near newly exposed frontiers, redundant candidates are pruned, and new edges are added. This update and pruning reduce persistence of stale frontier-driven viewpoints after map changes; no explicit frontier hysteresis or temporal smoothing is used. Both phases share this same graph and reachability structure; they differ only in how the gain field ψv is computed. 8 Noori et al. 
+
+Scout Planner: The planner selects the next NBV vertex v⋆ ∈ N , whose configuration qv⋆ instantiates the next scout decision qsk+1 = πk(Ik) in (5): 
+
+v⋆ = arg min  
+
+> v∈N
+
+J(v), J(v) = d⋆(v)1 + η ψ v
+
+, (14) where d⋆(v) is the A* [9] distance through GS to candidate v, ψv ≥ 0 is its current task-aware gain, and η ≥ 0 balances travel cost against gain. Moving to qv⋆ is one step of the online policy πk of (5). The weighting in (14) mitigates local myopia by allowing a higher-gain distant NBV to be preferred over a nearby low-gain candidate. Persistent local trapping was not observed in our experiments, although its frequency was not quantified. The resulting online policy is heuristic and does not claim global optimality for (12). 
+
+Next Best View Gains: The task-aware gain ψ(v; U) scores candidate vertex v by how well its observation advances an unresolved target-cell set U
+
+through three prioritized attributes. 
+
+Route Coverage counts directly observed targets, ψC (v; U) = ΓR(v) ∩ U .When none are directly observable, Frontier Visibility rewards the frontiers of v facing U, each weighted by its distance df to the nearest target it faces, 
+
+ψF (v; U) = P     
+
+> ffacing U1(1+ df)2
+
+. Failing that, Euclidean Distance uses proximity alone, scoring v by its distance dmin to the nearest target, ψD (v; U) = 1(1+ dmin )2 .The gain takes the highest tier for which the NBV qualifies, 
+
+ψ(v; U) = 
+
+
+
+ψC (v; U) ψC (v; U) > 0,β ψ F (v; U) else if ψF (v; U) > 0,γ ψ D (v; U) otherwise, (15) with β, γ > 0 weighting the lower gain tiers. Here, η balances scout travel cost against task-aware gain, while β and γ control their relative weighting. For the active phase target set U, the stored node gain is ψv = ψ(v; U). Phase 1 uses U1,whereas Phase 2 uses U2(v); these target sets are defined in Sec. 4.3 and Sec. 4.5, respectively. 
+
+4.3 Phase 1: Route-Biased Exploration 
+
+> Fig. 2: Phase 1 gain tiers.
+
+Phase 1 targets the unobserved cells in the preferred worker-route corridor, 
+
+U1 = { p ∈ R σ : p is unobserved }, (16) where Rσ denotes the swept corridor of the worker footprint along the route σ. The scout scores each candidate v ∈ N with the shared gain ψ(v; U1). As illustrated in Fig. 2, candidate (a) directly observes unresolved corridor cells and receives Route Coverage gain; candidate (b) observes a frontier facing the corridor and receives Frontier Visibility gain; candidate (c) Asymmetric Scout–Worker Reconnaissance 9Worker Route  
+
+> 70%
+> Route Coverage Tracker Done? Scout Graph NBVs Map
+> Transition to Phase 2 Gain Calculator NBV Gains Traversability Map Update Planner Scout Robot Controller Observations
+> Local Path
+
+Fig. 3: Phase 1: Route-biased exploration. The scout selects NBVs that reveal the unobserved portions of the worker corridor induced by the preferred route σ.
+
+satisfies neither condition and uses the Euclidean Distance fallback. Phase 1 terminates when the observed fraction of Rσ reaches the route-coverage threshold, or when no positive-gain NBV remains. 
+
+4.4 Transition: Projecting to a Worker Graph 
+
+After Phase 1 , the scout has observed a portion of the environment and maintains the scout graph GS . The transition step converts this graph into a worker-feasible graph by re-evaluating GS under the worker’s stricter traversability constraints. This graph is then used to decide whether the ordered goals are already connected for the worker, or whether Phase 2 must search for detours. 
+
+Worker graph. Given the current worker traversability map T kw, we construct the worker graph GW = ( VW , E W ) from the scout graph by retaining only configurations and local motions labeled free for the worker. In particular: 
+
+VW = { v ∈ VS : T kw(qv ) = free } ∪ VG, (17) where VG = {vg 
+
+> 0
+
+, . . . , v gm} are explicit goal vertices associated with the ordered goals G, including the worker start g0 = pos( qw
+
+> init
+
+). The worker edges are 
+
+EW = { euv ∈ ES : Sweep w(euv ) ⊆ { q : T kw(q) = free } } , (18) where Sweep w(euv ) denotes the swept volume of the worker footprint along the straight-line connection represented by euv . Each goal vertex is attached to nearby worker-feasible vertices using the same check, accepting only connections whose swept volume is free in T kw.
+
+Connectivity repair. Because GW is induced from sampled NBV vertices, discon-nected components may reflect missing samples rather than true worker blockage. We therefore bridge nearby components by running a worker local planner, imple-mented here using A* [9], on the observed map inflated by the worker footprint, 10 Noori et al. Scout Graph Interim Worker Graph Worker Graph     
+
+> Worker Vehicle Config
+> Edge Filtering Cluster Bridging
+> Fig. 4: Transition: From the scout graph GSto the worker graph GW
+
+inserting successful connections as worker edges. Components are maintained with union-find [19]. If one worker-feasible component contains all ordered goals, 
+
+Phase 2 is skipped; otherwise, the remaining goal-containing components are passed to Phase 2 .
+
+4.5 Phase 2: Cluster-Biased Detour Exploration 
+
+If the transition step cannot validate a worker-feasible route through all ordered goals, Phase 2 searches for detours. Let H = {H1, . . . , H ℓ} denote the goal-containing connected components of the current worker graph GW , where ℓ is the number of such components and each Hj ⊆ VW is the vertex set of one component. The objective is to direct the scout toward observations that may reveal worker-feasible connections between these disconnected components. For each candidate v ∈ N , let H(v) ∈ H denote its home component: the compo-nent containing v when v ∈ VW , or otherwise the goal-containing component nearest to qv in the observed map. The Phase 2 target is candidate-dependent, 
+
+> Fig. 5: Phase 2 Gain tiers.
+
+U2(v) = [ 
+
+> Hj∈H\{ H(v)}
+
+F(Hj ), (19) where F(Hj ) denotes frontier cells adjacent to, or visible from, component Hj . These frontiers act as proxies for unknown regions that may connect currently disconnected worker-feasible components. The scout scores each candidate using the shared gain ψ(v; U2(v)) from Sec. 4.2. As illustrated in Fig. 5, orange and blue nodes denote disconnected worker-feasible components of GW , while yellow points denote candidate NBVs. Since U2(v) con-tains frontier cells rather than route-corridor cells, the Route Coverage tier is inactive in Phase 2. Can-didate (b) observes frontiers facing another component and is therefore scored by Frontier Visibility. Candidate (c) has no such frontier visibility and uses the Euclidean Distance fallback. Candidate (a) is on the blue component, which is not active for the connection search, and receives zero gain. After each scout observation, the worker graph GW is recomputed under the updated worker traversability map T kw, the bridging step from Sec. 4.4 is Asymmetric Scout–Worker Reconnaissance 11 Gain Calculator Planner   
+
+> Scout Robot Controller Scout Graph
+> 2
+> Map Worker Graph NBVs NBV Gains Traversability Map Update Observations Cluster Tracker Clusters Connected? Extract Worker Route
+> Clusters Local Path Edges
+
+Fig. 6: Phase 2: Cluster-biased detour exploration. The scout selects NBVs that may reveal worker-feasible connections between disconnected goal-containing components. 
+
+repeated, and the connected components are updated. Phase 2 terminates when all ordered goals lie in a single worker-feasible connected component or when no positive-gain NBVs remain. The ready-to-execute worker path can then be extracted by solving (11); if Pk(qw
+
+> init
+
+, G) = ∅, no worker-feasible ordered-goal path has been validated on the current map. 
+
+## 5 Experiments 
+
+We evaluate the framework along two axes: scout viewpoint-selection efficiency for candidate worker-route validation, and the full pipeline’s ability to exploit scout–worker asymmetry to discover worker-feasible detours when the nominal route is blocked. Since, to the best of our knowledge, no prior method directly addresses asymmetric reconnaissance for ordered-goal worker-route validation, there is no direct end-to-end baseline; we therefore use baselines that isolate the main design choices of our approach. Specifically, in Sec. 5.3 we compare the Phase 1 task-aware viewpoint-selection policy against two planner variants, NSGA-II and Greedy, while keeping the same route-biased gain function fixed. This experiment isolates the effect of our cost-aware NBV selection rule. In Sec. 5.4 we evaluate the complete two-phase framework against two end-to-end baselines: a full-exploration baseline based on APN [20], and a worker-as-scout baseline in which the exploring robot is assigned the worker footprint. The latter emulates an approach that does not exploit scout– worker asymmetry, while the former measures the cost of exploring broadly instead of focusing only on observations needed for worker-route validation. 
+
+5.1 Simulation Setup 
+
+We evaluate in two simulation environments. SimpleSim is a lightweight 2D occupancy-grid simulator with a 360 ◦ lidar, enabling controlled variation of route feasibility, detour structure, and scout start pose while keeping scout and worker traversability explicit. CARLA [6] provides realistic vehicle dynamics and depth sensing; there, the scout is a car-like vehicle with a front-facing 90 ◦ depth camera, and the worker is modeled by a larger collision footprint for feasibility checking. 12 Noori et al. 
+
+Multi-Start scenario. 1600 1400 1200 1000  
+
+> 800
+> 600
+> 400
+> 200
+> 0
+> Ours
+> NSGA-II
+> Greedy
+> (a)
+> d=0.0 m
+> (b)
+> d=3.0 m
+> (c)
+> d=11.0 m
+> (e)
+> d=18.0 m
+> (d)
+> d=22.5 m
+> Total distance travelled(m)
+
+Total scout travel distance by start pose. Fig. 7: Phase 1 route-coverage experiment. Left: five scout start poses relative to a fixed worker route. Right: total scout distance Dterm for Ours , NSGA-II , and Greedy .
+
+5.2 Parameters and Metrics 
+
+The gain parameters were selected empirically as η = 5, β = 1, and γ = 0 .7. This configuration provided consistent behavior across the reported experimental settings and was used throughout; no separate sensitivity sweep was performed. Phase 1 stops at a route-coverage fraction of 0 .98. The simulator-specific settings follow, given as SimpleSim then CARLA. The scout is a disk of radius 0 .3 m, then a 4 .85 × 2.2 m vehicle; the worker footprint is 3 .0 × 2.0 m, then 6 .0 × 2.5 m; the scout senses through a 360 ◦ 5 m 2D lidar, then a 90 ◦ depth camera; the occupancy map resolution is 0 .2 m, then 0 .3 m; and each configuration is run 10 times, then 5. We report the total scout distance at termination, Dterm .
+
+5.3 Route-Coverage Experiment: Phase 1 Only 
+
+We first isolate the Phase 1 route-coverage stage. In this experiment, the nominal worker route is fully worker-traversable and is held fixed, while the scout starts from five poses at increasing distances from the route. Since the route and gain function are unchanged across methods, differences in scout travel primarily reflect the NBV selection rule. We compare our planner against two alternatives that use the same route-biased gain function but differ in how they select the next NBV. The first is NSGA-II [5], a Pareto-based optimizer implemented with DEAP [8], which solves a fixed-end open traveling-salesman problem over the reachable NBVs with two objectives: maximizing accumulated gain and minimizing scout travel distance. The second is a Greedy baseline that selects the reachable NBV with the largest immediate gain. Thus, this experiment isolates the effect of our cost-aware selec-tion rule from the effect of the task-aware gain itself. Pooled across the five scout start poses, our planner terminates after 489 .8 ±
+
+120 .8 m of scout travel, compared with 795 .8 ± 256 .9 m for NSGA-II and 1157 .8 ±
+
+457 .9 m for Greedy. This corresponds to a 38% reduction relative to NSGA-II and a 58% reduction relative to Greedy (Fig. 7). Asymmetric Scout–Worker Reconnaissance 13         
+
+> (a) (b) (c) (d) Fig. 8: End-to-end SimpleSim results. (a)–(b) Single & Double passage, (c) Infeasible scenario, (d) Total scout distance Dterm for Ours ,Worker-as-scout , and Full exploration .
+
+5.4 End-to-End Framework Comparison 
+
+We next evaluate the full two-phase framework, including route validation, worker-graph construction, detour exploration, and final worker-route extraction. This experiment tests whether scout–worker asymmetry and targeted detour explo-ration reduce scout travel. We compare against two end-to-end baselines. The Worker-as-scout baseline removes the asymmetry by assigning the scout the worker footprint and running the route-validation phase with the same sensing objective. This baseline tests whether the scout’s smaller footprint and the Phase 2 repair mechanism are actually useful. The Full exploration baseline uses an APN-style coverage-oriented exploration objective [20] and measures the distance required to explore broadly rather than focusing sensing on the worker-route validation problem. In SimpleSim, we evaluate three route-repair scenarios (Fig. 8). In the single-passage scenario, the nominal route crosses one passage that is traversable by the scout but not by the worker, so the scout must discover a wider detour. In the double-passage scenario, the nominal route crosses two such passages. In the infeasible scenario, no complete worker-feasible route exists, so the correct behavior is to terminate without returning an invalid worker route. On the single- and double-passage scenarios, our method terminates after 169 .8 ± 59 .1 m and 286 .7 ± 53 .9 m of scout travel, respectively. This is 37% and 24% less than Worker-as-scout , and 71% and 52% less than Full exploration 
+
+(Fig. 8). On the infeasible route, Worker-as-scout travels only 56 .3 m because its larger footprint prevents it from entering the narrow passage and it stops before inspecting the far region. In contrast, our scout passes through the narrow region, attempts to reconnect the worker graph, and terminates after eight failed reconnection attempts without validating a worker-feasible route. This requires 145 .1 m of scout travel, which remains below Full exploration .We also evaluate the full framework in CARLA, where the method runs in a 365 ×365 m region with an ordered route through seven goals. The scout is a 4 .85 ×
+
+2.2 m vehicle with a front-facing 90 ◦ depth camera, and the worker is modeled as a larger 6 .0 × 2.5 m footprint. Under these more realistic sensing and vehicle constraints, our method recovers a worker-feasible route by exploring around 14 Noori et al.         
+
+> (a) CARLA scenario. (b) Explored area. (c) Scout travel distance Dterm .Fig. 9: CARLA results. (a) Representative scenario. (b) Explored map with the initial route and the worker-feasible replanned route returned by our method. (c) Total scout distance Dterm over five runs for Ours ,Worker-as-scout , and Full exploration .
+
+the obstacle and repairing the initial route where it is not worker-traversable (Fig. 9). It travels 729 .2 ± 131 .8 m, which is 41% less than Worker-as-scout 
+
+(1236 .1 ± 261 .3 m) and 91% less than Full exploration (7747 .8 ± 1142 .8 m). 
+
+## 6 Real-World Demonstration 
+
+> (a)
+> (b) Fig. 10: Real-world setup: (a) AgileX Scout Mini and (b) Explored area.
+
+We validated the framework in the Unity Hall Building at Worcester Polytechnic Institute using an AgileX Scout Mini equipped with a SICK 2D LiDAR (180 ◦
+
+FOV, 5 m range) and an onboard PC, as shown in Fig. 10a. The experiment was conducted within a 50 × 50 m planning region represented by an occupancy grid with 0 .1 m resolution. The worker platform was modeled with a footprint of 1 .5 m ×
+
+0.95 m, while the scout was modeled as a circular robot with a 0 .5 m footprint. As shown in Fig. 10b, the environment con-tains a narrow passage that is traversable by the scout but not necessarily by the larger worker, making worker-route feasibil-ity non-trivial. Fig. 11 summarizes the ex-ploration progress. Phase 1 achieved 100% route coverage after 22 .05 m of travel. Dur-ing the transition stage, the worker graph was found to contain two distinct goal-containing components, triggering Phase 2. After an additional 42 .4 m of travel, the scout observed the missing connection and merged the graph into a single con-nected component, producing a replanned worker route of length 17 .76 m through all ordered goals. The key insight is that complete route coverage alone does Asymmetric Scout–Worker Reconnaissance 15 025 50 75 100 Route Coverage (%)  PHASE 1 PHASE 2       
+
+> Route Coverage Meaningful Clusters
+> 010 20 30 40 50 60 Total Distance Traveled (m) Worker Route Feasibility
+
+NoWorkerGraph INFEASIBLE FEASIBLE 12Meaningful Clusters 
+
+Fig. 11: Two-phase progress during the real-world deployment. 
+
+not guarantee worker-route feasibility. Even after the scout fully observed the preferred-route corridor, worker-graph connectivity was still required to validate a worker-feasible route. In Fig. 10b, the initial worker route (orange) crosses a narrow region that could not be validated for the larger worker footprint. Phase 1 completed observation of the route corridor, while Phase 2 targeted the unre-solved worker-graph components and revealed the connection needed to validate the replanned route (blue). We used the same frontier-based viewpoint-selection pipeline with real LiDAR measurements, although we did not systematically evaluate robustness to sensing and localization uncertainties. 
+
+## 7 Conclusion 
+
+This paper addressed asymmetric scout–worker reconnaissance in unknown en-vironments, where a small, agile scout must discover a worker-feasible path through ordered goal locations for a larger robot with stricter traversability con-straints. The results show that the framework validates nominal worker routes, repairs blocked segments with observed feasible detours, and identifies cases where no complete worker-feasible route has been validated. Across SimpleSim and CARLA, it consistently reduced scout travel relative to baselines that ei-ther ignore scout–worker asymmetry or explore broadly, demonstrating the value of task-directed reconnaissance. A real-world indoor deployment on the second floor of WPI’s Robotics Department further showed the practical character of the approach, with the scout navigating narrow corridors to discover a worker-feasible route. Overall, exploiting the scout’s greater mobility while evaluating all returned paths under the worker’s feasibility model enables route validation with substantially less exploration. Future work will extend the approach to non-nested, terrain-dependent traversability models, larger-scale environments, and physical scout–worker teams. 
+
+## References 
+
+1. Arora, A., Furlong, P.M., Fitch, R., Sukkarieh, S., Fong, T.: Multi-modal active perception for information gathering in science missions. Auton. Robots 43 (7), 1827–1853 (2019) 2. Bircher, A., Kamel, M., Alexis, K., Oleynikova, H., Siegwart, R.: Receding horizon “next-best-view” planner for 3D exploration. In: IEEE Intl. Conf. Robot. Autom., pp. 1462–1468 (2016) 16 Noori et al. 3. Burusa, A.K., Scholten, J., Wang, X., Rapado-Rinc´ on, D., van Henten, E.J., Kootstra, G.: Semantics-aware next-best-view planning for efficient search and detection of task-relevant plant parts. Biosystems Engineering 246 , 248–262 (2024) 4. Cao, C., Zhu, H., Ren, Z., Choset, H., Zhang, J.: Representation granularity enables time-efficient autonomous exploration in large, complex worlds. Science Robotics 
+
+8(80) (2023) 5. Deb, K., Pratap, A., Agarwal, S., Meyarivan, T.: A fast and elitist multiobjective genetic algorithm: NSGA-II. IEEE Trans. Evol. Comput. 6(2), 182–197 (2002) 6. Dosovitskiy, A., Ros, G., Codevilla, F., Lopez, A., Koltun, V.: CARLA: An open urban driving simulator. In: Proceedings of the 1st Annual Conference on Robot Learning, pp. 1–16 (2017) 7. Felner, A., Stern, R., Ben-Yair, A., Kraus, S., Netanyahu, N.: PHA*: Finding the shortest path with A* in an unknown physical environment. J. Artif. Intell. Res. 
+
+21 , 631–670 (2004) 8. Fortin, F.A., De Rainville, F.M., Gardner, M.A., Parizeau, M., Gagn´ e, C.: DEAP: Evolutionary algorithms made easy. J. Mach. Learn. Res. 13 , 2171–2175 (2012) 9. Hart, P.E., Nilsson, N.J., Raphael, B.: A formal basis for the heuristic determination of minimum cost paths. IEEE Trans. Syst. Sci. Cybern. 4(2), 100–107 (1968) 10. Kapoutsis, A.C., Malliou, C.M., Chatzichristofis, S.A., Kosmatopoulos, E.B.: Contin-uously informed heuristic A*-optimal path retrieval inside an unknown environment. In: IEEE/RSJ Symp. on Safety, Security, and Rescue Robotics, pp. 221–227 (2017) 11. Koenig, S., Likhachev, M.: D* lite. In: AAAI Conf. on Artif. Intell. (2002) 12. Koenig, S., Likhachev, M., Furcy, D.: Lifelong planning A*. Artif. Intell. 155 (1–2), 93–146 (2004) 13. Kulkarni, M., Dharmadhikari, M., Tranzatto, M., Zimmermann, S., Reijgwart, V., De Petris, P., Nguyen, H., Khedekar, N., Papachristos, C., Ott, L., Siegwart, R., Hutter, M., Alexis, K.: Autonomous teamed exploration of subterranean environ-ments using legged and aerial robots. In: IEEE Intl. Conf. Robot. Autom., pp. 3306–3313 (2022) 14. Moon, B., Suvarna, N., Jong, A., Chatterjee, S., Yuan, J., Cao, M., Scherer, S.: Ia-tigris: An incremental and adaptive sampling-based planner for online informative path planning. IEEE Trans. Robot. 42 , 1695–1713 (2026) 15. Naazare, M., Rosas, F.G., Schulz, D.: Online next-best-view planner for 3D-exploration and inspection with a mobile manipulator robot. IEEE Robot. Autom. Letters 7(2), 3779–3786 (2022) 16. Peterson, J., Chaudhry, H., Abdelatty, K., Bird, J., Kochersberger, K.: Online aerial terrain mapping for ground robot navigation. Sensors 18 (2), 630 (2018) 17. Rockenbauer, F.M., Lim, J., M¨ uller, M.G., Siegwart, R., Schmid, L.: Traversing Mars: Cooperative informative path planning to efficiently navigate unknown scenes. IEEE Robot. Autom. Letters 10 (2), 1776–1783 (2025) 18. Schmid, L., Pantic, M., Khanna, R., Ott, L., Siegwart, R., Nieto, J.: An efficient sampling-based method for online informative path planning in unknown environ-ments. IEEE Robot. Autom. Letters 5(2), 1500–1507 (2020) 19. Tarjan, R.E.: Efficiency of a good but not linear set union algorithm. J. ACM 
+
+22 (2), 215–225 (1975) 20. Vutetakis, D., Xiao, J.: Active perception network for non-myopic online exploration and visual surface coverage. Intl. J. of Robotics Research 44 (2), 247–272 (2025) 21. Yamauchi, B.: A frontier-based approach for autonomous exploration. In: IEEE Intl. Symp. on Computational Intelligence in Robot. and Autom., pp. 146–151 (1997)
