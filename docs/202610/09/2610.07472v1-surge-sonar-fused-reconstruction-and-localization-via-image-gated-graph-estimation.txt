@@ -1,0 +1,288 @@
+Title: SURGE: Sonar-fUsed Reconstruction and localization via image-gated Graph Estimation
+
+URL Source: https://arxiv.org/pdf/2610.07472v1
+
+Published Time: Wed, 07 Oct 2026 00:31:12 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# SURGE: Sonar-fUsed Reconstruction and localization via image-gated Graph Estimation 
+
+Mohammed Ibrahim M ∗, Vallabh Deogaonkar †, Trung Dong ∗, Jane Shin ‡ Abhilash Somayajula †, Xiaomin Lin ∗∗ Department of Electrical and Computer Engineering University of South Florida 
+
+Tampa, FL, USA mohammedibrahimm@usf.edu 
+
+† Department of Ocean Engineering Indian Institute of Technology Madras 
+
+Chennai, India 
+
+‡ Department of Naval Architecture and Ocean Engineering Seoul National University 
+
+Seoul, South Korea 
+
+Abstract —Remotely operated vehicles (ROVs) are widely used to explore and inspect underwater environments such as caves, shipwrecks, and submerged infrastructure. These missions require accurate 3D understanding of the surrounding environment, which depends on both reliable vehicle localization and metric scene reconstruction. However, external positioning is often unavailable underwater, requiring small ROVs to rely primarily on onboard perception. Optic vision provides rich visual and geometric information but suffers from scale ambi-guity and trajectory drift, whereas 2D imaging sonar provides metric range but incomplete 3D geometry. Existing underwater reconstruction approaches typically address these limitations separately or assume known sensor poses, leaving localization and reconstruction disconnected. We present SURGE, a camera sonar framework that jointly estimates the ROV trajectory and target location by integrating visual and acoustic observations within a factor graph, then uses the recovered metric poses for sonar Gaussian splatting. Experiments on real underwater RGB sonar observations show that SURGE substantially improves localization consistency over conventional vision based pose estimation and produces a more compact, natively metric reconstruction than RGB Gaussian splatting baselines. 
+
+Index Terms —Underwater perception, sensor fusion, factor graph SLAM, forward-looking sonar, Gaussian splatting, re-motely operated vehicles. 
+
+I. I NTRODUCTION 
+
+Remotely operated vehicles are increasingly used for un-derwater exploration and inspection of environments such as caves, shipwrecks, and submerged infrastructure [1]–[4]. These missions require accurate three dimensional under-standing of the environment for navigation, inspection, and spatial mapping. Building such representations, however, depends on both reliable vehicle localization and metric scene geometry. Underwater localization is particularly challenging because external positioning is often unavailable, forcing small ROVs to rely on onboard perception [24]. Monocular cameras provide rich visual and geometric information but suffer from 
+
+Fig. 1: A representative scenario of an ROV scanning a cinder-block target, with the imaging sonar’s and camera’s fields of view projected onto the object for localization and reconstruction. scale ambiguity and trajectory drift, especially when visi-bility and feature quality degrade underwater [25]. Forward looking imaging sonar provides complementary metric range measurements and remains effective under poor visibility, but conventional two dimensional sonar observes range and azimuth while leaving elevation ambiguous [30], [31]. Nei-ther modality alone therefore provides both reliable metric localization and complete scene geometry, as shown in Fig. 1. Recent acoustic optical methods such as AONeuS and Z Splat demonstrate the benefit of combining camera and sonar measurements for underwater reconstruction [8], [9]. How-ever, these approaches largely assume known sensor poses, while other methods address pose estimation and reconstruc-tion primarily within a single sensing modality [10], [13], [14]. This leaves a gap between multimodal reconstruction and the localization needed to support it in real underwater arXiv:2610.07472v1 [cs.RO] 5 Oct 2026 operation. This separation is limiting in practice because reconstruc-tion quality depends directly on the accuracy and metric consistency of the estimated sensor trajectory. We present 
+
+SURGE , a camera sonar framework for joint underwater localization and metric reconstruction. Our contributions are threefold: 1) We introduce a multimodal factor graph that jointly estimates the ROV trajectory and the location of a compact underwater target from monocular RGB and two dimensional forward looking imaging sonar obser-vations. 2) We develop a multi view sonar aggregation strategy and a target extent aware acoustic residual that pro-vide stable metric constraints for joint pose and target estimation. 3) We use the recovered metric poses for target-scoped sonar Gaussian splatting and demonstrate improved localization consistency and more compact metric re-construction than RGB Gaussian-splatting baselines on real underwater data. II. R ELATED WORK 
+
+Recent underwater reconstruction methods differ primarily in two aspects: the sensing modalities they use and whether sensor poses are known or must be estimated from the observations. These distinctions are important for SURGE because accurate reconstruction depends on both complemen-tary visual acoustic geometry and a reliable metric trajectory. Table I summarizes representative approaches and the setting considered in this work. 
+
+A. Multi-modal Reconstruction with Known Poses 
+
+Camera and sonar provide complementary information for underwater reconstruction, motivating methods that combine optical appearance with acoustic geometry. AONeuS [8] and Z-Splat [9] demonstrate that acoustic measurements can improve three dimensional reconstruction when optical observations are degraded by underwater visibility. Collado-Gonzalez et al. similarly combine image regions with sonar range measurements for reconstruction in turbid environ-ments [26]. These methods establish the value of acoustic optical fusion, but primarily assume externally provided sensor poses. As a result, they address reconstruction once the trajectory is known rather than recovering localization and reconstruction from the same measurements. 
+
+B. Single-Modality Reconstruction with Estimated Poses 
+
+A parallel line of work relaxes the requirement for known poses, but generally within a single sensing modality. Sonar-Splat [10] extends Gaussian splatting to forward-looking sonar while jointly optimizing the acoustic scene representa-tion and sensor poses. Differentiable space carving recon-structs occupancy from imaging-sonar observations when poses are available [37], while other approaches address reconstruction under pose drift [11] or recover sonar ge-ometry without supplied poses using priors from vision foundation models [12]. Together, these methods show that acoustic observations can support both pose reasoning and reconstruction despite the geometric ambiguity of imaging sonar. For optical sensing, SeaSplat [13] and WaterSplatting [14] reconstruct real underwater scenes from RGB imagery using COLMAP poses, while AquaSplat [17] introduces a dual-branch representation for underwater RGB reconstruction. These methods improve the representation of underwater appearance and geometry, but their reconstruction remains tied to trajectories recovered from visual Structure-from-Motion. Thus, pose-aware reconstruction has been explored for both optical and acoustic sensing, but primarily without using their complementary measurements jointly to recover a metric trajectory. 
+
+C. Underwater Factor-Graph SLAM 
+
+Underwater SLAM provides the complementary perspec-tive of estimating vehicle motion from multiple sensor con-straints. Existing systems combine acoustic range, inertial sensing, and optical observations to estimate trajectories and map features [15], [16], [35], [36]. Imaging-sonar multi-robot systems further recover trajectories and object-level maps from multibeam measurements [27], [28]. These approaches demonstrate the value of acoustic constraints for underwater localization, but are not designed to connect monocular RGB and 2D FLIS localization directly to downstream target reconstruction. The observation model is also different for compact ex-tended targets. Conventional landmark formulations typi-cally associate acoustic observations with discrete features, whereas the dominant return from an extended object can move across its visible surface as the viewpoint changes. SURGE therefore models the sonar observation relative to the spatial extent of the target rather than forcing every acoustic return to coincide with a single geometric center. 
+
+D. Position of the Present Work 
+
+Prior work therefore establishes three complementary ca-pabilities: acoustic optical fusion can improve underwater re-construction when poses are known, single-modality methods can reconstruct scenes while estimating or tolerating pose uncertainty, and underwater SLAM can recover vehicle tra-jectories from acoustic and visual constraints. What remains less explored is their combination: jointly estimating metric vehicle motion and target location from monocular RGB and 2D forward-looking sonar, then using the recovered trajectory for reconstruction in real underwater environments without external positioning. SURGE addresses this gap by coupling visual and acoustic observations within a factor graph and using the resulting metric poses for target-scoped sonar Gaussian splatting. The framework therefore connects localization and reconstruction through the same complementary camera-sonar measure-ments rather than treating accurate poses as an independent prerequisite. TABLE I: Comparison of representative underwater 3D reconstruction methods. “Real” denotes data collected outside controlled tank environments. 
+
+System Modalities Poses Metric Joint Loc.+Recon. Setting 
+
+AONeuS [8] RGB + Sonar GT Yes No Tank Z Splat [9] RGB + Sonar GT Yes No Tank SonarSplat [10] Sonar Est. Yes Yes Tank + River Pose free 3D [12] Sonar Est. Yes Yes Tank SeaSplat [13] RGB COLMAP No No Real WaterSplatting [14] RGB COLMAP No No Real 
+
+SURGE RGB + FLIS Joint Yes Yes Real Sonar peak 
+
+> estimation Factor Graph
+> Modelling Object
+> Segmentaion Visual pose
+> estimation RGB frames Sonar scans Factor Graph Modelling Consistant peak
+> point Segmentation
+> centroid Prior Visual
+> pose Object position
+> anchoring Gaussian Splatting Fused pose 3D Reconstruction Seed Collection Visual
+> Feature
+> Extraction Acoustic
+> Feature
+> Extraction Factors
+> optimization 3D
+> Reconstruction
+
+Fig. 2: Pipeline overview. RGB frames and sonar scans pass through visual and acoustic feature extraction into object segmentation, visual pose estimation, and sonar peak estimation. Factor-graph modelling fuses a multi-view consistent peak, the segmentation centroid, a prior visual pose, and an object-position anchor; factor optimization recovers metric ROV poses and the target landmark. Cone-arch seed collection and 2D-sonar Gaussian splatting then produce the reconstruction reprojected onto RGB. III. M ETHOD 
+
+At a high level, SURGE recovers a metric ROV trajectory and a static target centre from paired RGB and 2D sonar frames, then reconstructs the target with sonar Gaussian splatting under those poses. Vision tells where the object appears in the image; sonar tells how far it is. The factor graph fuses both, and the reconstruction stage consumes only the resulting poses. The pipeline is summarised in Fig. 2. Segmentation and SfM are treated as fixed inputs; the method itself has four stages aligned with that figure. Sec. III-A states the sensing configuration, lever arm, and assumed target half-extents h. Sec. III-B builds the acoustic observation: RGB-gated peak candidates on the FLIS fan are aggregated by a multi-view vote into one world-consistent orange flash, which is then reprojected into each frame, matching the feature-extraction and sonar peak estimation path in Fig. 2. Sec. III-C jointly estimates metric camera poses against that flash, a frozen landmark box of extents h, and RGB centroid/box fac-tors inside the factor-graph modelling / factors-optimization block. An important modelling choice in that graph is the polar disk sonar residual: because the dominant FLIS return typically sits on a near face rather than at the geometric cen-tre b, a hard centre-to-peak residual is inconsistent, and the disk tolerates that offset without discarding the measurement. Sec. III-D then runs cone-arch seed collection and 2D-sonar Gaussian splatting on the recovered poses (Fig. 2). 
+
+A. Sensors, frames, and inputs 
+
+Data are collected with a BlueROV2 carrying a forward-facing RGB camera and a 2D forward-looking imaging sonar in a rigid configuration (Fig. 3). The camera–sonar extrinsics are treated as known and fixed. COLMAP pro-Fig. 3: The data collection platform. A BlueROV2 carries an RGB camera and a 2D forward looking sonar in a rigid, forward facing configuration. 
+
+Fig. 4: Sonar fan with candidate peaks. The RGB camera cone constrains admissible peaks to the target’s angular extent; peaks outside the cone are discarded. Among in-cone candidates, the multi-view vote elects the frame’s sonar observation. vides an initial, soft visual pose prior; SAM [18] provides a per-frame target mask, bounding box, and centroid. We represent the target as a static upright box of assumed half-extents h=[0 .10 , 0.10 , 0.20] m; the centre b is unknown and estimated. Only yaw is refined on top of COLMAP; pitch and roll follow SfM. 
+
+B. Sonar measurement layer 
+
+A brightest-bin factor fails under clutter (rock, tether, sidelobe). We build one acoustic observation per frame in three steps (Fig. 4); the same flow appears in the feature-extraction and peak-estimation stages of Fig. 2. Raw sonar peaks are noisy: clutter, tether, and sidelobes can outshine the target. We therefore build one consensus acoustic observation per frame–a range–azimuth measurement that is consistent across views. In figures this locked return is drawn in orange, so we refer to it as the orange observation; it is not a second physical sensor. 
+
+Step 1 — local peaks. Detect local maxima with non-maximum suppression inside a range gate. TABLE II: Factors in the reported configuration.                                         
+
+> Factor Weight Residual
+> Fsonar 4.0Projected bvs. orange; zero cost inside a 12 cm polar disk.
+> Fbbox 1.8Projected AABB of b±hvs. SAM box.
+> Fuv 1.5Projected bvs. SAM mask centroid.
+> Fcolmap 0.25 Soft absolute anchor to COLMAP ( σc=0 .8m); down-weighted near teleports.
+> Fsmooth 2.5Small ∆c; matches ∆cCwhen ∥∆cC∥ ≤ 0.4m.
+> Fyaw 0.7Small δψ and ∆δψ .
+> Felev hard |el( b)| ≤ 25 ◦.
+> Fdepth 0.05 bin front of the camera.
+
+Fig. 5: Correspondence between RGB and sonar observations for a representative frame. Left: RGB with SAM silhouette (yellow), mask AABB (blue), and mask centroid (green). Right: matching FLIS fan with RGB-mask cone (cyan), factor-graph cone (magenta), projected brick (white), locked orange return, and projected centre b (red). 
+
+Step 2 — RGB cone gate. Project the SAM mask through the lever into polar (r, az) and discard peaks outside that cone. 
+
+Step 3 — multi-view consensus. In-cone peaks still walk over faces. For pairs of frames (i, j ), intersect frame i’s sonar elevation arc with frame j’s RGB-centroid ray, bin the hits in 18 cm voxels, and take the mode as a locked world point o⋆. Reprojecting o⋆ into each fan gives that frame’s orange observation: world-consistent, but still pose-dependent. Of 881 cone-gated frames, 880 retain a consensus flash. 
+
+C. Factor graph 
+
+The factor graph estimates the camera centres {ck}, small yaw corrections {δψ k}, and one static target centre b, so that RGB and sonar observations agree on the same metric object. We jointly estimate per-frame centres ck, yaw corrections 
+
+δψ k (Rk = Rz (δψ k) RC 
+
+> k
+
+), and one static landmark centre b.Assumed half-extents h are held fixed. This is cast as a factor-graph estimation [29]. Pitch and roll follow COLMAP. The first valid frame is gauge-fixed to its COLMAP centre with 
+
+δψ 0 = 0 . The full factor set is listed in Table II; residuals other than the elevation gate are Huber-robustified. Fig. 5 shows the RGB and sonar observations that feed Fbbox ,
+
+Fuv , and Fsonar ; the remaining factors are pose priors and geometric gates and are not drawn separately. In Fig. 2, this corresponds to fusing the consistent peak, segmentation centroid, prior visual pose, and object-position anchor, then optimizing the factors. a) Disk sonar factor ( Fsonar ).: The dominant sonar return usually comes from a near face of the block, not from its geometric centre. A residual that forces the peak to equal b is therefore inconsistent; we instead allow a small polar tolerance (the disk) around the orange observation. Let 
+
+p(r, θ ) = ( r cos θ, r sin θ) map polar quantities to the fan plane, (rbk, θ bk) the projection of b, and (r◦
+
+> k
+
+, θ ◦
+
+> k
+
+) the locked orange. With disk radius d=12 cm (on the order of the assumed box half-extents), 
+
+esonar  
+
+> k
+
+= 1
+
+σr
+
+ReLU 
+
+
+
+p(rbk, θ bk) − p(r◦
+
+> k
+
+, θ ◦
+
+> k
+
+) 2 − d
+
+
+
+. (1) Cost is zero while the projected centre lies inside the disk about the flash; outside, a Huber pull acts on the cameras. This lets a face return disagree with b without dropping the observation. The factor is always active. 
+
+b) RGB factors ( Fbbox , Fuv ).: Fbbox compares the projected AABB of b ± h to the SAM box (four residuals per frame). Fuv compares the projected centre to the mask cen-troid. Together they constrain bearing without overpowering the metric sonar disk (Fig. 5). 
+
+c) COLMAP prior ( Fcolmap ).: A weak absolute anchor (σc=0 .8 m) keeps the trajectory near the SfM shape. When COLMAP-reported inter-frame motion exceeds 0.9 m, nearby weights are scaled by 0.05 so teleports are not copied. 
+
+d) Smoothness ( Fsmooth ).: Prefers small ∆c between consecutive frames and, when COLMAP motion is below 
+
+0.4 m, also matches ∆cC.
+
+e) Yaw ( Fyaw ).: Penalises large δψ k and large frame-to-frame ∆δψ , limiting heading drift that would otherwise misplace the orange laterally at range. 
+
+f) Elevation and depth ( Felev , Fdepth ).: Felev is a hard gate keeping b inside the FLIS aperture ( |el( b)| ≤ 25 ◦). 
+
+Fdepth is a weak prior that b remains in front of the camera. We freeze b after a short box-only warm start so cameras move around a static object. Optimisation is GPU Adam, 400 
+
+iterations, learning rate 10 −3. All factors remain active; there is no staged schedule. 
+
+D. Reconstruction 
+
+The polar renderer follows [21]; we do not claim a new splatting algorithm. SURGE contributes estimated metric poses and target-scoped cone-arch seeding on real data. Given metric poses and b, we reconstruct only the target neighbourhood with 2D-sonar Gaussian splatting. Seeding is restricted to short elevation arches near b (cone-arch seeds) so that the cloud stays on the object rather than filling the seafloor. With metric poses and landmark b recovered (fused pose in Fig. 2), we reconstruct the target by 2D forward-looking imaging sonar Gaussian splatting [21] via seed collection and Gaussian splatting as shown in that figure. 
+
+a) Elevation ambiguity.: An FLIS ping reports intensity 
+
+I(r, θ ) over range and azimuth only. A strong return at (r, θ )
+
+is consistent with any point on the elevation arc inside the vertical beam, 
+
+A(r, θ ) = x : ∥x∥ = r, az( x) = θ, ϕ ∈ [ϕmin , ϕ max ] ,
+
+(2) with [ϕmin , ϕ max ] = [ −25 ◦, 25 ◦] on the M750d. Reconstruc-tion therefore cannot treat a bin as a 3D point; mass must be hypothesised along ϕ and resolved by multi-view consistency. 
+
+b) Scene representation and polar rendering.: The scene is a set of anisotropic Gaussians 
+
+G = {G i}Ni=1 , Gi = ( μi, Σi, α i, ρ i), (3) where μi is the mean, Σi the covariance, αi opacity, and ρi a scalar acoustic reflectivity (no RGB appearance). Following [21], each mean is transformed into the sonar frame, linearised into (r, θ, ϕ ) with the spherical Jacobian used in [10], reduced to the polar (r, θ ) plane, and α-composited along range to form a rendered fan ˆIk(r, θ ).Training minimises 
+
+L = X
+
+> k
+
+ˆIk − Ik 1 + λα Rα + λs Rs + λϕ Rϕ, (4) where Rα, Rs, and Rϕ are the opacity, scale, and elevation-ray regularisers from the 2d Sonar Splatting [21] pipeline (discouraging empty mass and thin vertical tubes along a single (r, θ )). 
+
+c) What we reuse from [21].: Elevation-arc initialisa-tion, the polar renderer, and three always-on components: elevation gating in the visibility mask, a creation-round replay filter on the per-Gaussian information matrix, and λmin 
+
+scoring for opacity weighting. Those elements were validated in simulation with known poses (fence / truss); we keep the same rendering backbone here. 
+
+d) What changes in this work.: The 2d Sonar Splatting [21] setting assumes known sensor poses and can seed across the observed scene. Here the cameras are the factor-graph estimate of Sec. III-C, not ground truth, and poses are held fixed during splatting (we do not jointly refine pose inside the renderer). Seeding is restricted to short elevation arches on cone-gated peaks near the localised box b ± h (plus a small margin), with initial covariance scale 6 cm (about one range bin). Full-fan seeding produces a seafloor pancake; seeds smaller than one bin receive no usable polar gradient. Training uses unmasked 128 ×128 polar fans for 15 epochs. The output is therefore a compact, metric target cloud under real freshwater observations, conditioned on the joint pose– landmark solution rather than on simulated ground-truth pose. IV. E XPERIMENTS 
+
+A. Dataset and protocol 
+
+We record 1,199 RGB–FLIS pairs at a freshwater spring-cave site in the southeastern United States, of one cinder block on a submerged deck, with the vehicle orbiting at 2–
+
+5 m range at approximately similar depth. Clear freshwater means reported failure modes reflect the estimator rather than turbidity. Camera calibration used by COLMAP and the graph follows Sec. III-A. After lockstep synchronisation and dropping a large COLMAP teleport window (sids 967 –
+
+969 ), 880 frames remain; 874 enter the graph as inliers. The pipeline is offline: every valid frame is a training view for both the graph and the reconstruction. Assumed half-extents follow Sec. III-A; we do not use a surveyed brick size as ground truth. TABLE III: Localization on the 880 -frame sequence. |∆r|
+
+and |∆az | are medians of projected b against locked orange; bbox is mean projected-box vs. SAM error.                     
+
+> Config Inl. |∆r||∆az |bbox (cm) (◦)(px) COLMAP frozen 312 189 12 .4210
+> Pose opt., bfix 872 12 .13.60 108
+> Centre +disk 874 10 .63.33 93
+
+B. Baselines and metrics 
+
+We evaluate localization of the joint graph and com-pactness of the sonar reconstruction near b. We do not claim a face-accurate mesh or a full-scene map. We com-pare against RGB Gaussian-splatting baselines trained on COLMAP poses: 
+
+Vanilla 3DGS [20]: no underwater medium model. 
+
+SeaSplat [13]: underwater medium model; same inputs. 
+
+WaterSplatting [14]: alternative underwater-medium for-mulation; same inputs. 
+
+AquaSplat [17]: additional underwater RGB baseline under the same protocol. OASIS [32] is omitted: it assumes imaging sonar and a known vehicle/arm pose, whereas this bag is 2D FLS without external positioning. RGB clouds are not natively metric. Before scoring distance to b, we similarity-align each RGB Gaussian cloud to the factor-graph cameras with a free Sim(3) (Umeyama on camera centres; recovered scale 
+
+≈ 0.38 ). Our cone-arch cloud is already in that metric frame and is not re-aligned. For localization we report inlier count, median radial and azimuth residuals of projected b against the consensus orange, and mean projected-box vs. SAM-box error. For reconstruction we report the median distance of opaque Gaussian means to b, the fraction of opaque means within 0.5 m of b, mean projected mass inside the SAM mask, and whether the cloud is natively metric. 
+
+C. Localization 
+
+Freezing COLMAP and moving only b fails (metre-scale range error). Optimising poses with b fixed recovers most of the gain; the centre +disk residual further reduces face bias and box error. Table III reports graph configurations on the 880 -frame sequence. The reported centre +disk for-mulation retains 874 /880 frames at 10 .6 cm median radial and 3.33 ◦ median azimuth residuals, with mean projected-box vs. SAM-box error of 93 px (on the order of SAM mask jitter). Because no surveyed vehicle trajectory is available, we report consistency of the estimated poses with the multi-view-consistent sonar observation and RGB segmentation, not absolute trajectory error. Freezing COLMAP poses and optimising only b locks scale error in: median |∆r| is 1.89 m. The adjustment must therefore move the cameras. Optimising poses with b frozen already recovers most of the gain; the disk residual fur-ther reduces face-bias and bbox error. Both pose-optimising rows keep the RGB centroid and bbox factors ( wuv =1 .5,
+
+Fig. 6: Recovered ROV trajectory (red) and target landmark (green) in the world frame, overlaid on the COLMAP prior (blue). The factor graph metricises the COLMAP path against the consensus orange and the frozen landmark, absorbing large SfM teleports without copying them. 
+
+wbbox =1 .8); the disk changes the sonar residual geometry, not the RGB factors. Fig. 6 shows COLMAP versus the recovered trajectory. A 6.26 m COLMAP teleport (sids 479 –481 ) appears as a 
+
+1.70 m step: the graph accepts that motion occurred but does not copy the jump. Early-sequence free frames can still move to place the orange inside the disk under the gauge pin; that is expected with a frozen landmark and an SfM-inconsistent initial pose. 
+
+D. Quantitative reconstruction 
+
+RGB baselines are denser in image space but not metric; we Sim(3)-align them to the factor-graph cameras before scoring distance to b. Our cloud is already in that frame. Table IV compares reconstructions on the same 880 frames. RGB baselines use frozen COLMAP poses; before scoring distance to b we similarity-align each RGB cloud to the factor-graph cameras with Sim(3) (Umeyama on camera centres). Even after alignment, opaque RGB means remain 
+
+1.4–2.2 m from b, with at most 7.1% of mass within 0.5 mand 8–20% mean in-mask projection. Our cone-arch splat is natively metric in the same frame: median distance 0.65 m, 
+
+30% of opaque means within 0.5 m of b, and 36% mean in-mask projection. It is intentionally target-scoped, not a full-scene map. Fig. 7 shows overlays on representative viewpoints. The cloud is not a face-accurate brick: vertical structure is limited by sensor elevation ambiguity and the orbit, not by the factor graph. Fig. 7: Reconstruction projected into representative frames. In each pair, raw RGB is left and the same view with projected Gaussian centres is right. The cloud is compact and correctly located near the target. Vertical spread follows the unmeasured 
+
+±25 ◦ FLIS aperture under a mostly horizontal orbit. TABLE IV: Reconstruction on the 880 -frame sequence (opaque α ≥ 0.05 ). RGB methods use COLMAP poses and are Sim(3)-aligned to FG cameras before scoring; ours uses FG poses and is natively metric. med → b: median distance to landmark b; ≤ 0.5 m: fraction within 0.5 m of b; In mask: mean projected mass inside the SAM mask.                             
+
+> Method med →b(m) ≤0.5mIn mask Metric Vanilla 3DGS 1.41 6.8% 20% no SeaSplat 2.20 1.6% 8% no WaterSplatting 1.43 7.1% 17% no AquaSplat 1.43 6.4% 17% no
+> Ours 0.65 30 %36 %yes
+
+V. D ISCUSSION 
+
+A. What the pipeline recovers 
+
+SURGE recovers metric-scale ROV poses, a static tar-get centre, and a compact sonar Gaussian cloud from a monocular camera and 2D FLIS only (Fig. 2). Median orange residuals are on the order of one range bin, and the reconstruction is natively metric and much closer to the localised landmark than RGB splatting on COLMAP poses. The cloud is intentionally target-scoped: it is not a face-accurate brick and not a full-scene map. Vertical structure is limited by FLIS angular resolution, the unmeasured ±25 ◦
+
+elevation aperture, and a mostly horizontal orbit. 
+
+B. Why the disk residual matters 
+
+A hard centre-to-peak sonar residual is inconsistent for an extended target: the dominant return usually sits on a near face, not at b. An earlier nearest-face model with Huber weighting looked correct but silently down-weighted informative frames and collapsed range by about a metre. Zeroing cost inside a polar disk of radius d=12 cm (on the order of the assumed half-extents) keeps those observations active. When a measurement is useful but ambiguous within a modelling tolerance, that tolerance belongs in the residual geometry, not only in a robust weight. 
+
+C. Limits of open-water reconstruction 
+
+Denser or sharper geometry is hard to justify from this bag. The orbit has little elevation diversity; FLIS provides no elevation measurement; and the target occupies only a small fraction of each fan. RGB can look detailed in image space yet miss metric scale, while sonar alone leaves a vertical slab. Under these views and sensors, a compact, correctly located, natively metric cloud near the localised landmark is the strongest reconstruction claim we can support. 
+
+D. Discarded design alternatives 
+
+Several alternatives failed for clear reasons. Peak-as-centre 
+
+cannot go to zero as the return walks over faces, so b chases glints. Freeze COLMAP, optimise only b locks scale error (median |∆r|≈ 1.89 m). Strong absolute COLMAP copies multi-metre teleports. Full-fan seeding produces a seafloor pancake; seeds must stay near b. Sub-bin initial covariance 
+
+removes the polar gradient and collapses opacity within a few epochs. 
+
+E. Scope and future work 
+
+Assumed half-extents h set both the box prior and the disk scale; unknown-size targets would need a jointly estimated extent, which we do not evaluate. The orange consensus assumes one compact static object. Within small-ROV in-spection of such a target with camera and 2D FLIS only, this is the setting we claim. The main remaining limit is viewpoint diversity, not the renderer. Closing the loop with active next-best-view control—motions that reduce uncertainty in the joint pose– landmark estimate and in the worst-constrained directions of the per-Gaussian information matrix—is the natural continu-ation [21], [33], [34]. VI. C ONCLUSION 
+
+We presented SURGE, a camera–sonar factor-graph pipeline that recovers metric ROV poses and a compact target reconstruction without external positioning. RGB gating and multi-view orange consensus stabilise the acoustic mea-surement; a polar disk residual tolerates face-versus-centre geometry under an assumed box prior; and a jump-gated SfM prior absorbs COLMAP teleports without copying them. On a real freshwater orbit, the estimator reaches centimetre-scale orange residuals, and cone-arch sonar Gaussian splatting yields a natively metric cloud near the localised landmark— stronger support than RGB densification on COLMAP poses under the same views. Reconstruction remains bounded by 2D FLIS elevation ambiguity and limited viewpoint diversity; active next-best-view control on the ROV is the natural next step. REFERENCES [1] S. Hou, D. Jiao, B. Dong, H. Wang, and G. Wu, “Underwater inspection of bridge substructures using sonar and deep convolutional network,” Advanced Engineering Informatics , vol. 52, p. 101545, 2022. [2] J. Labra, M. D. Zuniga, J. Rebolledo, M. A. Ahmed, R. Carvajal, N. Jara, and G. Carvajal, “Robust automatic net damage detection and tracking on real aquaculture environment using computer vision,” 
+
+Aquacultural Engineering , vol. 101, p. 102323, 2023. [3] N. Hurt´ os, N. Palomeras, A. Carrera, and M. Carreras, “Autonomous detection, following and mapping of an underwater chain using sonar,” 
+
+Ocean Engineering , vol. 130, pp. 336–350, 2017. [4] N. Molina-Padr´ on, F. Cabrera-Almeida, V. Ara˜ na-Pulido, and B. Tovar, “Towards a global surveillance system for lost containers at sea,” 
+
+Journal of Marine Science and Engineering , vol. 12, no. 2, p. 299, 2024. [5] R. D. Christ and R. L. Wernli Sr., “The ROV manual: A user guide for remotely operated vehicles,” Butterworth-Heinemann, 2013. [6] S. Patel, F. Abdellatif, M. Alsheikh, H. Trigui, A. Outa, A. Amer, M. Sarraj, A. Al Brahim, Y. Alnumay, A. Felemban, A. Alrasheed, H. Jifri, and J. Shamma, “Multi-robot system for inspection of under-water pipelines in shallow waters,” International Journal of Intelligent Robotics and Applications , vol. 8, no. 1, pp. 14–38, 2024. [7] D. C. L. Chong, A. S. Suhaili, S. M. Ng, W. H. F. Wan Shafie, B. Isnadi, R. Khan, K. H. Lau, N. Hassan, and M. F. B. Ismail, “Vessel-less underwater inspection at fixed offshore structure by utilizing mini remotely operated vehicle (mini-ROV),” in Proc. ASME 2022 41st Int. Conf. on Ocean, Offshore and Arctic Engineering (OMAE) , 2022. [8] M. Qadri, K. Zhang, A. Hinduja, M. Kaess, A. Pediredla, and C. A. Metzler, “AONeuS: A neural rendering framework for acoustic-optical sensor fusion,” in SIGGRAPH , 2024. [9] Z. Qu, O. Vengurlekar, M. Qadri, K. Zhang, M. Kaess, C. Metzler, S. Jayasuriya, and A. Pediredla, “Z-Splat: Z-Axis Gaussian Splatting for Camera-Sonar Fusion,” IEEE Trans. Pattern Anal. Mach. Intell. ,vol. 47, no. 9, pp. 7255–7267, 2025. [10] A. V. Sethuraman, M. Rucker, O. Bagoren, P.-C. Kung, N. N. B. Amutha, and K. A. Skinner, “SonarSplat: Novel View Synthesis of Imaging Sonar via Gaussian Splatting,” IEEE Robot. Autom. Lett. , vol. 10, no. 12, pp. 13312–13319, 2025. [11] T. Lin, M. Qadri, K. Zhang, A. Pediredla, C. A. Metzler, and M. Kaess, “Acoustic Neural 3D Reconstruction Under Pose Drift,” in Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS) , pp. 12704–12711, 2025. [12] K. Zhang, J. Chen, M. Qadri, R. Shomberg, M. Kaess, J.-B. Huang, A. Pediredla, and C. Metzler, “Adapting Vision Foundation Models to Acoustics for Pose-Free 3D Sonar Reconstruction,” arXiv:2609.06261, 2026. [13] D. Yang, J. J. Leonard, and Y. Girdhar, “SeaSplat: Representing Underwater Scenes with 3D Gaussian Splatting and a Physically Grounded Image Formation Model,” in Proc. IEEE Int. Conf. Robot. Autom. (ICRA) , 2025. [14] H. Li, W. Song, T. Xu, A. Elsig, and J. Kulhanek, “WaterSplatting: Fast Underwater 3D Scene Reconstruction Using Gaussian Splatting,” in Proc. Int. Conf. 3D Vision (3DV) , 2025. [15] A. Ferreira et al., “Underwater SLAM and calibration with a 3D profiling sonar,” Remote Sensing , vol. 18, no. 3, p. 524, 2026. [16] J. McConnell, I. Collado-Gonzalez, and B. Englot, “Perception for underwater robots,” Current Robotics Reports , vol. 3, no. 4, pp. 177– 186, 2022. [17] J. Hu, H. Wang, B. Xu, N. Ding, Z. Lu, N. Lei, and Y. He, “AquaSplatting: A Hybrid 3D Representation for Robust Underwater Scene Reconstruction via Dual-Branch Rendering,” in Proc. AAAI Conf. Artif. Intell. , 2026. [18] A. Kirillov et al., “Segment Anything,” in ICCV , 2023. [19] J. L. Sch¨ onberger and J.-M. Frahm, “Structure-from-motion revisited,” in CVPR , 2016. [20] B. Kerbl, G. Kopanas, T. Leimk¨ uhler, and G. Drettakis, “3D Gaussian splatting for real-time radiance field rendering,” ACM Trans. Graph. ,2023. [21] Vallabh et al. “3D Reconstruction of Underwater Structures using Forward-Scan Sonar and Gaussian Splatting,” in OCEANS , 2026, note=Anonymized for double-blind review. [22] A. Penumarti et al., “Calibration and comparative analysis of forward-looking sonar and 3D sonar for enhanced underwater object recogni-tion,” arXiv:2608.29433, 2026. [23] Y. Gao, J. Luo, and Y. Cai, “A vision-based operator-guided framework for close-range ROV inspection of coral colonies via multi-view 3D anchoring,” Ocean Engineering , vol. 365, p. 127297, 2026. [24] L. Paull, S. Saeedi, M. Seto, and H. Li, “AUV navigation and localization: A review,” IEEE J. Ocean. Eng. , vol. 39, no. 1, pp. 131– 149, 2014. [25] D. Akkaynak and T. Treibitz, “Sea-Thru: A method for removing water from underwater images,” in CVPR , 2019. [26] I. Collado-Gonzalez, J. McConnell, P. Szenher, and B. Englot, “Opti-acoustic scene reconstruction in highly turbid underwater environ-ments,” in IROS , 2025. [27] Y. Huang, J. McConnell, X. Lin, and B. Englot, “DRACo-SLAM2: Distributed robust acoustic communication-efficient SLAM for imag-ing sonar equipped underwater robot teams with object graph match-ing,” in IROS , 2025. [28] J. McConnell, Y. Huang, P. Szenher, I. Collado-Gonzalez, and B. En-glot, “DRACo-SLAM: Distributed robust acoustic communication-efficient SLAM for imaging sonar equipped underwater robot teams,” in IROS , 2022. [29] F. Dellaert and M. Kaess, “Factor graphs for robot perception,” Found. Trends Robot. , 2017. [30] T. A. Huang and M. Kaess, “Acoustic structure from motion,” in ICRA ,2015. [31] S. Negahdaripour, “Opti-acoustic stereo imaging: On system calibra-tion and 3-D target localization,” IEEE Trans. Image Process. , 2007. [32] A. Phung and R. Camilli, “OASIS: Real-time opti-acoustic sensing for intervention systems in unstructured environments,” in IROS , 2025. [33] J. Wang, F. Chen, Y. Huang, J. McConnell, T. Shan, and B. Englot, “Virtual maps for autonomous exploration of cluttered underwater environments,” IEEE J. Ocean. Eng. , vol. 47, no. 4, pp. 916–935, 2022. [34] Anonymous, “Navigating Uncertainty: Application of Information Theory for Ocean Exploration Using AUV,” in IEEE Underwater Technology (UT) , 2025, note=Anonymized for double-blind review. [35] J. Li, M. Kaess, R. M. Eustice, and M. Johnson-Roberson, “Pose-graph SLAM using forward-looking sonar,” IEEE Robot. Autom. Lett. , vol. 3, no. 3, pp. 2330–2337, 2018. [36] E. Westman, A. Hinduja, and M. Kaess, “Feature-based SLAM for imaging sonar with under-constrained landmarks,” in IEEE Int. Conf. Robot. Autom. (ICRA) , 2018, pp. 3629–3636. [37] Y. Feng, W. Lu, H. Gao, B. Nie, K. Lin, and L. Hu, “Differentiable space carving for 3D reconstruction using imaging sonar,” IEEE Robot. Autom. Lett. , vol. 9, no. 11, pp. 10065–10072, 2024.

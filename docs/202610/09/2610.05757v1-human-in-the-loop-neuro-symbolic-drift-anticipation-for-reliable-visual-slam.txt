@@ -1,0 +1,100 @@
+Title: Human-in-the-Loop Neuro-Symbolic Drift Anticipation for Reliable Visual SLAM
+
+URL Source: https://arxiv.org/pdf/2610.05757v1
+
+Published Time: Tue, 06 Oct 2026 02:48:57 GMT
+
+Number of Pages: 4
+
+Markdown Content:
+# Human-in-the-Loop Neuro-Symbolic Drift Anticipation for Reliable Visual SLAM ⋆
+
+Junhyun Nam 1, Wonse Jo 11Department of Information and Telecommunication Engineering, Incheon National University, Incheon, South Korea 22012. 
+
+{namjunhyun,jow }@inu.ac.kr 
+
+Abstract: This paper introduces Hybrid DeepSEE (HDS), a Human-in-the-Loop (HITL) neuro-symbolic framework for proactive drift anticipation in Visual SLAM (V-SLAM). While data-driven models offer predictive power, their “black-box” nature often yields physically in-consistent outputs in out-of-distribution (OOD) environments. To address this, HDS integrates neural drift risk estimation with symbolic constraint reasoning. By utilizing a Large Language Model (LLM) as a reasoning bridge, the framework translates qualitative human context into interpretable symbolic constraints. Building upon this architecture, we propose a superior drift anticipation framework that ensures enhanced reliability and consistency in Visual SLAM 1. INTRODUCTION Reliable state estimation is a fundamental requirement for the safe deployment of autonomous mobile robots in mission-critical domains such as industrial automation and defense operations. In such systems, localization ac-curacy directly affects feedback control performance, tra-jectory tracking stability, and overall operational safety (Kelly and Sukhatme, 2009). Visual Simultaneous Local-ization and Mapping (V-SLAM) has become a widely adopted solution due to its ability to extract rich envi-ronmental information using low-cost cameras (Cadena et al., 2016). Real-world V-SLAM systems, despite their advantages, experience cumulative drift, which refers to the accumu-lated errors in pose estimation while driving (Cadena et al., 2016). As a result, there is a divergence between the estimated and true trajectories. From a control perspec-tive, the estimation degradation can propagate through the feedback loop, leading to performance deterioration or potential instability (Radisavljevic-Gajic, 2024). Drift is particularly pronounced in challenging environments characterized by repetitive textures, abrupt illumination changes, and low-feature regions, where measurement re-liability is significantly reduced (Savinykh et al., 2022). In safety-critical domains, such as nuclear maintenance, defense operations, and human-robot collaboration, es-timation failures can lead to catastrophic consequences including human casualties or severe environmental dam-age. In these high-stakes contexts, even minor SLAM drift transcends simple positioning errors, potentially trig-gering abrupt trajectory deviations that propagate into the control loop (Cadena et al., 2016). Therefore, it is essential not only to correct errors after they occur but to anticipate degradation before significant drift compro-mises the system. Early awareness of drift risk enables proactive supervisory actions—such as motion regulation         
+
+> ⋆This research was supported by Incheon National University Research Grant in 2025 (#2025-0391).
+
+or re-localization triggers—thereby preserving closed-loop reliability and operational integrity without relying solely on post-hoc, reactive correction (Zhang et al., 2026). To address this need, we propose a conceptual Neuro-Symbolic Drift Anticipation Framework that introduces a constraint-aware supervisory layer above a conventional V-SLAM estimator using Human-in-the-Loop approach. It monitors drift risk and evaluates consistency under pre-defined constraints without altering the estimated pose. This supervisory evaluation aims to prevent physically implausible or high-risk estimation conditions. The main contributions of this work are summarized as follows: 
+
+• Designing a proactive supervisory framework for an-ticipating drift risk in V-SLAM-based state estima-tion. 
+
+• Proposing a constraint-aware Human-in-the-Loop regulation mechanism that encodes expert geomet-ric and kinematic knowledge through a language-mediated interface, enabling adaptive drift-risk con-trol under explicitly defined safety constraints. 2. RELATED WORK 
+
+2.1 Geometric Visual SLAM 
+
+Classical visual SLAM systems rely on geometric consis-tency, feature matching, and nonlinear optimization to estimate camera trajectories. Representative systems such as ORB-SLAM3 (Campos et al., 2021) utilized feature-based tracking, local bundle adjustment, and loop clo-sure detection to refine pose estimates. These approaches achieve high accuracy in structured and well-textured environments through principled optimization over pose graphs. However, geometric SLAM systems are fundamentally re-active: accumulated drift is corrected only after sufficient loop evidence is detected. In large-scale exploration or non-revisitable trajectories, loop closure cannot be guar-arXiv:2610.05757v1 [cs.RO] 5 Oct 2026 Fig. 1. Trajectory comparison between the ground truth and V-SLAM estimation on the EuRoC MH 04 se-quence, illustrating the occurrence of cumulative tracking drift. anteed, leading to persistent divergence. Furthermore, feature-based methods degrade significantly in challeng-ing environments—such as low-texture regions or areas with illumination volatility—where reliable feature corre-spondences become sparse or ambiguous. Conventional mitigation strategies primarily rely on loop closure detection, which compensates accumulated er-rors after revisiting previously mapped locations (Ho and Newman, 2006). Although effective in structured environ-ments, loop closure mechanisms are inherently reactive and provide no guarantee of bounded estimation perfor-mance during large-scale exploration or high-speed ma-neuvers (Cadena et al., 2016). In safety-critical systems, it is insufficient to only rely on the traditional loop closure mechanisms due to safety. 
+
+2.2 Learning-Based Drift and Error Estimation 
+
+Recent advances have incorporated deep learning into SLAM pipelines to improve robustness and error aware-ness. In particular, SEESys–the state-of-the-art online extension of the DeepSEE(Hu et al., 2023) framework– introduced an edge-assisted architecture that achieves real-time pose error estimation with an average end-to-end latency of 37.3 ms (Hu et al., 2024). By leveraging an attention-based multi-modality model (TimeSformer), SEESys demonstrates the feasibility of delivering instan-taneous quality-of-service (QoS) metrics for mobile robots and AR devices. However, despite their real-time capabilities, recent ap-proaches that integrate deep neural networks (DNNs) into V-SLAM pipelines to enhance perceptual robust-ness remain fundamentally data-driven black-box sys-tems. While these methods can produce numerically plau-sible motion estimates, they lack mechanisms to formally enforce geometric or kinematic consistency. As a result, physically inadmissible trajectories may emerge, particu-larly in out-of-distribution (OOD) environments, where such inconsistencies can arise unpredictably and intro-duce additional risk into downstream control processes (Radisavljevic-Gajic, 2024). Furthermore, although sys-tems such as SEESys provide auditory feedback to human operators, they do not offer explainable reasoning nor enable dynamic injection of contextual constraints into the inference loop. 
+
+Fig. 2. Overall architecture of the Hybrid DeepSEE (HDS) framework. The system integrates real-time SLAM features with language-mediated symbolic constraints to proactively anticipate drift risk. 
+
+2.3 Neuro-Symbolic and Constraint-Aware Learning 
+
+Neuro-symbolic learning aims to integrate data-driven perception with symbolic reasoning to overcome the lim-itations of black-box models. Logical Neural Networks (LNNs) enable differentiable reasoning under explicitly defined logical rules, offering improved interpretability and consistency. However, their application to proactive drift anticipation in robotic localization remains largely unexplored. In contrast to prior work, our framework integrates neural drift risk estimation with symbolic constraint enforcement under a Human-in-the-Loop paradigm. By leveraging a Large Language Model (LLM) as a reasoning bridge to encode expert-defined constraints, we enable a Hybrid DeepSEE (HDS) approach that aligns learned represen-tations with formal safety and kinematic principles. 3. DESIGN OF HYBRID DEEPSEE (HDS) FRAMEWORK The proposed Hybrid DeepSEE (HDS) framework proac-tively anticipates V-SLAM drift by integrating neural perception with human-defined geometric logic. As illus-trated in Figure 2, the architecture consists of three main modules: (i) Neural Drift Risk Estimation, (ii) Language-Mediated Symbolic Encoding, and (iii) Neuro-Symbolic Supervisory Integration. 
+
+3.1 Problem Formulation 
+
+Let ˆPt ∈ SE (3) denote the estimated camera pose and P ∗
+
+> t
+
+the unknown ground-truth pose. We define the integrated drift risk rt as the expected drift magnitude conditioned on multivariate SLAM signals Φ t, contextual knowledge 
+
+K, and guardrail constraints G:
+
+rt = E[Dt | Φt, K, G] (1) where Φ t denotes the extracted SLAM feature set includ-ing PSD and RTS, K represents contextual knowledge derived from language input, and G denotes hardware-based safety constraints. 3.2 Neural Drift Risk Estimation 
+
+The SLAM feature set Φ t comprises high-dimensional internal metrics and environmental descriptors reflecting V-SLAM reliability. Unlike raw geometric features, Φ t
+
+specifically incorporates the following indicators to an-ticipate estimation degradation: 
+
+• Power Spectral Density (PSD): This metric evaluates signal power distribution across the fre-quency domain. A decay in high-frequency compo-nents indicates texture deprivation or motion blur, serving as a critical precursor to tracking failure and cumulative drift. 
+
+• Real-Time Scalability (RTS): RTS monitors the pipeline’s computational health, including tracking latency and hardware utilization. A decrease in RTS signifies a failure to maintain the frame rate neces-sary for consistent estimation, introducing temporal gaps in the pose graph and leading to trajectory divergence. The neural module produces a baseline risk estimate through a deep neural network fθ :ˆrt = fθ (Φ t) (2) This value ˆ rt reflects data-driven uncertainty based on historical error patterns but, as a purely neural output, it lacks explicit awareness of physical constraints or human-defined safety boundaries. 
+
+3.3 Language-Mediated Symbolic Encoding 
+
+Speech-to-Text (STT) converts human spoken input into textual representations, which are then processed as con-textual prompts within the system. The Dynamic Logical Updater, powered by LLM, translates these prompts into symbolic rules Rk. For example: Prompt LLM 
+
+−−−→ R light : ( Iavg < τ lm ) ⇒ (WPSD ↑) (3) This pipeline enables adaptive sensitivity adjustment to the environmental factors that may not be fully captured by the neural model. 
+
+3.4 Neuro-Symbolic Supervisory Integration 
+
+The Logical Neural Network fuses neural risk, contextual rules, and guardrail constraints into a final anticipation score ˜ rt:˜rt = σ
+
+wn ˆrt + X
+
+> k
+
+λkRk(K) + X
+
+> j
+
+γj Gj
+
+
+
+where wn, λk, and γj denote weighting coefficients for neural risk scores, symbolic rules, and hardware con-straints, respectively. In this conceptual framework, these parameters are systematically initialized to reflect the baseline confidence of neural predictions, the activation frequency of symbolic rules, and the threshold sensitiv-ity of hardware limitations. To preserve the determinis-tic safety of the system, the dynamic formulation and online adaptive update strategies for these scaling co-efficients are designated as crucial directions for future 
+
+Fig. 3. Evaluation of the Early Warning Lead Time and Early Warning Rate (EWR) under varying qualities of language-mediated human annotations. investigation. The hardware limitations (e.g., maximum velocity, kinematic acceleration limits) act as physical priors that reinforce the risk score when safety thresholds are approached or violated. Importantly, the supervisory integration operates exclusively at the decision-support level and does not modify the pose estimation variables within the SLAM optimization backend. By establishing this neuro-symbolic alignment, the proposed framework provides a structured supervision mechanism that en-hances robustness in challenging and Out-of-Distribution (OOD) environments, where purely data-driven or geo-metric methods often fail unpredictably. 
+
+3.5 Supervisory Drift Monitoring and Decision Support 
+
+The final anticipation score ˜ rt is provided to a super-visory monitoring layer that operates independently of the underlying SLAM estimator. Importantly, the pro-posed framework does not modify or correct the estimated pose ˆPt; instead, it evaluates localization reliability in real time and provides decision-level guidance. When the anticipated drift risk exceeds a predefined threshold, the supervisory layer may trigger high-level safety actions such as: 
+
+• Motion scaling or velocity reduction, 
+
+• Re-localization request, 
+
+• Human operator notification. It is important to note that the LLM’s reasoning process is executed asynchronously only when significant envi-ronmental changes are detected or explicit user inputs are provided, ensuring that high-level symbolic reasoning does not compromise the real-time constraints of the underlying V-SLAM backend. 
+
+3.6 Quantitative Evaluation and Experimental Results 
+
+To validate the performance of the proposed Hybrid DeepSEE (HDS) framework, we conducted comparative experiments using the EuRoC MAV dataset, specifically the challenging MH 04 difficult sequence. We evaluated the proactive drift anticipation capability of HDS against both a standard Random Forest baseline and DeepSEE (Hu et al., 2023). The experimental results indicate that HDS generally provides longer Early Warning Lead Times compared to conventional reactive approaches. Across major drift events (e.g., E39 to E327), HDS predicted significant tracking degradation an average of 6.2 seconds in advance, whereas DeepSEE achieved an average lead time of 2.4 seconds or failed to anticipate certain drift events entirely. Furthermore, we evaluated the Early Warning Rate (EWR) under varying qualities of language-mediated hu-man annotations. Under robust expert-provided contex-tual annotations (“good annot”), HDS achieved a peak EWR of 91.5% for a ≥1s lead-time window and main-tained a relatively high reliability of 85.4% even under the stricter ≥5s condition. In contrast, DeepSEE without contextual assistance showed a noticeable performance decline, dropping to 78.5% at the ≥5s threshold. However, the experiments also revealed that the overall performance of HDS is highly dependent on the qual-ity and consistency of human-provided language inputs. Accurate and context-rich annotations from expert users significantly improved prediction reliability and antici-pation performance, whereas ambiguous or low-quality annotations could reduce system effectiveness. This ob-servation suggests that the proposed framework strongly relies on Human-in-the-Loop interaction, where the qual-ity of linguistic context directly influences the final safety prediction outcome. These results demonstrate that language-mediated sym-bolic constraints can help compensate for neural uncer-tainty and support more reliable and proactive safety regulation in out-of-distribution (OOD) scenarios. 4. CONCLUSION This paper presents Hybrid DeepSEE (HDS), a human-in-the-loop neuro-symbolic framework designed to proac-tively anticipate drift errors in Visual SLAM. By fus-ing data-driven neural perception with language-mediated symbolic reasoning, the architecture effectively addresses the ”black-box” limitations and physical inconsistencies prevalent in conventional deep learning models. The primary structural contribution of this work lies in decoupling drift-risk anticipation from the underly-ing state-estimation process, establishing a robust su-pervisory safety layer that preserves the integrity of the SLAM backend. Crucially, empirical evaluations demon-strate that integrating expert-defined geometric and kine-matic constraints via a language interface significantly extends the early warning lead time and enhances pre-diction reliability. This framework shifts drift monitoring from a reactive recovery process to a proactive, explain-able, and trustworthy component of autonomous robotic navigation. 5. FUTURE WORKS This research presents a conceptual framework, so we outline the following future research plans: (1) Adaptive Weight Optimization Strategy: We will develop an algorithm to determine the optimal weighting coefficients (wn, λ k, γ j ) for fusing neural risk, symbolic rules, and hardware constraints. This includes applying adaptive scheduling techniques to increase guardrail weights once the robot approaches physical safety limits, ensuring de-terministic safety in high-risk scenarios. (2) Validation with physical humanoid: The proposed HDS frame-work will be deployed onto a humanoid for real-world testing. We will evaluate the framework’s ability to proac-tively anticipate drift and trigger supervisory interven-tions within the real-time constraints of the hardware. REFERENCES Cadena, C., Carlone, L., Carrillo, H., Latif, Y., Scara-muzza, D., Neira, J., Reid, I., and Leonard, J.J. (2016). Past, present, and future of simultaneous localization and mapping: Toward the robust-perception age. IEEE Transactions on Robotics , 32(6), 1309–1332. Campos, C., Elvira, R., Rodr´ ıguez, J.J.G., M. Montiel, J.M., and D. Tard´ os, J. (2021). Orb-slam3: An accu-rate open-source library for visual, visual–inertial, and multimap slam. IEEE Transactions on Robotics , 37(6), 1874–1890. Ho, K.L. and Newman, P. (2006). Loop closure detection in slam by combining visual and spatial appearance. 
+
+Robotics and Autonomous Systems , 54(9), 740–749. Selected papers from the 2nd European Conference on Mobile Robots (ECMR ’05). Hu, T., Scargill, T., Chen, Y., Lan, G., and Gorlatova, M. (2023). Dnn-based slam tracking error online es-timation. In Proceedings of the 29th Annual Interna-tional Conference on Mobile Computing and Network-ing , ACM MobiCom ’23. Association for Computing Machinery, New York, NY, USA. Hu, T., Scargill, T., Yang, F., Chen, Y., Lan, G., and Gorlatova, M. (2024). Seesys: Online pose error esti-mation system for visual slam. In Proceedings of the 22nd ACM Conference on Embedded Networked Sensor Systems , SenSys ’24, 322–335. Association for Comput-ing Machinery, New York, NY, USA. Kelly, J. and Sukhatme, G.S. (2009). Visual-inertial si-multaneous localization, mapping and sensor-to-sensor self-calibration. In 2009 IEEE International Sympo-sium on Computational Intelligence in Robotics and Automation - (CIRA) , 360–368. Radisavljevic-Gajic, V. (2024). Design of reduced-order observer based steady state optimal linear-quadratic feedback controllers. Journal of the Franklin Institute ,361(12), 107015. Savinykh, A., Kurenkov, M., Kruzhkov, E., Yudin, E., Potapov, A., Karpyshev, P., and Tsetserukou, D. (2022). Darkslam: Gan-assisted visual slam for reliable operation in low-light conditions. In 2022 IEEE 95th Vehicular Technology Conference , 1–6. Zhang, H., Li, C., Canh, T.N., Wang, L., and Chong, N.Y. (2026). Sr-slam: Scene reliability-based rgb-d slam in diverse environments. Robotics and Autonomous Systems , 197, 105306.

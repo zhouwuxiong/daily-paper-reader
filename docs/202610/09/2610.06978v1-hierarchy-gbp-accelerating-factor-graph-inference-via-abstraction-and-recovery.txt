@@ -1,0 +1,1578 @@
+Title: Hierarchy-GBP: Accelerating Factor Graph Inference via Abstraction and Recovery
+
+URL Source: https://arxiv.org/pdf/2610.06978v1
+
+Published Time: Wed, 07 Oct 2026 00:09:39 GMT
+
+Number of Pages: 33
+
+Markdown Content:
+# HIERARCHY -GBP: A CCELERATING FACTOR GRAPH 
+
+# INFERENCE VIA ABSTRACTION AND RECOVERY 
+
+Yuzhou Cheng 1 Tom Yates 1 Ignacio Alzugaray 1 Danyal Akarca 1
+
+Pedro A. M. Mediano 1, † Andrew J. Davison 1, †
+
+## ABSTRACT 
+
+Gaussian Belief Propagation (GBP) is a distributed inference algorithm that passes messages in graphical models, making it attractive for scalable spatial intelligence. However, we find GBP most effective locally: it rapidly smooths message errors that vary sharply between neighbor variables, but corrects global errors across distant graph regions incrementally through long-range message propagations. We propose Hierarchy-GBP (H-GBP) , an iterative, two-stage framework that acceler-ates GBP by first solving these global errors with a coarse graph approximation (abstraction) and projecting the results back to the original graph (recovery), then refining the remaining local errors with GBP. We prove H-GBP convergence to the optimum by deriving the combined matrix operator of our abstraction and recovery steps and analyzing its spectral radius. Experiments on linear sparse graphs show that H-GBP converges fundamentally faster than standard GBP. Moreover, we validate H-GBP on two important spatial problems: Pose Graph Optimization (PGO) and Bundle Adjustment (BA). H-GBP markedly accelerates large-scale PGO and achieves state-of-the-art runtime across all tested BA scales. GBP 
+
+> correction
+
+Figure 1: Illustration of Hierarchy-GBP: A fine pose graph is partitioned along odometry order into local groups, where each group extracts a low-rank subspace for coarse abstraction. The hierarchical cycle first removes coherent coarse error and then lets GBP damp the remaining local error. 
+
+## 1 INTRODUCTION 
+
+Gaussian Belief Propagation (GBP) is an efficient distributed graphical inference algorithm (Pearl, 2022; Yates et al., 2026) that has been successfully applied in error-correcting decoding (Frey & MacKay, 1997), multiuser detection (Bickson et al., 2008), and solving large-scale linear systems (Shental et al., 2008). Inference proceeds by passing Gaussian distributions between nodes in a probabilistic graphical model, iteratively updating each variable’s marginal belief. This local, decoupled, and scalable computational model makes GBP a highly promising inference and reasoning framework for future spatial intelligence systems (Davison & Ortiz, 2019). 
+
+> 1
+
+Imperial College London, London, United Kingdom. 
+
+> †
+
+Co-supervised this work. 
+
+1arXiv:2610.06978v1 [cs.CV] 4 Oct 2026 Figure 2: Pose graph’s initial odometry trajectories versus trajectories after H-GBP optimization. Dubrovnik356 Ladybug1723 Venice1778 
+
+Figure 3: Bundle adjustment reconstructions with H-GBP optimization. GBP has the desirable property that, if it converges on a Gaussian graph, it converges to the global optimal mean (Weiss & Freeman, 1999). However, its convergence rate is compromised by graph structures like local loops or long graph diameters (Malioutov et al., 2005; 2006; Du et al., 2018), and GBP can often require many iterations (El-Kurdi et al., 2012; Liu et al., 2012). Algebraically, GBP behaves as a smoother: it quickly damps local (high-frequency) errors that vary sharply between neighboring nodes, while global (low-frequency) errors across distant graph regions require many iterations to reduce. We observe the local-versus-global error separation in many spatial inference problems, including SLAM, 3D computer vision, and sensor networks. This motivates a two-level view of GBP (see Fig.1). The fine space is the original variable space where GBP performs local message passing, while the coarse space is a low-dimensional graph approximation suitable for removing low-frequency errors. We solidify this idea with a localized low-rank abstraction . Variables are grouped locally and abstracted via their most prominent eigenvalues, forming a coarse problem that captures low-frequency errors (Briggs et al., 2000; Nataf et al., 2011; Spillane et al., 2014). Our algorithm Hierarchy-GBP (H-GBP) alternates coarse residual correction with fine-level syn-chronous GBP. For linear Gaussian factor graphs, we derive an operator describing a ‘V-cycle’ of alternating coarse and fine steps, which lets us compute the spectral radius and predict a large im-provement in convergence rate compared to standard GBP on the fine graph. Experiments on sparse spatial factor graphs (Dellaert & Kaess, 2017; Davison, 2018; Papadimitriou, 2025; Jiao et al., 2026) verify this predicted acceleration in linear problems. We also show that the abstraction-and-recovery principle extends to practically important, non-linear Pose Graph Optimization (PGO) (see Fig.2) and Bundle Adjustment (BA) (see Fig.3). Specifically, our main contributions are: • H-GBP framework We introduce a multilevel GBP framework for general sparse factor graphs. H-GBP builds a low-rank coarse space from low-eigenvalue modes, and alternates coarse corrections with GBP updates on the original fine graph. • Empirical validation H-GBP converges faster than standard GBP on sparse linear factor graphs empirically. Extensive experiments on PGO and BA benchmarks show H-GBP’s speed and accuracy benefits, and demonstrate the potential for broader spatial intelligence applications. • Convergence theory For linear factor graphs, we establish a global precision convergence rate and derive a reduced cycle operator whose spectral radius is a geometric global conver-gence criterion. We prove the local convergence of H-GBP on manifolds. 22 RELATED WORK 
+
+GBP on linear-Gaussian graphs has a strong theoretical foundation. Weiss & Freeman (1999) shows that when loopy GBP converges on a Gaussian graphical model, it recovers the correct posterior means, though the variances can be overconfident. Subsequent work connected GBP to walk-sum expansions and linear/quadratic solvers, clarifying that its behavior is governed by global coupling structure rather than by any single local loop in isolation (Malioutov et al., 2006; Shental et al., 2008; Moallemi & Van Roy, 2009). More recent analyses extended these perspectives to vector-valued Gaussian models, which arise in estimation problems (Du et al., 2018; Yates et al., 2026). Our H-GBP analysis takes a matrix-operator view of the underlying dynamics. A second line of work improves GBP efficiency while remaining on a flat graph. Representative ideas include residual scheduling (Elidan et al., 2006), relaxation or damping (El-Kurdi et al., 2012), and structural modifications such as feedback message passing (Liu et al., 2012). These methods can reduce oscillation or avoid unnecessary updates, but they do so by reordering or partially restructuring message passing on the original graph. They do not build a coarse representation to divide and counter long-range, low-frequency error components. H-GBP is inspired by domain-decomposition methods, where local smoothers remove high-frequency errors and coarse spaces correct slowly varying components (Briggs et al., 2000). The closest prior work combines GBP with multigrid for PDE/FEM systems (El-Kurdi et al., 2014; 2015). In contrast, H-GBP constructs the hierarchy directly on sparse factor graphs and derives the coupled coarse/fine message dynamics. To our knowledge, it is the first multilevel GBP framework formulated and analyzed for general sparse factor graphs beyond PDE/FEM discretizations. Our work is also related to the factor-graph optimization literature in robotics (Tazaki, 2022). Factor graphs have become a standard abstraction for large-scale estimation and SLAM, while sparse nonlinear solvers such as g2o and Ceres remain the dominant practical baselines (Dellaert & Kaess, 2017; Kümmerle et al., 2011; Agarwal et al., 2023). Recently, there has been renewed interest in GBP as a distributed inference engine for spatial estimation, including multi-robot localization, continuous-time SLAM, and bundle adjustment on graph processors (Murai et al., 2024; Hug et al., 2024; Ortiz et al., 2020). H-GBP sits between these threads: it preserves the locality and parallelism of GBP with an abstract-then-recover acceleration mechanism. 
+
+## 3 PRELIMINARIES 
+
+3.1 FACTOR GRAPHS 
+
+A factor graph G = ( V, F, E) is a bipartite graph with variable nodes V, factor nodes F and edges E
+
+that represent the factorisation of a joint probability distribution. 
+
+p(x) ∝ Y 
+
+> f∈F
+
+ψf (xN (f )) (1) where x = ( x1, ..., x n)T is the graph’s state vector and xN (f ) is the subset of variables connected to factor f .Variables are associated with the marginal posterior distribution (so-called belief) of their state xi, and each factor f ∈ F defines a joint Gaussian potential ψf over the states of its neighboring variables. Note that a factor’s dimensionality depends on the number and dimension of its neighbours. In our work, all Gaussian potentials are defined in their canonical form, using the precision matrix Λf and information vector ηf :
+
+ψf (xN (f )) ∝ exp 
+
+
+
+− 12 x⊤N (f )Λf xN (f ) + η⊤ 
+
+> f
+
+xN (f )
+
+
+
+Collecting these parameters from all factors then yields the global linear system Ax = b, where A is the global precision matrix Λ, b is the global information vector η, and x is the global mean vector. The factor graph’s unique Maximum A Posteriori (MAP) estimate is then given by x⋆ = A−1b.33.2 GAUSSIAN BELIEF PROPAGATION 
+
+We provide here a brief overview of Gaussian Belief Propagation (GBP), and direct interested readers to Ortiz et al. (2021) for further detail. 
+
+Figure 4: (a) Illustration of one synchronous iteration of Gaussian belief propagation. (b) Local factor-variable indexing illustration for the formulation of Eqs. (9) of message evolvement. Inference for GBP takes place through iterative message passing between neighboring nodes, where each message represents a marginal probability distribution over the state space of a single variable node. Variable beliefs (bΛi, bηi) are then updated based on their most recently received messages (Fig. 4 (a)). We detail GBP’s 3 update equations below, showing only factors with degree 2 or less, which are applied iteratively for inference. The Schur complement handles higher-degree factor nodes in the same way, so all steps extend exactly. 
+
+Variable-to-factor message update : Messages from variables to factors are the variable’s belief with the most recent message from the receiving factor subtracted. 
+
+Λi\f = bΛi − Λf →i, ηi\f = bηi − ηf →i. (2) 
+
+Factor-to-variable message update : Messages from factors to variables sum the messages from all other neighboring variables and marginalise over them to calculate the factor’s belief in terms of the receiving variable. To do this, we block partition the factor’s joint precision matrix over its neighboring variables i and j: Λf =
+
+"
+
+Λfii Λfij 
+
+Λfji Λfjj 
+
+#
+
+. From here, we can calculate updated parameters for our factor-to-variable message, Λ+ & η+:
+
+Λ+  
+
+> f→i
+
+= Λ fii − Λfij (Λ fjj + Λ j\f )−1Λfji , η+  
+
+> f→i
+
+= ηfi − Λfij (Λ fjj + Λ j\f )−1 ηfj + ηj\f
+
+ (3) 
+
+Belief update : Given an incoming message on each edge to variable i, where i ∈ N (f ), the belief in the variable is obtained by summing all incoming messages. 
+
+bΛi = X  
+
+> f∈N(i)
+
+Λf →i, bηi = X  
+
+> f∈N(i)
+
+ηf →i, (4) In this work, we only consider synchronous GBP, in which one iteration consists of all variables in a graph updating their messages, all factors in the graph updating their messages, followed by all variables updating their belief. 
+
+## 4 HIERARCHY -GBP: A LGORITHM AND MATRIX OPERATORS 
+
+Algorithm 1 summarizes H-GBP as an iterative linear solver for the Gaussian system Ax = b.The prolongation matrix P is constructed once and kept fixed. Each cycle runs k synchronous GBP sweeps, solves the coarse residual problem P ⊤AP δz = P ⊤(b − Ax ), and injects P δz using the message-preserving rule below (6). The resulting two-level iteration combines global coarse correction with local message passing. To better explain and analyze linear H-GBP, we derive the matrix operator for each step and combine them into the operator of one full cycle . The steps include: 41. Abstraction & Recovery of a coarse graph approximation 2. The first GBP iteration after Recovery 3. The remaining GBP iterations Note that separating steps 2 & 3 is necessary because we only project variable beliefs, not graph messages, to the coarse graph approximation. Once this approximation is solved and the residuals recovered, the variable beliefs are updated but inconsistent with the non-updated graph messages. We show that this inconsistency occurs only for one GBP iteration, so we compute the resulting adjusted operator that represents the first iteration after abstraction and recovery. Let x⋆ = A−1b. We define the mean vector residual v := x − x⋆. Concatenating all factor-to-variable information vectors yields a big information vector η. Let η⋆ be a fixed point of the H-GBP system. We define the information residual m := η − η⋆. Note that η⋆ exists by construction (Appendix B.2). 4.1 OPERATOR 1: A BSTRACTION & R ECOVERY OF A COARSE GRAPH APPROXIMATION 
+
+We derive the matrix operator for the abstraction and recovery step of H-GBP. To start, we group the variable nodes together, forming G "supernodes". For each supernode group g, we combine the precision matrices from factors wholly contained in the group into a single matrix Hg , where 
+
+(Hg )i,j = X  
+
+> N(f)⊂g
+
+(Λ f )i,j (5) To reduce supernode dimensionality, for each group g we perform eigenvalue decomposition on Hg =
+
+U ΣU ⊤. We then approximate Hg with its r smallest eigenvalues and corresponding eigenvectors Ur .If we concatenate all groups’ Ur matrices blockwise into a graph-wide matrix P , we get a transfor-mation from the original graph’s space to an approximated, coarse space. This global prolongation matrix is assembled blockwise as 
+
+P =
+
+
+
+Ur, 1 ... 0
+
+... . . . ...
+
+0 ... Ur,G 
+
+
+
+where Ur,g represents Ur for group g and 0 is the zero matrix. The coarse correction solves (P ⊤AP )δz = P ⊤(b − Ax ). To inject this correction into the variable beliefs, we first add increment P δz to x. So, x+ = x + P δz . And then, we update each variable’s information vector by this new mean 
+
+bηi = bΛix+ 
+
+> i
+
+. (6) 
+
+Property 4.1. The mean error v+ after abstraction and recovery is 
+
+v+ = Cv, C = I − P (P ⊤AP )−1P ⊤A (7) 4.2 OPERATOR 2: T HE FIRST GBP I TERATION AFTER RECOVERY 
+
+To derive the operator for Synchronous GBP, we stack all information vector messages from factor-to-variable, which allows Eq. (3) to be written in matrix form that represents the entire graph. After the graph’s precision matrices have converged, we can substitute Section 3.2’s update equations ((4) into (2) into (3)) and study the properties of the resulting matrix. However, once the original graph’s variable beliefs are updated from Eq. (6), they are inconsistent with the graph’s messages, which did not change under abstraction and recovery. As a result, the variable belief’s information vector will not equal the sum of incoming information vectors. One synchronous GBP iteration will repair this, so we calculate the operator that represents the first iteration after abstraction and recovery in this section. 
+
+Property 4.2. After precision matrices have converged, we consider the errors in the variables’ mean vector v = x − x⋆ and information vector m = η − η⋆. The first GBP iteration with inconsistent 
+
+5beliefs & messages takes the form m+ = Jv + Um, where for factor f sending to variable i with other neighboring variable j (as in Fig 4b), these operators are given by: 
+
+(Jv )f →i = −Λfij (Λ fjj + bΛ⋆j − Λ⋆f →j )−1 bΛ⋆j vj , (Um)f →i = Λ fij (Λ fjj + bΛ⋆j − Λ⋆f →j )−1mf →j .
+
+(8) 
+
+J and U are therefore our operators for the first iteration of GBP after abstraction and recovery. 4.3 OPERATOR 3: T HE REMAINING SYNCHRONOUS GBP ITERATIONS 
+
+We next derive the matrix operator for synchronous GBP iterations once Section 4.2’s inconsistency has been resolved. As messages and variable beliefs are now consistent, we can substitute all update equations in Section 3.2 without trouble. 
+
+Property 4.3. Let η = η⊤  
+
+> f→i
+
+η⊤  
+
+> f→j
+
+· · · ⊤ denote the stacked column vector of all factor-to-variable information vector messages in graph G, letting us write Eq. (3) in matrix form. When precisions have converged, we substitute Section 3.2’s equations ( (2) into (3) into (4) ) and show that the information vector’s message update under one synchronous GBP iteration is of the affine form η+ = Qη + s,where the block entries of Q are given by: 
+
+Q(f →i),(h→j) = −Λfij (Λ fjj + bΛ⋆j − Λ⋆f →j )−1 (9) 
+
+To demonstrate this property, a toy example is given in Appendix A.1. Here, j is the other neighboring node of f than i (see Fig. 4 (b)). Q(f →i),(h→j) indexes Q for the block corresponding to messages from factor f to variable i, and factor h to variable j, and the rest of the block entries of Q are 0.
+
+The converged value η⋆ of GBP is unique and satisfies η⋆ = Qη ⋆ + s. Recall that we define the error between our current eta-message and the fixed-point eta-message as m = η − η⋆. Changing variables from η to m removes the s term, and we arrive at our matrix operator, Q, for one iteration of GBP: 
+
+m+ = Qm. (10) The message error after k-1 synchronous GBP iterations is then given by mk+1 = Qk+1 m0, where 
+
+m0 is the initial mean error values. Finally, H-GBP is iterative, and needs accurate variable means for the next abstraction and recovery. We therefore define a readout operator R that updates all errors in the variable means v using the variables’ information vector error values m.
+
+vi = ( Rm)i = ( bΛ⋆i )−1 X  
+
+> f∈N(i)
+
+mf →i (11) Combining all operators yields a single matrix-operator description of one full H-GBP cycle. 
+
+Property 4.4. From operators C, Jv + Um, the remaining k − 1 iterations of operator Q and R,we get 
+
+ v+
+
+m+
+
+
+
+= Taug ,k 
+
+ vm
+
+
+
+, Taug ,k =
+
+CRQk−1J CRQk−1U
+
+Qk−1J Qk−1U
+
+
+
+. (12) 4.4 EXTENSION TO MANIFOLDS 
+
+H-GBP naturally extends to nonlinear factor graph optimization by operating on linearizations in the tangent space. We use the standard right-perturbation convention from Lie theory (Solà et al., 2018) and factor-graph optimization (Dellaert & Kaess, 2017): at the current estimate ¯X, each residual admits the first-order approximation rf ( ¯Xf ⊕ ξf ) ≈ rf ( ¯Xf ) + Jf ξf . This yields the linear Gaussian system in the tangent space that we solve using H-GBP, before retracting ¯Xi ← ¯Xi Exp( ξi).Optimization on manifolds involves repeating the above process continuously until ¯Xi converges. 
+
+## 5 EMPIRICAL RESULTS 
+
+All experiments are on an Intel 13th Gen Core i9-13900HX CPU with 64 GB RAM, without GPU acceleration. Experimental details are provided in Appendix D. 65.1 LINEAR HIERARCHY -GBP 
+
+Figure 5: (a) Low-rank abstraction reduces error more effectively than alternative coarse spaces. (b) Successive-cycle error ratios approach the spectral-radius prediction as precision messages stabilize. (c) H-GBP runtime is less sensitive to sparse-Cholesky fill-in. 0 5 10 15 20 20 40 60 80 100 1
+
+> 10 −3
+> 10 −6
+> 10 −9
+> 10 −12
+> 10 −15
+
+Cycles c
+
+Sweeps k
+
+> Relative  A-norm error
+
+GBP H-GBP 
+
+> Same initialization
+> Numerical precision plateau
+> Orders of magnitude
+
+Figure 6: H-GBP versus GBP performance We study linear H-GBP on fixed Gaussian pose-graph systems, using (x, y ) variables for conver-gence comparisons and a fixed SE(3) lineariza-tion for the coarse-space ablation. Figure 6 shows that H-GBP removes the low-frequency error that local message passing alone struggles to elim-inate. Varying both the number of cycles and the GBP iterations per cycle yields stable reduc-tion, demonstrating H-GBP’s consistent behavior across iteration budgets. Figure 5(a) shows that local low-rank approxi-mation yields substantially stronger error reduc-tion than a basic multigrid-style abstraction under the same GBP budget, making our coarse-space choice important for sparse factor graphs. We find retaining four local modes per group gives a stable coarse correction with little sensitivity above this threshold. Figure 5(b) validates the correctness of the theory: as precision messages rapidly stabilize, the ratio of errors in successive cycles approaches 
+
+ρ(Taug ,50 ), matching the predicted asymptotic contraction factor. A complementary experiment (Fig. 5(c)) evaluates solver performance across different levels of Cholesky fill-in. Sparse-Cholesky runtime grows 1.88 ×, whereas H-GBP runtime grows only 1.08 ×,revealing much weaker sensitivity to elimination fill-in. 5.2 HIERARCHY -GBP ON SE(2) AND SE(3) PGO Table 1: Pose-graph benchmarks: runtime (s) ↓ / final cost ↓.                                                                       
+
+> 1 thread 16 threads
+> Dataset Space
+> g2o Cholesky
+> (ICRA 2011)
+> H-GBP PGO
+> g2o PCG
+> (ICRA 2011)
+> Cycle PGO
+> (T-RO 2021)
+> AMM PGO
+> (T-RO 2024)
+> Schwarz PGO
+> (FE Symposium 2026)
+> H-GBP PGO FR079 SE(2) 0.02 /18.79 0.29/18.79 1.09/18.79 0.04/18.79 0.17/129.13 0.14/18.79 0.11/18.79
+> FRH SE(2) 0.04 /9.66e-5 0.35/9.66e-5 0.41/9.66e-5 0.09/9.66e-5 0.38/1.02e-4 0.13/9.66e-5 0.12/9.66e-5
+> M3500 SE(2) 0.13 /68.96 0.90/68.96 1.87/68.96 0.23/68.96 0.91/70.45 1.47/68.96 0.27/68.96
+> ParkingGarage SE(3) 0.38 /0.63 7.56/0.63 19.72/0.63 0.85/0.63 1.37/0.65 49.78/0.63 1.77/0.63
+> Sphere SE(3) 2.02/675.70 4.76/675.70 1.35/675.70 1.08 /675.70 1.08 /695.09 2.72/675.70 1.18/675.70
+> Cubicle SE(3) 4.22/1,378.53 22.63/1,378.53 93.53/1,378.53 4.17 /1,609.14 7.67/233,482.27 6.21/1,378.53 4.86/1,378.53
+> Grid SE(3) 493.90/42,179.98 16.16/42,179.98 4.38/42,179.98 621.95/42,179.98 7.94/42,192.23 44.55/42,179.98 3.90 /42,179.98
+> Globe10k SE(3) 93.45/3,039.93 20.44/3,039.93 7.04/3,039.93 42.04/3,039.93 12.78/3,040.00 13.33/3,039.93 5.34 /3,039.93
+> Globe100k SE(3) 1,288.89/20,090.74 177.88/20,090.74 662.81/20,090.74 OOM/– 132.07/20,112.14 >2000 /– 42.71 /20,090.74
+
+1st 2nd 3rd: fastest runtimes per dataset. Red: runtime > 20 × the fastest; cost > 2× the lowest; out of memory (OOM). 
+
+We evaluate H-GBP on SE(2) and SE(3) pose-graph benchmarks (Carlone et al., 2014; Olson et al., 2006; Carlone et al., 2015; Tazaki, 2022) (Fig. 2). We compare against g2o-Cholesky and g2o-7Table 2: Bundle adjustment benchmarks: runtime (s) ↓ / final sum-of-squares reprojection cost ↓.                                                                           
+
+> 1 thread 16 threads
+> Dataset
+> Ceres Sparse
+> (Google Inc 2012)
+> H-GBP BA
+> Ceres Sparse
+> (Google Inc 2012)
+> Ceres Iterative
+> (Google Inc 2012)
+> RootBA QR
+> (CVPR 2021)
+> PowerBA
+> (CVPR 2023)
+> H-GBP BA Ladybug49 0.98/26,690 0.18/26,705 0.33/26,690 0.54/26,691 0.63/26,691 0.23/27,299 0.07 /26,705
+> Venice89 19.22/567,243 2.68/576,781 5.91/567,243 5.03/567,055 6.22/572,780 1.91/580,416 0.59 /576,781
+> Final93 7.39/291,090 1.59/291,092 1.69/291,090 4.29/291,090 6.84/291,090 1.79/291,159 0.38 /291,092
+> Trafalgar257 7.21/193,577 1.31/197,378 2.38/193,577 14.41/193,671 22.72/193,398 1.11/205,427 0.45 /197,378
+> Dubrovnik356 50.15/987,859 6.83/1,021,102 13.96/987,859 49.54/987,859 119.17/987,866 4.14/1,059,446 1.63 /1,021,102
+> Final394 38.57/596,506 2.87/598,296 8.62/596,506 8.01/596,536 29.59/596,578 2.50/611,101 0.83 /598,296
+> Ladybug1723 60.56/778,095 4.79/759,600 19.05/778,095 5.51/770,444 9.18/763,070 2.72/797,704 1.22 /759,599
+> Venice1778 330.93/3,277,387 25.63/3,363,149 87.54/3,277,387 35.27/6,932,878 85.45/3,369,978 20.32/3,391,089 5.89 /3,363,149
+> Final3068 586.17/3,348,655 12.40/3,240,217 142.78/3,348,655 13.17/3,452,711 102.23/3,254,156 6.15/3,520,615 3.03 /3,240,217
+> Final4585 >2000 /– 48.55/10,331,432 526.06/10,783,988 72.54/13,021,324 1,278.84/10,158,450 33.72/10,441,192 11.20 /10,331,432
+> 1st 2nd 3rd: fastest runtimes per dataset. Red: runtime >20 ×the fastest; cost >2×the lowest.
+
+PCG (Kümmerle et al., 2011), AMM-PGO (Fan & Murphey, 2024), Cycle-PGO (Bai et al., 2021), and Schwarz-PGO (Tee et al., 2026). Table 1 reports runtime and final objective cost. H-GBP groups every 20 consecutive nodes in odometry order, retaining the 4 smallest eigenmodes for SE(2) and 12 
+
+for SE(3) . Each relinearization is followed by 3 cycles of 100 GBP iterations for SE(2) , or 5 cycles of 50 GBP iterations for SE(3) .H-GBP delivers consistent solution quality across all nine benchmarks: both its single-thread and 
+
+16 -thread final costs match g2o-Cholesky at the reported precision. With 16 threads, it ranks among the three fastest methods on eight benchmarks and is the fastest on the three largest graphs, Grid, Globe10k, and Globe100k. On these graphs, it achieves approximately 126 .6×, 17 .5×, and 30 .2×
+
+speedups over g2o-Cholesky, respectively. The corresponding speedups over the fastest competing baseline on each graph are 1.12 ×, 1.32 ×, and 3.09 ×, showing that the large-scale advantage extends beyond comparison with a direct solver. 5.3 HIERARCHY -GBP ON BUNDLE ADJUSTMENT 
+
+We evaluate H-GBP BA on ten bundle-adjustment benchmarks against Ceres Solver (Agarwal et al., 2023) with either direct sparse linear solve or iterative PCG, RootBA-QR (Demmel et al., 2021), and PowerBA (Weber et al., 2023). Table 2 reports runtime and final sum-of-squares reprojection cost for the 16 -thread comparison, with single-thread Ceres-Sparse and H-GBP BA included as references. H-GBP operates on the camera system S∆c = b obtained by Schur elimination of points at each linearization. For each pairwise potential, we simply fill in the corresponding off-diagonal blocks. The diagonal contributions define the unary potentials. (Note that this construction does not admit the assumptions. Therefore, the results of the BA are not intended to validate the theory, but rather to demonstrate the capabilities of H-GBP as an efficient solver.) Cameras are aggregated into connected groups of target size max(2 , ⌈nc/24 ⌉), and each group retains nine modes when abstracted. H-GBP BA is the fastest on all ten datasets, achieving approximately 2.0× to 4.4× speedups over the fastest competing 16 -thread baseline on each dataset, and 2.0× to 4.7× over PowerBA. This runtime advantage comes with consistently strong solution quality: H-GBP achieves lower final costs than PowerBA on every dataset, by up to 8.0% , and remains within 3.4% of the lowest reported cost throughout the benchmark suite. It also attains the lowest costs on Ladybug1723 and Final3068. On the largest instance, Final4585, H-GBP finishes in 11 .20 s, approximately 3.0× faster than PowerBA and 47 .0× faster than 16 -thread Ceres-Sparse, while remaining within 1.8% of the best reported cost. These results show that H-GBP sustains its speed advantage from small to large reconstructions 
+
+without the large cost outliers observed for some baselines. 
+
+## 6 MAIN THEORETICAL RESULTS 
+
+We give the main results here, while all proof details are included in the Appendix B. We make the same assumptions as in vector-valued standard GBP literature (Du et al., 2018). 8Assumption 6.1. The factor-to-variable precision messages (3) are initialized as positive semi-definite matrices: Λ(0)   
+
+> f→i
+
+⪰ 0 for all (f → i).
+
+Assumption 6.2. 1. Each variable has a prior with positive definite precision. 2. Each binary factor precision admits Λf = [ Af,i Af,j ]⊤ W −1 
+
+> f
+
+[Af,i Af,j ] , W f ≻ 0, where Af,i and Af,j are full column rank. 
+
+A useful property of H-GBP, shared with standard GBP, is that the precision-message typically converges rapidly in practice, often well before the eta-message. The following theorem proves global geometric convergence of the precision, providing a tool that links dynamics from initialization to the limiting fixed point. 
+
+Theorem 6.3. There exist constants CΛ < ∞ and θΛ ∈ (0 , 1) , depending on the initialization, such that 
+
+∥Λ(ℓ) − Λ⋆∥ ≤ CΛθℓ
+
+> Λ
+
+, ℓ ≥ 0,
+
+for any fixed matrix norm after changing constants. 
+
+Let M be the stacked directed η-message error space. At the end of every cycle, the coarse correction is applied to the readout (11) of the current message state while the messages are preserved. Hence, the cycle-boundary states satisfy v = CRm. Define the cycle-boundary subspace Ycyc := {(CRm, m ) : 
+
+m ∈ M} . Define the embedding and projection ιcyc (m) := ( CRm, m ), π cyc (v, m ) := m. Then the exact reduced cycle operator on message space is 
+
+Mk := πcyc Taug ,k ιcyc = Qk−1(JC R + U). (13) 
+
+Proposition 6.4 (Exact cycle-boundary reduction) . The subspace Ycyc is Taug ,k -invariant. Moreover, 
+
+Taug ,k ιcyc = ιcyc Mk.
+
+Thus Mk is the cycle-boundary reduction of the operator Taug ,k . Appendix B.4 shows that the reduced dynamics satisfy mt+1 = fMk,t mt = ( Mk + Et)mt, where P∞ 
+
+> t=0
+
+∥Et∥ < ∞. Thus, the full H-GBP trajectory is a summably perturbed version of the limiting linear cycle. 
+
+Theorem 6.5 (Necessary and sufficient condition) . For the full H-GBP iteration, the following statements are equivalent: 1. for every admissible initialization, mt → 0;2. for every compatible cycle-boundary state v0 = CR0m0, (vt, m t) → (0 , 0) ;3. ρ(Mk) < 1; 4. ρ(Taug ,k ) < 1.Whenever these conditions hold, for every fixed precision initialization and every q ∈ (ρ(Mk), 1) ,there exists Cq < ∞ such that ∥mt∥ ≤ Cq qt∥m0∥, ∥vt∥A ≤ Cq qt∥m0∥. The corresponding fine means converge to x⋆ = A−1b.
+
+The same linear result also provides a direct local convergence guarantee for the nonlinear manifold extension in Section 4.4. 
+
+Theorem 6.6 (Local convergence on manifolds) . Under the standard local conditions for inexact Gauss–Newton, suppose that at every linearization the tangent H-GBP system satisfies ρ(Mk,t ) < 1.If each inner solve is run to a sufficiently small fixed relative-residual tolerance, then the nonlinear H-GBP iterates converge locally Q-linearly to a stationary point. 
+
+## 7 CONCLUSION 
+
+We introduced Hierarchy-GBP, an abstraction-and-recovery framework to accelerate GBP on factor graphs by combining local message passing with a low-rank coarse correction. We showed H-GBP’s convergence by analyzing the spectral radius of a derived matrix operator for one cycle of linear H-GBP. We found H-GBP is competitive in both runtime and solution quality on challenging pose-graph and bundle adjustment benchmarks. The results highlight H-GBP as a promising design principle for scalable spatial-intelligence systems. Future work will explore broader sparse factor-graph problems with H-GBP, fully message-passing upper levels, and hierarchy-free distributed abstractions. 9REFERENCES 
+
+Sameer Agarwal, Keir Mierle, and The Ceres Solver Team. Ceres solver, 10 2023. URL https: //github.com/ceres-solver/ceres-solver .Fang Bai, Teresa Vidal-Calleja, and Giorgio Grisetti. Sparse pose graph optimization in cycle space. 
+
+IEEE Transactions on Robotics , 2021. doi: 10.1109/TRO.2021.3050328. Danny Bickson, Danny Dolev, Ori Shental, Paul H Siegel, and Jack K Wolf. Gaussian belief propagation based multiuser detection. In 2008 IEEE International Symposium on Information Theory , pp. 1878–1882. IEEE, 2008. William L Briggs, Van Emden Henson, and Steve F McCormick. A multigrid tutorial . SIAM, 2000. Luca Carlone, Rosario Aragues, José A Castellanos, and Basilio Bona. A fast and accurate approxi-mation for planar pose graph optimization. The International Journal of Robotics Research , 33(7): 965–987, 2014. Luca Carlone, Roberto Tron, Kostas Daniilidis, and Frank Dellaert. Initialization techniques for 3d slam: A survey on rotation estimation and its use in pose graph optimization. In 2015 IEEE international conference on robotics and automation (ICRA) , pp. 4597–4604. IEEE, 2015. Andrew J Davison. Futuremapping: The computational structure of spatial ai systems. arXiv preprint arXiv:1803.11288 , 2018. Andrew J Davison and Joseph Ortiz. Futuremapping 2: Gaussian belief propagation for spatial ai. 
+
+arXiv preprint arXiv:1910.14139 , 2019. Frank Dellaert and Michael Kaess. Factor graphs for robot perception. Foundations and Trends® in Robotics , 6(1-2):1–139, 2017. Ron S. Dembo, Stanley C. Eisenstat, and Trond Steihaug. Inexact Newton methods. SIAM Journal on Numerical Analysis , 19(2):400–408, 1982. doi: 10.1137/0719025. Nikolaus Demmel, Christiane Sommer, Daniel Cremers, and Vladyslav Usenko. Square root bun-dle adjustment for large-scale reconstruction. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2021. Jian Du, Shaodan Ma, Yik-Chung Wu, Soummya Kar, and José MF Moura. Convergence analysis of distributed inference with vector-valued gaussian belief propagation. Journal of Machine Learning Research , 18(172):1–38, 2018. Yousef El-Kurdi, Dennis Giannacopoulos, and Warren J Gross. Relaxed gaussian belief propagation. In 2012 IEEE International Symposium on Information Theory Proceedings , pp. 2002–2006. IEEE, 2012. Yousef El-Kurdi, Warren J Gross, and Dennis Giannacopoulos. Parallel multigrid acceleration for the finite-element gaussian belief propagation algorithm. IEEE transactions on magnetics , 50(2): 581–584, 2014. Yousef El-Kurdi, Maryam Mehri Dehnavi, Warren J Gross, and Dennis Giannacopoulos. Parallel finite element technique using gaussian belief propagation. Computer Physics Communications ,193:38–48, 2015. Gal Elidan, Ian McGraw, and Daphne Koller. Residual belief propagation: Informed scheduling for asynchronous message passing. In Proceedings of the Twenty-Second Conference on Uncertainty in Artificial Intelligence , pp. 165–173, 2006. Taosha Fan and Todd D. Murphey. Majorization minimization methods for distributed pose graph optimization. IEEE Transactions on Robotics , 40:22–42, 2024. Brendan J Frey and David MacKay. A revolution: Belief propagation in graphs with cycles. Advances in neural information processing systems , 10, 1997. 10 S. Gratton, A. S. Lawless, and N. K. Nichols. Approximate Gauss–Newton methods for nonlinear least squares problems. SIAM Journal on Optimization , 18(1):106–132, 2007. doi: 10.1137/050624935. Nicholas J Higham. Accuracy and stability of numerical algorithms . SIAM, 2002. David Hug, Ignacio Alzugaray, and Margarita Chli. Hyperion–a fast, versatile symbolic gaussian belief propagation framework for continuous-time slam. In European Conference on Computer Vision , pp. 215–231. Springer, 2024. Jianhao Jiao, Changkun Liu, Jingwen Yu, Boyi Liu, Qianyi Zhang, Yue Wang, and Dimitrios Kanoulas. Opennavmap: Structure-free topometric mapping via large-scale collaborative localization. arXiv preprint arXiv:2601.12291 , 2026. Rainer Kümmerle, Giorgio Grisetti, Hauke Strasdat, Kurt Konolige, and Wolfram Burgard. g 2 o: A general framework for graph optimization. In 2011 IEEE international conference on robotics and automation , pp. 3607–3613. IEEE, 2011. Ying Liu, Venkat Chandrasekaran, Animashree Anandkumar, and Alan S Willsky. Feedback message passing for inference in gaussian graphical models. IEEE Transactions on Signal Processing , 60 (8):4135–4150, 2012. Dmitry Malioutov, Alan Willsky, and Jason Johnson. Walk-sum interpretation and analysis of gaussian belief propagation. Advances in neural information processing systems , 18, 2005. Dmitry M Malioutov, Jason K Johnson, and Alan S Willsky. Walk-sums and belief propagation in gaussian graphical models. The Journal of Machine Learning Research , 7:2031–2064, 2006. Ciamac C Moallemi and Benjamin Van Roy. Convergence of min-sum message passing for quadratic optimization. IEEE Transactions on Information Theory , 55(5):2413–2423, 2009. Riku Murai, Ignacio Alzugaray, Paul HJ Kelly, and Andrew J Davison. Distributed simultaneous localisation and auto-calibration using gaussian belief propagation. IEEE Robotics and Automation Letters , 9(3):2136–2143, 2024. Frédéric Nataf, Hua Xiang, Victorita Dolean, and Nicole Spillane. A coarse space construction based on local dirichlet-to-neumann maps. SIAM Journal on Scientific Computing , 33(4):1623–1642, 2011. Edwin Olson, John Leonard, and Seth Teller. Fast iterative alignment of pose graphs with poor initial estimates. In Proceedings 2006 IEEE International Conference on Robotics and Automation, 2006. ICRA 2006. , pp. 2262–2269. IEEE, 2006. J. M. Ortega and W. C. Rheinboldt. Iterative Solution of Nonlinear Equations in Several Variables .Academic Press, 1970. Joseph Ortiz, Mark Pupilli, Stefan Leutenegger, and Andrew J Davison. Bundle adjustment on a graph processor. In 2020 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 2413–2422. IEEE, 2020. Joseph Ortiz, Talfan Evans, and Andrew J Davison. A visual introduction to gaussian belief propaga-tion. arXiv preprint arXiv:2107.02308 , 2021. Fivos Papadimitriou. Spatial Artificial Intelligence . Springer, 2025. Judea Pearl. Reverend bayes on inference engines: A distributed hierarchical approach. In Proba-bilistic and causal inference: the works of Judea Pearl , pp. 129–138. 2022. Ori Shental, Paul H Siegel, Jack K Wolf, Danny Bickson, and Danny Dolev. Gaussian belief propagation solver for systems of linear equations. In 2008 IEEE international symposium on information theory , pp. 1863–1867. IEEE, 2008. Joan Solà, Jérémie Deray, and Dinesh Atchuthan. A micro lie theory for state estimation in robotics. 
+
+arXiv preprint arXiv:1812.01537 , 2018. 11 Nicole Spillane, Victorita Dolean, Patrice Hauret, Frédéric Nataf, Clemens Pechstein, and Robert Scheichl. Abstract robust coarse spaces for systems of pdes via generalized eigenproblems in the overlaps. Numerische Mathematik , 126(4):741–770, 2014. Yuichi Tazaki. A spanning tree-based multi-resolution approach for pose-graph optimization. IEEE Robotics and Automation Letters , 7(4):10033–10040, 2022. Yue Xiang Tee, Stephan Köhler, Oliver Rheinbach, and Sebastian Zug. Overlapping schwarz pre-conditioners for pose graph SLAM in robotics. Chemnitz FE Symposium, 2026. URL https: //www.chemnitz-am.de/cfem2026/talks/tee_xiang_yue.pdf . Conference pre-sentation abstract. Simon Weber, Nikolaus Demmel, Tin Chon Chan, and Daniel Cremers. Power bundle adjustment for large-scale 3D reconstruction. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 281–289, 2023. Yair Weiss and William Freeman. Correctness of belief propagation in gaussian graphical models of arbitrary topology. Advances in neural information processing systems , 12, 1999. Jinchao Xu and Ludmil Zikatanov. Algebraic multigrid methods. Acta Numerica , 26:591–721, 2017. Tom Yates, Yuzhou Cheng, Ignacio Alzugaray, Danyal Akarca, Pedro AM Mediano, and Andrew J Davison. Belief propagation converges to gaussian distributions in sparsely-connected factor graphs. arXiv preprint arXiv:2601.21935 , 2026. 12 Supplementary Material 
+
+## Contents 
+
+A Examples 14 
+
+A.1 A three-node four-factor example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14 A.2 Standard GBP failure case . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16 
+
+B Theory 17 
+
+B.1 Convergence of precisions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18 B.2 MAP-centered message reference . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20 B.3 Frozen linear H-GBP cycle . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22 B.4 From the initial precision to the limiting cycle . . . . . . . . . . . . . . . . . . . . . . . 23 B.5 Global convergence criterion and MAP target . . . . . . . . . . . . . . . . . . . . . . . 24 B.6 H-GBP on manifolds . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25 
+
+C Algorithm 27 D Additional Details 28 
+
+D.1 Implementation Details . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28 D.2 Linear Experiment Details . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28 D.3 SE2/SE3 Pose-Graph Experiment Details . . . . . . . . . . . . . . . . . . . . . . . . . . 30 D.4 Bundle Adjustment Experiment Details . . . . . . . . . . . . . . . . . . . . . . . . . . . 31 
+
+E Discussion 33 A EXAMPLES 
+
+A.1 A THREE -NODE FOUR -FACTOR EXAMPLE 
+
+We give a small scalar example (see Fig. 7) illustrating how the limiting eta-transfer matrix Q is assembled from the local Schur-complement coefficients. Let x0, x 1, x 2 ∈ R. The graph has three binary factors f01 , f 12 , f 02 , and one unary factor f0 attached to x1.𝑥 0
+
+𝑥 1
+
+𝑥 2
+
+𝑓 0
+
+𝑓 1 𝑓 2
+
+𝑓 3               
+
+> Λ𝑓 0→1=1
+> 𝑎 1
+> Λ★𝑎 1=32
+> 𝑎 2
+> Λ★𝑎 2=1
+> 𝑎 3
+> Λ★𝑎 3=1
+> 𝑎 4
+> Λ★𝑎 4=32
+> 𝑎 5
+> Λ★𝑎 5=65
+> 𝑎 6
+> Λ★𝑎 6=65
+
+Ordering 
+
+𝑎 1 = ( 𝑓 1 → 𝑥 0)
+
+𝑎 2 = ( 𝑓 1 → 𝑥 1)
+
+𝑎 3 = ( 𝑓 2 → 𝑥 1)
+
+𝑎 4 = ( 𝑓 2 → 𝑥 2)
+
+𝑎 5 = ( 𝑓 3 → 𝑥 0)
+
+𝑎 6 = ( 𝑓 3 → 𝑥 2)
+
+Definitions 
+
+𝜂 𝑓 = 0 for all factors 𝑓 .
+
+Λ 𝑓 0 = 1.
+
+Λ 𝑓 1 = Λ 𝑓 2 = Λ 𝑓 3 = 6
+
+[ 1 −1
+
+−1 1
+
+]
+
+.The unary message 𝑓 0 → 𝑥 1 is fixed and is not stacked in 𝜂 .
+
+Figure 7: Scalar three-variable, four-factor example used to illustrate the construction of the limiting eta-message transfer matrix Q. Circles denote variables, boxes denote factors, and arrows denote directed factor-to-variable messages. We set all information vectors to zero, since the affine term s is irrelevant for the eta recursion. The unary precision is set as 
+
+Λf0 = 1 ,
+
+and each binary factor has precision 
+
+Λf1 = Λ f2 = Λ f3 = 6 
+
+ 1 −1
+
+−1 1
+
+
+
+.
+
+Thus Λfii = 6 , Λfij = −6, and Λfjj = 6 . The corresponding global information matrix is 
+
+A =
+
+" 12 −6 −6
+
+−6 13 −6
+
+−6 −6 12 
+
+#
+
+.
+
+Order the directed binary messages as 
+
+a1 = ( f1 → 0) , a2 = ( f1 → 1) , a3 = ( f2 → 1) ,a4 = ( f2 → 2) , a5 = ( f3 → 0) , a6 = ( f3 → 2) .
+
+The unary factor sends a fixed message to x1 and is not included in the stacked binary eta-message vector. Starting from zero binary factor-to-variable precision messages, i.e., Λ(0)  
+
+> aℓ
+
+= 0 for all 
+
+ℓ = 1 , . . . , 6, the synchronous precision update converges to a fixed point. The following table lists 14 the iterates. 
+
+t Λ(t) 
+
+> a1
+
+Λ(t) 
+
+> a2
+
+Λ(t) 
+
+> a3
+
+Λ(t) 
+
+> a4
+
+Λ(t) 
+
+> a5
+
+Λ(t)
+
+> a6
+
+0 0.000 0.000 0.000 0.000 0.000 0.000 1 0.857 0.000 0.000 0.857 0.000 0.000 2 0.857 0.000 0.000 0.857 0.750 0.750 3 0.857 0.667 0.667 0.857 0.750 0.750 4 1.304 0.667 0.667 1.304 0.750 0.750 5 1.304 0.667 0.667 1.304 1.071 1.071 6 1.304 0.909 0.909 1.304 1.071 1.071 7 1.448 0.909 0.909 1.448 1.071 1.071 8 1.448 0.909 0.909 1.448 1.167 1.167 9 1.448 0.977 0.977 1.448 1.167 1.167 10 1.487 0.977 0.977 1.487 1.167 1.167 
+
+... ... ... ... ... ... ...
+
+19 1.500 0.999 0.999 1.500 1.199 1.199 20 1.500 1.000 1.000 1.500 1.200 1.200 21 1.500 1.000 1.000 1.500 1.200 1.200 
+
+The exact fixed point for precision is therefore 
+
+Λ⋆a1 = 32 , Λ⋆a2 = 1 , Λ⋆a3 = 1 , Λ⋆a4 = 32 , Λ⋆a5 = 65 , Λ⋆a6 = 65 .
+
+Hence the limiting variable belief precisions are 
+
+bΛ⋆ 
+
+> 0
+
+= 27 10 , bΛ⋆ 
+
+> 1
+
+= 3 , bΛ⋆ 
+
+> 2
+
+= 27 10 .
+
+For a directed message a = ( f → i), let j(a) be the other endpoint of f , and let ¯a = ( f → j(a)) .Then 
+
+D⋆a = Λ fj(a)j(a) + bΛ⋆j(a) − Λ⋆
+
+> ¯a
+
+, B⋆a = Λ fij (a)(D⋆a)−1.
+
+For example, 
+
+D⋆a1 = 6 + bΛ⋆ 
+
+> 1
+
+− Λ⋆a2 = 6 + 3 − 1 = 8 , B⋆a1 = ( −6)8 −1 = − 34 .
+
+The six Schur coefficients are a D⋆a B⋆a −B⋆a
+
+a1 8 − 3434
+
+a2 36 5 − 5656
+
+a3 36 5 − 5656
+
+a4 8 − 3434
+
+a5 15 2 − 4545
+
+a6 15 2 − 4545
+
+.
+
+Using the ordering (a1, . . . , a 6), the limiting eta-transfer matrix is 
+
+Q =
+
+
+
+0 0 34 0 0 00 0 0 0 56 00 0 0 0 0 56
+
+0 34 0 0 0 00 0 0 45 0 0 
+
+> 45
+
+0 0 0 0 0
+
+
+
+.
+
+For instance, the first row encodes η+ 
+
+> a1
+
+= (3 /4) ηa3 : when sending f01 → 0, the factor looks through node 1, and the only binary incoming message at node 1 excluding f1 is a3 = ( f2 → 1) . The unary factor affects the denominator D⋆a1 and the affine offset, but not the linear message-to-message entry of Q.Finally, Q consists of two directed three-cycles, each with product 
+
+34 · 56 · 45 = 12 .
+
+15 Therefore 
+
+ρ(Q) = 
+
+ 12
+
+1/3
+
+≈ 0.7937 .
+
+A.2 STANDARD GBP FAILURE CASE 
+
+In Fig. 8, we construct an example with four variables (each two-dimensional) and multiple factors. Numerically, the dynamical index ρ(Q) of the standard GBP is greater than 1. Hierarchy-GBP uses the low-rank operator, group {0,1} and {2,3} as two groups. By choosing coarse rank r = 3 per group and performing k = 8 GBP iterations per cycle, the Hierarchy-GBP index ρ(M8) is less than 1. 
+
+ρ(Q) ≈ 1.0019966 , ρ(M8) ≈ 0.9205045 .Example pose graph in the regime rho(Q)>1 but rho(M_8)<1 Detailed Data 
+
+odometry / chain factor loop-closure / skip factor pose node 
+
+Group 1 Group 2 
+
+0123 
+
+> weak anchor prior
+> (0,1) (1,2) (2,3) (0,2) (0,3) (1,3)
+
+Model summary 
+
+> e_i=(dx_i, dy_i, dtheta_i) in R^3 fresh groups: {0,1} and {2,3} fresh coarse rank: r=3 per group hierarchy: k=8 GBP sweeps per cycle rho(Q) approx 1.0019966 rho(M_8) approx 0.9205045
+
+Edge precisions 
+
+> Omega_01 = diag(32,32,1) Omega_12 = diag(16,16,32) Omega_23 = diag(2,2,64) Omega_02 = diag(32,32,0.5) Omega_03 = diag(8,8,16) Omega_13 = diag(8,8,128)
+
+Figure 8: A four-node pose graph example, for which standard GBP does not converge, while H-GBP with k = 8 sweeps per cycle will converge. 16 B THEORY 
+
+The purpose of this appendix is to prove the two convergence claims in the main paper: first, for a fixed H-GBP cycle length k, the full hierarchy converges from every admissible initialization if and only if the reduced cycle operator satisfies ρ(Mk) < 1 (equivalently ρ(Taug ,k ) < 1). Second, whenever this criterion holds, the fine-level mean converges to the exact MAP solution of the original linear Gaussian factor graph. For readability, formulas are written for unary and binary factors. Higher-order factors use the same Schur-complement formulas (Ortiz et al., 2021) after replacing the single “other endpoint” by the block of all non-target variables. We make the same assumptions (Assumption B.1, B.2) as in vector-valued standard GBP (Du et al., 2018) and state their results as facts here, before delving into our results of H-GBP in the following subsections. Let N1(i) and N2(i) denote the unary and binary factors incident on variable i. For a binary factor 
+
+f = {i, j }, write 
+
+Λf =
+
+"
+
+Λfii Λfij 
+
+Λfji Λfjj 
+
+#
+
+.
+
+For a directed binary message a = ( f → i), with the other endpoint j = j(a), define the cavity precision 
+
+Ca(Λ) := Λ self  
+
+> j
+
++ Sa(Λ) , Λself  
+
+> j
+
+:= X
+
+> u∈N1(j)
+
+Λu→j , Sa(Λ) := X 
+
+> h∈N2(j)\{ f}
+
+Λh→j .
+
+Assumption B.1. The initial factor-to-variable precision messages satisfy Λ(0)   
+
+> f→i
+
+⪰ 0 for every directed factor-to-variable edge. 
+
+Assumption B.2. The following regularity conditions hold. (i) Each variable has positive self-precision: Λself  
+
+> i
+
+≻ 0 for all i ∈ V .(ii) Each binary factor admits the measurement-form factorization 
+
+Λf = [ Af,i Af,j ]⊤ W −1 
+
+> f
+
+[Af,i Af,j ] , Wf ≻ 0,
+
+where Af,i and Af,j are full column rank. 
+
+Remark. Assumption B.2 is consistent with standard Gaussian-BP implementations. In practice, the Schur-complement block in each factor-to-variable update is always stabilized by adding a small positive diagonal term, for example 
+
+Df →i 7 → Df →i + εI, ε ≈ 10 −10 .
+
+For the precision recursion, this is equivalent to adding an arbitrarily weak unary regularizer with precision εI to each variable. After including this regularizer in N1(i), we have Λself  
+
+> i
+
+⪰ εI ≻ 0.
+
+Thus the condition Λself  
+
+> i
+
+≻ 0 should be understood as a standard technical regularity condition ensuring well-defined Schur complements, rather than as a restrictive modeling requirement. 
+
+Let S+ and S++ denote the blockwise positive semidefinite and positive definite cones. The precision update map is F : S+ → S++ such that 
+
+Fa(Λ) = Λ fii − Λfij 
+
+ Λfjj + Ca(Λ) −1Λfji . (14) Using the measurement factorization and the Woodbury identity, we get this fact from Du et al. (2018) 
+
+Fa(Λ) = A⊤
+
+> f,i
+
+Wf + Af,j Ca(Λ) −1A⊤
+
+> f,j
+
+−1 Af,i . (15) This form makes positivity, monotonicity, and differentiability of F transparent. 
+
+Theorem B.3 (standard GBP precision convergence (Du et al., 2018)) . Under Assumptions B.1–B.2, the recursion Λ(ℓ+1) = F (Λ (ℓ)) has a unique positive-definite fixed point Λ⋆. For every positive-semidefinite initialization, Λ(ℓ) → Λ⋆. Moreover, for every fixed neighborhood of Λ⋆, the trajectory approaches that neighborhood at an exponential rate before the first entrance. 
+
+17 B.1 CONVERGENCE OF PRECISIONS 
+
+Proposition B.4 (Precision dynamics are unchanged by the hierarchy) . The H-GBP coarse correction changes only the variable belief information vectors and means. It does not alter factor-to-variable precision messages. Therefore H-GBP has exactly the same precision recursion, Λ(ℓ+1) = F (Λ (ℓ)),as standard synchronous GBP. Proof. The message-preserving injection rewrites bηi so that the belief mean is shifted by the coarse correction, while leaving bΛi, Λf →i, and ηf →i unchanged. The next precision update therefore sees the same precision state as ordinary GBP. Now, we strengthen the convergence result to a global geometric convergence rate, which will be recursively used to control the early, nonstationary precision phase of H-GBP. 
+
+Lemma B.5 (Derivative of the precision map at the fixed point) . The precision map F is Fréchet differentiable on a neighborhood of Λ⋆ inside S++ . For a directed message a = ( f → i), let 
+
+j = j(a), and define 
+
+Ba(Λ) := Wf + Af,j Ca(Λ) −1A⊤ 
+
+> f,j
+
+.
+
+Then for every symmetric blockwise increment H,
+
+DF a(Λ)[ H] = A⊤
+
+> f,i
+
+Ba(Λ) −1Af,j Ca(Λ) −1
+
+ X 
+
+> h∈N2(j)\{ f}
+
+Hh→j
+
+ Ca(Λ) −1A⊤ 
+
+> f,j
+
+Ba(Λ) −1Af,i .
+
+In particular, H ⪰ 0 implies DF (Λ ⋆)[ H] ⪰ 0.Proof. Equation (15) gives Fa(Λ) = A⊤
+
+> f,i
+
+Ba(Λ) −1Af,i .
+
+The map Ca(Λ) is linear in the relevant components of Λ. Hence, DCa(Λ)[ H] =P  
+
+> h∈N2(j)\{ f}
+
+Hh→j . Since Ca(Λ ⋆) ≻ 0, by continuity Ca(Λ) ≻ 0 in a sufficiently small neighbor-hood of Λ⋆. Thus the inverse is differentiable there. The Fréchet derivative formula for inversion (Higham, 2002) is D(X−1)[ H] = −X−1HX −1, so 
+
+D(C−1 
+
+> a
+
+)(Λ)[ H] = −C a(Λ) −1DCa(Λ)[ H]Ca(Λ) −1.
+
+Next, Ba(Λ) = Wf + Af,j Ca(Λ) −1A⊤ 
+
+> f,j
+
+. Since Wf , Af,j , and A⊤ 
+
+> f,j
+
+are fixed with respect to Λ,differentiating gives DBa(Λ)[ H] = Af,j D(C−1 
+
+> a
+
+)(Λ)[ H]A⊤ 
+
+> f,j
+
+.
+
+Applying the same inversion derivative formula to Ba(Λ) −1, we have 
+
+D(B−1 
+
+> a
+
+)(Λ)[ H] = −B a(Λ) −1DBa(Λ)[ H]Ba(Λ) −1.
+
+Finally, since Af,i is fixed with respect to Λ, DF a(Λ)[ H] = A⊤
+
+> f,i
+
+D(B−1 
+
+> a
+
+)(Λ)[ H]Af,i . Hence, substituting all the equations above sequentially we get 
+
+DF a(Λ)[ H] = A⊤
+
+> f,i
+
+Ba(Λ) −1Af,j Ca(Λ) −1
+
+ X 
+
+> h∈N2(j)\{ f}
+
+Hh→j
+
+ Ca(Λ) −1A⊤ 
+
+> f,j
+
+Ba(Λ) −1Af,i .
+
+This is the claimed derivative formula. If H ⪰ 0, the middle summed block is positive semidefinite, so every displayed block derivative is positive semidefinite. 
+
+Proposition B.6 (Local strict contraction near the precision fixed point) . There exist a monotone norm ∥ · ∥ ⋆ on the blockwise precision space, a radius ε0 > 0, and a constant q ∈ (0 , 1) such that 
+
+∥Λ − Λ⋆∥⋆ < ε 0 =⇒ ∥F (Λ) − Λ⋆∥⋆ ≤ q∥Λ − Λ⋆∥⋆.
+
+Proof. For a blockwise symmetric perturbation H = {Ha}a∈D , define 
+
+∥H∥⋆ := max  
+
+> a∈D
+
+(Λ ⋆a)−1/2Ha(Λ ⋆a)−1/2
+
+> 2
+
+.
+
+18 This norm is monotone on the positive semi-definite cone: if 0 ⪯ H ⪯ eH, then each normalized block is ordered in the Loewner sense, and the spectral norm of positive semidefinite blocks is monotone. The definition also implies the blockwise order bound 
+
+−∥ H∥⋆Λ⋆ ⪯ H ⪯ ∥ H∥⋆Λ⋆. (16) We show first that DF (Λ ⋆) is strictly contractive in this norm. Fix a = ( f → i), let j = j(a), and write 
+
+S⋆a := X 
+
+> h∈N2(j)\{ f}
+
+Λ⋆h→j , C⋆a := Λ self  
+
+> j
+
++ S⋆a , B⋆a := Wf + Af,j (C⋆a )−1A⊤ 
+
+> f,j
+
+.
+
+Substituting H = Λ ⋆ into Lemma B.5 gives 
+
+DF a(Λ ⋆)[Λ ⋆] = A⊤
+
+> f,i
+
+(B⋆a)−1Af,j (C⋆a )−1S⋆a (C⋆a )−1A⊤ 
+
+> f,j
+
+(B⋆a)−1Af,i .
+
+Because Λself  
+
+> j
+
+≻ 0, 0 ⪯ S⋆a ≺ C ⋆a , and hence (C⋆a )−1S⋆a (C⋆a )−1 ≺ (C⋆a )−1.
+
+Also Wf ≻ 0, so Af,j (C⋆a )−1A⊤ 
+
+> f,j
+
+≺ Wf + Af,j (C⋆a )−1A⊤ 
+
+> f,j
+
+= B⋆a.
+
+Combining these inequalities gives 
+
+DF a(Λ ⋆)[Λ ⋆] ≺ A⊤
+
+> f,i
+
+(B⋆a)−1Af,i = Fa(Λ ⋆) = Λ ⋆a.
+
+Since there are finitely many directed messages, there exists α ∈ (0 , 1) such that 
+
+DF (Λ ⋆)[Λ ⋆] ⪯ αΛ⋆. (17) For arbitrary H, let t = ∥H∥⋆. By (16), −tΛ⋆ ⪯ H ⪯ tΛ⋆. Since DF (Λ ⋆) is positive and linear, it is order-preserving. Therefore DF (Λ ⋆)[ −tΛ⋆] ⪯ DF (Λ ⋆)[ H] ⪯ DF (Λ ⋆)[ tΛ⋆]. Linearity gives 
+
+−tDF (Λ ⋆)[Λ ⋆] ⪯ DF (Λ ⋆)[ H] ⪯ tDF (Λ ⋆)[Λ ⋆].
+
+By (17), DF (Λ ⋆)[Λ ⋆] ⪯ αΛ⋆. Hence 
+
+−αt Λ⋆ ⪯ DF (Λ ⋆)[ H] ⪯ αt Λ⋆.
+
+Substituting t = ∥H∥⋆ yields −α∥H∥⋆Λ⋆ ⪯ DF (Λ ⋆)[ H] ⪯ α∥H∥⋆Λ⋆. By the definition of ∥ · ∥ ⋆,this implies 
+
+∥DF (Λ ⋆)[ H]∥⋆ ≤ α∥H∥⋆.
+
+Thus ∥DF (Λ ⋆)∥⋆→⋆ := sup H̸ =0   
+
+> ∥DF (Λ ⋆)[ H]∥⋆
+> ∥H∥⋆
+
+≤ α < 1.Since F is C1 near Λ⋆, choose q ∈ (α, 1) and then ε0 > 0 so that the closed ∥ · ∥ ⋆-ball of radius ε0
+
+around Λ⋆ lies inside S++ and ∥DF (Λ) ∥⋆→⋆ ≤ q throughout that ball. For any Λ in the ball, the segment between Λ⋆ and Λ remains in the ball, and the finite-dimensional mean-value formula gives 
+
+F (Λ) − F (Λ ⋆) = 
+
+Z 10
+
+DF  Λ⋆ + s(Λ − Λ⋆)[Λ − Λ⋆] ds. 
+
+Taking the ∥ · ∥ ⋆-norm proves the claimed local contraction. 
+
+Theorem B.7 (Global geometric precision convergence) . For every admissible precision initialization, there exist constants CΛ < ∞ and θΛ ∈ (0 , 1) such that 
+
+∥Λ(ℓ) − Λ⋆∥⋆ ≤ CΛθℓ
+
+> Λ
+
+, ℓ ≥ 0.
+
+Proof. The imported exponential-entrance result B.3 implies a finite entrance into the ε0-ball. After that entrance time, Proposition B.6 gives a geometric tail. Enlarging the prefactor to dominate the finite prefix yields the displayed all-time bound. 19 B.2 MAP-CENTERED MESSAGE REFERENCE 
+
+Let x⋆ = A−1b. For any precision state Λ, define the canonical eta reference by 
+
+η⋆f →i(Λ) := ηfi − (Λ f x⋆N (f ))i + Λ f →ix⋆i . (18) Here x⋆N (f ) is the stacked vector of MAP blocks adjacent to factor f , Λf is the precision matrix of factor f , and (Λ f x⋆N (f ))i denotes the block corresponding to variable i. For unary messages, 
+
+η⋆u→i = ηui . For a binary factor f with endpoints i and j,
+
+η⋆f →i(Λ) = ηfi − Λfii x⋆i − Λfij x⋆j + Λ f →ix⋆i .
+
+Let bΛi(Λ) := X  
+
+> f∈N(i)
+
+Λf →i, bη⋆i (Λ) := X  
+
+> f∈N(i)
+
+η⋆f →i(Λ) . (19) 
+
+Lemma B.8 (Canonical reference has MAP readout and propagates with precision) . For every precision state Λ,
+
+bη⋆i (Λ) = bΛi(Λ) x⋆i , ∀i. 
+
+Moreover, if one synchronous precision sweep maps Λ to F (Λ) , then the corresponding synchronous eta Schur update maps η⋆(Λ) to η⋆(F (Λ)) . In particular, η⋆(Λ ⋆) is a fixed point of the frozen eta-message equations at Λ⋆, and its belief mean is x⋆.Proof. We first prove the readout identity. By the assembly of the global linear system, 
+
+bi = X  
+
+> f∈N(i)
+
+ηfi , (Ax ⋆)i = X  
+
+> f∈N(i)
+
+(Λ f x⋆N (f ))i, bi − (A⋆x)i = 0 .
+
+By definition 19, 
+
+bη⋆i (Λ) − bΛi(Λ) x⋆i = X  
+
+> f∈N(i)
+
+η⋆f →i(Λ) − Λf →ix⋆i
+
+ = X  
+
+> f∈N(i)
+
+h
+
+ηfi − (Λ f x⋆N (f ))i
+
+i
+
+.
+
+Hence bη⋆i (Λ) − bΛi(Λ) x⋆i = bi − (Ax ⋆)i = 0 . Therefore bη⋆i (Λ) = bΛi(Λ) x⋆i .
+
+We now prove the propagation identity. Consider a binary message a = ( f → i), and let j be the other endpoint of f . Define 
+
+Da(Λ) := Λ fjj + X  
+
+> h∈N(j)\{ f}
+
+Λh→j .
+
+The corresponding precision update is 
+
+Fa(Λ) = Λ fii − Λfij Da(Λ) −1Λfji . (20) The eta Schur update uses the cavity information at j,
+
+r⋆a,j (Λ) := ηfj + X  
+
+> h∈N(j)\{ f}
+
+η⋆h→j (Λ) .
+
+We claim that 
+
+r⋆a,j (Λ) = Da(Λ) x⋆j + Λ fji x⋆i .
+
+Indeed, by the readout identity just proved, 
+
+X 
+
+> h∈N(j)
+
+η⋆h→j (Λ) = 
+
+ X 
+
+> h∈N(j)
+
+Λh→j
+
+ x⋆j .
+
+Therefore 
+
+r⋆a,j (Λ) = ηfj + bη⋆j (Λ) − η⋆f →j (Λ) = ηfj + bΛj (Λ) x⋆j −
+
+h
+
+ηfj − Λfjj x⋆j − Λfji x⋆i + Λ f →j x⋆j
+
+i
+
+=
+
+bΛj (Λ) − Λf →j + Λ fjj 
+
+
+
+x⋆j + Λ fji x⋆i
+
+= Da(Λ) x⋆j + Λ fji x⋆i .
+
+20 Substituting this into the eta Schur update gives 
+
+η+  
+
+> f→i
+
+= ηfi − Λfij Da(Λ) −1r⋆a,j (Λ) = ηfi − Λfij Da(Λ) −1 h
+
+Da(Λ) x⋆j + Λ fji x⋆i
+
+i
+
+= ηfi − Λfij x⋆j − Λfij Da(Λ) −1Λfji x⋆i .
+
+Using 20, we obtain 
+
+η+  
+
+> f→i
+
+= ηfi − Λfij x⋆j −  Λfii − Fa(Λ) x⋆i
+
+= ηfi − Λfii x⋆i − Λfij x⋆j + Fa(Λ) x⋆i .
+
+This is exactly the canonical message 
+
+η⋆f →i(F (Λ)) .
+
+Unary eta messages are unchanged, and their canonical references are also unchanged. Hence the full synchronous eta update maps 
+
+η⋆(Λ) to η⋆(F (Λ)) .
+
+Finally, setting Λ = Λ ⋆ and using F (Λ ⋆) = Λ ⋆, we get η⋆(Λ ⋆) 7 → η⋆(F (Λ ⋆)) = η⋆(Λ ⋆). Thus 
+
+η⋆(Λ ⋆) is a fixed point of the frozen eta-message equations. The readout identity at Λ⋆ gives bΛi(Λ ⋆)−1 bη⋆i (Λ ⋆) = x⋆i for every variable i, so the belief mean is 
+
+x⋆.From now on, eta-message errors are always defined relative to the current canonical reference: 
+
+m := η − η⋆(Λ) , v := x − x⋆.
+
+At the limiting precision, this reduces to the usual frozen error m = η − η⋆(Λ ⋆).21 B.3 FROZEN LINEAR H-GBP CYCLE 
+
+Let P be the grouped prolongation matrix, and define 
+
+C := I − P (P ⊤AP )−1P ⊤A. (21) The coarse residual correction (P ⊤AP )δz = P ⊤(b − Ax ), x + = x + P δz therefore maps the mean error by 
+
+v+ = Cv, P ⊤Av + = 0 . (22) This is the Galerkin A-orthogonal projection onto range( P )⊥A (Briggs et al., 2000). Now, let’s fix the precision at Λ⋆ – analyze the system when all variances converge. Recall in the main text, we have the following matrix operators: (J, U) for repair sweep, Q for k − 1
+
+additional GBP sweeps, and R for the readout. Together with the Galerkin correction C gives the limiting augmented cycle 
+
+ v+
+
+m+
+
+
+
+= Taug ,k 
+
+ vm
+
+
+
+, Taug ,k =
+
+CRQk−1J CRQk−1U
+
+Qk−1J Qk−1U
+
+
+
+. (23) At a post-injection cycle boundary, messages are preserved and the mean has just been Galerkin-corrected. Hence boundary states satisfy 
+
+v = CRm. 
+
+Define 
+
+Ycyc := {(CRm, m ) : m ∈ M} , ιcyc (m) := ( CRm, m ), πcyc (v, m ) := m. 
+
+Proposition B.9 (Exact cycle-boundary reduction) . The subspace Ycyc is invariant under Taug ,k ,and the reduced cycle operator is 
+
+Mk := πcyc Taug ,k ιcyc = Qk−1(JC R + U). (24) 
+
+Moreover, 
+
+Taug ,k ιcyc = ιcyc Mk.
+
+Proof. Substituting v = CRm into (23) gives 
+
+Taug ,k ιcyc (m) =  CRQk−1(JC R + U)m, Q k−1(JC R + U)m = ιcyc (Mkm).
+
+Lemma B.10 (Spectral equivalence) .
+
+ρ(Mk) = ρ(Taug ,k ).
+
+Proof. The map ιcyc is an isomorphism from M to Ycyc , so Mk is similar to Taug ,k |Ycyc . Also, 
+
+Taug ,k maps the whole augmented space into Ycyc ; hence every nonzero eigenvector of Taug ,k lies in 
+
+Ycyc . The two operators therefore have the same nonzero eigenvalues. 22 B.4 FROM THE INITIAL PRECISION TO THE LIMITING CYCLE 
+
+For cycle t, let Λ[r] 
+
+> t
+
+:= Λ (tk +r), r = 0 , . . . , k . The operators Jt, Ut, Rt are evaluated at Λ[0]  
+
+> t
+
+, while 
+
+Qt,r is evaluated at Λ[r] 
+
+> t
+
+. Because the canonical reference η⋆(Λ) propagates with the precision update (Lemma B.8), the eta-error dynamics are exactly homogeneous at every precision state. 
+
+Definition B.11 (Exact cocycle and limiting operator) . The exact cycle-boundary cocycle is 
+
+fMk,t := Qt,k −1 · · · Qt, 1
+
+ JtCRt + Ut
+
+. (25) 
+
+The limiting operator is 
+
+Mk = Qk−1(JC R + U),
+
+where Q, J, U, R are evaluated at Λ⋆.
+
+Proposition B.12 (Exact cycle-boundary dynamics) . Let mt be the directed eta-message error at the post-injection boundary of cycle t, defined relative to η⋆(Λ [0]  
+
+> t
+
+). Then 
+
+vt = CRtmt, mt+1 = fMk,t mt.
+
+Proof. Before injection, the readout error is Rtmt; the Galerkin step maps it to CRtmt, proving the boundary relation. The first sweep gives (JtCRt +Ut)mt, and the remaining k−1 message-consistent sweeps multiply successively by Qt, 1, . . . , Q t,k −1. This is exactly (25). 
+
+Lemma B.13 (Local Lipschitz dependence of frozen operators) . There is a compact neighborhood 
+
+K0 ⊂ S++ of Λ⋆ and a constant Lop < ∞ such that, for all Λ, eΛ ∈ K 0,
+
+∥J(Λ) − J(eΛ) ∥ + ∥U (Λ) − U (eΛ) ∥ + ∥R (Λ) − R (eΛ) ∥ + ∥Q(Λ) − Q(eΛ) ∥ ≤ Lop ∥Λ − eΛ∥⋆.
+
+The same operator families are uniformly bounded on K0.Proof. Every block of these operators is a rational expression in the precision blocks, formed from sums, products, Schur denominators, and inverses. On a compact positive-definite neighborhood of 
+
+Λ⋆, all denominators are uniformly nonsingular. The maps are therefore C1, Lipschitz, and uniformly bounded on K0.
+
+Lemma B.14 (Exponential convergence of the exact cocycle) . For every admissible precision initialization and fixed k, there exist constants CM,k < ∞ and θM,k ∈ (0 , 1) such that 
+
+∥ fMk,t − Mk∥ ≤ CM,k θtM,k , t ≥ 0.
+
+Consequently, with Et := fMk,t − Mk,
+
+> ∞
+
+X
+
+> t=0
+
+∥Et∥ < ∞.
+
+Proof. By Corollary B.7, ∥Λ(ℓ) − Λ⋆∥⋆ ≤ CΛθℓ
+
+> Λ
+
+. After a finite prefix, all within-cycle precision states lie in K0. Lemma B.13 then gives 
+
+∥Jt − J∥ + ∥U t − U∥ + ∥R t − R∥ +
+
+> k−1
+
+X
+
+> r=1
+
+∥Qt,r − Q∥ ≤ Ck(θk
+
+> Λ
+
+)t.
+
+A telescoping expansion of the product Qt,k −1 · · · Qt, 1 against Qk−1, together with uniform bound-edness of all factors, yields the displayed bound. The finite prefix is absorbed into CM,k , and the geometric bound is summable. 
+
+Proposition B.15 (Stability under a vanishing perturbation) . Let zt+1 = ( A + Et)zt in finite dimension and Et → 0. If ρ(A) < 1, then zt → 0 for every z0. Moreover, for every q ∈ (ρ(A), 1) ,there is Cq < ∞ such that 
+
+∥zt∥ ≤ Cq qt∥z0∥.
+
+In particular, the conclusion holds if P 
+
+> t
+
+∥Et∥ < ∞.Proof. Choose an induced norm with ∥A∥ < q , possible by the standard adapted-norm construction for finite-dimensional matrices. Since Et → 0, the tail satisfies ∥A + Et∥ ≤ q. The finite prefix is absorbed into the constant. 23 B.5 GLOBAL CONVERGENCE CRITERION AND MAP TARGET 
+
+Definition B.16 (Admissible initialization) . An admissible initialization is a post-injection cycle-boundary state with Λ(0) ⪰ 0 and finite x(0) , η(0) , for which all GBP Schur complements and H-GBP updates are well defined. 
+
+Theorem B.17 (Global necessary and sufficient criterion for H-GBP) . Fix the cycle length k. The following statements are equivalent: (a) For every admissible initialization, the full H-GBP trajectory converges to the MAP-centered fixed point. (b) For every admissible precision initialization, the exact cocycle mt+1 = fMk,t mt satisfies 
+
+mt → 0 for every m0 ∈ M .(c) ρ(Mk) < 1.(d) ρ(Taug ,k ) < 1.When these conditions hold, for every q ∈ (ρ(Mk), 1) there exists Cq < ∞ such that 
+
+∥mt∥ ≤ Cq qt∥m0∥, ∥vt∥ ≤ Cq qt∥m0∥, t ≥ 0,
+
+after enlarging Cq to absorb the finite prefix. Proof. By Proposition B.12, the cycle-boundary dynamics are 
+
+mt+1 = fMk,t mt, vt = CRtmt.
+
+The readout operators are uniformly bounded along the compact precision trajectory, so mt → 0 is equivalent to (vt, m t) → (0 , 0) at cycle boundaries. Within-cycle states are obtained by finitely many uniformly bounded maps, so cycle-boundary convergence is equivalent to full-trajectory convergence. If ρ(Mk) < 1, Lemma B.14 gives fMk,t = Mk + Et with Et → 0, in fact summably. Applying Proposition B.15 gives geometric convergence of mt, and uniform boundedness of CRt gives the same rate for vt.Conversely, suppose the full hierarchy converges for every admissible initialization. Choose Λ(0) =Λ⋆. Then the precision is frozen, fMk,t = Mk, and the message recursion is mt+1 = Mkmt.Convergence for every m0 in a finite-dimensional linear system is equivalent to ρ(Mk) < 1. Finally, Lemma B.10 gives ρ(Mk) = ρ(Taug ,k ).
+
+Theorem B.18 (Exact MAP target) . If the equivalent conditions of Theorem B.17 hold, then for every admissible initialization, 
+
+xt → x⋆ = A−1b, ηt → η⋆(Λ ⋆), Λt → Λ⋆.
+
+Thus the fine mean produced by H-GBP converges to the exact MAP solution of the base linear Gaussian factor graph. Proof. Precision convergence follows from Theorem B.3 and Proposition B.4. Theorem B.17 gives 
+
+mt → 0 and vt → 0. Since vt = xt − x⋆, this proves xt → x⋆.Since the canonical reference η⋆(Λ) is continuous in Λ and Λt → Λ⋆, we also have ηt = η⋆(Λ t) + 
+
+mt → η⋆(Λ ⋆).24 B.6 H-GBP ON MANIFOLDS 
+
+Using an iterative inner solver for each linearized least-squares problem is the truncated/inexact Gauss–Newton construction (Gratton et al., 2007; Dembo et al., 1982). H-GBP fits this construction: at outer iteration t, it approximately solves 
+
+Atξ = bt, At = J⊤ 
+
+> t
+
+Jt, bt = −J⊤ 
+
+> t
+
+rt, (26) and retracts Xt+1 = Xt ⊕ bξt. Here F (X) = 12 ∥r(X)∥22, and derivatives and tangent norms are expressed in gauge-fixed local coordinates. We now give a direct H-GBP result for local nonlinear convergence and its outer rate. Because H-GBP approaches the tangent solution iteratively, the only added algorithmic condition is the standard relative-residual stopping rule 
+
+ηt := ∥At bξt − bt∥A−1
+
+> t
+
+∥bt∥A−1
+
+> t
+
+≤ ¯η, 0 < ¯η < 1 − γ⋆
+
+1 + γ⋆
+
+. (27) If bt = 0 , the algorithm terminates. No additional structural assumption is introduced: the outer conditions are the standard local Gauss–Newton conditions, and the inner conditions are exactly those of our linear H-GBP theorem. 
+
+Lemma B.19 (Standard inexact Gauss–Newton) . Let X⋆ be a stationary point. Assume that the whitened residual r is twice continuously differentiable, the gauge-fixed matrix A⋆ = J⊤ 
+
+> ⋆
+
+J⋆ is positive definite, and the retraction is smooth. Define 
+
+S⋆ := ∇2F (X⋆) − A⋆, γ⋆ := ∥A−1/2 
+
+> ⋆
+
+S⋆A−1/2 
+
+> ⋆
+
+∥2 < 1.
+
+Let ξ⋆t = A−1 
+
+> t
+
+bt be the exact Gauss–Newton step. If 
+
+∥bξt − ξ⋆t ∥At
+
+∥ξ⋆t ∥At
+
+≤ ηt ≤ ¯η, 
+
+with ¯η as in (27) , then, for X0 sufficiently close to X⋆,
+
+lim sup 
+
+> t→∞
+
+∥Xt+1 ⊖ X⋆∥A⋆
+
+∥Xt ⊖ X⋆∥A⋆
+
+≤ γ⋆ + (1 + γ⋆) lim sup 
+
+> t→∞
+
+ηt. (28) 
+
+Hence ηt ≤ ¯η < (1 − γ⋆)/(1 + γ⋆) gives local Q-linear convergence. Proof. This follows from the standard perturbation theory of locally contractive fixed-point iterations (Ortega & Rheinboldt, 1970, Chapter 10): the exact Gauss–Newton map has local asymptotic contraction factor γ⋆, while a relative step perturbation ηt contributes at most (1+ γ⋆)ηt asymptotically. 
+
+Lemma B.20 (Residual–error identity) . For At ≻ 0 and bt̸ = 0 ,
+
+∥At bξt − bt∥A−1
+
+> t
+
+∥bt∥A−1
+
+> t
+
+= ∥bξt − ξ⋆t ∥At
+
+∥ξ⋆t ∥At
+
+. (29) 
+
+Proof. Since Atξ⋆t = bt, we have At bξt − bt = At(bξt − ξ⋆t ). The identity follows directly from the definitions of the At- and A−1 
+
+> t
+
+-norms. 
+
+Theorem B.21 (Local convergence of nonlinear H-GBP) . Assume the conditions of Lemma B.19 hold. At every outer iteration before termination, suppose the tangent graph satisfies our existing linear H-GBP assumptions and 
+
+ρ(Mk,t ) < 1,
+
+where Mk,t is the H-GBP cycle operator for the current linearization. Run H-GBP until the stopping rule (27) holds. Then Xt+1 = Xt ⊕ bξt converges locally to X⋆.Proof. Theorems B.17 and B.18 imply that ρ(Mk,t ) < 1 makes H-GBP converge geometrically to 
+
+ξ⋆t = A−1 
+
+> t
+
+bt, so the stopping tolerance is reached in finitely many cycles. Lemma B.20 converts that tolerance exactly into the forcing condition of Lemma B.19, which proves the claim. 25 Corollary B.22 (H-GBP-controlled outer rate) . Under the assumptions of Theorem B.21, for any 
+
+qt ∈ (ρ(Mk,t ), 1) , our linear theorem gives a finite Kt such that after T H-GBP cycles, 
+
+η(T ) 
+
+> t
+
+≤ KtqTt .
+
+Hence the stopping rule is reached after finitely many cycles. For example, it is sufficient to take 
+
+Tt ≥
+
+ log( Kt/¯η)
+
+− log qt
+
+
+
+whenever Kt > ¯η. 
+
+The resulting nonlinear outer rate satisfies 
+
+qouter ≤ γ⋆ + (1 + γ⋆)¯ η < 1. (30) 
+
+Thus H-GBP’s geometric inner convergence guarantees finite attainment of the prescribed forcing tolerance, while that tolerance explicitly controls the nonlinear outer convergence rate. Proof. The finite-cycle bound follows from the linear H-GBP theorem. Substituting ηt ≤ ¯η into Lemma B.19 gives the outer-rate bound. 26 C ALGORITHM 
+
+Algorithm 1 Hierarchical Gaussian BP 
+
+Require: Fixed linear Gaussian factor graph G with factor parameters {(ηf , Λf )}f ∈F ; groups {G};ranks {rG}; sweeps k; cycles T . 
+
+> 1:
+
+Assemble A and b; initialize all factor-to-variable messages to zero.  
+
+> 2:
+
+for each group G do  
+
+> 3:
+
+Build HG from factors satisfying N (f ) ⊆ G using (5).  
+
+> 4:
+
+Store the rG lowest eigenvectors of HG as the local basis PG. 
+
+> 5:
+
+end for  
+
+> 6:
+
+Assemble P = blkassemble {PG}G and factorize Ac = P ⊤AP . 
+
+> 7:
+
+for t = 0 , . . . , T − 1 do  
+
+> 8:
+
+for s = 1 , . . . , k do  
+
+> 9:
+
+Compute variable-to-factor messages by (2).  
+
+> 10:
+
+Compute factor-to-variable messages Λ+ 
+
+> f→i
+
+, η+  
+
+> f→i
+
+by the Schur update (3).  
+
+> 11:
+
+Update all variable beliefs by (4) (and means xi optionally).  
+
+> 12:
+
+end for  
+
+> 13:
+
+Stack x = ( x⊤ 
+
+> 1
+
+, . . . , x ⊤ 
+
+> N
+
+)⊤ and compute rc = P ⊤(b − Ax ). 
+
+> 14:
+
+Solve Acδz = rc and prolong δx = P δz . 
+
+> 15:
+
+Inject xi ← xi + δx i and bηi ← bΛixi for all variables. Keep all (ηf →i, Λf →i) unchanged.  
+
+> 16:
+
+end for  
+
+> 17:
+
+return x = ( x⊤ 
+
+> 1
+
+, . . . , x ⊤ 
+
+> N
+
+)⊤.27 D ADDITIONAL DETAILS 
+
+D.1 IMPLEMENTATION DETAILS 
+
+All timings are CPU-only, on an Intel Core i9-13900HX system (24 physical cores, 32 logical processors, 64 GB RAM). A 16-thread run specifies a worker budget, not 16 physical cores. The released configurations specify one policy for SE(2), one for SE(3), and one for BA; none selects parameters by dataset name. 
+
+Precision reuse and packed messages. Within a fixed Gaussian model, precision updates are independent of the canonical vectors. Once the precision stopping rule is met, we cache the Schur gain 
+
+Bf →i = Λ fij (Λ fjj + Λ j\f )−1, η+  
+
+> f→i
+
+= ηfi − Bf →i(ηfj + ηj\f ).
+
+Subsequent eta-only sweeps reuse both this gain and the belief precisions, replacing repeated small factorizations by matrix–vector products. This changes the per-message arithmetic from O(d3) to 
+
+O(d2) for block dimension d. Caches are refreshed when the linearized model changes. Numerical freezing uses the task-specific tolerances below, rather than assuming an exact fixed point after a prescribed number of sweeps. 
+
+Local basis construction. For PGO, a group G assembles HG ∈ Rd|G|× d|G| from its internal factors and priors, and retains the rG lowest eigenmodes as PG. Here d = 3 for SE(2) and d = 6 for SE(3), with ranks 4 and 12 , respectively (capped by the group dimension). SE(2) uses block inverse iteration with Rayleigh–Ritz extraction and an eigen-residual acceptance test, warm-started from the preceding basis when available. SE(3) first exploits exact band structure with a selected-eigenpair solver when the local block is sufficiently narrow-banded, and otherwise attempts the partial solve. Unaccepted partial solves fall back to a full symmetric eigendecomposition. These backends target the same low-mode space; local bases are rebuilt at each relinearization. 
+
+Parallel and distributed structure. Fine-level factor and belief passes, as well as per-group basis construction, admit parallel execution with local data access. Contiguous message slots, fixed-size block kernels, preallocated workspaces, and persistent worker regions reduce allocation and synchronization overhead; restriction accumulates group contributions and prolongation applies local basis blocks. The one-thread PGO path avoids launching parallel worker teams. Our implementation is shared-memory: reductions and the reduced solve still provide global coupling. In preliminary experiments, GBP on the induced second-level factor graph was slower than a direct solve. A likely reason is the much smaller coarse-system dimension, which makes a factorization reused across corrections cheaper than repeated coarse message sweeps. We therefore use sparse Cholesky for the PGO coarse system and dense LDL ⊤ for the small BA coarse system, while retaining loopy GBP on the fine message graph. D.2 LINEAR EXPERIMENT DETAILS 
+
+The convergence studies use fixed Gaussian systems, with a direct solution as the MAP reference. Figure 6 varies the smoothing budget on a synthetic translation graph; Fig. 5(a,b) examines coarse spaces and spectral contraction. The companion fill-in timing study in Fig. 5(c) is described separately below. D.2.1 TWO -LAP TRANSLATION GRAPH 
+
+The graph has 200 two-dimensional position variables, arranged on two circular laps of radius 10 ,with 100 positions per lap and random seed 11 . Odometry initialization integrates consecutive relative displacements with Gaussian noise N (0 , 0.10 2I2). Within-group chain factors use those measurements; connectors, skips, and cross-lap closures use ground-truth displacements perturbed by N (0 , 0.01 2I2). Twenty groups contain ten consecutive variables each. A soft prior of weight 
+
+10 −6 anchors the first position. Each group retains four modes (two scalar modes in each coordinate), reducing dimension 400 to 80 . Table 3 specifies the edge counts and information weights; the displayed realization selects 135 within-group skips from 160 eligible candidates. 28 Table 3: Edge construction for Fig. 6. Edge type Construction Count Weight Local chain adjacent poses within each group 180 1.0 Inter-group connector last pose of a group to first pose of next group 20 1.0 Short-range skip selected within-group skips, distance 2–6 135 0.8 Long-range loop closure cross-lap edges with phase jitter δ ∈ [−3, 3] nodes 16 0.2 Table 4: Sphere final relative error ∥e − eMAP ∥2/∥eMAP ∥2, as displayed in Fig. 5(a). Coarse abstraction Relative error AMD 0.928 Message-λ 0.899 Low-rank 0.335 We vary k ∈ { 20 , 30 , . . . , 100 } and c ∈ { 0, 1, . . . , 20 }. One GBP cycle contains k synchronous sweeps; H-GBP adds a coarse correction to the same fine-sweep budget. Both start at the same odometry estimate. The surface plots 
+
+log 10 
+
+ ∥ec − e⋆∥A
+
+∥e0 − e⋆∥A
+
+
+
+.
+
+Thus the comparison isolates the benefit of abstraction and recovery at equal numbers of fine sweeps, not equal wall time. The energy norm measures the quadratic-system error; because the anchor is weak, it should not be interpreted as an unweighted trajectory MSE. D.2.2 COARSE -SPACE ABLATION : F IG . 5( A)This panel freezes the first SE(3) linearization of Sphere, He = η, and uses eMAP = H−1η as the reference. Ordered groups contain 20 poses. Low-rank abstraction uses the lowest modes of the block assembled from priors and factors fully contained in a group. Message-λ abstraction additionally includes incoming boundary-message precision blocks. The algebraic multigrid comparator (labelled AMD in the figure) instead uses block strength of connection to select coarse pose nodes and interpolate neighboring fine nodes (Xu & Zikatanov, 2017). Starting from e = 0 , all three methods apply a coarse correction, 50 synchronous GBP sweeps, and a second coarse correction. Each correction solves (P ⊤HP )δz = P ⊤(η − He ) and injects P δz .Table 4 reproduces the final relative Euclidean errors shown in the panel. The low-rank space yields a substantially smaller remaining error on this system. D.2.3 SPECTRAL CONTRACTION : F IG . 5( B)The spectral experiment again uses 200 translation variables, group size 10 , rank 4, and k = 50 . Only the short- and long-range connectivity varies (Table 5). We plot successive-cycle energy-error ratios 
+
+∥ec − e⋆∥A/∥ec−1 − e⋆∥A, for c = 1 , . . . , 20 , against the estimated fixed-precision spectral radius 
+
+ρ(Taug ,50 ) = ρ(M50 ). The ratios approach the predicted asymptotic rates as precision messages stabilize. Faster initial contraction is compatible with the theory: a spectral radius describes the asymptotic rate, not a universal one-step norm bound. D.2.4 FILL -IN SENSITIVITY : F IG . 5( C)The fill-in diagnostic concerns the linear system A0δ = b0 obtained by the first linearization at the initial odometry estimate. The Globe1k variants all have matrix dimension 6144 and 98 ,544 
+
+lower-triangular nonzeros, but different elimination fill-in. The accompanying recorded runtimes cover ten nonlinear outer iterations, rather than only this first linear solve. H-GBP uses five cycles, fifty pre-sweeps, group size 20 , rank 12 , and one thread throughout. Each method’s runtime is normalized by its own smallest-fill case (Table 6). Across these variants, Cholesky time grows by 29 Table 5: Graph variants used in the spectral-radius contraction test. Case pskip nloop wskip wloop Short-range Long-loop ρ(Taug ,50 )                     
+
+> Dense local / few loops 1.0 81.2 0.05 160 80.393 Moderate local / moderate loops 0.8 16 0.8 0.20 135 16 0.428 Sparse local / more loops 0.3 24 0.4 1.00 44 24 0.657
+
+Table 6: Runtime scaling under increasing sparse-matrix fill-in. Mode Fill-in ratio H-GBP time (s) Cholesky time (s) H-GBP growth Cholesky growth local_diag 5.066 1.459 0.475 1.000 1.000 medium_chords 6.141 1.504 0.603 1.031 1.269 separator_weave 6.781 1.500 0.682 1.028 1.436 mixed_chords 6.864 1.549 0.720 1.061 1.516 hemisphere_bridges 8.102 1.568 0.894 1.075 1.883 
+
+1.883 ×, versus 1.075 × for H-GBP. This is an empirical sensitivity comparison at fixed problem size and sparsity, not an asymptotic complexity claim. D.3 SE2/SE3 P OSE -G RAPH EXPERIMENT DETAILS 
+
+Baselines and protocol. The Cholesky reference uses the official g2o LinearSolverCholmod 
+
+kernel (Kümmerle et al., 2011) inside our matched analytic Lie-log front end, with block ordering and symbolic reuse. The archived CHOLMOD build is simplicial: its dominant numerical factorization is serial, so additional front-end threads do not accelerate that stage. g2o-PCG uses block-preconditioned conjugate gradients (relative tolerance 10 −6, iteration cap equal to the scalar system dimension). Both use twenty Gauss–Newton outer iterations. AMM-PGO (Fan & Murphey, 2024) combines distributed majorization–minimization with Nesterov acceleration and adaptive restart; we use the official implementation with a parallel-node adapter and sixteen partitions. Cycle-PGO (Bai et al., 2021) optimizes relative poses using a minimum cycle basis and cycle-consistency constraints. Schwarz-PGO uses sixteen subdomains, one-hop overlap, a GDSW coarse space, and PCG tolerance 10 −8 Tee et al. (2026). Cycle-PGO and Schwarz-PGO allow up to twenty nonlinear iterations. AMM-PGO retains its recorded native budgets: 100 iterations for FR079 and Globe100k, 20 for Grid, and 300 otherwise. All methods receive the same released graph files, including the offline PSD-conditioned Cubicle graph and the generated Globe graphs. H-GBP, Cholesky, PCG, and Schwarz use Huber threshold 5.AMM-PGO retains its native scalar-weighted chordal robust objective and initialization; Cycle-PGO retains its native non-robust objective. For comparison, final poses are rescored using the same full-information, half-quadratic Lie-log cost, so displayed costs are not the Huber objectives used internally. Cycle estimates are reconstructed into vertex poses before scoring. Timings are measured wall times with native boundaries retained; in particular, Schwarz totals include parsing. Sixteen threads denotes the available worker budget, not guaranteed parallelism in every stage. 
+
+Unified H-GBP settings. SE(2) uses 20 outer iterations, c = 3 , k = 100 , group size 20 , and 
+
+r = 4 ; SE(3) uses 20 , c = 5 , k = 50 , group size 20 , and r = 12 . Analytical Jacobians produce each tangent system. Loopy GBP pre-smoothing and a reduced sparse direct solve alternate within every outer iteration, followed by retraction. Precision freezing requires three consecutive checks below relative tolerance 10 −8. Checks initially occur every five sweeps (the SE(2) interval may back off to twenty-five); frozen precisions are rechecked every twenty-five sweeps and reactivated if necessary. These rules are shared across datasets within each space. 
+
+Objective trajectories. Figure 9 retains the archived objective-versus-outer comparison with the direct Gauss–Newton reference as a qualitative convergence illustration, separate from the current timing runs. H-GBP consistently reduces the objective across the nine graphs and avoids the pronounced early spikes seen in the direct reference on Cubicle and Grid. 30 Figure 9: Archived objective trajectories of H-GBP and the direct Gauss–Newton reference over nonlinear outer iterations. D.4 BUNDLE ADJUSTMENT EXPERIMENT DETAILS 
+
+Baselines and common objective. Ceres Sparse uses sparse Cholesky on the reduced camera system ( SPARSE_SCHUR , SuiteSparse/CHOLMOD); Ceres Iterative uses implicit Schur PCG with a Schur–Jacobi preconditioner (Agarwal et al., 2023). RootBA-QR eliminates landmarks by House-holder QR in square-root form and iteratively solves the reduced camera problem (Demmel et al., 2021). PowerBA approximates the inverse Schur complement by a truncated power series, here of order ten (Weber et al., 2023). We use their released implementations through the common BAL/RootBA adapters, with double precision, identical input files, camera model, and normalization. All receive a budget of twenty nonlinear iterations and retain native stopping. Cost is the sum of squared two-dimensional reprojection residuals. Table timings exclude loading and common input normalization; Ceres reports Solve time, excluding wrapper problem construction, whereas H-GBP, RootBA, and PowerBA include their internal setup. 
+
+A single policy across scenes. Cameras are aggregated into connected groups of target size 
+
+max(2 , ⌈nc/24 ⌉), and each group retains nine modes when abstracted. The damping coefficient for the fine graph is one. Precision messages are computed for each camera system until relative change is below 10 −6. We then reuse the cached eta maps across H-GBP applications. Grouping and sparsity follow the same graph rules for every scene. 
+
+Cost versus iteration time. Figure 10 compares the actual per-outer histories of H-GBP and PowerBA on all ten BA benchmarks. H-GBP reaches lower final cost on these runs while spending less time in the nonlinear iterations. To avoid mixing timing boundaries, the horizontal axis sums the recorded outer durations for both methods, excluding one-time setup, loading, and normalization; the main table separately reports solver totals. Each point is one outer attempt, and rejected PowerBA trials retain the previous accepted cost while their elapsed time is still counted. Each H-GBP curve is a 31 Figure 10: H-GBP versus PowerBA on BA, both with sixteen threads. Markers show outer attempts 
+
+1–20 ; vertical axes show reprojection cost (SSR) on logarithmic scales. Time is accumulated inside outer iterations, excluding one-time setup. Curves use recorded durations without rescaling. complete run with median total runtime among three repeats, not a curve assembled from per-iteration minima. 32 E DISCUSSION 
+
+Toward multiple levels. Algorithmically, extending the current two-level construction to a fully multilevel hierarchy is nontrivial. The upper-level system 
+
+Acδz = rc
+
+is a Galerkin algebraic system, and different coarse factor-graph realizations may induce the same matrix equation. Thus a multilevel GBP construction must decide not only the dimension of each coarse variable, but also how unary and binary factors should be assigned among abstracted coarse nodes. A natural attempt is to assign one coarse variable to each fine group, with dimension equal to the retained local eigenbasis size, project within-group factors into unary coarse factors, and project cross-group factors into between-group coarse factors. In our preliminary experiments, however, GBP on this induced coarse factor graph typically required many iterations to solve the coarse system and was slower than a direct sparse solve at that level. This does not diminish the two-level result; rather, it highlights a compelling open direction: designing purely message-passing upper levels that retain the scalability and locality needed for fully distributed spatial-intelligence systems. 
+
+Broader applications. Finally, the abstraction-and-recovery principle behind H-GBP is not specific to pose graphs or bundle adjustment’s cameras. Many sparse factor-graph problems have natural intermediate structures that could define useful coarse abstractions. In multi-robot SLAM and navigation, each robot’s local subgraph could form a group, with higher-level messages coordinating inter-robot constraints. In visual odometry, pixels, patches, or object-level regions could be grouped into progressively coarser variables to accelerate GBP-based inference. Exploring such applications may reveal when hierarchical message passing can provide both distributed computation and strong global correction in broader sparse graphical models. 33
